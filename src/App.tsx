@@ -125,25 +125,20 @@ export default function App() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000030]/90 backdrop-blur-md"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000030]/90 backdrop-blur-md cursor-pointer"
         onClick={onClose}
       >
         <motion.div
           initial={{ scale: 0.9, y: 20 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.9, y: 20 }}
-          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
+          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default"
           onClick={e => e.stopPropagation()}
         >
           {/* Header Decor */}
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
           
           <div className="p-8 relative z-10">
-            {/* Faded Match Number in Modal Background */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[20rem] font-black text-white/[0.02] italic select-none pointer-events-none">
-              {match.matchNumber}
-            </div>
-            
             <div className="flex justify-between items-center mb-12 relative z-10">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
@@ -157,25 +152,25 @@ export default function App() {
               </button>
             </div>
 
-            <div className="flex items-center justify-between gap-4 mb-12">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
               <div className="flex-1 flex flex-col items-center text-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-lg">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg">
                   {awayTeam?.name[0] || '?'}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight pr-1">{awayTeam?.name || 'TBD'}</h2>
+                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.name || 'TBD'}</h2>
                   <p className="text-[10px] text-white/40 font-mono">{awayTeam?.uid || 'UID: ???'}</p>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center gap-4">
-                <div className="text-xs font-black text-blue-400/50 uppercase tracking-widest">Score</div>
-                <div className="flex items-center gap-6">
-                  <span className="text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
-                  <span className="text-white/10 font-black text-2xl">VS</span>
-                  <span className="text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
+              <div className="flex flex-col items-center gap-2 md:gap-4">
+                <div className="text-[10px] md:text-xs font-black text-blue-400/50 uppercase tracking-widest">Score</div>
+                <div className="flex items-center gap-4 md:gap-6">
+                  <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
+                  <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
+                  <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
                 </div>
-                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${
                   match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
                 }`}>
                   {match.status === 'finished' ? 'Final Result' : 'Match Scheduled'}
@@ -183,11 +178,11 @@ export default function App() {
               </div>
 
               <div className="flex-1 flex flex-col items-center text-center gap-4">
-                <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-lg">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg">
                   {homeTeam?.name[0] || '?'}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight pr-1">{homeTeam?.name || 'TBD'}</h2>
+                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.name || 'TBD'}</h2>
                   <p className="text-[10px] text-white/40 font-mono">{homeTeam?.uid || 'UID: ???'}</p>
                 </div>
               </div>
@@ -359,10 +354,6 @@ export default function App() {
                     return (
                       <tr key={team.id} className={`${rowClass} relative group/row`}>
                         <td className="px-3 md:px-6 py-3 md:py-4 relative">
-                          {/* Faded Background Number for Table - Increased Visibility */}
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 text-5xl md:text-6xl font-black text-white/[0.08] italic select-none pointer-events-none group-hover/row:text-blue-500/[0.15] transition-all duration-500">
-                            {index + 1}
-                          </div>
                           <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
                             index < 4 ? 'bg-green-500/20 text-green-400' : 
                             index >= 12 ? 'bg-red-500/20 text-red-400' : 
@@ -456,11 +447,6 @@ export default function App() {
                             <div className="absolute bottom-0 right-0 w-4 h-[1px] bg-blue-500/30" />
                           </div>
 
-                          {/* Background Match Number Decor - Fixed Positioning and Visibility */}
-                          <div className="absolute right-0 bottom-0 text-9xl md:text-[12rem] font-black text-white/[0.12] italic select-none pointer-events-none group-hover:text-blue-500/[0.25] transition-all duration-500 group-hover:-translate-y-2 pr-4">
-                            {match.matchNumber}
-                          </div>
-
                           {/* Background Glow */}
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                           
@@ -495,6 +481,11 @@ export default function App() {
                           {/* Home Team (Right) */}
                           <div className="flex-1 flex justify-start pl-2 md:pl-8 relative z-10 min-w-0">
                             <TeamNameWithCopy team={homeTeam} reverse={true} />
+                          </div>
+
+                          {/* Mobile Click Indicator */}
+                          <div className="md:hidden ml-2 text-white/20">
+                            <ChevronRight className="w-4 h-4" />
                           </div>
                         </div>
                       );
@@ -532,10 +523,6 @@ export default function App() {
                         })}
                         className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
                       >
-                        {/* Faded Match Number for Bracket */}
-                        <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
-                          {100 + i}
-                        </div>
                         <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
                           <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
@@ -572,10 +559,6 @@ export default function App() {
                         })}
                         className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
                       >
-                        {/* Faded Match Number for Bracket */}
-                        <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
-                          {200 + i}
-                        </div>
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
                           <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
@@ -612,10 +595,6 @@ export default function App() {
                         })}
                         className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
                       >
-                        {/* Faded Match Number for Bracket */}
-                        <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
-                          {300 + i}
-                        </div>
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
                           <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Winner</span>
                           <span className="font-mono font-bold">-</span>
@@ -651,10 +630,6 @@ export default function App() {
                       })}
                       className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/30 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)] p-1 cursor-pointer hover:border-yellow-400 transition-all group/match relative"
                     >
-                      {/* Faded Match Number for Final */}
-                      <div className="absolute -right-2 -bottom-2 text-5xl font-black text-white/[0.05] italic select-none pointer-events-none group-hover/match:text-yellow-500/[0.1] transition-all duration-500">
-                        400
-                      </div>
                       <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
                         <div className="p-4 flex justify-between items-center">
                           <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Finalist 1</span>
@@ -683,10 +658,6 @@ export default function App() {
                       })}
                       className="w-56 bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
                     >
-                      {/* Faded Match Number for 3rd Place */}
-                      <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
-                        399
-                      </div>
                       <div className="p-3 flex justify-between items-center text-sm relative z-10">
                         <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors pr-1">Loser SF1</span>
                         <span className="font-mono font-bold text-white/40">-</span>
