@@ -86,16 +86,16 @@ export default function App() {
   const TeamNameWithCopy = ({ team, size = 'lg', reverse = false }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean }) => {
     if (!team) return null;
     return (
-      <div className={`flex items-center gap-2 md:gap-3 group/name ${reverse ? 'flex-row-reverse' : ''}`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic ${
-          size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-sm'
+      <div className={`flex items-center gap-2 md:gap-3 group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate ${
+          size === 'lg' ? 'text-xs md:text-lg' : 'text-[11px] md:text-sm'
         }`}>{team.name}</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
             copyToClipboard(team.uid);
           }}
-          className={`${size === 'lg' ? 'p-1 md:p-1.5' : 'p-0.5 md:p-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/70 hover:text-blue-400 flex items-center gap-1 transition-all`}
+          className={`${size === 'lg' ? 'p-1 md:p-1.5' : 'p-0.5 md:p-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/70 hover:text-blue-400 flex items-center gap-1 transition-all shrink-0`}
           title="Click to copy UID"
         >
           {copiedId === team.uid ? (
@@ -338,43 +338,43 @@ export default function App() {
                           </div>
 
                           {/* Background Match Number Decor */}
-                          <div className="absolute -right-4 -bottom-8 text-6xl md:text-8xl font-black text-white/[0.02] italic select-none pointer-events-none group-hover:text-blue-500/[0.05] transition-colors duration-500">
+                          <div className="absolute -right-4 -bottom-8 text-7xl md:text-8xl font-black text-white/[0.05] italic select-none pointer-events-none group-hover:text-blue-500/[0.1] transition-all duration-500 group-hover:-translate-y-2">
                             {match.matchNumber}
                           </div>
 
                           {/* Background Glow */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                           
                           {/* Away Team (Left) */}
-                          <div className="flex-1 flex justify-end pr-2 md:pr-8 relative z-10">
+                          <div className="flex-1 flex justify-end pr-2 md:pr-8 relative z-10 min-w-0">
                             <TeamNameWithCopy team={awayTeam} />
                           </div>
                           
                           {/* Score/VS (Center) */}
-                          <div className="flex flex-col items-center gap-1 md:gap-2 px-3 md:px-8 border-x border-white/10 relative z-10 min-w-[100px] md:min-w-[180px]">
+                          <div className="flex flex-col items-center gap-1 md:gap-2 px-3 md:px-8 border-x border-white/10 relative z-10 min-w-[110px] md:min-w-[180px] shrink-0">
                             <div className="flex items-center gap-1 md:gap-2">
                               <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
-                              <span className="text-[7px] md:text-[9px] font-black text-blue-400/50 uppercase tracking-[0.2em] md:tracking-[0.3em]">M{match.matchNumber}</span>
+                              <span className="text-[8px] md:text-[9px] font-black text-blue-400/50 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match {match.matchNumber}</span>
                               <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
                             </div>
-                            <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[7px] md:text-[10px] font-black uppercase tracking-widest ${
+                            <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
                             }`}>
                               {match.status === 'finished' ? 'Final' : 'Live'}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
-                              <span className={`text-xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
+                              <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
                                 {match.awayScore ?? '-'}
                               </span>
                               <span className="text-white/10 font-bold text-[10px]">VS</span>
-                              <span className={`text-xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
+                              <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
                                 {match.homeScore ?? '-'}
                               </span>
                             </div>
                           </div>
 
                           {/* Home Team (Right) */}
-                          <div className="flex-1 flex justify-start pl-2 md:pl-8 relative z-10">
+                          <div className="flex-1 flex justify-start pl-2 md:pl-8 relative z-10 min-w-0">
                             <TeamNameWithCopy team={homeTeam} reverse={true} />
                           </div>
                         </div>
