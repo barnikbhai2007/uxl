@@ -70,6 +70,7 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
 export default function App() {
   const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket'>('fixtures');
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const teams = useMemo(() => INITIAL_TEAMS, []);
   const matches = useMemo(() => getMatchesFromSchedule(teams), [teams]);
   const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
@@ -84,11 +85,17 @@ export default function App() {
   };
 
   const TeamNameWithCopy = ({ team, size = 'lg', reverse = false }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean }) => {
-    if (!team) return null;
+    if (!team) return (
+      <div className={`flex items-center gap-2 md:gap-3 ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate ${
+          size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
+        }`}>TBD</span>
+      </div>
+    );
     return (
       <div className={`flex items-center gap-2 md:gap-3 group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate ${
-          size === 'lg' ? 'text-xs md:text-lg' : 'text-[11px] md:text-sm'
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic shrink-0 ${
+          size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>{team.name}</span>
         <button
           onClick={(e) => {
@@ -106,6 +113,113 @@ export default function App() {
           <span className="text-[7px] md:text-[8px] font-black uppercase tracking-tighter">UID</span>
         </button>
       </div>
+    );
+  };
+
+  const MatchDetailsModal = ({ match, onClose }: { match: Match, onClose: () => void }) => {
+    const homeTeam = teams.find(t => t.id === match.homeTeamId);
+    const awayTeam = teams.find(t => t.id === match.awayTeamId);
+
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000030]/90 backdrop-blur-md"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.9, y: 20 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.9, y: 20 }}
+          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* Header Decor */}
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
+          
+          <div className="p-8 relative z-10">
+            {/* Faded Match Number in Modal Background */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[20rem] font-black text-white/[0.02] italic select-none pointer-events-none">
+              {match.matchNumber}
+            </div>
+            
+            <div className="flex justify-between items-center mb-12 relative z-10">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-yellow-500" />
+                <span className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">Match Details</span>
+              </div>
+              <button 
+                onClick={onClose}
+                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+              >
+                <span className="text-2xl">&times;</span>
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between gap-4 mb-12">
+              <div className="flex-1 flex flex-col items-center text-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-lg">
+                  {awayTeam?.name[0] || '?'}
+                </div>
+                <div className="space-y-1">
+                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight">{awayTeam?.name || 'TBD'}</h2>
+                  <p className="text-[10px] text-white/40 font-mono">{awayTeam?.uid || 'UID: ???'}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-center gap-4">
+                <div className="text-xs font-black text-blue-400/50 uppercase tracking-widest">Score</div>
+                <div className="flex items-center gap-6">
+                  <span className="text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
+                  <span className="text-white/10 font-black text-2xl">VS</span>
+                  <span className="text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
+                </div>
+                <div className={`px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
+                }`}>
+                  {match.status === 'finished' ? 'Final Result' : 'Match Scheduled'}
+                </div>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center text-center gap-4">
+                <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-4xl shadow-lg">
+                  {homeTeam?.name[0] || '?'}
+                </div>
+                <div className="space-y-1">
+                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight">{homeTeam?.name || 'TBD'}</h2>
+                  <p className="text-[10px] text-white/40 font-mono">{homeTeam?.uid || 'UID: ???'}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-3 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+              <div className="text-center space-y-1">
+                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Match Date</div>
+                <div className="text-sm font-bold text-blue-400">{match.date}</div>
+              </div>
+              <div className="text-center space-y-1 border-x border-white/5">
+                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
+                <div className="text-sm font-bold text-blue-400">#{match.matchNumber}</div>
+              </div>
+              <div className="text-center space-y-1">
+                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Venue</div>
+                <div className="text-sm font-bold text-blue-400">Arena {Math.ceil(match.matchNumber / 4)}</div>
+              </div>
+            </div>
+
+            <div className="mt-8 flex justify-center">
+              <button 
+                onClick={onClose}
+                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl transition-all shadow-lg shadow-blue-600/20"
+              >
+                Close Details
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
     );
   };
 
@@ -223,7 +337,7 @@ export default function App() {
             >
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-white/5 text-blue-200/50 text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
+                  <tr className="bg-white/5 text-blue-200/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
                     <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
                     <th className="px-3 md:px-6 py-3 md:py-4">Team</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">P</th>
@@ -243,9 +357,13 @@ export default function App() {
                     if (index >= 12) rowClass += " bg-red-500/5";
                     
                     return (
-                      <tr key={team.id} className={rowClass}>
-                        <td className="px-3 md:px-6 py-3 md:py-4">
-                          <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-[10px] md:text-sm ${
+                      <tr key={team.id} className={`${rowClass} relative group/row`}>
+                        <td className="px-3 md:px-6 py-3 md:py-4 relative">
+                          {/* Faded Background Number for Table - Increased Visibility */}
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 text-5xl md:text-6xl font-black text-white/[0.08] italic select-none pointer-events-none group-hover/row:text-blue-500/[0.15] transition-all duration-500">
+                            {index + 1}
+                          </div>
+                          <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
                             index < 4 ? 'bg-green-500/20 text-green-400' : 
                             index >= 12 ? 'bg-red-500/20 text-red-400' : 
                             'bg-white/10 text-white/70'
@@ -256,14 +374,14 @@ export default function App() {
                         <td className="px-3 md:px-6 py-3 md:py-4">
                           <TeamNameWithCopy team={team} size="sm" />
                         </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.played}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.won}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.drawn}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.lost}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.gf}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.ga}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-[10px] md:text-sm text-blue-400">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.played}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.won}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.drawn}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.lost}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gf}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.ga}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-xs md:text-sm text-blue-400">{team.points}</td>
                       </tr>
                     );
                   })}
@@ -325,7 +443,8 @@ export default function App() {
                       return (
                         <div 
                           key={match.id} 
-                          className="group bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 flex items-center justify-between hover:border-blue-500/50 transition-all duration-300 relative overflow-hidden"
+                          onClick={() => setSelectedMatch(match)}
+                          className="group bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 flex items-center justify-between hover:border-blue-500/50 transition-all duration-300 relative overflow-hidden cursor-pointer"
                         >
                           {/* Decorative Corner Accents */}
                           <div className="absolute top-0 left-0 w-8 h-8 pointer-events-none">
@@ -337,8 +456,8 @@ export default function App() {
                             <div className="absolute bottom-0 right-0 w-4 h-[1px] bg-blue-500/30" />
                           </div>
 
-                          {/* Background Match Number Decor */}
-                          <div className="absolute -right-4 -bottom-8 text-7xl md:text-8xl font-black text-white/[0.05] italic select-none pointer-events-none group-hover:text-blue-500/[0.1] transition-all duration-500 group-hover:-translate-y-2">
+                          {/* Background Match Number Decor - Fixed Positioning and Visibility */}
+                          <div className="absolute right-0 bottom-0 text-9xl md:text-[12rem] font-black text-white/[0.12] italic select-none pointer-events-none group-hover:text-blue-500/[0.25] transition-all duration-500 group-hover:-translate-y-2">
                             {match.matchNumber}
                           </div>
 
@@ -400,13 +519,29 @@ export default function App() {
                   <h3 className="text-blue-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center">Round of 16</h3>
                   {Array.from({ length: 8 }).map((_, i) => (
                     <div key={`r16-${i}`} className="relative">
-                      <div className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg">
-                        <div className={`p-2 flex justify-between items-center text-xs ${i % 2 === 0 ? 'bg-blue-500/10' : ''}`}>
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic">TBD</span>
+                      <div 
+                        onClick={() => setSelectedMatch({
+                          id: `r16-${i}`,
+                          matchNumber: 100 + i,
+                          homeTeamId: '',
+                          awayTeamId: '',
+                          homeScore: 0,
+                          awayScore: 0,
+                          date: 'TBD',
+                          status: 'scheduled'
+                        })}
+                        className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                      >
+                        {/* Faded Match Number for Bracket */}
+                        <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
+                          {100 + i}
+                        </div>
+                        <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
-                        <div className={`p-2 flex justify-between items-center text-xs border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''}`}>
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic">TBD</span>
+                        <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''}`}>
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                       </div>
@@ -421,16 +556,31 @@ export default function App() {
 
                 {/* Quarter Finals */}
                 <div className="flex flex-col justify-around gap-16">
-                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center">Quarter-Finals</h3>
+                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-xs mb-4 text-center">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={`qf-${i}`} className="relative">
-                      <div className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg">
-                        <div className="p-2 flex justify-between items-center text-xs">
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic">TBD</span>
+                      <div 
+                        onClick={() => setSelectedMatch({
+                          id: `qf-${i}`,
+                          matchNumber: 200 + i,
+                          homeTeamId: '',
+                          awayTeamId: '',
+                          homeScore: 0,
+                          awayScore: 0,
+                          date: 'TBD',
+                          status: 'scheduled'
+                        })}
+                        className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                      >
+                        {/* Faded Match Number for Bracket */}
+                        <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
+                          {200 + i}
+                        </div>
+                        <div className="p-2 flex justify-between items-center text-sm relative z-10">
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
-                        <div className="p-2 flex justify-between items-center text-xs border-t border-white/5">
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic">TBD</span>
+                        <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                       </div>
@@ -445,16 +595,32 @@ export default function App() {
 
                 {/* Semi Finals */}
                 <div className="flex flex-col justify-around gap-32">
-                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center">Semi-Finals</h3>
+                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-xs mb-4 text-center">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => (
                     <div key={`sf-${i}`} className="relative">
-                      <div className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg">
-                        <div className="p-2 flex justify-between items-center text-xs">
-                          <span className="font-display font-black truncate max-w-[100px] uppercase italic">Winner</span>
+                      <div 
+                        onClick={() => setSelectedMatch({
+                          id: `sf-${i}`,
+                          matchNumber: 300 + i,
+                          homeTeamId: '',
+                          awayTeamId: '',
+                          homeScore: 0,
+                          awayScore: 0,
+                          date: 'TBD',
+                          status: 'scheduled'
+                        })}
+                        className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                      >
+                        {/* Faded Match Number for Bracket */}
+                        <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
+                          {300 + i}
+                        </div>
+                        <div className="p-2 flex justify-between items-center text-sm relative z-10">
+                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors">Winner</span>
                           <span className="font-mono font-bold">-</span>
                         </div>
-                        <div className="p-2 flex justify-between items-center text-xs border-t border-white/5">
-                          <span className="font-display font-black truncate max-w-[100px] uppercase italic">Winner</span>
+                        <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
+                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors">Winner</span>
                           <span className="font-mono font-bold">-</span>
                         </div>
                       </div>
@@ -470,30 +636,62 @@ export default function App() {
                 {/* Final */}
                 <div className="flex flex-col justify-center gap-12">
                   <div>
-                    <h3 className="text-yellow-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center">Grand Final</h3>
-                    <div className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/30 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)] p-1">
-                      <div className="bg-[#000030] rounded-lg overflow-hidden">
+                    <h3 className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center">Grand Final</h3>
+                    <div 
+                      onClick={() => setSelectedMatch({
+                        id: 'final',
+                        matchNumber: 400,
+                        homeTeamId: '',
+                        awayTeamId: '',
+                        homeScore: 0,
+                        awayScore: 0,
+                        date: 'TBD',
+                        status: 'scheduled'
+                      })}
+                      className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/30 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)] p-1 cursor-pointer hover:border-yellow-400 transition-all group/match relative"
+                    >
+                      {/* Faded Match Number for Final */}
+                      <div className="absolute -right-2 -bottom-2 text-5xl font-black text-white/[0.05] italic select-none pointer-events-none group-hover/match:text-yellow-500/[0.1] transition-all duration-500">
+                        400
+                      </div>
+                      <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
                         <div className="p-4 flex justify-between items-center">
-                          <span className="font-display font-black text-sm uppercase italic tracking-tighter">Finalist 1</span>
-                          <span className="font-mono font-black text-xl">-</span>
+                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors">Finalist 1</span>
+                          <span className="font-mono font-black text-2xl">-</span>
                         </div>
                         <div className="p-4 flex justify-between items-center border-t border-white/5">
-                          <span className="font-display font-black text-sm uppercase italic tracking-tighter">Finalist 2</span>
-                          <span className="font-mono font-black text-xl">-</span>
+                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors">Finalist 2</span>
+                          <span className="font-mono font-black text-2xl">-</span>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <h3 className="text-blue-400/50 font-black uppercase tracking-widest text-[10px] mb-4 text-center">3rd Place Match</h3>
-                    <div className="w-56 bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-lg">
-                      <div className="p-3 flex justify-between items-center text-xs">
-                        <span className="font-display font-black truncate max-w-[100px] text-white/60 uppercase italic">Loser SF1</span>
+                    <h3 className="text-blue-400/50 font-black uppercase tracking-widest text-xs mb-4 text-center">3rd Place Match</h3>
+                    <div 
+                      onClick={() => setSelectedMatch({
+                        id: '3rd',
+                        matchNumber: 399,
+                        homeTeamId: '',
+                        awayTeamId: '',
+                        homeScore: 0,
+                        awayScore: 0,
+                        date: 'TBD',
+                        status: 'scheduled'
+                      })}
+                      className="w-56 bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                    >
+                      {/* Faded Match Number for 3rd Place */}
+                      <div className="absolute -right-2 -bottom-2 text-4xl font-black text-white/[0.03] italic select-none pointer-events-none group-hover/match:text-blue-500/[0.1] transition-all duration-500">
+                        399
+                      </div>
+                      <div className="p-3 flex justify-between items-center text-sm relative z-10">
+                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors">Loser SF1</span>
                         <span className="font-mono font-bold text-white/40">-</span>
                       </div>
-                      <div className="p-3 flex justify-between items-center border-t border-white/5 text-xs">
-                        <span className="font-display font-black truncate max-w-[100px] text-white/60 uppercase italic">Loser SF2</span>
+                      <div className="p-3 flex justify-between items-center border-t border-white/5 text-sm">
+                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors">Loser SF2</span>
                         <span className="font-mono font-bold text-white/40">-</span>
                       </div>
                     </div>
@@ -509,6 +707,15 @@ export default function App() {
           )}
         </AnimatePresence>
       </main>
+
+      <AnimatePresence>
+        {selectedMatch && (
+          <MatchDetailsModal 
+            match={selectedMatch} 
+            onClose={() => setSelectedMatch(null)} 
+          />
+        )}
+      </AnimatePresence>
 
       {/* Footer */}
       <footer className="mt-20 py-8 md:py-12 border-t border-white/10 bg-black/20">
