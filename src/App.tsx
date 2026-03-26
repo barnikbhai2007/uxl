@@ -86,22 +86,24 @@ export default function App() {
   const TeamNameWithCopy = ({ team, size = 'lg', reverse = false }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean }) => {
     if (!team) return null;
     return (
-      <div className={`flex items-center gap-3 group/name ${reverse ? 'flex-row-reverse' : ''}`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic ${size === 'lg' ? 'text-lg' : 'text-sm'}`}>{team.name}</span>
+      <div className={`flex items-center gap-2 md:gap-3 group/name ${reverse ? 'flex-row-reverse' : ''}`}>
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic ${
+          size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-sm'
+        }`}>{team.name}</span>
         <button
           onClick={(e) => {
             e.stopPropagation();
             copyToClipboard(team.uid);
           }}
-          className={`${size === 'lg' ? 'p-1.5' : 'p-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/70 hover:text-blue-400 flex items-center gap-1 transition-all`}
+          className={`${size === 'lg' ? 'p-1 md:p-1.5' : 'p-0.5 md:p-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/70 hover:text-blue-400 flex items-center gap-1 transition-all`}
           title="Click to copy UID"
         >
           {copiedId === team.uid ? (
-            <Check className="w-3 h-3 text-green-400" />
+            <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-green-400" />
           ) : (
-            <Copy className="w-3 h-3" />
+            <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
           )}
-          <span className="text-[8px] font-black uppercase tracking-tighter">UID</span>
+          <span className="text-[7px] md:text-[8px] font-black uppercase tracking-tighter">UID</span>
         </button>
       </div>
     );
@@ -150,7 +152,7 @@ export default function App() {
       </div>
 
       {/* Header */}
-      <header className="relative h-64 flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
+      <header className="relative h-48 md:h-64 flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-[#000030]" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-10">
@@ -165,13 +167,13 @@ export default function App() {
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="z-10 text-center"
+          className="z-10 text-center px-4"
         >
-          <Trophy className="w-16 h-16 mx-auto mb-4 text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
-          <h1 className="font-display text-4xl md:text-6xl font-black tracking-tighter uppercase italic">
+          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
+          <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none">
             UXI <span className="text-blue-400">Tournament</span>
           </h1>
-          <p className="text-blue-200/60 mt-2 font-mono text-sm tracking-[0.4em] uppercase">Elite Competition</p>
+          <p className="text-blue-200/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">Elite Competition</p>
         </motion.div>
       </header>
 
@@ -221,29 +223,29 @@ export default function App() {
             >
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-white/5 text-blue-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
-                    <th className="px-6 py-4">Pos</th>
-                    <th className="px-6 py-4">Team</th>
-                    <th className="px-6 py-4 text-center">P</th>
-                    <th className="px-6 py-4 text-center">W</th>
-                    <th className="px-6 py-4 text-center">D</th>
-                    <th className="px-6 py-4 text-center">L</th>
-                    <th className="px-6 py-4 text-center">GF</th>
-                    <th className="px-6 py-4 text-center">GA</th>
-                    <th className="px-6 py-4 text-center">GD</th>
-                    <th className="px-6 py-4 text-center">Pts</th>
+                  <tr className="bg-white/5 text-blue-200/50 text-[8px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
+                    <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4">Team</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">P</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">W</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">D</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">L</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">GF</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">GA</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">GD</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">Pts</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
                   {standings.map((team, index) => {
                     let rowClass = "hover:bg-white/5 transition-colors";
-                    if (index < 4) rowClass += " bg-green-500/10";
-                    if (index >= 12) rowClass += " bg-red-500/10";
+                    if (index < 4) rowClass += " bg-green-500/5";
+                    if (index >= 12) rowClass += " bg-red-500/5";
                     
                     return (
                       <tr key={team.id} className={rowClass}>
-                        <td className="px-6 py-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                        <td className="px-3 md:px-6 py-3 md:py-4">
+                          <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-[10px] md:text-sm ${
                             index < 4 ? 'bg-green-500/20 text-green-400' : 
                             index >= 12 ? 'bg-red-500/20 text-red-400' : 
                             'bg-white/10 text-white/70'
@@ -251,17 +253,17 @@ export default function App() {
                             {index + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-3 md:px-6 py-3 md:py-4">
                           <TeamNameWithCopy team={team} size="sm" />
                         </td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.played}</td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.won}</td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.drawn}</td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.lost}</td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.gf}</td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.ga}</td>
-                        <td className="px-6 py-4 text-center font-mono text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-6 py-4 text-center font-black text-blue-400">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.played}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.won}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.drawn}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.lost}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.gf}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.ga}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-[10px] md:text-sm text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-[10px] md:text-sm text-blue-400">{team.points}</td>
                       </tr>
                     );
                   })}
@@ -278,11 +280,11 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-12"
             >
-              <div className="flex flex-col md:flex-row gap-6 items-center justify-between bg-white/5 border border-white/10 p-6 rounded-2xl backdrop-blur-sm">
-                <div className="flex items-center gap-4">
-                  <Info className="w-5 h-5 text-blue-400 shrink-0" />
-                  <p className="text-sm text-blue-200/80 italic">
-                    Note: In the schedule below, the <span className="text-white font-bold">Left side</span> is Away and the <span className="text-white font-bold">Right side</span> is Home.
+              <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-between bg-white/5 border border-white/10 p-4 md:p-6 rounded-2xl backdrop-blur-sm">
+                <div className="flex items-center gap-3 md:gap-4">
+                  <Info className="w-4 h-4 md:w-5 md:h-5 text-blue-400 shrink-0" />
+                  <p className="text-[10px] md:text-sm text-blue-200/80 italic">
+                    Note: <span className="text-white font-bold">Left</span> is Away, <span className="text-white font-bold">Right</span> is Home.
                   </p>
                 </div>
                 <div className="relative w-full md:w-64">
@@ -323,7 +325,7 @@ export default function App() {
                       return (
                         <div 
                           key={match.id} 
-                          className="group bg-white/5 border border-white/10 rounded-xl p-6 flex items-center justify-between hover:border-blue-500/50 transition-all duration-300 relative overflow-hidden"
+                          className="group bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 flex items-center justify-between hover:border-blue-500/50 transition-all duration-300 relative overflow-hidden"
                         >
                           {/* Decorative Corner Accents */}
                           <div className="absolute top-0 left-0 w-8 h-8 pointer-events-none">
@@ -336,7 +338,7 @@ export default function App() {
                           </div>
 
                           {/* Background Match Number Decor */}
-                          <div className="absolute -right-4 -bottom-8 text-8xl font-black text-white/[0.02] italic select-none pointer-events-none group-hover:text-blue-500/[0.05] transition-colors duration-500">
+                          <div className="absolute -right-4 -bottom-8 text-6xl md:text-8xl font-black text-white/[0.02] italic select-none pointer-events-none group-hover:text-blue-500/[0.05] transition-colors duration-500">
                             {match.matchNumber}
                           </div>
 
@@ -344,35 +346,35 @@ export default function App() {
                           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
                           
                           {/* Away Team (Left) */}
-                          <div className="flex-1 flex justify-end pr-8 relative z-10">
+                          <div className="flex-1 flex justify-end pr-2 md:pr-8 relative z-10">
                             <TeamNameWithCopy team={awayTeam} />
                           </div>
                           
                           {/* Score/VS (Center) */}
-                          <div className="flex flex-col items-center gap-2 px-8 border-x border-white/10 relative z-10 min-w-[180px]">
-                            <div className="flex items-center gap-2">
-                              <div className="h-[1px] w-4 bg-blue-500/30" />
-                              <span className="text-[9px] font-black text-blue-400/50 uppercase tracking-[0.3em]">Match {match.matchNumber}</span>
-                              <div className="h-[1px] w-4 bg-blue-500/30" />
+                          <div className="flex flex-col items-center gap-1 md:gap-2 px-3 md:px-8 border-x border-white/10 relative z-10 min-w-[100px] md:min-w-[180px]">
+                            <div className="flex items-center gap-1 md:gap-2">
+                              <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
+                              <span className="text-[7px] md:text-[9px] font-black text-blue-400/50 uppercase tracking-[0.2em] md:tracking-[0.3em]">M{match.matchNumber}</span>
+                              <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
                             </div>
-                            <div className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                            <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[7px] md:text-[10px] font-black uppercase tracking-widest ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
                             }`}>
-                              {match.status === 'finished' ? 'Final' : 'Scheduled'}
+                              {match.status === 'finished' ? 'Final' : 'Live'}
                             </div>
-                            <div className="flex items-center gap-4">
-                              <span className={`text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
+                            <div className="flex items-center gap-2 md:gap-4">
+                              <span className={`text-xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
                                 {match.awayScore ?? '-'}
                               </span>
-                              <span className="text-white/10 font-bold text-xs">VS</span>
-                              <span className={`text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
+                              <span className="text-white/10 font-bold text-[10px]">VS</span>
+                              <span className={`text-xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
                                 {match.homeScore ?? '-'}
                               </span>
                             </div>
                           </div>
 
                           {/* Home Team (Right) */}
-                          <div className="flex-1 flex justify-start pl-8 relative z-10">
+                          <div className="flex-1 flex justify-start pl-2 md:pl-8 relative z-10">
                             <TeamNameWithCopy team={homeTeam} reverse={true} />
                           </div>
                         </div>
@@ -509,23 +511,23 @@ export default function App() {
       </main>
 
       {/* Footer */}
-      <footer className="mt-20 py-12 border-t border-white/10 bg-black/20">
+      <footer className="mt-20 py-8 md:py-12 border-t border-white/10 bg-black/20">
         <div className="max-w-5xl mx-auto px-4 text-center">
-          <div className="flex justify-center gap-8 mb-8">
-                <div className="text-left">
-                  <p className="text-[10px] uppercase tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Matches</p>
-                  <p className="text-3xl font-display font-black italic tracking-tighter">72</p>
+          <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
+                <div className="text-center md:text-left">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Matches</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter">72</p>
                 </div>
-                <div className="text-left">
-                  <p className="text-[10px] uppercase tracking-[0.3em] font-black text-blue-400/50 mb-1">Teams</p>
-                  <p className="text-3xl font-display font-black italic tracking-tighter">16</p>
+                <div className="text-center md:text-left">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Teams</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter">16</p>
                 </div>
-                <div className="text-left">
-                  <p className="text-[10px] uppercase tracking-[0.3em] font-black text-blue-400/50 mb-1">Matchdays</p>
-                  <p className="text-3xl font-display font-black italic tracking-tighter">5</p>
+                <div className="text-center md:text-left">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Matchdays</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter">5</p>
                 </div>
           </div>
-          <p className="text-white/20 text-xs font-mono uppercase tracking-widest">
+          <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest">
             &copy; 2026 UXI Tournament Hub
           </p>
         </div>
