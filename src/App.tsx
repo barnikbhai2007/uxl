@@ -87,14 +87,14 @@ export default function App() {
   const TeamNameWithCopy = ({ team, size = 'lg', reverse = false }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean }) => {
     if (!team) return (
       <div className={`flex items-center gap-2 md:gap-3 ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate ${
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>TBD</span>
       </div>
     );
     return (
       <div className={`flex items-center gap-2 md:gap-3 group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic shrink-0 ${
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic shrink-0 pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>{team.name}</span>
         <button
@@ -163,7 +163,7 @@ export default function App() {
                   {awayTeam?.name[0] || '?'}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight">{awayTeam?.name || 'TBD'}</h2>
+                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight pr-1">{awayTeam?.name || 'TBD'}</h2>
                   <p className="text-[10px] text-white/40 font-mono">{awayTeam?.uid || 'UID: ???'}</p>
                 </div>
               </div>
@@ -187,7 +187,7 @@ export default function App() {
                   {homeTeam?.name[0] || '?'}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight">{homeTeam?.name || 'TBD'}</h2>
+                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight pr-1">{homeTeam?.name || 'TBD'}</h2>
                   <p className="text-[10px] text-white/40 font-mono">{homeTeam?.uid || 'UID: ???'}</p>
                 </div>
               </div>
@@ -284,7 +284,7 @@ export default function App() {
           className="z-10 text-center px-4"
         >
           <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
-          <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none">
+          <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none pr-2">
             UXI <span className="text-blue-400">Tournament</span>
           </h1>
           <p className="text-blue-200/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">Elite Competition</p>
@@ -401,7 +401,7 @@ export default function App() {
               <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-between bg-white/5 border border-white/10 p-4 md:p-6 rounded-2xl backdrop-blur-sm">
                 <div className="flex items-center gap-3 md:gap-4">
                   <Info className="w-4 h-4 md:w-5 md:h-5 text-blue-400 shrink-0" />
-                  <p className="text-[10px] md:text-sm text-blue-200/80 italic">
+                  <p className="text-[10px] md:text-sm text-blue-200/80 italic pr-1">
                     Note: <span className="text-white font-bold">Left</span> is Away, <span className="text-white font-bold">Right</span> is Home.
                   </p>
                 </div>
@@ -429,7 +429,7 @@ export default function App() {
                 <div key={day} ref={day === firstUpcomingDay ? upcomingRef : null} className="space-y-6">
                   <div className="flex items-center gap-4">
                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-blue-500/30" />
-                    <h2 className="text-xl font-black uppercase italic tracking-widest text-blue-400 px-4 py-2 bg-blue-500/5 border border-blue-500/10 rounded-lg">
+                    <h2 className="text-xl font-black uppercase italic tracking-widest text-blue-400 px-4 py-2 bg-blue-500/5 border border-blue-500/10 rounded-lg pr-5">
                       {day}
                     </h2>
                     <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-blue-500/30" />
@@ -457,7 +457,7 @@ export default function App() {
                           </div>
 
                           {/* Background Match Number Decor - Fixed Positioning and Visibility */}
-                          <div className="absolute right-0 bottom-0 text-9xl md:text-[12rem] font-black text-white/[0.12] italic select-none pointer-events-none group-hover:text-blue-500/[0.25] transition-all duration-500 group-hover:-translate-y-2">
+                          <div className="absolute right-0 bottom-0 text-9xl md:text-[12rem] font-black text-white/[0.12] italic select-none pointer-events-none group-hover:text-blue-500/[0.25] transition-all duration-500 group-hover:-translate-y-2 pr-4">
                             {match.matchNumber}
                           </div>
 
@@ -537,11 +537,11 @@ export default function App() {
                           {100 + i}
                         </div>
                         <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors">TBD</span>
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                         <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''}`}>
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors">TBD</span>
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                       </div>
@@ -577,10 +577,11 @@ export default function App() {
                           {200 + i}
                         </div>
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                         <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors">TBD</span>
+                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                       </div>
@@ -616,11 +617,11 @@ export default function App() {
                           {300 + i}
                         </div>
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
-                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors">Winner</span>
+                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Winner</span>
                           <span className="font-mono font-bold">-</span>
                         </div>
                         <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors">Winner</span>
+                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Winner</span>
                           <span className="font-mono font-bold">-</span>
                         </div>
                       </div>
@@ -656,11 +657,11 @@ export default function App() {
                       </div>
                       <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
                         <div className="p-4 flex justify-between items-center">
-                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors">Finalist 1</span>
+                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Finalist 1</span>
                           <span className="font-mono font-black text-2xl">-</span>
                         </div>
                         <div className="p-4 flex justify-between items-center border-t border-white/5">
-                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors">Finalist 2</span>
+                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Finalist 2</span>
                           <span className="font-mono font-black text-2xl">-</span>
                         </div>
                       </div>
@@ -687,11 +688,11 @@ export default function App() {
                         399
                       </div>
                       <div className="p-3 flex justify-between items-center text-sm relative z-10">
-                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors">Loser SF1</span>
+                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors pr-1">Loser SF1</span>
                         <span className="font-mono font-bold text-white/40">-</span>
                       </div>
                       <div className="p-3 flex justify-between items-center border-t border-white/5 text-sm">
-                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors">Loser SF2</span>
+                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors pr-1">Loser SF2</span>
                         <span className="font-mono font-bold text-white/40">-</span>
                       </div>
                     </div>
@@ -723,15 +724,15 @@ export default function App() {
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Matches</p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter">72</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">72</p>
                 </div>
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Teams</p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter">16</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">16</p>
                 </div>
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Matchdays</p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter">5</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">5</p>
                 </div>
           </div>
           <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest">
