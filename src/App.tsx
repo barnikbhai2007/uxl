@@ -83,10 +83,10 @@ export default function App() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const TeamNameWithCopy = ({ team, size = 'lg' }: { team: Team | undefined, size?: 'sm' | 'lg' }) => {
+  const TeamNameWithCopy = ({ team, size = 'lg', reverse = false }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean }) => {
     if (!team) return null;
     return (
-      <div className="flex items-center gap-3 group/name">
+      <div className={`flex items-center gap-3 group/name ${reverse ? 'flex-row-reverse' : ''}`}>
         <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic ${size === 'lg' ? 'text-lg' : 'text-sm'}`}>{team.name}</span>
         <button
           onClick={(e) => {
@@ -373,7 +373,7 @@ export default function App() {
 
                           {/* Home Team (Right) */}
                           <div className="flex-1 flex justify-start pl-8 relative z-10">
-                            <TeamNameWithCopy team={homeTeam} />
+                            <TeamNameWithCopy team={homeTeam} reverse={true} />
                           </div>
                         </div>
                       );
