@@ -191,10 +191,16 @@ export default function App() {
                   <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
                   <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
                 </div>
-                <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${
-                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
+                <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
+                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : (match.date === '27th March 2026' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                 }`}>
-                  {match.status === 'finished' ? 'Final Result' : 'Match Scheduled'}
+                  {match.date === '27th March 2026' && match.status !== 'finished' && (
+                    <span className="relative flex h-2 w-2">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                  )}
+                  {match.status === 'finished' ? 'Final Result' : (match.date === '27th March 2026' ? 'Ongoing' : 'Match Scheduled')}
                 </div>
               </div>
 
@@ -269,16 +275,6 @@ export default function App() {
     return days.find(day => matchesByDay[day].some(m => m.status !== 'finished'));
   }, [matchesByDay]);
 
-  React.useEffect(() => {
-    if (activeTab === 'fixtures' && upcomingRef.current) {
-      // Small delay to ensure the tab content is rendered before scrolling
-      const timer = setTimeout(() => {
-        upcomingRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-      return () => clearTimeout(timer);
-    }
-  }, [activeTab, firstUpcomingDay]);
-
   const bracketMatches: BracketMatch[] = [];
 
   return (
@@ -316,9 +312,9 @@ export default function App() {
       </header>
 
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-[#000030]/80 backdrop-blur-xl border-b border-white/10 py-6">
-        <div className="max-w-md mx-auto px-4">
-          <div className="relative flex p-1 bg-white/5 rounded-2xl border border-white/10">
+      <nav className="sticky top-0 z-50 bg-[#000030]/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
+        <div className="max-w-xl mx-auto px-4">
+          <div className="relative flex p-1.5 bg-white/5 rounded-2xl border border-white/10 shadow-2xl">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
               { id: 'table', label: 'Table', icon: TableIcon },
@@ -327,19 +323,19 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl transition-all duration-500 z-10 ${
+                className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 md:py-4 rounded-xl transition-all duration-500 z-10 ${
                   activeTab === tab.id ? 'text-white' : 'text-white/40 hover:text-white/70'
                 }`}
               >
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.3)]"
+                    className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)]"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                <tab.icon className={`w-4 h-4 relative z-20 transition-transform duration-500 ${activeTab === tab.id ? 'scale-110' : 'scale-100'}`} />
-                <span className="relative z-20 font-black uppercase text-[10px] tracking-[0.2em]">
+                <tab.icon className={`w-4 h-4 md:w-5 md:h-5 relative z-20 transition-transform duration-500 ${activeTab === tab.id ? 'scale-110' : 'scale-100'}`} />
+                <span className="relative z-20 font-black uppercase text-[9px] md:text-[10px] tracking-[0.15em] md:tracking-[0.2em]">
                   {tab.label}
                 </span>
               </button>
@@ -496,10 +492,16 @@ export default function App() {
                               <span className="text-[8px] md:text-[9px] font-black text-blue-400/50 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match {match.matchNumber}</span>
                               <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
                             </div>
-                            <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${
-                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
+                            <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
+                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : (day === '27th March 2026' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                             }`}>
-                              {match.status === 'finished' ? 'Final' : 'Upcoming'}
+                              {day === '27th March 2026' && match.status !== 'finished' && (
+                                <span className="relative flex h-1.5 w-1.5">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                                </span>
+                              )}
+                              {match.status === 'finished' ? 'Final' : (day === '27th March 2026' ? 'Ongoing' : 'Upcoming')}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
