@@ -84,34 +84,36 @@ export default function App() {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const TeamNameWithCopy = ({ team, size = 'lg', reverse = false }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean }) => {
+  const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean, showCopy?: boolean }) => {
     if (!team) return (
-      <div className={`flex items-center gap-2 md:gap-3 ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
+      <div className={`flex items-center ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
         <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>TBD</span>
       </div>
     );
     return (
-      <div className={`flex items-center gap-2 md:gap-3 group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
+      <div className={`flex items-center ${showCopy ? 'gap-2 md:gap-3' : ''} group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
         <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic shrink-0 pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>{team.name}</span>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            copyToClipboard(team.uid);
-          }}
-          className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
-          title="Click to copy UID"
-        >
-          {copiedId === team.uid ? (
-            <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-green-400" />
-          ) : (
-            <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
-          )}
-          <span className="text-[8px] md:text-[10px] font-black uppercase tracking-wider">UID</span>
-        </button>
+        {showCopy && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              copyToClipboard(team.uid);
+            }}
+            className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
+            title="Click to copy UID"
+          >
+            {copiedId === team.uid ? (
+              <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-green-400" />
+            ) : (
+              <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
+            )}
+            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-wider">UID</span>
+          </button>
+        )}
       </div>
     );
   };
@@ -125,14 +127,16 @@ export default function App() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000030]/90 backdrop-blur-md cursor-pointer"
+        transition={{ duration: 0.15, ease: "easeOut" }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000030]/95 cursor-pointer will-change-opacity"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.9, y: 20 }}
-          animate={{ scale: 1, y: 0 }}
-          exit={{ scale: 0.9, y: 20 }}
-          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default"
+          initial={{ scale: 0.98, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.98, opacity: 0 }}
+          transition={{ duration: 0.15, ease: "easeOut" }}
+          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default will-change-transform"
           onClick={e => e.stopPropagation()}
         >
           {/* Header Decor */}
@@ -164,9 +168,19 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.name || 'TBD'}</h2>
-                  <div className="px-2 py-0.5 bg-white/5 rounded border border-white/10 inline-block">
-                    <p className="text-[9px] md:text-[10px] text-blue-400/80 font-mono font-bold tracking-wider">{awayTeam?.uid || 'UID: ???'}</p>
-                  </div>
+                  <button 
+                    onClick={() => awayTeam && copyToClipboard(awayTeam.uid)}
+                    className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid mx-auto"
+                  >
+                    <span className="font-mono font-bold tracking-wider uppercase">
+                      {copiedId === awayTeam?.uid ? 'Copied!' : 'Copy UID'}
+                    </span>
+                    {copiedId === awayTeam?.uid ? (
+                      <Check className="w-2.5 h-2.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
+                    )}
+                  </button>
                 </div>
               </div>
 
@@ -190,9 +204,19 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.name || 'TBD'}</h2>
-                  <div className="px-2 py-0.5 bg-white/5 rounded border border-white/10 inline-block">
-                    <p className="text-[9px] md:text-[10px] text-blue-400/80 font-mono font-bold tracking-wider">{homeTeam?.uid || 'UID: ???'}</p>
-                  </div>
+                  <button 
+                    onClick={() => homeTeam && copyToClipboard(homeTeam.uid)}
+                    className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid mx-auto"
+                  >
+                    <span className="font-mono font-bold tracking-wider uppercase">
+                      {copiedId === homeTeam?.uid ? 'Copied!' : 'Copy UID'}
+                    </span>
+                    {copiedId === homeTeam?.uid ? (
+                      <Check className="w-2.5 h-2.5 text-green-400" />
+                    ) : (
+                      <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
+                    )}
+                  </button>
                 </div>
               </div>
             </div>
@@ -462,7 +486,7 @@ export default function App() {
                           
                           {/* Away Team (Left) */}
                           <div className="flex-1 flex justify-end pr-2 md:pr-8 relative z-10 min-w-0">
-                            <TeamNameWithCopy team={awayTeam} />
+                            <TeamNameWithCopy team={awayTeam} showCopy={false} />
                           </div>
                           
                           {/* Score/VS (Center) */}
@@ -475,7 +499,7 @@ export default function App() {
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 'bg-blue-600/20 text-blue-400'
                             }`}>
-                              {match.status === 'finished' ? 'Final' : 'Live'}
+                              {match.status === 'finished' ? 'Final' : 'Upcoming'}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
@@ -490,7 +514,7 @@ export default function App() {
 
                           {/* Home Team (Right) */}
                           <div className="flex-1 flex justify-start pl-2 md:pl-8 relative z-10 min-w-0">
-                            <TeamNameWithCopy team={homeTeam} reverse={true} />
+                            <TeamNameWithCopy team={homeTeam} reverse={true} showCopy={false} />
                           </div>
 
                           {/* Mobile Click Indicator */}
