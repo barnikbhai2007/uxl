@@ -1,0 +1,5 @@
+{
+  "name": "UXI Tournament Hub",
+  "description": "A UXI Tournament tracker with fixtures, standings, and a full knockout bracket.",
+  "requestFramePermissions": []
+}
