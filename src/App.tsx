@@ -102,7 +102,7 @@ export default function App() {
             e.stopPropagation();
             copyToClipboard(team.uid);
           }}
-          className={`${size === 'lg' ? 'p-1 md:p-1.5' : 'p-0.5 md:p-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/70 hover:text-blue-400 flex items-center gap-1 transition-all shrink-0`}
+          className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
           title="Click to copy UID"
         >
           {copiedId === team.uid ? (
@@ -110,7 +110,7 @@ export default function App() {
           ) : (
             <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
           )}
-          <span className="text-[7px] md:text-[8px] font-black uppercase tracking-tighter">UID</span>
+          <span className="text-[8px] md:text-[10px] font-black uppercase tracking-wider">UID</span>
         </button>
       </div>
     );
@@ -139,6 +139,11 @@ export default function App() {
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
           
           <div className="p-8 relative z-10">
+            {/* Faded Match Number in Modal Background */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] md:text-[20rem] font-black text-white/[0.02] italic select-none pointer-events-none">
+              {match.matchNumber}
+            </div>
+            
             <div className="flex justify-between items-center mb-12 relative z-10">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
@@ -159,7 +164,9 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.name || 'TBD'}</h2>
-                  <p className="text-[10px] text-white/40 font-mono">{awayTeam?.uid || 'UID: ???'}</p>
+                  <div className="px-2 py-0.5 bg-white/5 rounded border border-white/10 inline-block">
+                    <p className="text-[9px] md:text-[10px] text-blue-400/80 font-mono font-bold tracking-wider">{awayTeam?.uid || 'UID: ???'}</p>
+                  </div>
                 </div>
               </div>
 
@@ -183,24 +190,22 @@ export default function App() {
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.name || 'TBD'}</h2>
-                  <p className="text-[10px] text-white/40 font-mono">{homeTeam?.uid || 'UID: ???'}</p>
+                  <div className="px-2 py-0.5 bg-white/5 rounded border border-white/10 inline-block">
+                    <p className="text-[9px] md:text-[10px] text-blue-400/80 font-mono font-bold tracking-wider">{homeTeam?.uid || 'UID: ???'}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-3 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+            <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
               <div className="text-center space-y-1">
                 <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Match Date</div>
                 <div className="text-sm font-bold text-blue-400">{match.date}</div>
               </div>
-              <div className="text-center space-y-1 border-x border-white/5">
+              <div className="text-center space-y-1 border-l border-white/5">
                 <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
                 <div className="text-sm font-bold text-blue-400">#{match.matchNumber}</div>
-              </div>
-              <div className="text-center space-y-1">
-                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Venue</div>
-                <div className="text-sm font-bold text-blue-400">Arena {Math.ceil(match.matchNumber / 4)}</div>
               </div>
             </div>
 
@@ -445,6 +450,11 @@ export default function App() {
                           <div className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none">
                             <div className="absolute bottom-0 right-0 w-[1px] h-4 bg-blue-500/30" />
                             <div className="absolute bottom-0 right-0 w-4 h-[1px] bg-blue-500/30" />
+                          </div>
+
+                          {/* Background Match Number Decor - Fixed Positioning and Visibility */}
+                          <div className="absolute right-0 bottom-0 text-9xl md:text-[12rem] font-black text-white/[0.12] italic select-none pointer-events-none group-hover:text-blue-500/[0.25] transition-all duration-500 group-hover:-translate-y-2 pr-4">
+                            {match.matchNumber}
                           </div>
 
                           {/* Background Glow */}
