@@ -205,9 +205,30 @@ export default function App() {
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   const copyToClipboard = (uid: string) => {
-    navigator.clipboard.writeText(uid);
-    setCopiedId(uid);
-    setTimeout(() => setCopiedId(null), 2000);
+    if (!uid) return;
+    try {
+      // Fallback for better compatibility in iframes
+      const textArea = document.createElement("textarea");
+      textArea.value = uid;
+      textArea.style.position = "fixed";
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      textArea.focus();
+      textArea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textArea);
+      
+      // Modern API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(uid).catch(() => {});
+      }
+      
+      setCopiedId(uid);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy: ", err);
+    }
   };
 
   const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean, showCopy?: boolean }) => {
@@ -321,7 +342,10 @@ export default function App() {
                       <div className="flex items-center gap-2">
                         <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
                         <button 
-                          onClick={() => copyToClipboard(awayTeam.uid)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(awayTeam.uid);
+                          }}
                           className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
                         >
                           <span className="font-mono font-bold tracking-wider uppercase">
@@ -380,7 +404,10 @@ export default function App() {
                       <div className="flex items-center gap-2">
                         <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
                         <button 
-                          onClick={() => copyToClipboard(homeTeam.uid)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            copyToClipboard(homeTeam.uid);
+                          }}
                           className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
                         >
                           <span className="font-mono font-bold tracking-wider uppercase">
@@ -584,6 +611,7 @@ export default function App() {
                       <th className="px-6 py-4">Rank</th>
                       <th className="px-6 py-4">Football Player</th>
                       <th className="px-6 py-4">Gamer</th>
+                      <th className="px-6 py-4 text-center">UID</th>
                       <th className="px-6 py-4 text-center">Goals</th>
                     </tr>
                   </thead>
@@ -608,6 +636,22 @@ export default function App() {
                             <span className="text-xs font-bold text-white/80">{stat.gamerFullName}</span>
                             <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">{stat.gamerName}</span>
                           </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <button 
+                            onClick={() => {
+                              const team = teams.find(t => t.name === stat.gamerName);
+                              if (team) copyToClipboard(team.uid);
+                            }}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 transition-all border border-white/5"
+                            title="Copy UID"
+                          >
+                            {copiedId === teams.find(t => t.name === stat.gamerName)?.uid ? (
+                              <Check className="w-3 h-3 text-green-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
                         </td>
                         <td className="px-6 py-4 text-center">
                           <span className="text-lg font-black text-blue-400">{stat.goals}</span>
@@ -711,6 +755,7 @@ export default function App() {
                     <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
                     <th className="px-3 md:px-6 py-3 md:py-4">Player</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell">FC Name</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">UID</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">OVR</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">P</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">W</th>
@@ -747,6 +792,19 @@ export default function App() {
                           </div>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-mono text-xs text-white/40">{team.fcName}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                          <button 
+                            onClick={() => copyToClipboard(team.uid)}
+                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 transition-all border border-white/5"
+                            title="Copy UID"
+                          >
+                            {copiedId === team.uid ? (
+                              <Check className="w-3 h-3 text-green-400" />
+                            ) : (
+                              <Copy className="w-3 h-3" />
+                            )}
+                          </button>
+                        </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                           <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] md:text-[10px] font-black text-blue-400">{team.ovr}</span>
                         </td>
