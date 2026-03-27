@@ -51,6 +51,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Garrincha', goals: 1 }, { playerName: 'Dembélé', goals: 1 }, { playerName: 'Raphinha', goals: 1 }];
         homeStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 81, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 53, passAccuracy: 78, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "ARYAN") {
+        homeScore = 1; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
+        awayScorers = [{ playerName: 'Messi', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 53, passAccuracy: 88, fouls: 1, offsides: 1 };
+        awayStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 75, fouls: 0, offsides: 0 };
       }
     }
 
@@ -162,6 +168,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 9,
+    title: "ARYAN AND SONU SHARE POINTS",
+    excerpt: "A tactical battle between Aryan Sarkar and Sonu Mandal ends in a 1-1 draw, with Messi and Ronaldo both finding the net.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 8,
     title: "AYUSH EDGES PRITAM IN THRILLER",
     excerpt: "Ayush Saha secures a hard-fought 3-2 victory over Pritam Ghosh in the first high-scoring match of the tournament.",
@@ -170,8 +183,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 5/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 5 matches completed. 11 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 6/12 COMPLETED",
+    excerpt: "The tournament is in full swing with 6 matches completed. 6 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
