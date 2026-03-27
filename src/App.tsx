@@ -61,6 +61,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScore = 0; awayScore = 0; status = 'finished';
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 49, passAccuracy: 82, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 1, possession: 51, passAccuracy: 79, fouls: 1, offsides: 0 };
+      } else if (sm.home === "AYUSH" && sm.away === "ABHROJEET") {
+        homeScore = 5; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Garrincha', goals: 2 }, { playerName: 'Dembélé', goals: 1 }, { playerName: 'Raphinha', goals: 2 }];
+        homeStats = { shots: 6, shotsOnTarget: 6, possession: 49, passAccuracy: 85, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 51, passAccuracy: 73, fouls: 2, offsides: 0 };
       }
     }
 
@@ -172,6 +177,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 11,
+    title: "AYUSH SAHA DOMINATES ABHROJEET",
+    excerpt: "Ayush Saha puts on a clinical performance, defeating Abhrojeet Kundu 5-0. Garrincha and Raphinha both bagged braces in the rout.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 10,
     title: "STALEMATE FOR SONU AND SOUMAJIT",
     excerpt: "A defensive masterclass from both sides results in a 0-0 draw. Scoring opportunities were rare in this Matchday 1 clash.",
@@ -194,8 +206,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 7/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 7 matches completed. 9 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 8/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 8 matches completed. 8 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
