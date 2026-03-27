@@ -625,11 +625,7 @@ const NEWS_POSTS = [
     isAdmin: boolean
   }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const showResults = !session.isActive || isAdmin;
-    console.log("VotingModal isAdmin:", isAdmin);
-    console.log("VotingModal session.isActive:", session.isActive);
-    console.log("VotingModal showResults:", showResults);
-    console.log("VotingModal user:", user);
+    const showResults = !session.isActive || (isAdmin && (session.showResults ?? true));
     const timeLeft = useMemo(() => {
       if (!session.endTime) return null;
       const end = session.endTime.toDate();
@@ -733,8 +729,12 @@ const NEWS_POSTS = [
                         
                         <div className="text-right">
                           <div className="flex flex-col items-end">
-                            <div className="font-display font-black text-sm italic text-white">{percentage}%</div>
-                            <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">{votes} Votes</div>
+                            {showResults && (
+                              <>
+                                <div className="font-display font-black text-sm italic text-white">{percentage}%</div>
+                                <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">{votes} Votes</div>
+                              </>
+                            )}
                           </div>
                           {session.isActive && (selectedId === candidate.id || votedCandidateId === candidate.id) && (
                             <Check className="w-5 h-5 text-blue-400" />
