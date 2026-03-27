@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, Newspaper, Vote as VoteIcon, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
-import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote } from './types';
+import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote, News } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -612,7 +612,7 @@ const NEWS_POSTS = [
     );
   };
 
-  const VotingModal = ({ session, onClose, user, isVoting, hasVoted, handleVote, sessionVotes, totalVotes, votedCandidateId }: { 
+  const VotingModal = ({ session, onClose, user, isVoting, hasVoted, handleVote, sessionVotes, totalVotes, votedCandidateId, isAdmin }: { 
     session: VotingSession, 
     onClose: () => void,
     user: User | null,
@@ -621,9 +621,15 @@ const NEWS_POSTS = [
     handleVote: (id: string) => void,
     sessionVotes: Record<string, number>,
     totalVotes: number,
-    votedCandidateId: string | null
+    votedCandidateId: string | null,
+    isAdmin: boolean
   }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
+    const showResults = !session.isActive || isAdmin;
+    console.log("VotingModal isAdmin:", isAdmin);
+    console.log("VotingModal session.isActive:", session.isActive);
+    console.log("VotingModal showResults:", showResults);
+    console.log("VotingModal user:", user);
     const timeLeft = useMemo(() => {
       if (!session.endTime) return null;
       const end = session.endTime.toDate();
@@ -670,18 +676,18 @@ const NEWS_POSTS = [
 
             <div className="space-y-3 mb-8">
               <p className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">
-                {session.isActive ? 'Vote for Best Performer' : 'Voting Results'}
+                {showResults ? 'Voting Results' : 'Vote for Best Performer'}
               </p>
               {(() => {
                 let displayCandidates = [...session.candidates];
-                if (!session.isActive) {
+                if (showResults) {
                   displayCandidates.sort((a, b) => (sessionVotes[b.id] || 0) - (sessionVotes[a.id] || 0));
                 }
                 
                 return displayCandidates.map((candidate, index) => {
                   const votes = sessionVotes[candidate.id] || 0;
                   const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
-                  const isWinner = !session.isActive && index === 0 && votes > 0;
+                  const isWinner = showResults && index === 0 && votes > 0;
 
                   return (
                     <div
@@ -694,7 +700,7 @@ const NEWS_POSTS = [
                             : 'bg-white/5 border-white/5'
                       } ${hasVoted && votedCandidateId !== candidate.id && session.isActive ? 'opacity-50 grayscale' : ''}`}
                     >
-                      {!session.isActive && (
+                      {showResults && (
                         <div 
                           className="absolute inset-0 bg-blue-500/10 transition-all duration-1000"
                           style={{ width: `${percentage}%` }}
@@ -726,15 +732,12 @@ const NEWS_POSTS = [
                         </div>
                         
                         <div className="text-right">
-                          {!session.isActive ? (
-                            <div className="flex flex-col items-end">
-                              <div className="font-display font-black text-sm italic text-white">{percentage}%</div>
-                              <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">{votes} Votes</div>
-                            </div>
-                          ) : (
-                            (selectedId === candidate.id || votedCandidateId === candidate.id) && (
-                              <Check className="w-5 h-5 text-blue-400" />
-                            )
+                          <div className="flex flex-col items-end">
+                            <div className="font-display font-black text-sm italic text-white">{percentage}%</div>
+                            <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">{votes} Votes</div>
+                          </div>
+                          {session.isActive && (selectedId === candidate.id || votedCandidateId === candidate.id) && (
+                            <Check className="w-5 h-5 text-blue-400" />
                           )}
                         </div>
                       </button>
@@ -790,7 +793,17 @@ const NEWS_POSTS = [
     handleToggleResults, 
     handleEndVote,
     sessionVotes,
-    totalVotes
+    totalVotes,
+    newsTopic,
+    setNewsTopic,
+    newsDate,
+    setNewsDate,
+    newsTitle,
+    setNewsTitle,
+    newsDescription,
+    setNewsDescription,
+    isPostingNews,
+    handlePostNews
   }: { 
     onClose: () => void,
     adminMatchday: string | number,
@@ -805,9 +818,20 @@ const NEWS_POSTS = [
     handleToggleResults: () => void,
     handleEndVote: () => void,
     sessionVotes: Record<string, number>,
-    totalVotes: number
+    totalVotes: number,
+    newsTopic: string,
+    setNewsTopic: (val: string) => void,
+    newsDate: string,
+    setNewsDate: (val: string) => void,
+    newsTitle: string,
+    setNewsTitle: (val: string) => void,
+    newsDescription: string,
+    setNewsDescription: (val: string) => void,
+    isPostingNews: boolean,
+    handlePostNews: () => void
   }) => {
     const [newCandidateTeam, setNewCandidateTeam] = useState(TEAMS_LIST[0]);
+    const [activeTab, setActiveTab] = useState<'voting' | 'news'>('voting');
 
     const addCandidate = () => {
       const details = TEAM_DETAILS[newCandidateTeam];
@@ -852,7 +876,7 @@ const NEWS_POSTS = [
               </div>
               <div>
                 <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none">Admin Panel</h2>
-                <p className="text-yellow-400/60 text-[10px] font-black uppercase tracking-widest mt-1">Manage Voting Sessions</p>
+                <p className="text-yellow-400/60 text-[10px] font-black uppercase tracking-widest mt-1">Manage Content</p>
               </div>
             </div>
             <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
@@ -860,101 +884,132 @@ const NEWS_POSTS = [
             </button>
           </div>
 
-          <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Session Title</label>
-                <input 
-                  type="text"
-                  value={adminMatchday}
-                  onChange={(e) => setAdminMatchday(e.target.value)}
-                  placeholder="e.g. Matchday 1, Semi-Finals"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Voting Duration (Hours)</label>
-                <input 
-                  type="number"
-                  value={adminHours}
-                  onChange={(e) => setAdminHours(Number(e.target.value))}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Select Candidate</label>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                <div className="md:col-span-3">
-                  <select 
-                    value={newCandidateTeam}
-                    onChange={(e) => setNewCandidateTeam(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none transition-all"
-                  >
-                    {TEAMS_LIST.map(team => (
-                      <option key={team} value={team} className="bg-[#000040]">{TEAM_DETAILS[team]?.fullName} ({team})</option>
-                    ))}
-                  </select>
-                </div>
-                <button 
-                  onClick={addCandidate}
-                  className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-3 flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest transition-all"
-                >
-                  <Plus className="w-4 h-4" />
-                  Add
-                </button>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                {adminCandidates.map(candidate => (
-                  <div key={candidate.id} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl group">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center font-black text-xs text-blue-400">
-                        {candidate.name[0]}
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-white">{candidate.name}</p>
-                        <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">{candidate.fcName}</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => removeCandidate(candidate.id)}
-                      className="p-2 text-white/20 hover:text-red-400 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </div>
+          <div className="flex border-b border-white/10">
+            <button 
+              onClick={() => setActiveTab('voting')}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'voting' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Voting
+            </button>
+            <button 
+              onClick={() => setActiveTab('news')}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'news' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+            >
+              News
+            </button>
           </div>
 
-          <div className="p-8 border-t border-white/10 bg-white/5">
-            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-4">Live Voting Stats</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Total Votes</p>
-                <p className="text-2xl font-black text-blue-400">{totalVotes}</p>
+          <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
+            {activeTab === 'voting' ? (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Session Title</label>
+                    <input 
+                      type="text"
+                      value={adminMatchday}
+                      onChange={(e) => setAdminMatchday(e.target.value)}
+                      placeholder="e.g. Matchday 1, Semi-Finals"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Voting Duration (Hours)</label>
+                    <input 
+                      type="number"
+                      value={adminHours}
+                      onChange={(e) => setAdminHours(Number(e.target.value))}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Select Candidate</label>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
+                    <div className="md:col-span-3">
+                      <select 
+                        value={newCandidateTeam}
+                        onChange={(e) => setNewCandidateTeam(e.target.value)}
+                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none transition-all"
+                      >
+                        {TEAMS_LIST.map(team => (
+                          <option key={team} value={team} className="bg-[#000040]">{TEAM_DETAILS[team]?.fullName} ({team})</option>
+                        ))}
+                      </select>
+                    </div>
+                    <button 
+                      onClick={addCandidate}
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-3 flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest transition-all"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Add
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
+                    {adminCandidates.map(candidate => (
+                      <div key={candidate.id} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl group">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center font-black text-xs text-blue-400">
+                            {candidate.name[0]}
+                          </div>
+                          <div>
+                            <p className="text-xs font-bold text-white">{candidate.name}</p>
+                            <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">{candidate.fcName}</p>
+                          </div>
+                        </div>
+                        <button 
+                          onClick={() => removeCandidate(candidate.id)}
+                          className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <input 
+                    type="text"
+                    value={newsTopic}
+                    onChange={(e) => setNewsTopic(e.target.value)}
+                    placeholder="Topic"
+                    className="bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                  />
+                  <input 
+                    type="date"
+                    value={newsDate}
+                    onChange={(e) => setNewsDate(e.target.value)}
+                    className="bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+                <input 
+                  type="text"
+                  value={newsTitle}
+                  onChange={(e) => setNewsTitle(e.target.value)}
+                  placeholder="Title"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                />
+                <textarea 
+                  value={newsDescription}
+                  onChange={(e) => setNewsDescription(e.target.value)}
+                  placeholder="Description"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all h-32"
+                />
+                <button 
+                  onClick={handlePostNews}
+                  disabled={isPostingNews}
+                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl py-3 flex items-center justify-center gap-2 font-black uppercase text-xs tracking-[0.2em] transition-all"
+                >
+                  {isPostingNews ? <Loader2 className="w-4 h-4 animate-spin" /> : <Newspaper className="w-4 h-4" />}
+                  Post News
+                </button>
               </div>
-              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Winning Candidate</p>
-                <p className="text-sm font-black text-white truncate">
-                  {(() => {
-                    let maxVotes = -1;
-                    let winner = "None";
-                    adminCandidates.forEach(c => {
-                      const votes = sessionVotes[c.id] || 0;
-                      if (votes > maxVotes) {
-                        maxVotes = votes;
-                        winner = c.name;
-                      }
-                    });
-                    return totalVotes > 0 ? winner : "N/A";
-                  })()}
-                </p>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="p-8 border-t border-white/10 bg-white/5 flex flex-col md:flex-row gap-4">
@@ -1055,12 +1110,69 @@ export default function App() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const isAdmin = user?.email === 'webblogger82@gmail.com';
+  console.log("App.tsx isAdmin:", isAdmin);
 
   const [adminMatchday, setAdminMatchday] = useState<string | number>('Matchday 1');
   const [adminCandidates, setAdminCandidates] = useState<VotingCandidate[]>([]);
   const [adminHours, setAdminHours] = useState(12);
   const [adminShowResults, setAdminShowResults] = useState(true);
   const [isSavingAdmin, setIsSavingAdmin] = useState(false);
+  const [news, setNews] = useState<News[]>([]);
+  const [newsTopic, setNewsTopic] = useState('');
+  const [newsDate, setNewsDate] = useState('');
+  const [newsTitle, setNewsTitle] = useState('');
+  const [newsDescription, setNewsDescription] = useState('');
+  const [isPostingNews, setIsPostingNews] = useState(false);
+
+  const handlePostNews = async () => {
+    if (!isAdmin) return;
+    setIsPostingNews(true);
+    try {
+      const newsId = uuidv4();
+      await setDoc(doc(db, 'news', newsId), {
+        id: newsId,
+        topic: newsTopic,
+        date: newsDate,
+        title: newsTitle,
+        description: newsDescription
+      });
+      setNewsTopic('');
+      setNewsDate('');
+      setNewsTitle('');
+      setNewsDescription('');
+      alert("News posted successfully!");
+    } catch (error) {
+      console.error("Error posting news:", error);
+      alert("Failed to post news.");
+    } finally {
+      setIsPostingNews(false);
+    }
+  };
+
+  useEffect(() => {
+    const q = query(collection(db, 'news'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const newsData: News[] = [];
+      snapshot.forEach((doc) => {
+        newsData.push(doc.data() as News);
+      });
+      setNews(newsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (news.length > 0 && !news.find(n => n.title === 'Matchday 1 Breakdown')) {
+      const newsId = uuidv4();
+      setDoc(doc(db, 'news', newsId), {
+        id: newsId,
+        topic: 'Matchday 1',
+        date: '2026-03-27',
+        title: 'Matchday 1 Breakdown',
+        description: 'Matchday 1 was full of surprises! Here is a breakdown of all the matches...'
+      }).catch(console.error);
+    }
+  }, [news]);
 
   useEffect(() => {
     if (activeSession) {
@@ -2118,6 +2230,19 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
+        <section className="p-8 border-t border-white/10 bg-white/5">
+          <h2 className="font-display text-3xl font-black uppercase italic tracking-tight mb-8">Latest News</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {news.map(n => (
+              <div key={n.id} className="bg-[#000040] border border-white/10 rounded-2xl p-6 space-y-3">
+                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">{n.topic}</span>
+                <h3 className="font-display text-xl font-black uppercase italic tracking-tight text-white">{n.title}</h3>
+                <p className="text-xs text-white/60">{n.date}</p>
+                <p className="text-sm text-white/80">{n.description}</p>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
 
       {/* Floating Vote Button / Winner Reveal */}
@@ -2186,6 +2311,7 @@ export default function App() {
             sessionVotes={sessionVotes}
             totalVotes={totalVotes}
             votedCandidateId={votedCandidateId}
+            isAdmin={isAdmin}
           />
         )}
         {isAdminModalOpen && (
@@ -2204,6 +2330,16 @@ export default function App() {
             handleEndVote={handleEndVote}
             sessionVotes={sessionVotes}
             totalVotes={totalVotes}
+            newsTopic={newsTopic}
+            setNewsTopic={setNewsTopic}
+            newsDate={newsDate}
+            setNewsDate={setNewsDate}
+            newsTitle={newsTitle}
+            setNewsTitle={setNewsTitle}
+            newsDescription={newsDescription}
+            setNewsDescription={setNewsDescription}
+            isPostingNews={isPostingNews}
+            handlePostNews={handlePostNews}
           />
         )}
       </AnimatePresence>

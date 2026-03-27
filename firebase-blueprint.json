@@ -47,6 +47,18 @@
         "role": { "type": "string", "enum": ["admin", "user"] }
       },
       "required": ["uid", "email", "role"]
+    },
+    "News": {
+      "title": "News",
+      "description": "News article about matchdays.",
+      "type": "object",
+      "properties": {
+        "topic": { "type": "string" },
+        "date": { "type": "string", "format": "date" },
+        "title": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "required": ["topic", "date", "title", "description"]
     }
   },
   "firestore": {
@@ -61,6 +73,10 @@
     "/users/{userId}": {
       "schema": "User",
       "description": "Collection of user profiles."
+    },
+    "/news/{newsId}": {
+      "schema": "News",
+      "description": "Collection of news articles."
     }
   }
 }

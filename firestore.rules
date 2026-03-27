@@ -33,6 +33,14 @@ service cloud.firestore {
     //   - email: string (required)
     //   - role: string (required, 'admin' or 'user')
     //
+    // Collection: news
+    // Document ID: {newsId}
+    // Fields:
+    //   - topic: string (required)
+    //   - date: string (required)
+    //   - title: string (required)
+    //   - description: string (required)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -88,6 +96,11 @@ service cloud.firestore {
                       isValidVote(request.resource.data) && 
                       isVotingOpen(request.resource.data.get('sessionDocId', request.resource.data.sessionId));
       allow update, delete: if false;
+    }
+
+    match /news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

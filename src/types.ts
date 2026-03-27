@@ -66,7 +66,7 @@ export interface VotingCandidate {
 export interface VotingSession {
   id: string;
   sessionId: string;
-  matchday: number | string;
+  matchday: number;
   startTime: any;
   endTime: any;
   candidates: VotingCandidate[];
@@ -78,7 +78,15 @@ export interface Vote {
   voterId: string;
   userId: string;
   candidateId: string;
-  matchday: number | string;
+  matchday: number;
   sessionId: string;
   timestamp: any;
+}
+
+export interface News {
+  id: string;
+  topic: string;
+  date: string;
+  title: string;
+  description: string;
 }
