@@ -71,6 +71,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
         homeStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 68, fouls: 0, offsides: 0 };
         awayStats = { shots: 4, shotsOnTarget: 3, possession: 53, passAccuracy: 82, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNICK" && sm.away === "ANIMESH") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Zieliński', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 82, fouls: 0, offsides: 1 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 76, fouls: 0, offsides: 0 };
       }
     }
 
@@ -182,6 +187,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 13,
+    title: "ANIMESH SECURES COMFORTABLE WIN",
+    excerpt: "Animesh defeats Sagnick Roy 2-0 in a dominant display. Zieliński and C. Ronaldo provided the clinical finishes.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 12,
     title: "ABHROJEET BOUNCES BACK",
     excerpt: "After a tough loss earlier, Abhrojeet Kundu secures a solid 2-0 victory over Sayantan Paul. Dembélé and King provided the goals.",
@@ -218,8 +230,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 9/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 9 matches completed. 7 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 10/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 10 matches completed. 6 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
