@@ -35,8 +35,8 @@ export const signInAnon = async () => {
   try {
     const result = await signInAnonymously(auth);
     return result.user;
-  } catch (error) {
-    console.error("Error signing in anonymously:", error);
+  } catch (error: any) {
+    console.error("Error signing in anonymously:", error.code, error.message);
     throw error;
   }
 };

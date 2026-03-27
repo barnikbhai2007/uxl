@@ -107,12 +107,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 37, passAccuracy: 78, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 63, passAccuracy: 90, fouls: 0, offsides: 0 };
-      } else if (sm.home === "BROKENAQUA" && sm.away === "RD10") {
+      } else if (sm.home === "BARNIK" && sm.away === "RAJAT") {
         homeScore = 0; awayScore = 1; status = 'finished';
         awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
         homeStats = { shots: 4, shotsOnTarget: 4, possession: 55, passAccuracy: 76, fouls: 1, offsides: 0 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 45, passAccuracy: 60, fouls: 0, offsides: 0 };
-      } else if (sm.home === "BROKENAQUA" && sm.away === "GAMERR") {
+      } else if (sm.home === "BARNIK" && sm.away === "RANAJAY") {
         homeScore = 1; awayScore = 0; status = 'finished';
         homeScorers = [{ playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 63, passAccuracy: 90, fouls: 0, offsides: 0 };
@@ -275,15 +275,15 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 const NEWS_POSTS = [
   {
     id: 19,
-    title: "BROKENAQUA EDGES OUT GAMERR",
-    excerpt: "In a closely fought match, brokenaqua secures a 1-0 victory over GamerR, with Al Owairan scoring the decisive goal.",
+    title: "BARNIK EDGES OUT RANAJAY",
+    excerpt: "In a closely fought match, Barnik secures a 1-0 victory over Ranajay, with Al Owairan scoring the decisive goal.",
     date: "27th March 2026",
     category: "MATCH REPORT"
   },
   {
     id: 18,
-    title: "RD10 DEFEATS BROKENAQUA",
-    excerpt: "RD10 secures a narrow 1-0 victory over brokenaqua, with Mbappé scoring the only goal of the match.",
+    title: "RAJAT DEFEATS BARNIK",
+    excerpt: "Rajat secures a narrow 1-0 victory over Barnik, with Mbappé scoring the only goal of the match.",
     date: "27th March 2026",
     category: "MATCH REPORT"
   },
