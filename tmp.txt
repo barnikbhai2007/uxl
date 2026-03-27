@@ -1,0 +1,48 @@
+752:    adminMatchday, 
+753-    setAdminMatchday, 
+754-    adminCandidates, 
+755-    setAdminCandidates, 
+756-    adminHours, 
+757-    setAdminHours, 
+--
+765:    adminMatchday: string | number,
+766-    setAdminMatchday: (val: string | number) => void,
+767-    adminCandidates: VotingCandidate[],
+768-    setAdminCandidates: (val: VotingCandidate[]) => void,
+769-    adminHours: number,
+770-    setAdminHours: (val: number) => void,
+--
+836:                  value={adminMatchday}
+837-                  onChange={(e) => setAdminMatchday(e.target.value)}
+838-                  placeholder="e.g. Matchday 1, Semi-Finals"
+839-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+840-                />
+841-              </div>
+--
+965:  const [adminMatchday, setAdminMatchday] = useState<string | number>('Matchday 1');
+966-  const [adminCandidates, setAdminCandidates] = useState<VotingCandidate[]>([]);
+967-  const [adminHours, setAdminHours] = useState(12);
+968-  const [adminShowResults, setAdminShowResults] = useState(true);
+969-  const [isSavingAdmin, setIsSavingAdmin] = useState(false);
+970-
+--
+986:      const sessionId = `matchday-${adminMatchday}`;
+987-      const newSessionId = uuidv4();
+988-      const startTime = serverTimestamp();
+989-      const endTime = new Date(Date.now() + adminHours * 60 * 60 * 1000);
+990-
+991-      await setDoc(doc(db, 'votingSessions', sessionId), {
+--
+994:        matchday: adminMatchday,
+995-        startTime: startTime,
+996-        endTime: endTime,
+997-        candidates: adminCandidates,
+998-        isActive: true,
+999-        showResults: adminShowResults
+--
+2132:            adminMatchday={adminMatchday}
+2133-            setAdminMatchday={setAdminMatchday}
+2134-            adminCandidates={adminCandidates}
+2135-            setAdminCandidates={setAdminCandidates}
+2136-            adminHours={adminHours}
+2137-            setAdminHours={setAdminHours}

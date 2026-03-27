@@ -1,0 +1,93 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: votingSessions
+    // Document ID: matchday-{number}
+    // Fields:
+    //   - id: string (required)
+    //   - sessionId: string (required)
+    //   - matchday: number (required)
+    //   - startTime: timestamp (required)
+    //   - endTime: timestamp (required)
+    //   - candidates: list (required)
+    //   - isActive: bool (required)
+    //
+    // Collection: votes
+    // Document ID: {voterId}_{sessionId}
+    // Fields:
+    //   - voterId: string (required)
+    //   - userId: string (required)
+    //   - candidateId: string (required)
+    //   - matchday: number (required)
+    //   - sessionId: string (required)
+    //   - timestamp: timestamp (required)
+    //
+    // Collection: users
+    // Document ID: {userId}
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required)
+    //   - role: string (required, 'admin' or 'user')
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "webblogger82@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isVotingOpen(sessionDocId) {
+      let session = get(/databases/$(database)/documents/votingSessions/$(sessionDocId));
+      return session != null && 
+             session.data.isActive == true &&
+             (session.data.endTime == null || request.time <= session.data.endTime);
+    }
+
+    function isValidVote(data) {
+      return data.keys().hasAll(['voterId', 'userId', 'candidateId', 'matchday', 'sessionId', 'timestamp']) &&
+             data.userId == request.auth.uid &&
+             data.candidateId is string &&
+             (data.matchday is number || data.matchday is string) &&
+             data.sessionId is string;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isOwner(userId) && request.resource.data.role == 'user';
+      allow update: if isAdmin();
+    }
+
+    match /votingSessions/{sessionId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /votes/{voteId} {
+      allow read: if true;
+      allow create: if isAuthenticated() && 
+                      isValidVote(request.resource.data) && 
+                      isVotingOpen(request.resource.data.get('sessionDocId', request.resource.data.sessionId));
+      allow update, delete: if false;
+    }
+  }
+}

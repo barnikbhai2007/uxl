@@ -6,23 +6,23 @@ export const TEAMS_LIST = [
   "SAGNICK", "ABHROJEET", "SAYANTAN", "ANIMESH"
 ];
 
-export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: number, fullName: string }> = {
-  "AYUSH": { fcName: "AYUSH_08", uid: "847857761683775488", ovr: 121, fullName: "Ayush Saha" },
-  "SOUMAJIT": { fcName: "soubiswas2", uid: "910022838300041217", ovr: 121, fullName: "Soumajit Biswas" },
-  "ARYAN": { fcName: "Baby_Aryanrox121", uid: "908741022842437637", ovr: 119, fullName: "Aryan Sarkar" },
-  "SONU": { fcName: "sonu2007", uid: "545136672475017216", ovr: 119, fullName: "Sonu Mandal" },
-  "RANAJAY": { fcName: "GamerR", uid: "666275283639996417", ovr: 121, fullName: "RANAJOY BHOWMIK" },
-  "SAMRIDDHA": { fcName: "sam1017", uid: "1000129435803713536", ovr: 121, fullName: "Samriddha Mandal" },
-  "RAJAT": { fcName: "rd10", uid: "842718468706385920", ovr: 121, fullName: "Rajat Das" },
-  "BARNIK": { fcName: "brokenaqua", uid: "858045300533792768", ovr: 121, fullName: "Barnik" },
-  "PRITAM": { fcName: "Pritam", uid: "1058620361900937216", ovr: 120, fullName: "Pritam ghosh" },
-  "DIBYAJOTI": { fcName: "dibya7334", uid: "998821168026656769", ovr: 121, fullName: "Dibyajyoti Sarkar" },
-  "PRIYAM": { fcName: "Priyam2007", uid: "713327705700397056", ovr: 120, fullName: "Priyam Paul" },
-  "SAGNIK": { fcName: "Kundes", uid: "1031556959882035200", ovr: 119, fullName: "Sagnik Kundu" },
-  "SAGNICK": { fcName: "AYU45", uid: "881759190897385472", ovr: 116, fullName: "Sagnick Roy" },
-  "ABHROJEET": { fcName: "Abhrojeet", uid: "1000048169385328640", ovr: 115, fullName: "Abhrojeet Kundu" },
-  "SAYANTAN": { fcName: "Sayantan111", uid: "1044989674656509952", ovr: 117, fullName: "Sayantan Paul" },
-  "ANIMESH": { fcName: "Ashish..Won", uid: "646962951897718784", ovr: 119, fullName: "Animesh" }
+export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: number, fullName: string, goalkeeper: string }> = {
+  "AYUSH": { fcName: "AYUSH_08", uid: "847857761683775488", ovr: 121, fullName: "Ayush Saha", goalkeeper: "Joan Garcia" },
+  "SOUMAJIT": { fcName: "soubiswas2", uid: "910022838300041217", ovr: 121, fullName: "Soumajit Biswas", goalkeeper: "Buffon" },
+  "ARYAN": { fcName: "Baby_Aryanrox121", uid: "908741022842437637", ovr: 119, fullName: "Aryan Sarkar", goalkeeper: "Yashin" },
+  "SONU": { fcName: "sonu2007", uid: "545136672475017216", ovr: 119, fullName: "Sonu Mandal", goalkeeper: "Courtois" },
+  "RANAJAY": { fcName: "GamerR", uid: "666275283639996417", ovr: 121, fullName: "RANAJOY BHOWMIK", goalkeeper: "Cech" },
+  "SAMRIDDHA": { fcName: "sam1017", uid: "1000129435803713536", ovr: 121, fullName: "Samriddha Mandal", goalkeeper: "Dudek" },
+  "RAJAT": { fcName: "rd10", uid: "842718468706385920", ovr: 121, fullName: "Rajat Das", goalkeeper: "Savic" },
+  "BARNIK": { fcName: "brokenaqua", uid: "858045300533792768", ovr: 121, fullName: "Barnik", goalkeeper: "Donnarumma" },
+  "PRITAM": { fcName: "Pritam", uid: "1058620361900937216", ovr: 120, fullName: "Pritam ghosh", goalkeeper: "Bounou" },
+  "DIBYAJOTI": { fcName: "dibya7334", uid: "998821168026656769", ovr: 121, fullName: "Dibyajyoti Sarkar", goalkeeper: "Muselera" },
+  "PRIYAM": { fcName: "Priyam2007", uid: "713327705700397056", ovr: 120, fullName: "Priyam Paul", goalkeeper: "Courtois" },
+  "SAGNIK": { fcName: "Kundes", uid: "1031556959882035200", ovr: 119, fullName: "Sagnik Kundu", goalkeeper: "Robert Sanchez" },
+  "SAGNICK": { fcName: "AYU45", uid: "881759190897385472", ovr: 116, fullName: "Sagnick Roy", goalkeeper: "Savic" },
+  "ABHROJEET": { fcName: "Abhrojeet", uid: "1000048169385328640", ovr: 115, fullName: "Abhrojeet Kundu", goalkeeper: "Savic" },
+  "SAYANTAN": { fcName: "Sayantan111", uid: "1044989674656509952", ovr: 117, fullName: "Sayantan Paul", goalkeeper: "Cech" },
+  "ANIMESH": { fcName: "Ashish..Won", uid: "646962951897718784", ovr: 119, fullName: "Animesh", goalkeeper: "Courtois" }
 };
 
 export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => {
@@ -35,6 +35,7 @@ export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => {
     fcName: details?.fcName || "",
     ovr: details?.ovr || 0,
     uid: details?.uid || "",
+    goalkeeper: details?.goalkeeper || "",
     played: 0,
     won: 0,
     drawn: 0,

@@ -6,6 +6,7 @@ export interface Team {
   fcName: string;
   ovr: number;
   uid: string;
+  goalkeeper?: string;
   played: number;
   won: number;
   drawn: number;
@@ -54,4 +55,30 @@ export interface BracketMatch {
   winnerId?: string;
   nextMatchId?: string;
   round: string;
+}
+
+export interface VotingCandidate {
+  id: string;
+  name: string;
+  fcName: string;
+}
+
+export interface VotingSession {
+  id: string;
+  sessionId: string;
+  matchday: number | string;
+  startTime: any;
+  endTime: any;
+  candidates: VotingCandidate[];
+  isActive: boolean;
+  showResults?: boolean;
+}
+
+export interface Vote {
+  voterId: string;
+  userId: string;
+  candidateId: string;
+  matchday: number | string;
+  sessionId: string;
+  timestamp: any;
 }
