@@ -87,6 +87,17 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Hazard', goals: 1 }, { playerName: 'Kane', goals: 1 }];
         homeStats = { shots: 6, shotsOnTarget: 5, possession: 54, passAccuracy: 87, fouls: 0, offsides: 0 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 46, passAccuracy: 77, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "ANIMESH") {
+        homeScore = 0; awayScore = 8; status = 'finished';
+        awayScorers = [
+          { playerName: 'C. Ronaldo', goals: 4 },
+          { playerName: 'Berghuis', goals: 1 },
+          { playerName: 'Zieliński', goals: 1 },
+          { playerName: 'Al Dawsari', goals: 1 },
+          { playerName: 'O\'Reilly', goals: 1 }
+        ];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 40, passAccuracy: 60, fouls: 0, offsides: 0 };
+        awayStats = { shots: 12, shotsOnTarget: 12, possession: 60, passAccuracy: 90, fouls: 1, offsides: 0 };
       }
     }
 
@@ -198,6 +209,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 16,
+    title: "ANIMESH OBLITERATES SAYANTAN",
+    excerpt: "In a historic Matchday 1 performance, Animesh secures an 8-0 victory over Sayantan Paul. C. Ronaldo was unstoppable, netting four goals.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 15,
     title: "SAMRIDDHA SHINES AGAINST RAJAT",
     excerpt: "Samriddha Mandal secures a convincing 2-0 win over Rajat Das. Hazard and Kane provided the goals in a dominant performance.",
@@ -255,8 +273,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 12/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 12 matches completed. 4 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 13/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 13 matches completed. 3 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
