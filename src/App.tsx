@@ -82,6 +82,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Zico', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 46, passAccuracy: 70, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 54, passAccuracy: 74, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAMRIDDHA" && sm.away === "RAJAT") {
+        homeScore = 2; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Hazard', goals: 1 }, { playerName: 'Kane', goals: 1 }];
+        homeStats = { shots: 6, shotsOnTarget: 5, possession: 54, passAccuracy: 87, fouls: 0, offsides: 0 };
+        awayStats = { shots: 3, shotsOnTarget: 3, possession: 46, passAccuracy: 77, fouls: 0, offsides: 0 };
       }
     }
 
@@ -193,6 +198,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 15,
+    title: "SAMRIDDHA SHINES AGAINST RAJAT",
+    excerpt: "Samriddha Mandal secures a convincing 2-0 win over Rajat Das. Hazard and Kane provided the goals in a dominant performance.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 14,
     title: "SAMRIDDHA AND SOUMAJIT BATTLE TO A DRAW",
     excerpt: "A closely contested match between Samriddha Mandal and Soumajit Biswas ends 1-1. Ribéry opened the scoring early, but Zico equalized in the second half.",
@@ -243,8 +255,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 11/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 11 matches completed. 5 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 12/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 12 matches completed. 4 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
