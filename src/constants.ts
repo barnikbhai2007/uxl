@@ -69,10 +69,8 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "ANIMESH", home: "SAGNICK", matchday: 1 },
   { away: "ABHROJEET", home: "SAYANTAN", matchday: 1 },
   { away: "ARYAN", home: "RANAJAY", matchday: 1 },
-  { away: "BARNIK", home: "RANAJAY", matchday: 1 },
-  { away: "BARNIK", home: "RAJAT", matchday: 1 },
-  { away: "BARNIK", home: "RAJAT", matchday: 1 },
-  { away: "BARNIK", home: "RANAJAY", matchday: 1 },
+  { away: "RAJAT", home: "BARNIK", matchday: 1 },
+  { away: "RANAJAY", home: "BARNIK", matchday: 1 },
 
   // Matchday 2
   { away: "BARNIK", home: "SAYANTAN", matchday: 2 },

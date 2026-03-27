@@ -91,10 +91,15 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Hazard', goals: 1 }, { playerName: 'Kane', goals: 1 }];
         homeStats = { shots: 6, shotsOnTarget: 5, possession: 54, passAccuracy: 87, fouls: 0, offsides: 0 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 46, passAccuracy: 77, fouls: 0, offsides: 0 };
+      } else if (sm.home === "PRITAM" && sm.away === "DIBYAJOTI") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Saint-Maximin', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 2, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 55, passAccuracy: 85, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAYANTAN" && sm.away === "ANIMESH") {
         homeScore = 0; awayScore = 8; status = 'finished';
         awayScorers = [
-          { playerName: 'C. Ronaldo', goals: 4 },
+          { playerName: 'C. Ronaldo', goals: 2 },
           { playerName: 'Berghuis', goals: 1 },
           { playerName: 'Zieliński', goals: 1 },
           { playerName: 'Al Dawsari', goals: 1 },
@@ -274,9 +279,9 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
-    id: 19,
-    title: "BARNIK EDGES OUT RANAJAY",
-    excerpt: "In a closely fought match, Barnik secures a 1-0 victory over Ranajay, with Al Owairan scoring the decisive goal.",
+    id: 20,
+    title: "PRITAM EDGES OUT DIBYAJOTI",
+    excerpt: "In a tight encounter, Pritam secures a narrow 1-0 victory over Dibyajyoti, with Saint-Maximin scoring the only goal.",
     date: "27th March 2026",
     category: "MATCH REPORT"
   },
@@ -288,9 +293,9 @@ const NEWS_POSTS = [
     category: "MATCH REPORT"
   },
   {
-    id: 17,
-    title: "BARNIK EDGES OUT RANAJOY",
-    excerpt: "In a tight tactical battle, Barnik (brokenaqua) secures a 1-0 victory over Ranajoy Bhowmik (GamerR) thanks to a 52nd-minute goal from Al Owairan.",
+    id: 19,
+    title: "BARNIK EDGES OUT RANAJAY",
+    excerpt: "In a closely fought match, Barnik secures a 1-0 victory over Ranajay, with Al Owairan scoring the decisive goal.",
     date: "27th March 2026",
     category: "MATCH REPORT"
   },
