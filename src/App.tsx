@@ -788,7 +788,9 @@ const NEWS_POSTS = [
     isSavingAdmin, 
     handleSaveAdmin, 
     handleToggleResults, 
-    handleEndVote 
+    handleEndVote,
+    sessionVotes,
+    totalVotes
   }: { 
     onClose: () => void,
     adminMatchday: string | number,
@@ -801,7 +803,9 @@ const NEWS_POSTS = [
     isSavingAdmin: boolean,
     handleSaveAdmin: () => void,
     handleToggleResults: () => void,
-    handleEndVote: () => void
+    handleEndVote: () => void,
+    sessionVotes: Record<string, number>,
+    totalVotes: number
   }) => {
     const [newCandidateTeam, setNewCandidateTeam] = useState(TEAMS_LIST[0]);
 
@@ -922,6 +926,33 @@ const NEWS_POSTS = [
                     </button>
                   </div>
                 ))}
+              </div>
+            </div>
+          </div>
+
+          <div className="p-8 border-t border-white/10 bg-white/5">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white mb-4">Live Voting Stats</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Total Votes</p>
+                <p className="text-2xl font-black text-blue-400">{totalVotes}</p>
+              </div>
+              <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Winning Candidate</p>
+                <p className="text-sm font-black text-white truncate">
+                  {(() => {
+                    let maxVotes = -1;
+                    let winner = "None";
+                    adminCandidates.forEach(c => {
+                      const votes = sessionVotes[c.id] || 0;
+                      if (votes > maxVotes) {
+                        maxVotes = votes;
+                        winner = c.name;
+                      }
+                    });
+                    return totalVotes > 0 ? winner : "N/A";
+                  })()}
+                </p>
               </div>
             </div>
           </div>
@@ -2171,6 +2202,8 @@ export default function App() {
             handleSaveAdmin={handleSaveAdmin}
             handleToggleResults={handleToggleResults}
             handleEndVote={handleEndVote}
+            sessionVotes={sessionVotes}
+            totalVotes={totalVotes}
           />
         )}
       </AnimatePresence>
