@@ -6,38 +6,45 @@ export const TEAMS_LIST = [
   "SAGNICK", "ABHROJEET", "SAYANTAN", "ANIMESH"
 ];
 
-export const TEAM_UIDS: Record<string, string> = {
-  "AYUSH": "847857761683775488",
-  "SOUMAJIT": "910022838300041217",
-  "ARYAN": "908741022842437637",
-  "SONU": "545136672475017216",
-  "RANAJAY": "666275283639996417",
-  "SAMRIDDHA": "1000129435803713536",
-  "RAJAT": "842718468706385920",
-  "BARNIK": "858045300533792768",
-  "PRITAM": "1058620361900937216",
-  "DIBYAJOTI": "998821168026656769",
-  "PRIYAM": "713327705700397056",
-  "SAGNIK": "1031556959882035200",
-  "SAGNICK": "881759190897385472",
-  "ABHROJEET": "1000048169385328640",
-  "SAYANTAN": "1044989674656509952",
-  "ANIMESH": "646962951897718784"
+export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: number, fullName: string }> = {
+  "AYUSH": { fcName: "AYUSH_08", uid: "847857761683775488", ovr: 121, fullName: "Ayush Saha" },
+  "SOUMAJIT": { fcName: "soubiswas2", uid: "910022838300041217", ovr: 121, fullName: "Soumajit Biswas" },
+  "ARYAN": { fcName: "Baby_Aryanrox121", uid: "908741022842437637", ovr: 119, fullName: "Aryan Sarkar" },
+  "SONU": { fcName: "sonu2007", uid: "545136672475017216", ovr: 119, fullName: "Sonu Mandal" },
+  "RANAJAY": { fcName: "GamerR", uid: "666275283639996417", ovr: 121, fullName: "RANAJOY BHOWMIK" },
+  "SAMRIDDHA": { fcName: "sam1017", uid: "1000129435803713536", ovr: 121, fullName: "Samriddha Mandal" },
+  "RAJAT": { fcName: "rd10", uid: "842718468706385920", ovr: 121, fullName: "Rajat Das" },
+  "BARNIK": { fcName: "brokenaqua", uid: "858045300533792768", ovr: 121, fullName: "Barnik" },
+  "PRITAM": { fcName: "Pritam", uid: "1058620361900937216", ovr: 120, fullName: "Pritam ghosh" },
+  "DIBYAJOTI": { fcName: "dibya7334", uid: "998821168026656769", ovr: 121, fullName: "Dibyajyoti Sarkar" },
+  "PRIYAM": { fcName: "Priyam2007", uid: "713327705700397056", ovr: 120, fullName: "Priyam Paul" },
+  "SAGNIK": { fcName: "Kundes", uid: "1031556959882035200", ovr: 119, fullName: "Sagnik Kundu" },
+  "SAGNICK": { fcName: "AYU45", uid: "881759190897385472", ovr: 116, fullName: "Sagnick Roy" },
+  "ABHROJEET": { fcName: "Abhrojeet", uid: "1000048169385328640", ovr: 115, fullName: "Abhrojeet Kundu" },
+  "SAYANTAN": { fcName: "Sayantan111", uid: "1044989674656509952", ovr: 117, fullName: "Sayantan Paul" },
+  "ANIMESH": { fcName: "Ashish..Won", uid: "646962951897718784", ovr: 119, fullName: "Animesh" }
 };
 
-export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => ({
-  id: `team-${index}`,
-  name,
-  uid: TEAM_UIDS[name] || "",
-  played: 0,
-  won: 0,
-  drawn: 0,
-  lost: 0,
-  gf: 0,
-  ga: 0,
-  gd: 0,
-  points: 0,
-}));
+export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => {
+  const details = TEAM_DETAILS[name];
+  return {
+    id: `team-${index}`,
+    name: name, // Keep short name as 'name' for matching
+    shortName: name,
+    fullName: details?.fullName || name,
+    fcName: details?.fcName || "",
+    ovr: details?.ovr || 0,
+    uid: details?.uid || "",
+    played: 0,
+    won: 0,
+    drawn: 0,
+    lost: 0,
+    gf: 0,
+    ga: 0,
+    gd: 0,
+    points: 0,
+  };
+});
 
 export interface RawMatch {
   away: string;

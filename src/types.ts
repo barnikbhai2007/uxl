@@ -1,6 +1,10 @@
 export interface Team {
   id: string;
   name: string;
+  shortName: string;
+  fullName: string;
+  fcName: string;
+  ovr: number;
   uid: string;
   played: number;
   won: number;
@@ -12,6 +16,20 @@ export interface Team {
   points: number;
 }
 
+export interface Scorer {
+  playerName: string;
+  goals: number;
+}
+
+export interface MatchStats {
+  shots: number;
+  shotsOnTarget: number;
+  possession: number;
+  passAccuracy: number;
+  fouls: number;
+  offsides: number;
+}
+
 export interface Match {
   id: string;
   matchNumber: number;
@@ -19,6 +37,10 @@ export interface Match {
   awayTeamId: string;
   homeScore?: number;
   awayScore?: number;
+  homeScorers?: Scorer[];
+  awayScorers?: Scorer[];
+  homeStats?: MatchStats;
+  awayStats?: MatchStats;
   date: string;
   status: 'scheduled' | 'live' | 'finished';
 }

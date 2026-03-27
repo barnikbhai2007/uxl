@@ -1,8 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, Newspaper } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE } from './constants';
-import { Team, Match, BracketMatch } from './types';
+import { Team, Match, BracketMatch, Scorer } from './types';
 
 // Static data mapping
 const getMatchdayDate = (matchday: number) => {
@@ -15,15 +15,52 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     const homeTeam = teams.find(t => t.name === sm.home);
     const awayTeam = teams.find(t => t.name === sm.away);
     
+    let homeScore = 0;
+    let awayScore = 0;
+    let status: 'scheduled' | 'finished' = 'scheduled';
+    let homeScorers: Scorer[] = [];
+    let awayScorers: Scorer[] = [];
+    let homeStats: Match['homeStats'];
+    let awayStats: Match['awayStats'];
+
+    // Inject results from images (Matchday 1)
+    if (sm.matchday === 1) {
+      if (sm.home === "SAGNICK" && sm.away === "PRIYAM") {
+        homeScore = 0; awayScore = 3; status = 'finished';
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Scholes', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 88, fouls: 0, offsides: 0 };
+        awayStats = { shots: 6, shotsOnTarget: 6, possession: 55, passAccuracy: 89, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNIK" && sm.away === "DIBYAJOTI") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Rooney', goals: 2 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 89, fouls: 0, offsides: 1 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 1 };
+      } else if (sm.home === "SAGNIK" && sm.away === "PRIYAM") {
+        homeScore = 0; awayScore = 4; status = 'finished';
+        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 2 }, { playerName: 'C. Ronaldo', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 42, passAccuracy: 69, fouls: 0, offsides: 0 };
+        awayStats = { shots: 10, shotsOnTarget: 9, possession: 58, passAccuracy: 92, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RANAJAY" && sm.away === "ARYAN") {
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 45, passAccuracy: 76, fouls: 1, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 55, passAccuracy: 69, fouls: 1, offsides: 0 };
+      }
+    }
+
     return {
       id: `m-${index + 1}`,
       matchNumber: index + 1,
       homeTeamId: homeTeam?.id || '',
       awayTeamId: awayTeam?.id || '',
-      homeScore: 0,
-      awayScore: 0,
+      homeScore,
+      awayScore,
+      homeScorers,
+      awayScorers,
+      homeStats,
+      awayStats,
       date: getMatchdayDate(sm.matchday),
-      status: 'scheduled',
+      status,
     };
   });
 };
@@ -67,13 +104,102 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
   return standings.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
 };
 
+interface PlayerGoalStats {
+  playerName: string;
+  gamerName: string;
+  gamerFullName: string;
+  goals: number;
+}
+
+const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
+  const statsMap: Record<string, PlayerGoalStats> = {};
+
+  matches.forEach(m => {
+    if (m.status === 'finished') {
+      const homeTeam = teams.find(t => t.id === m.homeTeamId);
+      const awayTeam = teams.find(t => t.id === m.awayTeamId);
+
+      if (homeTeam && m.homeScorers) {
+        m.homeScorers.forEach(s => {
+          const key = `${s.playerName}-${homeTeam.id}`;
+          if (!statsMap[key]) {
+            statsMap[key] = {
+              playerName: s.playerName,
+              gamerName: homeTeam.name,
+              gamerFullName: homeTeam.fullName,
+              goals: 0
+            };
+          }
+          statsMap[key].goals += s.goals;
+        });
+      }
+
+      if (awayTeam && m.awayScorers) {
+        m.awayScorers.forEach(s => {
+          const key = `${s.playerName}-${awayTeam.id}`;
+          if (!statsMap[key]) {
+            statsMap[key] = {
+              playerName: s.playerName,
+              gamerName: awayTeam.name,
+              gamerFullName: awayTeam.fullName,
+              goals: 0
+            };
+          }
+          statsMap[key].goals += s.goals;
+        });
+      }
+    }
+  });
+
+  return Object.values(statsMap).sort((a, b) => b.goals - a.goals);
+};
+
+const NEWS_POSTS = [
+  {
+    id: 1,
+    title: "PRIYAM PAUL ON FIRE",
+    excerpt: "Priyam Paul secures two massive clean-sheet victories against Sagnick (3-0) and Sagnik (4-0), scoring 7 goals in total.",
+    date: "27th March 2026",
+    category: "MATCHDAY 1"
+  },
+  {
+    id: 2,
+    title: "ROONEY BRACE FOR DIBYAJOTI",
+    excerpt: "Dibyajyoti Sarkar defeats Sagnik Kundu 2-0 thanks to a clinical double from Wayne Rooney.",
+    date: "27th March 2026",
+    category: "MATCHDAY 1"
+  },
+  {
+    id: 3,
+    title: "ARYAN EDGES RANAJAY",
+    excerpt: "In a tight contest, Aryan Sarkar secures a 1-0 win over Ranajay Bhowmik with a goal from C. Ronaldo.",
+    date: "27th March 2026",
+    category: "MATCHDAY 1"
+  },
+  {
+    id: 4,
+    title: "MATCHDAY 1: 4/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 4 matches completed. 12 more high-stakes fixtures remain for today.",
+    date: "27th March 2026",
+    category: "TOURNAMENT STATUS"
+  },
+  {
+    id: 8,
+    title: "CLEAN SHEETS DOMINATE",
+    excerpt: "All four completed matches so far have resulted in clean sheets for the winning side. Defensive discipline is key.",
+    date: "27th March 2026",
+    category: "STATS"
+  }
+];
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket'>('fixtures');
+  const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'stats' | 'hallOfFame' | 'news'>('fixtures');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const teams = useMemo(() => INITIAL_TEAMS, []);
   const matches = useMemo(() => getMatchesFromSchedule(teams), [teams]);
   const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
+  const stats = useMemo(() => calculateStats(teams, matches).slice(0, 5), [teams, matches]);
   const upcomingRef = React.useRef<HTMLDivElement>(null);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -94,7 +220,7 @@ export default function App() {
     );
     return (
       <div className={`flex items-center ${showCopy ? 'gap-2 md:gap-3' : ''} group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic shrink-0 pr-1 ${
+        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>{team.name}</span>
         {showCopy && (
@@ -121,6 +247,27 @@ export default function App() {
   const MatchDetailsModal = ({ match, onClose }: { match: Match, onClose: () => void }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
+
+    const StatRow = ({ home, away, label, suffix = '', homeVal, awayVal }: { home: number | string, away: number | string, label: string, suffix?: string, homeVal?: number, awayVal?: number }) => {
+      const h = homeVal ?? (typeof home === 'number' ? home : parseFloat(home as string));
+      const a = awayVal ?? (typeof away === 'number' ? away : parseFloat(away as string));
+      const total = h + a;
+      const homePercent = total === 0 ? 50 : (h / total) * 100;
+
+      return (
+        <div className="space-y-1.5">
+          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+            <span className="text-white w-12 text-left">{home}{suffix}</span>
+            <span className="text-blue-400/40 text-[9px]">{label}</span>
+            <span className="text-white w-12 text-right">{away}{suffix}</span>
+          </div>
+          <div className="h-1 bg-white/5 rounded-full overflow-hidden flex">
+            <div className="h-full bg-blue-500 transition-all duration-700" style={{ width: `${homePercent}%` }} />
+            <div className="h-full bg-white/10 transition-all duration-700" style={{ width: `${100 - homePercent}%` }} />
+          </div>
+        </div>
+      );
+    };
 
     return (
       <motion.div
@@ -167,21 +314,38 @@ export default function App() {
                   {awayTeam?.name[0] || '?'}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.name || 'TBD'}</h2>
-                  <button 
-                    onClick={() => awayTeam && copyToClipboard(awayTeam.uid)}
-                    className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid mx-auto"
-                  >
-                    <span className="font-mono font-bold tracking-wider uppercase">
-                      {copiedId === awayTeam?.uid ? 'Copied!' : 'Copy UID'}
-                    </span>
-                    {copiedId === awayTeam?.uid ? (
-                      <Check className="w-2.5 h-2.5 text-green-400" />
-                    ) : (
-                      <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
-                    )}
-                  </button>
+                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.fullName || 'TBD'}</h2>
+                  {awayTeam && (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
+                        <button 
+                          onClick={() => copyToClipboard(awayTeam.uid)}
+                          className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
+                        >
+                          <span className="font-mono font-bold tracking-wider uppercase">
+                            {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
+                          </span>
+                          {copiedId === awayTeam.uid ? (
+                            <Check className="w-2.5 h-2.5 text-green-400" />
+                          ) : (
+                            <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {match.awayScorers && match.awayScorers.length > 0 && (
+                  <div className="mt-4 flex flex-col items-center gap-1">
+                    {match.awayScorers.map((s, i) => (
+                      <span key={i} className="text-[10px] font-bold text-white/40 italic">
+                        {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col items-center gap-2 md:gap-4">
@@ -209,23 +373,62 @@ export default function App() {
                   {homeTeam?.name[0] || '?'}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.name || 'TBD'}</h2>
-                  <button 
-                    onClick={() => homeTeam && copyToClipboard(homeTeam.uid)}
-                    className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid mx-auto"
-                  >
-                    <span className="font-mono font-bold tracking-wider uppercase">
-                      {copiedId === homeTeam?.uid ? 'Copied!' : 'Copy UID'}
-                    </span>
-                    {copiedId === homeTeam?.uid ? (
-                      <Check className="w-2.5 h-2.5 text-green-400" />
-                    ) : (
-                      <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
-                    )}
-                  </button>
+                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.fullName || 'TBD'}</h2>
+                  {homeTeam && (
+                    <div className="flex flex-col items-center gap-1">
+                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
+                        <button 
+                          onClick={() => copyToClipboard(homeTeam.uid)}
+                          className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
+                        >
+                          <span className="font-mono font-bold tracking-wider uppercase">
+                            {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
+                          </span>
+                          {copiedId === homeTeam.uid ? (
+                            <Check className="w-2.5 h-2.5 text-green-400" />
+                          ) : (
+                            <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
+                {match.homeScorers && match.homeScorers.length > 0 && (
+                  <div className="mt-4 flex flex-col items-center gap-1">
+                    {match.homeScorers.map((s, i) => (
+                      <span key={i} className="text-[10px] font-bold text-white/40 italic">
+                        {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
+
+            {/* Match Stats */}
+            {match.status === 'finished' && match.homeStats && match.awayStats && (
+              <div className="mt-8 space-y-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+                <div className="text-center mb-2">
+                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">Match Statistics</span>
+                </div>
+                <div className="grid gap-4">
+                  <StatRow 
+                    home={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
+                    away={`${match.homeStats.shotsOnTarget}/${match.homeStats.shots}`} 
+                    label="Shots (On Target)" 
+                    homeVal={match.awayStats.shots}
+                    awayVal={match.homeStats.shots}
+                  />
+                  <StatRow home={match.awayStats.possession} away={match.homeStats.possession} label="Possession" suffix="%" />
+                  <StatRow home={match.awayStats.passAccuracy} away={match.homeStats.passAccuracy} label="Pass Accuracy" suffix="%" />
+                  <StatRow home={match.awayStats.fouls} away={match.homeStats.fouls} label="Fouls" />
+                  <StatRow home={match.awayStats.offsides} away={match.homeStats.offsides} label="Offsides" />
+                </div>
+              </div>
+            )}
 
             {/* Stats Grid */}
             <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
@@ -257,9 +460,15 @@ export default function App() {
     const grouped: Record<string, Match[]> = {};
     const filtered = searchTerm 
       ? matches.filter(m => {
-          const home = teams.find(t => t.id === m.homeTeamId)?.name.toLowerCase();
-          const away = teams.find(t => t.id === m.awayTeamId)?.name.toLowerCase();
-          return home?.includes(searchTerm.toLowerCase()) || away?.includes(searchTerm.toLowerCase());
+          const home = teams.find(t => t.id === m.homeTeamId);
+          const away = teams.find(t => t.id === m.awayTeamId);
+          const search = searchTerm.toLowerCase();
+          return home?.name.toLowerCase().includes(search) || 
+                 home?.fullName.toLowerCase().includes(search) ||
+                 home?.fcName.toLowerCase().includes(search) ||
+                 away?.name.toLowerCase().includes(search) ||
+                 away?.fullName.toLowerCase().includes(search) ||
+                 away?.fcName.toLowerCase().includes(search);
         })
       : matches;
 
@@ -314,11 +523,14 @@ export default function App() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-[#000030]/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
         <div className="max-w-xl mx-auto px-4">
-          <div className="relative flex p-1.5 bg-white/5 rounded-2xl border border-white/10 shadow-2xl">
+          <div className="relative flex p-1.5 bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
+              { id: 'stats', label: 'Stats', icon: BarChart2 },
+              { id: 'hallOfFame', label: 'H.O.F', icon: Award },
+              { id: 'news', label: 'News', icon: Newspaper },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -347,6 +559,144 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-12">
         <AnimatePresence mode="wait">
+          {activeTab === 'stats' && (
+            <motion.div
+              key="stats"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
+                  <BarChart2 className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none">Top Scorers</h2>
+                  <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">Individual Player Statistics</p>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+                <table className="w-full text-left border-collapse">
+                  <thead>
+                    <tr className="bg-white/5 text-blue-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
+                      <th className="px-6 py-4">Rank</th>
+                      <th className="px-6 py-4">Football Player</th>
+                      <th className="px-6 py-4">Gamer</th>
+                      <th className="px-6 py-4 text-center">Goals</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {stats.length > 0 ? stats.map((stat, index) => (
+                      <tr key={`${stat.playerName}-${stat.gamerName}`} className="hover:bg-white/5 transition-colors">
+                        <td className="px-6 py-4">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                            index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
+                            index === 1 ? 'bg-gray-400/20 text-gray-300' : 
+                            index === 2 ? 'bg-orange-500/20 text-orange-400' : 
+                            'bg-white/10 text-white/70'
+                          }`}>
+                            {index + 1}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="font-display font-black uppercase italic text-sm tracking-tight">{stat.playerName}</span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex flex-col">
+                            <span className="text-xs font-bold text-white/80">{stat.gamerFullName}</span>
+                            <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">{stat.gamerName}</span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-center">
+                          <span className="text-lg font-black text-blue-400">{stat.goals}</span>
+                        </td>
+                      </tr>
+                    )) : (
+                      <tr>
+                        <td colSpan={4} className="px-6 py-12 text-center">
+                          <div className="flex flex-col items-center gap-3 opacity-20">
+                            <Info className="w-8 h-8" />
+                            <p className="text-xs uppercase font-black tracking-widest">No goals recorded yet</p>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'news' && (
+            <motion.div
+              key="news"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-2xl mx-auto px-4 py-8 space-y-6"
+            >
+              <div className="flex items-center gap-4 mb-8">
+                <Newspaper className="w-6 h-6 text-blue-400" />
+                <h2 className="text-2xl font-black uppercase italic tracking-tighter">Tournament <span className="text-blue-400">Glimpse</span></h2>
+              </div>
+
+              <div className="space-y-4">
+                {NEWS_POSTS.map((post) => (
+                  <motion.article
+                    key={post.id}
+                    whileHover={{ x: 4 }}
+                    className="bg-white/5 border-l-2 border-blue-500 p-5 rounded-r-2xl shadow-lg group cursor-pointer hover:bg-white/[0.08] transition-all"
+                  >
+                    <div className="flex items-center gap-3 mb-2">
+                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">
+                        {post.category}
+                      </span>
+                      <span className="w-1 h-1 rounded-full bg-white/20" />
+                      <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">{post.date}</span>
+                    </div>
+                    <h3 className="text-lg font-black uppercase italic tracking-tight mb-1 group-hover:text-blue-400 transition-colors">
+                      {post.title}
+                    </h3>
+                    <p className="text-xs text-white/50 leading-relaxed font-medium">
+                      {post.excerpt}
+                    </p>
+                  </motion.article>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {activeTab === 'hallOfFame' && (
+            <motion.div
+              key="hallOfFame"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="flex flex-col items-center justify-center py-24 text-center"
+            >
+              <div className="relative mb-8">
+                <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+                <Award className="w-24 h-24 text-blue-400 relative z-10 animate-pulse" />
+              </div>
+              <h2 className="font-display text-4xl font-black uppercase italic tracking-tighter mb-4">Hall of Fame</h2>
+              <div className="max-w-md space-y-4">
+                <p className="text-blue-200/60 font-mono text-sm uppercase tracking-widest leading-relaxed">
+                  The legends of UXI are forged in the heat of competition.
+                </p>
+                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
+                    Season Currently Ongoing
+                  </p>
+                  <p className="text-white/30 text-[9px] uppercase tracking-widest mt-2">
+                    Winners will be immortalized here upon completion.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {activeTab === 'table' && (
             <motion.div
               key="table"
@@ -359,7 +709,9 @@ export default function App() {
                 <thead>
                   <tr className="bg-white/5 text-blue-200/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
                     <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4">Team</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4">Player</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell">FC Name</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">OVR</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">P</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">W</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">D</th>
@@ -388,7 +740,15 @@ export default function App() {
                           </div>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4">
-                          <TeamNameWithCopy team={team} size="sm" />
+                          <div className="flex items-center min-w-0">
+                            <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
+                              {team.fullName}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-mono text-xs text-white/40">{team.fcName}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                          <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] md:text-[10px] font-black text-blue-400">{team.ovr}</span>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.played}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.won}</td>
@@ -425,7 +785,7 @@ export default function App() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                   <input
                     type="text"
-                    placeholder="Search player name..."
+                    placeholder="Search player, FC or full name..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-white/20"
