@@ -98,6 +98,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         ];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 40, passAccuracy: 60, fouls: 0, offsides: 0 };
         awayStats = { shots: 12, shotsOnTarget: 12, possession: 60, passAccuracy: 90, fouls: 1, offsides: 0 };
+      } else if (sm.home === "RANAJAY" && sm.away === "BARNIK") {
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 37, passAccuracy: 78, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 63, passAccuracy: 90, fouls: 0, offsides: 0 };
       }
     }
 
@@ -209,6 +214,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 17,
+    title: "BARNIK EDGES OUT RANAJOY",
+    excerpt: "In a tight tactical battle, Barnik (brokenaqua) secures a 1-0 victory over Ranajoy Bhowmik (GamerR) thanks to a 52nd-minute goal from Al Owairan.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 16,
     title: "ANIMESH OBLITERATES SAYANTAN",
     excerpt: "In a historic Matchday 1 performance, Animesh secures an 8-0 victory over Sayantan Paul. C. Ronaldo was unstoppable, netting four goals.",
@@ -273,8 +285,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 13/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 13 matches completed. 3 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 14/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 14 matches completed. Only 2 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
