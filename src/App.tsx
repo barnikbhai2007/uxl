@@ -45,6 +45,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 45, passAccuracy: 76, fouls: 1, offsides: 0 };
         awayStats = { shots: 4, shotsOnTarget: 2, possession: 55, passAccuracy: 69, fouls: 1, offsides: 0 };
+      } else if (sm.home === "PRITAM" && sm.away === "AYUSH") {
+        homeScore = 2; awayScore = 3; status = 'finished';
+        homeScorers = [{ playerName: 'Lamine Yamal', goals: 2 }];
+        awayScorers = [{ playerName: 'Garrincha', goals: 1 }, { playerName: 'Dembélé', goals: 1 }, { playerName: 'Raphinha', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 81, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 53, passAccuracy: 78, fouls: 1, offsides: 0 };
       }
     }
 
@@ -156,9 +162,23 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
-    id: 1,
-    title: "PRIYAM PAUL ON FIRE",
-    excerpt: "Priyam Paul secures two massive clean-sheet victories against Sagnick (3-0) and Sagnik (4-0), scoring 7 goals in total.",
+    id: 8,
+    title: "AYUSH EDGES PRITAM IN THRILLER",
+    excerpt: "Ayush Saha secures a hard-fought 3-2 victory over Pritam Ghosh in the first high-scoring match of the tournament.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 4,
+    title: "MATCHDAY 1: 5/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 5 matches completed. 11 more high-stakes fixtures remain for today.",
+    date: "27th March 2026",
+    category: "TOURNAMENT STATUS"
+  },
+  {
+    id: 3,
+    title: "ARYAN EDGES RANAJAY",
+    excerpt: "In a tight contest, Aryan Sarkar secures a 1-0 win over Ranajay Bhowmik with a goal from C. Ronaldo.",
     date: "27th March 2026",
     category: "MATCHDAY 1"
   },
@@ -170,25 +190,11 @@ const NEWS_POSTS = [
     category: "MATCHDAY 1"
   },
   {
-    id: 3,
-    title: "ARYAN EDGES RANAJAY",
-    excerpt: "In a tight contest, Aryan Sarkar secures a 1-0 win over Ranajay Bhowmik with a goal from C. Ronaldo.",
+    id: 1,
+    title: "PRIYAM PAUL ON FIRE",
+    excerpt: "Priyam Paul secures two massive clean-sheet victories against Sagnick (3-0) and Sagnik (4-0), scoring 7 goals in total.",
     date: "27th March 2026",
     category: "MATCHDAY 1"
-  },
-  {
-    id: 4,
-    title: "MATCHDAY 1: 4/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 4 matches completed. 12 more high-stakes fixtures remain for today.",
-    date: "27th March 2026",
-    category: "TOURNAMENT STATUS"
-  },
-  {
-    id: 8,
-    title: "CLEAN SHEETS DOMINATE",
-    excerpt: "All four completed matches so far have resulted in clean sheets for the winning side. Defensive discipline is key.",
-    date: "27th March 2026",
-    category: "STATS"
   }
 ];
 
