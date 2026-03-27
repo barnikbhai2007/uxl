@@ -66,6 +66,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Garrincha', goals: 2 }, { playerName: 'Dembélé', goals: 1 }, { playerName: 'Raphinha', goals: 2 }];
         homeStats = { shots: 6, shotsOnTarget: 6, possession: 49, passAccuracy: 85, fouls: 0, offsides: 0 };
         awayStats = { shots: 4, shotsOnTarget: 2, possession: 51, passAccuracy: 73, fouls: 2, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "ABHROJEET") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 68, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 3, possession: 53, passAccuracy: 82, fouls: 0, offsides: 0 };
       }
     }
 
@@ -177,6 +182,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 12,
+    title: "ABHROJEET BOUNCES BACK",
+    excerpt: "After a tough loss earlier, Abhrojeet Kundu secures a solid 2-0 victory over Sayantan Paul. Dembélé and King provided the goals.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 11,
     title: "AYUSH SAHA DOMINATES ABHROJEET",
     excerpt: "Ayush Saha puts on a clinical performance, defeating Abhrojeet Kundu 5-0. Garrincha and Raphinha both bagged braces in the rout.",
@@ -206,8 +218,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 8/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 8 matches completed. 8 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 9/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 9 matches completed. 7 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
