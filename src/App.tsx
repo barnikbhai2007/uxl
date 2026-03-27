@@ -76,6 +76,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Zieliński', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 82, fouls: 0, offsides: 1 };
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 76, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "SAMRIDDHA") {
+        homeScore = 1; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Ribéry', goals: 1 }];
+        awayScorers = [{ playerName: 'Zico', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 46, passAccuracy: 70, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 54, passAccuracy: 74, fouls: 0, offsides: 0 };
       }
     }
 
@@ -187,6 +193,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 14,
+    title: "SAMRIDDHA AND SOUMAJIT BATTLE TO A DRAW",
+    excerpt: "A closely contested match between Samriddha Mandal and Soumajit Biswas ends 1-1. Ribéry opened the scoring early, but Zico equalized in the second half.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 13,
     title: "ANIMESH SECURES COMFORTABLE WIN",
     excerpt: "Animesh defeats Sagnick Roy 2-0 in a dominant display. Zieliński and C. Ronaldo provided the clinical finishes.",
@@ -230,8 +243,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 10/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 10 matches completed. 6 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 11/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 11 matches completed. 5 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
