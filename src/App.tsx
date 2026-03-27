@@ -21,7 +21,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     
     let homeScore = 0;
     let awayScore = 0;
-    let status: 'scheduled' | 'finished' = 'scheduled';
+    let status: 'scheduled' | 'live' | 'finished' = sm.matchday === 2 ? 'live' : 'scheduled';
     let homeScorers: Scorer[] = [];
     let awayScorers: Scorer[] = [];
     let homeStats: Match['homeStats'];
@@ -625,7 +625,7 @@ const NEWS_POSTS = [
     isAdmin: boolean
   }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const showResults = !session.isActive || (isAdmin && (session.showResults ?? true));
+    const showResults = !session.isActive || isAdmin || (session.showResults ?? true);
     const timeLeft = useMemo(() => {
       if (!session.endTime) return null;
       const end = session.endTime.toDate();
@@ -900,8 +900,19 @@ const NEWS_POSTS = [
           </div>
 
           <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-            {activeTab === 'voting' ? (
+            {activeTab === 'voting' && (
               <>
+                {isAdmin && activeSession && (
+                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl mb-6">
+                    <span className="text-xs font-bold text-white">Show Results</span>
+                    <button 
+                      onClick={() => updateSession(activeSession.id, { showResults: !activeSession.showResults })}
+                      className={`w-12 h-6 rounded-full transition-all ${activeSession.showResults ? 'bg-green-500' : 'bg-white/10'}`}
+                    >
+                      <div className={`w-4 h-4 rounded-full bg-white transition-all ${activeSession.showResults ? 'ml-7' : 'ml-1'}`} />
+                    </button>
+                  </div>
+                )}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Session Title</label>
@@ -970,45 +981,6 @@ const NEWS_POSTS = [
                   </div>
                 </div>
               </>
-            ) : (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <input 
-                    type="text"
-                    value={newsTopic}
-                    onChange={(e) => setNewsTopic(e.target.value)}
-                    placeholder="Topic"
-                    className="bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                  />
-                  <input 
-                    type="date"
-                    value={newsDate}
-                    onChange={(e) => setNewsDate(e.target.value)}
-                    className="bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-                <input 
-                  type="text"
-                  value={newsTitle}
-                  onChange={(e) => setNewsTitle(e.target.value)}
-                  placeholder="Title"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                />
-                <textarea 
-                  value={newsDescription}
-                  onChange={(e) => setNewsDescription(e.target.value)}
-                  placeholder="Description"
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all h-32"
-                />
-                <button 
-                  onClick={handlePostNews}
-                  disabled={isPostingNews}
-                  className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white rounded-xl py-3 flex items-center justify-center gap-2 font-black uppercase text-xs tracking-[0.2em] transition-all"
-                >
-                  {isPostingNews ? <Loader2 className="w-4 h-4 animate-spin" /> : <Newspaper className="w-4 h-4" />}
-                  Post News
-                </button>
-              </div>
             )}
           </div>
 
@@ -1784,6 +1756,64 @@ export default function App() {
                 <h2 className="text-2xl font-black uppercase italic tracking-tighter">Tournament <span className="text-blue-400">Glimpse</span></h2>
               </div>
 
+              {isAdmin && (
+                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 space-y-4 mb-8">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Post New Update</h3>
+                  <input 
+                    type="text"
+                    placeholder="Topic"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                    onChange={(e) => setNewsTopic(e.target.value)}
+                  />
+                  <input 
+                    type="text"
+                    placeholder="Title"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                    onChange={(e) => setNewsTitle(e.target.value)}
+                  />
+                  <textarea 
+                    placeholder="Description"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                    onChange={(e) => setNewsDescription(e.target.value)}
+                  />
+                  <button 
+                    onClick={handlePostNews}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-3 rounded-lg transition-all"
+                  >
+                    Post Update
+                  </button>
+                </div>
+              )}
+
+              {isAdmin && (
+                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 space-y-4 mb-8">
+                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Post New Update</h3>
+                  <input 
+                    type="text"
+                    placeholder="Topic"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                    onChange={(e) => setNewsTopic(e.target.value)}
+                  />
+                  <input 
+                    type="text"
+                    placeholder="Title"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                    onChange={(e) => setNewsTitle(e.target.value)}
+                  />
+                  <textarea 
+                    placeholder="Description"
+                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
+                    onChange={(e) => setNewsDescription(e.target.value)}
+                  />
+                  <button 
+                    onClick={handlePostNews}
+                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-3 rounded-lg transition-all"
+                  >
+                    Post Update
+                  </button>
+                </div>
+              )}
+
               <div className="space-y-4">
                 {NEWS_POSTS.map((post) => (
                   <motion.article
@@ -1957,7 +1987,11 @@ export default function App() {
                 </div>
               </div>
 
-              {Object.entries(matchesByDay).sort((a, b) => a[0].localeCompare(b[0])).map(([day, dayMatches]) => (
+              {Object.entries(matchesByDay).sort((a, b) => {
+                    if (a[0].includes('28th March')) return -1;
+                    if (b[0].includes('28th March')) return 1;
+                    return a[0].localeCompare(b[0]);
+                  }).map(([day, dayMatches]) => (
                 <div key={day} ref={day === firstUpcomingDay ? upcomingRef : null} className="space-y-6">
                   <div className="flex items-center gap-4">
                     <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-blue-500/30" />
@@ -2009,15 +2043,15 @@ export default function App() {
                               <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
                             </div>
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : (day === '27th March 2026' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : ((day === '27th March 2026' || day === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                             }`}>
-                              {day === '27th March 2026' && match.status !== 'finished' && (
+                              {(day === '27th March 2026' || day === '28th March 2026') && match.status !== 'finished' && (
                                 <span className="relative flex h-1.5 w-1.5">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
                                 </span>
                               )}
-                              {match.status === 'finished' ? 'Final' : (day === '27th March 2026' ? 'Ongoing' : 'Upcoming')}
+                              {match.status === 'finished' ? 'Final' : ((day === '27th March 2026' || day === '28th March 2026') ? 'Ongoing' : 'Upcoming')}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
@@ -2231,7 +2265,7 @@ export default function App() {
           )}
         </AnimatePresence>
         <section className="p-8 border-t border-white/10 bg-white/5">
-          <h2 className="font-display text-3xl font-black uppercase italic tracking-tight mb-8">Latest News</h2>
+          <h2 className="font-display text-3xl font-black uppercase italic tracking-tight mb-8">Tournament Glimpse</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {news.map(n => (
               <div key={n.id} className="bg-[#000040] border border-white/10 rounded-2xl p-6 space-y-3">
