@@ -57,6 +57,10 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Messi', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 53, passAccuracy: 88, fouls: 1, offsides: 1 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 75, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "SONU") {
+        homeScore = 0; awayScore = 0; status = 'finished';
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 49, passAccuracy: 82, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 1, possession: 51, passAccuracy: 79, fouls: 1, offsides: 0 };
       }
     }
 
@@ -168,6 +172,13 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 
 const NEWS_POSTS = [
   {
+    id: 10,
+    title: "STALEMATE FOR SONU AND SOUMAJIT",
+    excerpt: "A defensive masterclass from both sides results in a 0-0 draw. Scoring opportunities were rare in this Matchday 1 clash.",
+    date: "27th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 9,
     title: "ARYAN AND SONU SHARE POINTS",
     excerpt: "A tactical battle between Aryan Sarkar and Sonu Mandal ends in a 1-1 draw, with Messi and Ronaldo both finding the net.",
@@ -183,8 +194,8 @@ const NEWS_POSTS = [
   },
   {
     id: 4,
-    title: "MATCHDAY 1: 6/12 COMPLETED",
-    excerpt: "The tournament is in full swing with 6 matches completed. 6 more high-stakes fixtures remain for today.",
+    title: "MATCHDAY 1: 7/16 COMPLETED",
+    excerpt: "The tournament is in full swing with 7 matches completed. 9 more high-stakes fixtures remain for today.",
     date: "27th March 2026",
     category: "TOURNAMENT STATUS"
   },
