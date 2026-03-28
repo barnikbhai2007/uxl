@@ -1,26 +1,26 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import * as admin from "firebase-admin";
+import { initializeApp } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Firebase Admin
-admin.initializeApp({
+initializeApp({
   projectId: firebaseConfig.projectId
 });
 
 // Firestore initialization (Admin SDK)
 // Note: Server-side writes are disabled due to IAM cross-project issues.
 // We keep the initialization for potential future use or reading if permissions allow.
-const db = new admin.firestore.Firestore({
-  projectId: firebaseConfig.projectId,
-  databaseId: firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
+const db = getFirestore(
+  firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
     ? firebaseConfig.firestoreDatabaseId 
     : undefined
-});
+);
 
 console.log(`Firestore initialized for project: ${firebaseConfig.projectId}, database: ${firebaseConfig.firestoreDatabaseId || '(default)'}`);
 

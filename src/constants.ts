@@ -52,6 +52,8 @@ export interface RawMatch {
   home: string;
   matchday: number;
   type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
+  rescheduled?: boolean;
+  matchNumber?: number;
 }
 
 export const TOURNAMENT_SCHEDULE: RawMatch[] = [
@@ -75,12 +77,12 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
 
   // Matchday 2
   { away: "BARNIK", home: "SAYANTAN", matchday: 2 },
-  { away: "RAJAT", home: "RANAJAY", matchday: 2 },
+  { away: "RAJAT", home: "RANAJAY", matchday: 2, rescheduled: true },
   { away: "ABHROJEET", home: "SAMRIDDHA", matchday: 2 },
   { away: "SAGNIK", home: "SOUMAJIT", matchday: 2 },
   { away: "PRITAM", home: "SAGNIK", matchday: 2 },
   { away: "ABHROJEET", home: "ANIMESH", matchday: 2 },
-  { away: "PRIYAM", home: "RANAJAY", matchday: 2 },
+  { away: "PRIYAM", home: "RANAJAY", matchday: 2, rescheduled: true },
   { away: "AYUSH", home: "PRIYAM", matchday: 2 },
   { away: "DIBYAJOTI", home: "RAJAT", matchday: 2 },
   { away: "DIBYAJOTI", home: "SOUMAJIT", matchday: 2 },
@@ -90,6 +92,8 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "ARYAN", home: "BARNIK", matchday: 2 },
   { away: "ARYAN", home: "SAYANTAN", matchday: 2 },
   { away: "ANIMESH", home: "SONU", matchday: 2 },
+  { away: "RAJAT", home: "RANAJAY", matchday: 3, rescheduled: true, matchNumber: 18 },
+  { away: "PRIYAM", home: "RANAJAY", matchday: 3, rescheduled: true, matchNumber: 23 },
 
   // Matchday 3
   { away: "RANAJAY", home: "SAYANTAN", matchday: 3 },

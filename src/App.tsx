@@ -215,7 +215,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
 
     return {
       id: `m-${index + 1}`,
-      matchNumber: index + 1,
+      matchNumber: sm.matchNumber || index + 1,
       homeTeamId: homeTeam?.id || 'TBD',
       awayTeamId: awayTeam?.id || 'TBD',
       homeScore,
@@ -225,8 +225,9 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       homeStats,
       awayStats,
       date: getMatchdayDate(sm.matchday),
-      status,
+      status: (sm.rescheduled && sm.matchday <= 2) ? 'rescheduled' : status,
       type: sm.type,
+      rescheduled: sm.rescheduled,
     };
   });
 };
@@ -704,16 +705,25 @@ const NEWS_POSTS = [
                   <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
                   <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
                 </div>
+                {match.rescheduled && match.status !== 'rescheduled' && (
+                  <div className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-orange-400 mb-2">
+                    Rescheduled Match
+                  </div>
+                )}
                 <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
+                  match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
+                  ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                 }`}>
-                  {(match.date === '27th March 2026' || match.date === '28th March 2026') && match.status !== 'finished' && (
+                  {(match.date === '27th March 2026' || match.date === '28th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                     </span>
                   )}
-                  {match.status === 'finished' ? 'Final Result' : ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'Ongoing' : 'Match Scheduled')}
+                  {match.status === 'finished' ? 'Final Result' : 
+                   match.status === 'rescheduled' ? 'Rescheduled' :
+                   ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'Ongoing' : 'Match Scheduled')}
                 </div>
               </div>
 
@@ -2282,16 +2292,25 @@ export default function App() {
                               </div>
                             )}
 
+                            {match.rescheduled && match.status !== 'rescheduled' && (
+                              <div className="text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-orange-400 mb-1">
+                                Rescheduled
+                              </div>
+                            )}
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : ((day === '27th March 2026' || day === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
+                              match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
+                              ((day === '27th March 2026' || day === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                             }`}>
-                              {(day === '27th March 2026' || day === '28th March 2026') && match.status !== 'finished' && (
+                              {(day === '27th March 2026' || day === '28th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
                                 <span className="relative flex h-1.5 w-1.5">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
                                 </span>
                               )}
-                              {match.status === 'finished' ? 'Final' : ((day === '27th March 2026' || day === '28th March 2026') ? 'Ongoing' : 'Upcoming')}
+                              {match.status === 'finished' ? 'Final' : 
+                               match.status === 'rescheduled' ? 'Rescheduled' :
+                               ((day === '27th March 2026' || day === '28th March 2026') ? 'Ongoing' : 'Upcoming')}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
