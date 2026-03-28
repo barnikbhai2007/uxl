@@ -125,6 +125,47 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       }
     }
 
+    // Inject results from images (Matchday 2)
+    if (sm.matchday === 2) {
+      if (sm.home === "SAGNICK" && sm.away === "AYUSH") {
+        homeScore = 0; awayScore = 4; status = 'finished';
+        awayScorers = [{ playerName: 'Raphinha', goals: 1 }, { playerName: 'Garrincha', goals: 2 }, { playerName: 'Park Ji Sung', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 44, passAccuracy: 76, fouls: 0, offsides: 0 };
+        awayStats = { shots: 7, shotsOnTarget: 7, possession: 56, passAccuracy: 90, fouls: 0, offsides: 0 };
+      } else if (sm.home === "PRIYAM" && sm.away === "AYUSH") {
+        homeScore = 1; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Bale', goals: 1 }];
+        awayScorers = [{ playerName: 'Dembélé', goals: 2 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 48, passAccuracy: 91, fouls: 1, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 52, passAccuracy: 70, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNICK" && sm.away === "PRITAM") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Messi', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 44, passAccuracy: 76, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 4, possession: 56, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "DIBYAJOTI") {
+        homeScore = 5; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Cantona', goals: 4 }, { playerName: 'Rice', goals: 1 }];
+        homeStats = { shots: 7, shotsOnTarget: 7, possession: 49, passAccuracy: 90, fouls: 0, offsides: 0 };
+        awayStats = { shots: 3, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNIK" && sm.away === "PRITAM") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 86, fouls: 0, offsides: 1 };
+        awayStats = { shots: 7, shotsOnTarget: 5, possession: 53, passAccuracy: 84, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "SAGNIK") {
+        homeScore = 5; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Cantona', goals: 2 }, { playerName: 'Gullit', goals: 2 }, { playerName: 'Musiala', goals: 1 }];
+        homeStats = { shots: 6, shotsOnTarget: 6, possession: 49, passAccuracy: 85, fouls: 1, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "ARYAN") {
+        homeScore = 0; awayScore = 6; status = 'finished';
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Vini Jr.', goals: 3 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 56, fouls: 0, offsides: 1 };
+        awayStats = { shots: 9, shotsOnTarget: 9, possession: 53, passAccuracy: 77, fouls: 1, offsides: 0 };
+      }
+    }
+
     return {
       id: `m-${index + 1}`,
       matchNumber: index + 1,
@@ -278,6 +319,55 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 27,
+    title: "ARYAN SARKAR OBLITERATES SAYANTAN",
+    excerpt: "In a dominant display, Aryan Sarkar secures a massive 6-0 victory over Sayantan Paul. Vini Jr. was clinical with a hat-trick, supported by a brace from C. Ronaldo.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 26,
+    title: "SOUMAJIT BISWAS CRUSHES SAGNIK KUNDU",
+    excerpt: "Soumajit Biswas continues his fine form with a 5-0 win over Sagnik Kundu. Cantona and Gullit both scored twice in the rout.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 25,
+    title: "PRITAM GHOSH SECURES SECOND WIN OF THE DAY",
+    excerpt: "Pritam Ghosh defeats Sagnik Kundu 2-0, with C. Ronaldo netting both goals in a professional performance.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 24,
+    title: "SOUMAJIT BISWAS DOMINATES DIBYAJOTI",
+    excerpt: "Soumajit Biswas puts on a masterclass, defeating Dibyajyoti Sarkar 5-0. Cantona was the star of the show with four goals.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 23,
+    title: "PRITAM GHOSH DEFEATS SAGNICK ROY",
+    excerpt: "Pritam Ghosh secures a solid 2-0 victory over Sagnick Roy. Lamine Yamal and Messi provided the goals in a controlled display.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 22,
+    title: "AYUSH SAHA EDGES PRIYAM PAUL",
+    excerpt: "In a closely contested match, Ayush Saha secures a 2-1 win over Priyam Paul. Dembélé's brace was enough to overcome Bale's strike.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 21,
+    title: "AYUSH SAHA CLINICAL AGAINST SAGNICK",
+    excerpt: "Ayush Saha starts Matchday 2 with a convincing 4-0 win over Sagnick Roy. Garrincha's double led the way for the Raiganj Mafias star.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
   {
     id: 20,
     title: "PRITAM EDGES OUT DIBYAJOTI",
@@ -511,15 +601,15 @@ const NEWS_POSTS = [
                   <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
                 </div>
                 <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : (match.date === '27th March 2026' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                 }`}>
-                  {match.date === '27th March 2026' && match.status !== 'finished' && (
+                  {(match.date === '27th March 2026' || match.date === '28th March 2026') && match.status !== 'finished' && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                     </span>
                   )}
-                  {match.status === 'finished' ? 'Final Result' : (match.date === '27th March 2026' ? 'Ongoing' : 'Match Scheduled')}
+                  {match.status === 'finished' ? 'Final Result' : ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'Ongoing' : 'Match Scheduled')}
                 </div>
               </div>
 
@@ -780,6 +870,7 @@ const NEWS_POSTS = [
   };
 
   const AdminModal = ({ 
+    isAdmin,
     onClose, 
     adminMatchday, 
     setAdminMatchday, 
@@ -805,6 +896,7 @@ const NEWS_POSTS = [
     isPostingNews,
     handlePostNews
   }: { 
+    isAdmin: boolean,
     onClose: () => void,
     adminMatchday: string | number,
     setAdminMatchday: (val: string | number) => void,
@@ -906,7 +998,7 @@ const NEWS_POSTS = [
                   <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl mb-6">
                     <span className="text-xs font-bold text-white">Show Results</span>
                     <button 
-                      onClick={() => updateSession(activeSession.id, { showResults: !activeSession.showResults })}
+                      onClick={handleToggleResults}
                       className={`w-12 h-6 rounded-full transition-all ${activeSession.showResults ? 'bg-green-500' : 'bg-white/10'}`}
                     >
                       <div className={`w-4 h-4 rounded-full bg-white transition-all ${activeSession.showResults ? 'ml-7' : 'ml-1'}`} />
@@ -981,6 +1073,63 @@ const NEWS_POSTS = [
                   </div>
                 </div>
               </>
+            )}
+            {activeTab === 'news' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Topic</label>
+                    <select 
+                      value={newsTopic}
+                      onChange={(e) => setNewsTopic(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                    >
+                      <option value="Matchday Discussion" className="bg-[#000040]">Matchday Discussion</option>
+                      <option value="Tournament Update" className="bg-[#000040]">Tournament Update</option>
+                      <option value="Player Spotlight" className="bg-[#000040]">Player Spotlight</option>
+                      <option value="General News" className="bg-[#000040]">General News</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Date</label>
+                    <input 
+                      type="text"
+                      value={newsDate}
+                      onChange={(e) => setNewsDate(e.target.value)}
+                      placeholder="e.g. 2026-03-28"
+                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Title</label>
+                  <input 
+                    type="text"
+                    value={newsTitle}
+                    onChange={(e) => setNewsTitle(e.target.value)}
+                    placeholder="Enter news title"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Description</label>
+                  <textarea 
+                    value={newsDescription}
+                    onChange={(e) => setNewsDescription(e.target.value)}
+                    placeholder="Enter news description"
+                    rows={4}
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all resize-none"
+                  />
+                </div>
+                <button 
+                  onClick={handlePostNews}
+                  disabled={isPostingNews}
+                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all shadow-lg shadow-blue-600/20"
+                >
+                  {isPostingNews ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                  Post Update
+                </button>
+              </div>
             )}
           </div>
 
@@ -1753,66 +1902,8 @@ export default function App() {
             >
               <div className="flex items-center gap-4 mb-8">
                 <Newspaper className="w-6 h-6 text-blue-400" />
-                <h2 className="text-2xl font-black uppercase italic tracking-tighter">Tournament <span className="text-blue-400">Glimpse</span></h2>
+                <h2 className="text-2xl font-black uppercase italic tracking-tighter">Latest <span className="text-blue-400">Updates</span></h2>
               </div>
-
-              {isAdmin && (
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 space-y-4 mb-8">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Post New Update</h3>
-                  <input 
-                    type="text"
-                    placeholder="Topic"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
-                    onChange={(e) => setNewsTopic(e.target.value)}
-                  />
-                  <input 
-                    type="text"
-                    placeholder="Title"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
-                    onChange={(e) => setNewsTitle(e.target.value)}
-                  />
-                  <textarea 
-                    placeholder="Description"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
-                    onChange={(e) => setNewsDescription(e.target.value)}
-                  />
-                  <button 
-                    onClick={handlePostNews}
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-3 rounded-lg transition-all"
-                  >
-                    Post Update
-                  </button>
-                </div>
-              )}
-
-              {isAdmin && (
-                <div className="bg-white/5 p-6 rounded-2xl border border-white/10 space-y-4 mb-8">
-                  <h3 className="text-sm font-black uppercase tracking-widest text-white">Post New Update</h3>
-                  <input 
-                    type="text"
-                    placeholder="Topic"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
-                    onChange={(e) => setNewsTopic(e.target.value)}
-                  />
-                  <input 
-                    type="text"
-                    placeholder="Title"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
-                    onChange={(e) => setNewsTitle(e.target.value)}
-                  />
-                  <textarea 
-                    placeholder="Description"
-                    className="w-full bg-white/5 border border-white/10 rounded-lg p-3 text-white"
-                    onChange={(e) => setNewsDescription(e.target.value)}
-                  />
-                  <button 
-                    onClick={handlePostNews}
-                    className="w-full bg-blue-600 hover:bg-blue-500 text-white font-black uppercase tracking-widest py-3 rounded-lg transition-all"
-                  >
-                    Post Update
-                  </button>
-                </div>
-              )}
 
               <div className="space-y-4">
                 {NEWS_POSTS.map((post) => (
@@ -2264,19 +2355,6 @@ export default function App() {
             </motion.div>
           )}
         </AnimatePresence>
-        <section className="p-8 border-t border-white/10 bg-white/5">
-          <h2 className="font-display text-3xl font-black uppercase italic tracking-tight mb-8">Tournament Glimpse</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {news.map(n => (
-              <div key={n.id} className="bg-[#000040] border border-white/10 rounded-2xl p-6 space-y-3">
-                <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">{n.topic}</span>
-                <h3 className="font-display text-xl font-black uppercase italic tracking-tight text-white">{n.title}</h3>
-                <p className="text-xs text-white/60">{n.date}</p>
-                <p className="text-sm text-white/80">{n.description}</p>
-              </div>
-            ))}
-          </div>
-        </section>
       </main>
 
       {/* Floating Vote Button / Winner Reveal */}
@@ -2350,6 +2428,7 @@ export default function App() {
         )}
         {isAdminModalOpen && (
           <AdminModal 
+            isAdmin={isAdmin}
             onClose={() => setIsAdminModalOpen(false)} 
             adminMatchday={adminMatchday}
             setAdminMatchday={setAdminMatchday}
