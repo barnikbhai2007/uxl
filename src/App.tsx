@@ -713,9 +713,9 @@ const NEWS_POSTS = [
                 <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
                   match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
                   match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                  ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                  ((match.date === '27th March 2026' || match.date === '28th March 2026' || match.date === '29th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                 }`}>
-                  {(match.date === '27th March 2026' || match.date === '28th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
+                  {(match.date === '27th March 2026' || match.date === '28th March 2026' || match.date === '29th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
@@ -723,7 +723,7 @@ const NEWS_POSTS = [
                   )}
                   {match.status === 'finished' ? 'Final Result' : 
                    match.status === 'rescheduled' ? 'Rescheduled' :
-                   ((match.date === '27th March 2026' || match.date === '28th March 2026') ? 'Ongoing' : 'Match Scheduled')}
+                   ((match.date === '27th March 2026' || match.date === '28th March 2026' || match.date === '29th March 2026') ? 'Ongoing' : 'Match Scheduled')}
                 </div>
               </div>
 
@@ -2210,16 +2210,25 @@ export default function App() {
               </div>
 
               {Object.entries(matchesByDay).sort((a, b) => {
-                    if (a[0].includes('28th March')) return -1;
-                    if (b[0].includes('28th March')) return 1;
+                    const dateA = a[0];
+                    const dateB = b[0];
                     
-                    const isAprilA = a[0].includes('April');
-                    const isAprilB = b[0].includes('April');
+                    if (dateA === '29th March 2026') return -1;
+                    if (dateB === '29th March 2026') return 1;
+                    
+                    if (dateA === '27th March 2026') return -1;
+                    if (dateB === '27th March 2026') return 1;
+                    
+                    if (dateA === '28th March 2026') return -1;
+                    if (dateB === '28th March 2026') return 1;
+                    
+                    const isAprilA = dateA.includes('April');
+                    const isAprilB = dateB.includes('April');
                     if (isAprilA && !isAprilB) return 1;
                     if (!isAprilA && isAprilB) return -1;
                     
-                    const dayA = parseInt(a[0]);
-                    const dayB = parseInt(b[0]);
+                    const dayA = parseInt(dateA);
+                    const dayB = parseInt(dateB);
                     return dayA - dayB;
                   }).map(([day, dayMatches]) => (
                 <div key={day} ref={day === firstUpcomingDay ? upcomingRef : null} className="space-y-6">
@@ -2300,9 +2309,9 @@ export default function App() {
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
                               match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                              ((day === '27th March 2026' || day === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                              ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                             }`}>
-                              {(day === '27th March 2026' || day === '28th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
+                              {(day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
                                 <span className="relative flex h-1.5 w-1.5">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
@@ -2310,7 +2319,7 @@ export default function App() {
                               )}
                               {match.status === 'finished' ? 'Final' : 
                                match.status === 'rescheduled' ? 'Rescheduled' :
-                               ((day === '27th March 2026' || day === '28th March 2026') ? 'Ongoing' : 'Upcoming')}
+                               ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026') ? 'Ongoing' : 'Upcoming')}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
