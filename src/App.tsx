@@ -57,8 +57,8 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 53, passAccuracy: 78, fouls: 1, offsides: 0 };
       } else if (sm.home === "SONU" && sm.away === "ARYAN") {
         homeScore = 1; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
-        awayScorers = [{ playerName: 'Messi', goals: 1 }];
+        homeScorers = [{ playerName: 'Messi', goals: 1 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 53, passAccuracy: 88, fouls: 1, offsides: 1 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 75, fouls: 0, offsides: 0 };
       } else if (sm.home === "SOUMAJIT" && sm.away === "SONU") {
@@ -99,7 +99,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       } else if (sm.home === "SAYANTAN" && sm.away === "ANIMESH") {
         homeScore = 0; awayScore = 8; status = 'finished';
         awayScorers = [
-          { playerName: 'C. Ronaldo', goals: 2 },
+          { playerName: 'C. Ronaldo', goals: 4 },
           { playerName: 'Berghuis', goals: 1 },
           { playerName: 'Zieliński', goals: 1 },
           { playerName: 'Al Dawsari', goals: 1 },
@@ -163,6 +163,24 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Vini Jr.', goals: 3 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 56, fouls: 0, offsides: 1 };
         awayStats = { shots: 9, shotsOnTarget: 9, possession: 53, passAccuracy: 77, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "SAMRIDDHA") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Mbappé', goals: 2 }];
+        awayScorers = [{ playerName: 'Hazard', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 62, passAccuracy: 90, fouls: 1, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 38, passAccuracy: 73, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "ANIMESH") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Völler', goals: 1 }, { playerName: 'Al Owairan', goals: 1 }];
+        awayScorers = [{ playerName: 'Mbeumo', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 2, possession: 55, passAccuracy: 83, fouls: 1, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 45, passAccuracy: 77, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAMRIDDHA" && sm.away === "ABHROJEET") {
+        homeScore = 5; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Zico', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }, { playerName: 'Hazard', goals: 1 }, { playerName: 'Kane', goals: 1 }];
+        awayScorers = [{ playerName: 'Dembélé', goals: 1 }];
+        homeStats = { shots: 11, shotsOnTarget: 11, possession: 46, passAccuracy: 83, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 54, passAccuracy: 70, fouls: 0, offsides: 0 };
       }
     }
 
@@ -320,6 +338,34 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
+    id: 31,
+    title: "SONU MANDAL: THE GIANT KILLER",
+    excerpt: "In a shocking Matchday 2 upset, Sonu Mandal takes down the heavyweight Animesh with a clinical 2-1 victory. Völler and Al Owairan provided the magic, ending Animesh's unbeaten run.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 30,
+    title: "ZICO'S SYMPHONY: SAMRIDDHA'S REDEMPTION",
+    excerpt: "After a narrow loss to Sonu, Samriddha Mandal unleashed a 5-1 demolition on Abhrojeet. Zico's brace was a masterclass in finishing, proving Samriddha is still a top-tier title contender.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 29,
+    title: "MBAPPÉ'S ARRIVAL: SONU SINKS SAMRIDDHA",
+    excerpt: "Kylian Mbappé has officially arrived in the Kolkata XI. His clinical brace was the difference as Sonu Mandal edged out Samriddha in a tactical battle that left fans breathless.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 28,
+    title: "SONU MANDAL EDGES SAMRIDDHA IN TIGHT CLASH",
+    excerpt: "Sonu Mandal secures a hard-fought 2-1 victory over Samriddha Mandal. A brace from Mbappé was the difference, despite Hazard's goal for Samriddha.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
     id: 27,
     title: "ARYAN SARKAR OBLITERATES SAYANTAN",
     excerpt: "In a dominant display, Aryan Sarkar secures a massive 6-0 victory over Sayantan Paul. Vini Jr. was clinical with a hat-trick, supported by a brace from C. Ronaldo.",
@@ -441,7 +487,7 @@ const NEWS_POSTS = [
   {
     id: 9,
     title: "ARYAN AND SONU SHARE POINTS",
-    excerpt: "A tactical battle between Aryan Sarkar and Sonu Mandal ends in a 1-1 draw, with Messi and Ronaldo both finding the net.",
+    excerpt: "A tactical battle between Aryan Sarkar and Sonu Mandal ends in a 1-1 draw, with C. Ronaldo and Messi both finding the net.",
     date: "27th March 2026",
     category: "MATCH REPORT"
   },
