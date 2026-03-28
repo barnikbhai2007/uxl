@@ -51,6 +51,7 @@ export interface RawMatch {
   away: string;
   home: string;
   matchday: number;
+  type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
 }
 
 export const TOURNAMENT_SCHEDULE: RawMatch[] = [
@@ -125,14 +126,28 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "ANIMESH", home: "BARNIK", matchday: 4 },
   { away: "RANAJAY", home: "SAGNICK", matchday: 4 },
   { away: "SAGNICK", home: "SAYANTAN", matchday: 4 },
+  { away: "DIBYAJOTI", home: "SAYANTAN", matchday: 4 },
+  { away: "ABHROJEET", home: "SAGNIK", matchday: 4 },
+  { away: "ANIMESH", home: "SOUMAJIT", matchday: 4 },
+  { away: "RAJAT", home: "SAGNICK", matchday: 4 },
+  { away: "ARYAN", home: "AYUSH", matchday: 4 },
+  { away: "BARNIK", home: "SAMRIDDHA", matchday: 4 },
+  { away: "PRITAM", home: "RANAJAY", matchday: 4 },
+  { away: "PRIYAM", home: "SONU", matchday: 4 },
 
-  // Matchday 5
-  { away: "DIBYAJOTI", home: "SAYANTAN", matchday: 5 },
-  { away: "ABHROJEET", home: "SAGNIK", matchday: 5 },
-  { away: "ANIMESH", home: "SOUMAJIT", matchday: 5 },
-  { away: "RAJAT", home: "SAGNICK", matchday: 5 },
-  { away: "ARYAN", home: "AYUSH", matchday: 5 },
-  { away: "BARNIK", home: "SAMRIDDHA", matchday: 5 },
-  { away: "PRITAM", home: "RANAJAY", matchday: 5 },
-  { away: "PRIYAM", home: "SONU", matchday: 5 },
+  // Matchday 5 - 31st March (Qualifiers & Quarterfinals)
+  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 1
+  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 2
+  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 3
+  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 4
+  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 1
+  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 2
+  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 3
+  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 4
+
+  // Matchday 6 - 1st April (Semis, 3rd Place & Final)
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal' }, // Semi-final 1
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal' }, // Semi-final 2
+  { away: "TBD", home: "TBD", matchday: 6, type: 'thirdplace' }, // 3rd Place Match
+  { away: "TBD", home: "TBD", matchday: 6, type: 'final' }, // Grand Final
 ];

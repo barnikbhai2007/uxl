@@ -10,6 +10,7 @@ import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, get
 
 // Static data mapping
 const getMatchdayDate = (matchday: number) => {
+  if (matchday === 6) return "1st April 2026";
   const day = 26 + matchday;
   return `${day}th March 2026`;
 };
@@ -138,6 +139,18 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Dembélé', goals: 2 }];
         homeStats = { shots: 1, shotsOnTarget: 1, possession: 48, passAccuracy: 91, fouls: 1, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 52, passAccuracy: 70, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RAJAT" && sm.away === "DIBYAJOTI") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Beckham', goals: 1 }, { playerName: 'Raphinha', goals: 1 }];
+        awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 34, passAccuracy: 81, fouls: 0, offsides: 0 };
+        awayStats = { shots: 6, shotsOnTarget: 4, possession: 66, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.home === "ANIMESH" && sm.away === "ABHROJEET") {
+        homeScore = 5; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'C. Ronaldo', goals: 3 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Al Dawsari', goals: 1 }];
+        awayScorers = [{ playerName: 'McTominay', goals: 1 }];
+        homeStats = { shots: 7, shotsOnTarget: 6, possession: 54, passAccuracy: 85, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 46, passAccuracy: 69, fouls: 1, offsides: 0 };
       } else if (sm.home === "SAGNICK" && sm.away === "PRITAM") {
         homeScore = 0; awayScore = 2; status = 'finished';
         awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Messi', goals: 1 }];
@@ -203,8 +216,8 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     return {
       id: `m-${index + 1}`,
       matchNumber: index + 1,
-      homeTeamId: homeTeam?.id || '',
-      awayTeamId: awayTeam?.id || '',
+      homeTeamId: homeTeam?.id || 'TBD',
+      awayTeamId: awayTeam?.id || 'TBD',
       homeScore,
       awayScore,
       homeScorers,
@@ -213,6 +226,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       awayStats,
       date: getMatchdayDate(sm.matchday),
       status,
+      type: sm.type,
     };
   });
 };
@@ -353,6 +367,20 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 35,
+    title: "ANIMESH CRUSHES ABHROJEET",
+    excerpt: "Animesh delivers a dominant performance, defeating Abhrojeet 5-1. C. Ronaldo was the star of the show with a magnificent hat-trick.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 34,
+    title: "RAJAT EDGES DIBYAJOTI",
+    excerpt: "In a closely contested Matchday 2 fixture, Rajat secures a 2-1 victory over Dibyajyoti. Beckham and Raphinha provided the goals for the winners.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
   {
     id: 33,
     title: "ARYAN SARKAR EDGES OUT BARNIK IN DEFENSIVE MASTERCLASS",
@@ -1700,7 +1728,15 @@ export default function App() {
   }, [matches, searchTerm, teams]);
 
   const firstUpcomingDay = useMemo(() => {
-    const days = Object.keys(matchesByDay).sort((a, b) => a.localeCompare(b));
+    const days = Object.keys(matchesByDay).sort((a, b) => {
+      const isAprilA = a.includes('April');
+      const isAprilB = b.includes('April');
+      if (isAprilA && !isAprilB) return 1;
+      if (!isAprilA && isAprilB) return -1;
+      const dayA = parseInt(a);
+      const dayB = parseInt(b);
+      return dayA - dayB;
+    });
     return days.find(day => matchesByDay[day].some(m => m.status !== 'finished'));
   }, [matchesByDay]);
 
@@ -2166,7 +2202,15 @@ export default function App() {
               {Object.entries(matchesByDay).sort((a, b) => {
                     if (a[0].includes('28th March')) return -1;
                     if (b[0].includes('28th March')) return 1;
-                    return a[0].localeCompare(b[0]);
+                    
+                    const isAprilA = a[0].includes('April');
+                    const isAprilB = b[0].includes('April');
+                    if (isAprilA && !isAprilB) return 1;
+                    if (!isAprilA && isAprilB) return -1;
+                    
+                    const dayA = parseInt(a[0]);
+                    const dayB = parseInt(b[0]);
+                    return dayA - dayB;
                   }).map(([day, dayMatches]) => (
                 <div key={day} ref={day === firstUpcomingDay ? upcomingRef : null} className="space-y-6">
                   <div className="flex items-center gap-4">
@@ -2186,7 +2230,14 @@ export default function App() {
                         <div 
                           key={match.id} 
                           onClick={() => setSelectedMatch(match)}
-                          className="group bg-white/5 border border-white/10 rounded-xl p-4 md:p-6 flex items-center justify-between hover:border-blue-500/50 transition-all duration-300 relative overflow-hidden cursor-pointer"
+                          className={`group bg-white/5 border rounded-xl p-4 md:p-6 flex items-center justify-between transition-all duration-300 relative overflow-hidden cursor-pointer ${
+                            match.type === 'qualifier' ? 'border-cyan-400/30 hover:border-cyan-400/60' :
+                            match.type === 'quarterfinal' ? 'border-indigo-400/30 hover:border-indigo-400/60' :
+                            match.type === 'semifinal' ? 'border-purple-400/30 hover:border-purple-400/60' :
+                            match.type === 'thirdplace' ? 'border-orange-400/30 hover:border-orange-400/60' :
+                            match.type === 'final' ? 'border-yellow-400/30 hover:border-yellow-400/60 shadow-[0_0_20px_rgba(234,179,8,0.1)]' :
+                            'border-white/10 hover:border-blue-500/50'
+                          }`}
                         >
                           {/* Decorative Corner Accents */}
                           <div className="absolute top-0 left-0 w-8 h-8 pointer-events-none">
@@ -2218,6 +2269,19 @@ export default function App() {
                               <span className="text-[8px] md:text-[9px] font-black text-blue-400/50 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match {match.matchNumber}</span>
                               <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
                             </div>
+                            
+                            {match.type && (
+                              <div className={`text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border ${
+                                match.type === 'qualifier' ? 'text-cyan-400 border-cyan-400/30 bg-cyan-400/5' :
+                                match.type === 'quarterfinal' ? 'text-indigo-400 border-indigo-400/30 bg-indigo-400/5' :
+                                match.type === 'semifinal' ? 'text-purple-400 border-purple-400/30 bg-purple-400/5' :
+                                match.type === 'thirdplace' ? 'text-orange-400 border-orange-400/30 bg-orange-400/5' :
+                                'text-yellow-400 border-yellow-400/30 bg-yellow-400/5'
+                              }`}>
+                                {match.type}
+                              </div>
+                            )}
+
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : ((day === '27th March 2026' || day === '28th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                             }`}>
@@ -2267,23 +2331,23 @@ export default function App() {
               className="w-full overflow-x-auto pb-8"
             >
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
-                {/* Round of 16 */}
-                <div className="flex flex-col justify-around gap-8">
-                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center">Round of 16</h3>
-                  {Array.from({ length: 8 }).map((_, i) => (
-                    <div key={`r16-${i}`} className="relative">
+                {/* Qualifier Round */}
+                <div className="flex flex-col justify-around gap-16">
+                  <h3 className="text-cyan-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-cyan-400/10 py-1 rounded border border-cyan-400/20">Qualifier Round</h3>
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <div key={`qual-${i}`} className="relative">
                       <div 
                         onClick={() => setSelectedMatch({
-                          id: `r16-${i}`,
+                          id: `qual-${i}`,
                           matchNumber: 100 + i,
-                          homeTeamId: '',
-                          awayTeamId: '',
+                          homeTeamId: 'TBD',
+                          awayTeamId: 'TBD',
                           homeScore: 0,
                           awayScore: 0,
-                          date: 'TBD',
+                          date: '31st March 2026',
                           status: 'scheduled'
                         })}
-                        className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                        className="w-48 bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-cyan-400/60 transition-all group/match relative"
                       >
                         <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
                           <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
@@ -2294,32 +2358,29 @@ export default function App() {
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                       </div>
-                      {/* Connector Line */}
-                      <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
-                      {i % 2 === 0 ? (
-                        <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+32px)] bg-white/20" />
-                      ) : null}
+                      {/* Connector Line - Straight to Quarterfinal */}
+                      <div className={`absolute -right-16 top-1/2 w-16 h-[1px] bg-white/20`} />
                     </div>
                   ))}
                 </div>
 
                 {/* Quarter Finals */}
                 <div className="flex flex-col justify-around gap-16">
-                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-xs mb-4 text-center">Quarter-Finals</h3>
+                  <h3 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-indigo-400/10 py-1 rounded border border-indigo-400/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => (
                     <div key={`qf-${i}`} className="relative">
                       <div 
                         onClick={() => setSelectedMatch({
                           id: `qf-${i}`,
                           matchNumber: 200 + i,
-                          homeTeamId: '',
-                          awayTeamId: '',
+                          homeTeamId: 'TBD',
+                          awayTeamId: 'TBD',
                           homeScore: 0,
                           awayScore: 0,
-                          date: 'TBD',
+                          date: '31st March 2026',
                           status: 'scheduled'
                         })}
-                        className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                        className="w-48 bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-indigo-400/60 transition-all group/match relative"
                       >
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
                           <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
@@ -2341,21 +2402,21 @@ export default function App() {
 
                 {/* Semi Finals */}
                 <div className="flex flex-col justify-around gap-32">
-                  <h3 className="text-blue-400 font-black uppercase tracking-widest text-xs mb-4 text-center">Semi-Finals</h3>
+                  <h3 className="text-purple-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-purple-400/10 py-1 rounded border border-purple-400/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => (
                     <div key={`sf-${i}`} className="relative">
                       <div 
                         onClick={() => setSelectedMatch({
                           id: `sf-${i}`,
                           matchNumber: 300 + i,
-                          homeTeamId: '',
-                          awayTeamId: '',
+                          homeTeamId: 'TBD',
+                          awayTeamId: 'TBD',
                           homeScore: 0,
                           awayScore: 0,
                           date: 'TBD',
                           status: 'scheduled'
                         })}
-                        className="w-48 bg-white/5 border border-white/10 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                        className="w-48 bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-purple-400/60 transition-all group/match relative"
                       >
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
                           <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Winner</span>
@@ -2375,22 +2436,23 @@ export default function App() {
                   ))}
                 </div>
 
-                {/* Final */}
-                <div className="flex flex-col justify-center gap-12">
+                {/* Final & 3rd Place */}
+                <div className="flex flex-col justify-center gap-16">
                   <div>
-                    <h3 className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center">Grand Final</h3>
+                    <h3 className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
                     <div 
                       onClick={() => setSelectedMatch({
                         id: 'final',
                         matchNumber: 400,
-                        homeTeamId: '',
-                        awayTeamId: '',
+                        homeTeamId: 'TBD',
+                        awayTeamId: 'TBD',
                         homeScore: 0,
                         awayScore: 0,
-                        date: 'TBD',
-                        status: 'scheduled'
+                        date: '1st April 2026',
+                        status: 'scheduled',
+                        type: 'final'
                       })}
-                      className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/30 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.1)] p-1 cursor-pointer hover:border-yellow-400 transition-all group/match relative"
+                      className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 cursor-pointer hover:border-yellow-400 transition-all group/match relative"
                     >
                       <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
                         <div className="p-4 flex justify-between items-center">
@@ -2406,27 +2468,30 @@ export default function App() {
                   </div>
 
                   <div>
-                    <h3 className="text-blue-400/50 font-black uppercase tracking-widest text-xs mb-4 text-center">3rd Place Match</h3>
+                    <h3 className="text-orange-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
                     <div 
                       onClick={() => setSelectedMatch({
-                        id: '3rd',
+                        id: 'third-place',
                         matchNumber: 399,
-                        homeTeamId: '',
-                        awayTeamId: '',
+                        homeTeamId: 'TBD',
+                        awayTeamId: 'TBD',
                         homeScore: 0,
                         awayScore: 0,
-                        date: 'TBD',
-                        status: 'scheduled'
+                        date: '1st April 2026',
+                        status: 'scheduled',
+                        type: 'thirdplace'
                       })}
-                      className="w-56 bg-white/5 border border-white/10 rounded-xl overflow-hidden shadow-lg cursor-pointer hover:border-blue-500/50 transition-all group/match relative"
+                      className="w-56 bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 cursor-pointer hover:border-orange-500/60 transition-all group/match relative"
                     >
-                      <div className="p-3 flex justify-between items-center text-sm relative z-10">
-                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors pr-1">Loser SF1</span>
-                        <span className="font-mono font-bold text-white/40">-</span>
-                      </div>
-                      <div className="p-3 flex justify-between items-center border-t border-white/5 text-sm">
-                        <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic group-hover/match:text-white/60 transition-colors pr-1">Loser SF2</span>
-                        <span className="font-mono font-bold text-white/40">-</span>
+                      <div className="bg-[#000020] rounded-lg overflow-hidden relative z-10">
+                        <div className="p-3 flex justify-between items-center">
+                          <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/20 group-hover/match:text-white/40 transition-colors pr-1">Loser SF1</span>
+                          <span className="font-mono font-bold text-lg">-</span>
+                        </div>
+                        <div className="p-3 flex justify-between items-center border-t border-white/5">
+                          <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/20 group-hover/match:text-white/40 transition-colors pr-1">Loser SF2</span>
+                          <span className="font-mono font-bold text-lg">-</span>
+                        </div>
                       </div>
                     </div>
                   </div>

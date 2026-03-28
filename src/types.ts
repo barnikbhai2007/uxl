@@ -44,6 +44,7 @@ export interface Match {
   awayStats?: MatchStats;
   date: string;
   status: 'scheduled' | 'live' | 'finished';
+  type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
 }
 
 export interface BracketMatch {
