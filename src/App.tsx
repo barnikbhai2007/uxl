@@ -6,7 +6,7 @@ import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc } from 'firebase/firestore';
 
 // Static data mapping
 const getMatchdayDate = (matchday: number) => {
@@ -181,6 +181,22 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Dembélé', goals: 1 }];
         homeStats = { shots: 11, shotsOnTarget: 11, possession: 46, passAccuracy: 83, fouls: 0, offsides: 0 };
         awayStats = { shots: 1, shotsOnTarget: 1, possession: 54, passAccuracy: 70, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "BARNIK") {
+        homeScore = 0; awayScore = 10; status = 'finished';
+        awayScorers = [
+          { playerName: 'Al Owairan', goals: 4 },
+          { playerName: 'Barcola', goals: 3 },
+          { playerName: 'Vidić', goals: 1 },
+          { playerName: 'Matheus Cunha', goals: 1 },
+          { playerName: 'Nesta', goals: 1 }
+        ];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 38, passAccuracy: 56, fouls: 0, offsides: 0 };
+        awayStats = { shots: 13, shotsOnTarget: 13, possession: 62, passAccuracy: 89, fouls: 0, offsides: 0 };
+      } else if (sm.home === "BARNIK" && sm.away === "ARYAN") {
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 52, passAccuracy: 84, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 48, passAccuracy: 86, fouls: 1, offsides: 1 };
       }
     }
 
@@ -337,6 +353,20 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 33,
+    title: "ARYAN SARKAR EDGES OUT BARNIK IN DEFENSIVE MASTERCLASS",
+    excerpt: "In a tightly contested battle, Aryan Sarkar (Baby_Aryanrox121) secured a vital 1-0 victory over Barnik. A 78th-minute strike from Vini Jr. was the only difference in a match dominated by tactical discipline.",
+    date: "28th March 2026",
+    category: "MATCH REPORT"
+  },
+  {
+    id: 32,
+    title: "HISTORIC HUMILIATION: BARNIK CRUSHES SAYANTAN 10-0!",
+    excerpt: "In a match that will be remembered for decades, Barnik (brokenaqua) delivered a masterclass performance, netting 10 goals against a helpless Sayantan. Al Owairan was the star with 4 goals, while Barcola secured a hat-trick in this unprecedented slaughter.",
+    date: "28th March 2026",
+    category: "BREAKING NEWS"
+  },
   {
     id: 31,
     title: "SONU MANDAL: THE GIANT KILLER",
@@ -931,14 +961,14 @@ const NEWS_POSTS = [
     handleEndVote,
     sessionVotes,
     totalVotes,
-    newsTopic,
-    setNewsTopic,
+    newsCategory,
+    setNewsCategory,
     newsDate,
     setNewsDate,
     newsTitle,
     setNewsTitle,
-    newsDescription,
-    setNewsDescription,
+    newsExcerpt,
+    setNewsExcerpt,
     isPostingNews,
     handlePostNews
   }: { 
@@ -957,14 +987,14 @@ const NEWS_POSTS = [
     handleEndVote: () => void,
     sessionVotes: Record<string, number>,
     totalVotes: number,
-    newsTopic: string,
-    setNewsTopic: (val: string) => void,
+    newsCategory: string,
+    setNewsCategory: (val: string) => void,
     newsDate: string,
     setNewsDate: (val: string) => void,
     newsTitle: string,
     setNewsTitle: (val: string) => void,
-    newsDescription: string,
-    setNewsDescription: (val: string) => void,
+    newsExcerpt: string,
+    setNewsExcerpt: (val: string) => void,
     isPostingNews: boolean,
     handlePostNews: () => void
   }) => {
@@ -1124,16 +1154,16 @@ const NEWS_POSTS = [
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Topic</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Category</label>
                     <select 
-                      value={newsTopic}
-                      onChange={(e) => setNewsTopic(e.target.value)}
+                      value={newsCategory}
+                      onChange={(e) => setNewsCategory(e.target.value)}
                       className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
                     >
-                      <option value="Matchday Discussion" className="bg-[#000040]">Matchday Discussion</option>
-                      <option value="Tournament Update" className="bg-[#000040]">Tournament Update</option>
-                      <option value="Player Spotlight" className="bg-[#000040]">Player Spotlight</option>
-                      <option value="General News" className="bg-[#000040]">General News</option>
+                      <option value="MATCH REPORT" className="bg-[#000040]">Match Report</option>
+                      <option value="TOURNAMENT UPDATE" className="bg-[#000040]">Tournament Update</option>
+                      <option value="PLAYER SPOTLIGHT" className="bg-[#000040]">Player Spotlight</option>
+                      <option value="BREAKING NEWS" className="bg-[#000040]">Breaking News</option>
                     </select>
                   </div>
                   <div className="space-y-2">
@@ -1142,7 +1172,7 @@ const NEWS_POSTS = [
                       type="text"
                       value={newsDate}
                       onChange={(e) => setNewsDate(e.target.value)}
-                      placeholder="e.g. 2026-03-28"
+                      placeholder="e.g. 28th March 2026"
                       className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
                     />
                   </div>
@@ -1158,11 +1188,11 @@ const NEWS_POSTS = [
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Description</label>
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Excerpt</label>
                   <textarea 
-                    value={newsDescription}
-                    onChange={(e) => setNewsDescription(e.target.value)}
-                    placeholder="Enter news description"
+                    value={newsExcerpt}
+                    onChange={(e) => setNewsExcerpt(e.target.value)}
+                    placeholder="Enter news excerpt"
                     rows={4}
                     className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all resize-none"
                   />
@@ -1285,28 +1315,30 @@ export default function App() {
   const [adminShowResults, setAdminShowResults] = useState(true);
   const [isSavingAdmin, setIsSavingAdmin] = useState(false);
   const [news, setNews] = useState<News[]>([]);
-  const [newsTopic, setNewsTopic] = useState('');
-  const [newsDate, setNewsDate] = useState('');
+  const [newsCategory, setNewsCategory] = useState('MATCH REPORT');
+  const [newsDate, setNewsDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
   const [newsTitle, setNewsTitle] = useState('');
-  const [newsDescription, setNewsDescription] = useState('');
+  const [newsExcerpt, setNewsExcerpt] = useState('');
   const [isPostingNews, setIsPostingNews] = useState(false);
 
   const handlePostNews = async () => {
     if (!isAdmin) return;
+    if (!newsTitle || !newsExcerpt) {
+      alert("Please fill in all fields.");
+      return;
+    }
     setIsPostingNews(true);
     try {
       const newsId = uuidv4();
       await setDoc(doc(db, 'news', newsId), {
         id: newsId,
-        topic: newsTopic,
+        category: newsCategory,
         date: newsDate,
         title: newsTitle,
-        description: newsDescription
+        excerpt: newsExcerpt
       });
-      setNewsTopic('');
-      setNewsDate('');
       setNewsTitle('');
-      setNewsDescription('');
+      setNewsExcerpt('');
       alert("News posted successfully!");
     } catch (error) {
       console.error("Error posting news:", error);
@@ -1329,16 +1361,23 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    if (news.length > 0 && !news.find(n => n.title === 'Matchday 1 Breakdown')) {
-      const newsId = uuidv4();
-      setDoc(doc(db, 'news', newsId), {
-        id: newsId,
-        topic: 'Matchday 1',
-        date: '2026-03-27',
-        title: 'Matchday 1 Breakdown',
-        description: 'Matchday 1 was full of surprises! Here is a breakdown of all the matches...'
-      }).catch(console.error);
-    }
+    const deleteSpecificNews = async () => {
+      if (!news.length) return;
+      const titlesToDelete = [
+        'Attack vs Defense Showdown – Match #24',
+        'Matchday 1 Breakdown',
+        '🔥 Pool 1 Power Takes Over'
+      ];
+      
+      for (const title of titlesToDelete) {
+        const q = query(collection(db, 'news'), where('title', '==', title));
+        const snapshot = await getDocs(q);
+        snapshot.forEach(async (document) => {
+          await deleteDoc(doc(db, 'news', document.id));
+        });
+      }
+    };
+    deleteSpecificNews();
   }, [news]);
 
   useEffect(() => {
@@ -1744,8 +1783,8 @@ export default function App() {
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
               { id: 'stats', label: 'Stats', icon: BarChart2 },
-              { id: 'hallOfFame', label: 'H.O.F', icon: Award },
               { id: 'news', label: 'News', icon: Newspaper },
+              { id: 'hallOfFame', label: 'H.O.F', icon: Award },
             ].map((tab) => (
               <button
                 key={tab.id}
@@ -1952,7 +1991,7 @@ export default function App() {
               </div>
 
               <div className="space-y-4">
-                {NEWS_POSTS.map((post) => (
+                {[...news, ...NEWS_POSTS].map((post) => (
                   <motion.article
                     key={post.id}
                     whileHover={{ x: 4 }}
@@ -2489,14 +2528,14 @@ export default function App() {
             handleEndVote={handleEndVote}
             sessionVotes={sessionVotes}
             totalVotes={totalVotes}
-            newsTopic={newsTopic}
-            setNewsTopic={setNewsTopic}
+            newsCategory={newsCategory}
+            setNewsCategory={setNewsCategory}
             newsDate={newsDate}
             setNewsDate={setNewsDate}
             newsTitle={newsTitle}
             setNewsTitle={setNewsTitle}
-            newsDescription={newsDescription}
-            setNewsDescription={setNewsDescription}
+            newsExcerpt={newsExcerpt}
+            setNewsExcerpt={setNewsExcerpt}
             isPostingNews={isPostingNews}
             handlePostNews={handlePostNews}
           />

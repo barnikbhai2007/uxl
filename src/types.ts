@@ -84,9 +84,9 @@ export interface Vote {
 }
 
 export interface News {
-  id: string;
-  topic: string;
+  id: string | number;
+  category: string;
   date: string;
   title: string;
-  description: string;
+  excerpt: string;
 }
