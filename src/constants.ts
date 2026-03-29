@@ -58,7 +58,7 @@ export interface RawMatch {
 }
 
 export const TOURNAMENT_SCHEDULE: RawMatch[] = [
-  // Matchday 1
+  // Matchday 1 - 27th March
   { away: "RAJAT", home: "SAMRIDDHA", matchday: 1 },
   { away: "ARYAN", home: "SONU", matchday: 1 },
   { away: "SAMRIDDHA", home: "SOUMAJIT", matchday: 1 },
@@ -76,12 +76,14 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "RAJAT", home: "BARNIK", matchday: 1 },
   { away: "RANAJAY", home: "BARNIK", matchday: 1 },
 
-  // Matchday 2
+  // Matchday 2 - 28th March
   { away: "BARNIK", home: "SAYANTAN", matchday: 2 },
+  { away: "RAJAT", home: "RANAJAY", matchday: 3, rescheduled: true },
   { away: "ABHROJEET", home: "SAMRIDDHA", matchday: 2 },
   { away: "SAGNIK", home: "SOUMAJIT", matchday: 2 },
   { away: "PRITAM", home: "SAGNIK", matchday: 2 },
   { away: "ABHROJEET", home: "ANIMESH", matchday: 2 },
+  { away: "PRIYAM", home: "RANAJAY", matchday: 3, rescheduled: true },
   { away: "AYUSH", home: "PRIYAM", matchday: 2 },
   { away: "DIBYAJOTI", home: "RAJAT", matchday: 2 },
   { away: "DIBYAJOTI", home: "SOUMAJIT", matchday: 2 },
@@ -91,10 +93,8 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "ARYAN", home: "BARNIK", matchday: 2 },
   { away: "ARYAN", home: "SAYANTAN", matchday: 2 },
   { away: "ANIMESH", home: "SONU", matchday: 2 },
-  { away: "RAJAT", home: "RANAJAY", matchday: 3, rescheduled: true, matchNumber: 18 },
-  { away: "PRIYAM", home: "RANAJAY", matchday: 3, rescheduled: true, matchNumber: 23 },
 
-  // Matchday 3
+  // Matchday 3 - 29th March
   { away: "SAYANTAN", home: "RANAJAY", matchday: 3 },
   { away: "ABHROJEET", home: "SAGNICK", matchday: 3 },
   { away: "AYUSH", home: "RANAJAY", matchday: 3 },
@@ -112,7 +112,7 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "PRIYAM", home: "SAYANTAN", matchday: 3 },
   { away: "AYUSH", home: "RAJAT", matchday: 3 },
 
-  // Matchday 4
+  // Matchday 4 - 30th March (Ongoing)
   { away: "AYUSH", home: "SOUMAJIT", matchday: 4 },
   { away: "BARNIK", home: "PRIYAM", matchday: 4 },
   { away: "RANAJAY", home: "SAMRIDDHA", matchday: 4 },

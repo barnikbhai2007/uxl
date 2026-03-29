@@ -1,18 +1,22 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, Newspaper, Vote as VoteIcon, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, Newspaper, Vote as VoteIcon, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote, News } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
 
 // Static data mapping
 const getMatchdayDate = (matchday: number) => {
+  if (matchday === 1) return "27th March 2026";
+  if (matchday === 2) return "28th March 2026";
+  if (matchday === 3) return "29th March 2026";
+  if (matchday === 4) return "30th March 2026";
+  if (matchday === 5) return "31st March 2026";
   if (matchday === 6) return "1st April 2026";
-  const day = 26 + matchday;
-  return `${day}th March 2026`;
+  return `${26 + matchday}th March 2026`;
 };
 
 const getMatchesFromSchedule = (teams: Team[]): Match[] => {
@@ -22,7 +26,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     
     let homeScore = 0;
     let awayScore = 0;
-    let status: 'scheduled' | 'live' | 'finished' = sm.matchday === 2 ? 'live' : 'scheduled';
+    let status: 'scheduled' | 'live' | 'finished' = (sm.matchday >= 1 && sm.matchday <= 4) ? 'live' : 'scheduled';
     let homeScorers: Scorer[] = [];
     let awayScorers: Scorer[] = [];
     let homeStats: Match['homeStats'];
@@ -302,10 +306,10 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeStats = { shots: 9, shotsOnTarget: 8, possession: 55, passAccuracy: 90, fouls: 0, offsides: 0 };
         awayStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 57, fouls: 1, offsides: 0 };
       } else if (sm.home === "SAGNICK" && sm.away === "ABHROJEET") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 1, possession: 48, passAccuracy: 75, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 3, possession: 52, passAccuracy: 82, fouls: 0, offsides: 0 };
+        homeScore = 3; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Bale', goals: 1 }];
+        homeStats = { shots: 8, shotsOnTarget: 6, possession: 58, passAccuracy: 88, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 0, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
       } else if (sm.home === "BARNIK" && sm.away === "SOUMAJIT") {
         homeScore = 1; awayScore = 0; status = 'finished';
         homeScorers = [{ playerName: 'Messi', goals: 1 }];
@@ -314,8 +318,33 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       }
     }
 
-    // Set Matchday 3 matches (29th March) to live if not finished
-    if (sm.matchday === 3 && status === 'scheduled') {
+    // Inject results from images (Matchday 4)
+    if (sm.matchday === 4) {
+      if (sm.home === "PRITAM" && sm.away === "ABHROJEET") {
+        homeScore = 8; awayScore = 0; status = 'finished';
+        homeScorers = [
+          { playerName: 'Lamine Yamal', goals: 3 },
+          { playerName: 'C. Ronaldo', goals: 1 },
+          { playerName: 'Saint-Maximin', goals: 1 },
+          { playerName: 'Messi', goals: 1 }
+        ];
+        homeStats = { shots: 12, shotsOnTarget: 11, possession: 63, passAccuracy: 78, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 0, possession: 37, passAccuracy: 68, fouls: 1, offsides: 0 };
+      } else if (sm.home === "PRITAM" && sm.away === "ARYAN") {
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
+        homeStats = { shots: 4, shotsOnTarget: 2, possession: 48, passAccuracy: 68, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 52, passAccuracy: 71, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SAGNIK" && sm.away === "ARYAN") {
+        homeScore = 0; awayScore = 3; status = 'finished';
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 78, fouls: 0, offsides: 0 };
+        awayStats = { shots: 7, shotsOnTarget: 5, possession: 52, passAccuracy: 72, fouls: 0, offsides: 0 };
+      }
+    }
+
+    // Set Matchday 4 matches (30th March) to live if not finished
+    if (sm.matchday === 4 && status === 'scheduled') {
       status = 'live';
     }
 
@@ -489,9 +518,49 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
+    id: 55,
+    title: "ARYAN'S 3-0 MASTERCLASS OVER SAGNIK",
+    excerpt: "Aryan Sarkar (Baby_Aryanrox121) continues his unstoppable run with a 3-0 victory over Sagnik. C. Ronaldo's brace and Al Owairan's strike secured another clean sheet and three points.",
+    date: "30th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 1000000
+  },
+  {
+    id: 54,
+    title: "PRITAM'S 8-0 DEMOLITION: LAMINE YAMAL HAT-TRICK",
+    excerpt: "In a record-equaling performance, Pritam Ghosh obliterated Abhrojeet 8-0. Lamine Yamal was the star with a clinical hat-trick, while Ronaldo, Messi, and Saint-Maximin also found the net.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 900000
+  },
+  {
+    id: 53,
+    title: "ARYAN EDGES PRITAM IN TOP-OF-TABLE CLASH",
+    excerpt: "In a tactical masterclass, Aryan Sarkar secured a vital 1-0 win over Pritam. Al Owairan's 31st-minute goal was enough to decide this high-stakes Matchday 4 encounter.",
+    date: "30th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 800000
+  },
+  {
+    id: 52,
+    title: "MATCHDAY 4 BEGINS: ARYAN AND PRITAM SET THE PACE",
+    excerpt: "Matchday 4 has kicked off with some explosive results. Aryan Sarkar cements his lead with two massive wins, while Pritam Ghosh bounces back from a loss with an 8-0 slaughter.",
+    date: "30th March 2026",
+    category: "TOURNAMENT UPDATE",
+    timestamp: Date.now() + 700000
+  },
+  {
+    id: 51,
+    title: "SAGNICK'S 3-0 CLINICAL WIN OVER ABHROJEET",
+    excerpt: "Sagnick Roy (AYU45) secured a vital 3-0 victory over Abhrojeet in Matchday 3. A dominant performance from start to finish, with Cruyff and Bale providing the clinical edge.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 600000
+  },
+  {
     id: 50,
     title: "MATCHDAY 3 BREAKDOWN: GOALS, DRAMA, AND DOMINANCE",
-    excerpt: "Matchday 3 has concluded with some of the most lopsided results in tournament history. From Sonu's and Ranajay's 8-0 demolitions to Aryan's continued dominance, the table is starting to take shape as we head into the next phase.",
+    excerpt: "Matchday 3 has concluded with some of the most lopsided results in tournament history. From Sonu's and Ranajay's 8-0 demolitions to Sagnick's 3-0 clinical win, the table is starting to take shape as we head into the next phase.",
     date: "29th March 2026",
     category: "TOURNAMENT UPDATE",
     timestamp: Date.now() + 500000 // Highest timestamp to be at top
@@ -1078,7 +1147,7 @@ const NEWS_POSTS = [
     isAdmin: boolean
   }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
-    const showResults = !session.isActive || isAdmin || (session.showResults ?? true);
+    const showResults = (session.showResults ?? true);
     const timeLeft = useMemo(() => {
       if (!session.endTime) return null;
       const end = session.endTime.toDate();
@@ -1519,14 +1588,18 @@ const NEWS_POSTS = [
                 {(activeSession.showResults ?? true) ? "Hide Results" : "Show Results"}
               </button>
             )}
-            {activeSession && activeSession.isActive && (
+            {activeSession && (
               <button 
                 onClick={handleEndVote}
                 disabled={isSavingAdmin}
-                className="md:w-1/3 bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400 rounded-2xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all"
+                className={`md:w-1/3 rounded-2xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all ${
+                  activeSession.isActive 
+                    ? "bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400" 
+                    : "bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400"
+                }`}
               >
-                {isSavingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : <X className="w-4 h-4" />}
-                End Vote
+                {isSavingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : (activeSession.isActive ? <X className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />)}
+                {activeSession.isActive ? "End Vote" : "Reset Vote"}
               </button>
             )}
           </div>
@@ -1649,6 +1722,38 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const seedNews = async () => {
+      const initialNews = [
+        {
+          id: 'news-md4-aryan-pritam',
+          category: 'Match Report',
+          date: '30th March 2026',
+          title: 'ARYAN Edges Past PRITAM in Tight Contest',
+          excerpt: 'A solitary goal from Al Owairan was enough for ARYAN to secure a crucial 1-0 victory over PRITAM in a closely fought Matchday 4 encounter.',
+          timestamp: Date.now() - 1000
+        },
+        {
+          id: 'news-md4-aryan-sagnik',
+          category: 'Match Report',
+          date: '30th March 2026',
+          title: 'ARYAN Dominates SAGNIK with 3-0 Win',
+          excerpt: 'C. Ronaldo bagged a brace and Al Owairan added another as ARYAN comfortably defeated SAGNIK 3-0, showcasing their attacking prowess.',
+          timestamp: Date.now()
+        }
+      ];
+
+      for (const article of initialNews) {
+        const docRef = doc(db, 'news', article.id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, article);
+        }
+      }
+    };
+    seedNews();
+  }, []);
+
+  useEffect(() => {
     const deleteSpecificNews = async () => {
       if (!news.length) return;
       const titlesToDelete = [
@@ -1712,14 +1817,22 @@ export default function App() {
     if (!isAdmin || !activeSession) return;
     setIsSavingAdmin(true);
     try {
-      await setDoc(doc(db, 'votingSessions', activeSession.id), {
-        ...activeSession,
-        isActive: false
-      });
-      setIsAdminModalOpen(false);
+      const newIsActive = !activeSession.isActive;
+      const updateData: any = {
+        isActive: newIsActive
+      };
+      
+      // If we are resetting the vote, hide results too
+      if (newIsActive) {
+        updateData.showResults = false;
+        setAdminShowResults(false);
+      }
+
+      await updateDoc(doc(db, 'votingSessions', activeSession.id), updateData);
+      // Don't close modal, just update status
     } catch (error) {
-      console.error("Error ending vote:", error);
-      alert("Failed to end vote.");
+      console.error("Error toggling vote status:", error);
+      alert("Failed to update vote status.");
     } finally {
       setIsSavingAdmin(false);
     }
@@ -1730,10 +1843,16 @@ export default function App() {
     setIsSavingAdmin(true);
     try {
       const newShowResults = !(activeSession.showResults ?? true);
-      await setDoc(doc(db, 'votingSessions', activeSession.id), {
-        ...activeSession,
+      const updateData: any = {
         showResults: newShowResults
-      });
+      };
+      
+      // If we are showing results, immediately end the vote
+      if (newShowResults) {
+        updateData.isActive = false;
+      }
+
+      await updateDoc(doc(db, 'votingSessions', activeSession.id), updateData);
       setAdminShowResults(newShowResults);
     } catch (error) {
       console.error("Error toggling results:", error);
@@ -1984,11 +2103,30 @@ export default function App() {
       if (!grouped[m.date]) grouped[m.date] = [];
       grouped[m.date].push(m);
     });
+    
+    // Sort matches within each day by matchNumber
+    Object.keys(grouped).forEach(day => {
+      grouped[day].sort((a, b) => a.matchNumber - b.matchNumber);
+    });
+    
     return grouped;
   }, [matches, searchTerm, teams]);
 
   const firstUpcomingDay = useMemo(() => {
     const days = Object.keys(matchesByDay).sort((a, b) => {
+      if (a === b) return 0;
+      if (a === '30th March 2026') return -1;
+      if (b === '30th March 2026') return 1;
+      
+      if (a === '27th March 2026') return -1;
+      if (b === '27th March 2026') return 1;
+      
+      if (a === '28th March 2026') return -1;
+      if (b === '28th March 2026') return 1;
+      
+      if (a === '29th March 2026') return -1;
+      if (b === '29th March 2026') return 1;
+      
       const isAprilA = a.includes('April');
       const isAprilB = b.includes('April');
       if (isAprilA && !isAprilB) return 1;
@@ -2489,14 +2627,18 @@ export default function App() {
                     const dateA = a[0];
                     const dateB = b[0];
                     
-                    if (dateA === '29th March 2026') return -1;
-                    if (dateB === '29th March 2026') return 1;
+                    if (dateA === dateB) return 0;
+                    if (dateA === '30th March 2026') return -1;
+                    if (dateB === '30th March 2026') return 1;
                     
                     if (dateA === '27th March 2026') return -1;
                     if (dateB === '27th March 2026') return 1;
                     
                     if (dateA === '28th March 2026') return -1;
                     if (dateB === '28th March 2026') return 1;
+                    
+                    if (dateA === '29th March 2026') return -1;
+                    if (dateB === '29th March 2026') return 1;
                     
                     const isAprilA = dateA.includes('April');
                     const isAprilB = dateB.includes('April');
@@ -2585,9 +2727,9 @@ export default function App() {
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
                               match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                              ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                              ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026' || day === '30th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
                             }`}>
-                              {(day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
+                              {(day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026' || day === '30th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
                                 <span className="relative flex h-1.5 w-1.5">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
@@ -2595,7 +2737,7 @@ export default function App() {
                               )}
                               {match.status === 'finished' ? 'Final' : 
                                match.status === 'rescheduled' ? 'Rescheduled' :
-                               ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026') ? 'Ongoing' : 'Upcoming')}
+                               ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026' || day === '30th March 2026') ? 'Ongoing' : 'Upcoming')}
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
