@@ -44,6 +44,7 @@ export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => {
     ga: 0,
     gd: 0,
     points: 0,
+    form: [],
   };
 });
 

@@ -236,7 +236,43 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Gullit', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 1, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
         awayStats = { shots: 6, shotsOnTarget: 2, possession: 58, passAccuracy: 85, fouls: 0, offsides: 2 };
+      } else if (sm.home === "SAMRIDDHA" && sm.away === "SAGNIK") {
+        homeScore = 5; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Kane', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }, { playerName: 'Zico', goals: 1 }, { playerName: 'Hazard', goals: 1 }];
+        homeStats = { shots: 8, shotsOnTarget: 8, possession: 54, passAccuracy: 83, fouls: 0, offsides: 1 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 46, passAccuracy: 87, fouls: 0, offsides: 2 };
+      } else if (sm.home === "SONU" && sm.away === "ABHROJEET") {
+        homeScore = 8; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Völler', goals: 2 }, { playerName: 'Al Owairan', goals: 3 }, { playerName: 'Kuyt', goals: 1 }];
+        homeStats = { shots: 9, shotsOnTarget: 9, possession: 56, passAccuracy: 93, fouls: 0, offsides: 2 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "DIBYAJOTI") {
+        homeScore = 2; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Völler', goals: 1 }, { playerName: 'Messi', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 45, passAccuracy: 79, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 1, possession: 55, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "PRIYAM" && sm.away === "PRITAM") {
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'Messi', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 55, passAccuracy: 77, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "PRIYAM") {
+        homeScore = 0; awayScore = 7; status = 'finished';
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 3 }, { playerName: 'Bale', goals: 1 }, { playerName: 'Cruyff', goals: 1 }, { playerName: 'Scholes', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 63, fouls: 0, offsides: 0 };
+        awayStats = { shots: 13, shotsOnTarget: 10, possession: 57, passAccuracy: 78, fouls: 1, offsides: 0 };
+      } else if (sm.home === "RANAJAY" && sm.away === "PRIYAM") {
+        homeScore = 3; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Nesta', goals: 1 }, { playerName: 'Gabriel', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
+        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Vini Jr.', goals: 1 }];
+        homeStats = { shots: 6, shotsOnTarget: 4, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 4, possession: 49, passAccuracy: 86, fouls: 0, offsides: 0 };
       }
+    }
+
+    // Set Matchday 3 matches (29th March) to live if not finished
+    if (sm.matchday === 3 && status === 'scheduled') {
+      status = 'live';
     }
 
     return {
@@ -259,9 +295,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
 };
 
 const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
-  const standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0 }));
+  const standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: [] as string[] }));
   
-  matches.forEach(m => {
+  // Sort matches by matchNumber to ensure form is chronological
+  const sortedMatches = [...matches].sort((a, b) => a.matchNumber - b.matchNumber);
+
+  sortedMatches.forEach(m => {
     if (m.status === 'finished' && m.homeScore !== undefined && m.awayScore !== undefined) {
       const home = standings.find(t => t.id === m.homeTeamId);
       const away = standings.find(t => t.id === m.awayTeamId);
@@ -277,21 +316,32 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
         if (m.homeScore > m.awayScore) {
           home.won++;
           home.points += 3;
+          home.form.push('W');
           away.lost++;
+          away.form.push('L');
         } else if (m.homeScore < m.awayScore) {
           away.won++;
           away.points += 3;
+          away.form.push('W');
           home.lost++;
+          home.form.push('L');
         } else {
           home.drawn++;
           away.drawn++;
           home.points += 1;
+          home.form.push('D');
           away.points += 1;
+          away.form.push('D');
         }
         home.gd = home.gf - home.ga;
         away.gd = away.gf - away.ga;
       }
     }
+  });
+  
+  // Keep only the last 5 results for form
+  standings.forEach(t => {
+    t.form = t.form.slice(-5);
   });
   
   return standings.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
@@ -394,6 +444,62 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 46,
+    title: "TOURNAMENT LEADERS: ARYAN AND SONU UNSTOPPABLE",
+    excerpt: "As Matchday 3 concludes, Aryan Sarkar and Sonu Mandal have emerged as the clear favorites. Both players remain undefeated, showcasing clinical finishing and rock-solid defenses that have left their opponents scrambling for answers.",
+    date: "29th March 2026",
+    category: "TOURNAMENT UPDATE",
+    timestamp: Date.now() + 100000 // Ensure this stays at the very top
+  },
+  {
+    id: 45,
+    title: "SONU'S 8-0 SLAUGHTER: ABHROJEET LEFT SPEECHLESS",
+    excerpt: "In an absolute demolition, Sonu Mandal (sonu2007) crushed Abhrojeet 8-0. Al Owairan was the star with a hat-trick, while Völler added a brace in this record-breaking Matchday 3 victory.",
+    date: "29th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 5
+  },
+  {
+    id: 44,
+    title: "PRIYAM'S 7-0 REVENGE: VINI JR. HAT-TRICK CRUSHES SAYANTAN",
+    excerpt: "Priyam Paul (Priyam2007) delivered a statement win, obliterating Sayantan 7-0. Vini Jr. was unstoppable with a clinical hat-trick, supported by goals from Bale, Cruyff, and Scholes.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 4
+  },
+  {
+    id: 43,
+    title: "SAMRIDDHA'S 5-0 MASTERCLASS: KANE BRACE SINKS SAGNIK",
+    excerpt: "Samriddha Mandal (sam1017) returned to winning ways with a dominant 5-0 victory over Sagnik. Harry Kane's first-half brace set the tone for a flawless performance.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 3
+  },
+  {
+    id: 42,
+    title: "RANAJOY EDGES PRIYAM IN 5-GOAL THRILLER",
+    excerpt: "In one of the most exciting matches of the tournament, Ranajoy Bhowmik (GamerR) edged out Priyam 3-2. Goals from Nesta, Gabriel, and Pirlo secured the points in a high-octane battle.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 2
+  },
+  {
+    id: 41,
+    title: "SONU'S WINNING STREAK: 2-0 OVER DIBYAJYOTI",
+    excerpt: "Sonu Mandal continues his relentless march with a professional 2-0 win against Dibyajyoti. Völler and Messi provided the goals in a match controlled from start to finish.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 1
+  },
+  {
+    id: 40,
+    title: "PRITAM'S CLINICAL 1-0 OVER PRIYAM",
+    excerpt: "Pritam Ghosh secured a vital three points with a narrow 1-0 victory over Priyam. A 36th-minute strike from Lionel Messi was enough to decide this tactical encounter.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now()
+  },
   {
     id: 39,
     title: "ARYAN'S DOMINANCE CONTINUES: 3-0 OVER SAGNICK",
@@ -2191,6 +2297,7 @@ export default function App() {
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">GA</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">GD</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">Pts</th>
+                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">Form</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -2242,6 +2349,23 @@ export default function App() {
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.ga}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-xs md:text-sm text-blue-400">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            {team.form.map((result, i) => (
+                              <div
+                                key={i}
+                                className={`w-4 h-4 md:w-5 md:h-5 rounded-sm flex items-center justify-center text-[8px] md:text-[10px] font-black ${
+                                  result === 'W' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                                  result === 'D' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
+                                  'bg-red-500/20 text-red-400 border border-red-500/30'
+                                }`}
+                                title={result === 'W' ? 'Win' : result === 'D' ? 'Draw' : 'Loss'}
+                              >
+                                {result}
+                              </div>
+                            ))}
+                          </div>
+                        </td>
                       </tr>
                     );
                   })}

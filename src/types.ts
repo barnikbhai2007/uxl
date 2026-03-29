@@ -15,6 +15,7 @@ export interface Team {
   ga: number;
   gd: number;
   points: number;
+  form: string[];
 }
 
 export interface Scorer {
