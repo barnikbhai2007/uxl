@@ -243,8 +243,13 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 46, passAccuracy: 87, fouls: 0, offsides: 2 };
       } else if (sm.home === "SONU" && sm.away === "ABHROJEET") {
         homeScore = 8; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Völler', goals: 2 }, { playerName: 'Al Owairan', goals: 3 }, { playerName: 'Kuyt', goals: 1 }];
-        homeStats = { shots: 9, shotsOnTarget: 9, possession: 56, passAccuracy: 93, fouls: 0, offsides: 2 };
+        homeScorers = [
+          { playerName: 'Völler', goals: 3 }, 
+          { playerName: 'Al Owairan', goals: 3 }, 
+          { playerName: 'Kuyt', goals: 1 },
+          { playerName: 'Messi', goals: 1 }
+        ];
+        homeStats = { shots: 12, shotsOnTarget: 10, possession: 56, passAccuracy: 93, fouls: 0, offsides: 2 };
         awayStats = { shots: 0, shotsOnTarget: 0, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
       } else if (sm.home === "SONU" && sm.away === "DIBYAJOTI") {
         homeScore = 2; awayScore = 0; status = 'finished';
@@ -258,7 +263,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAYANTAN" && sm.away === "PRIYAM") {
         homeScore = 0; awayScore = 7; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 3 }, { playerName: 'Bale', goals: 1 }, { playerName: 'Cruyff', goals: 1 }, { playerName: 'Scholes', goals: 1 }];
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 4 }, { playerName: 'Bale', goals: 1 }, { playerName: 'Cruyff', goals: 1 }, { playerName: 'Scholes', goals: 1 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 63, fouls: 0, offsides: 0 };
         awayStats = { shots: 13, shotsOnTarget: 10, possession: 57, passAccuracy: 78, fouls: 1, offsides: 0 };
       } else if (sm.home === "RANAJAY" && sm.away === "PRIYAM") {
@@ -267,6 +272,48 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Vini Jr.', goals: 1 }];
         homeStats = { shots: 6, shotsOnTarget: 4, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 4, possession: 49, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RAJAT" && sm.away === "AYUSH") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
+        homeStats = { shots: 4, shotsOnTarget: 1, possession: 42, passAccuracy: 78, fouls: 2, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 58, passAccuracy: 88, fouls: 0, offsides: 1 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "RANAJAY") {
+        homeScore = 0; awayScore = 3; status = 'finished';
+        awayScorers = [{ playerName: 'Pirlo', goals: 1 }, { playerName: 'Nesta', goals: 1 }, { playerName: 'Gabriel', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 0, possession: 40, passAccuracy: 65, fouls: 0, offsides: 0 };
+        awayStats = { shots: 7, shotsOnTarget: 5, possession: 60, passAccuracy: 88, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNICK" && sm.away === "ABHROJEET") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 1, possession: 48, passAccuracy: 75, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 3, possession: 52, passAccuracy: 82, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RANAJAY" && sm.away === "AYUSH") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Garrincha', goals: 1 }, { playerName: 'Raphinha', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 1, possession: 45, passAccuracy: 80, fouls: 1, offsides: 0 };
+        awayStats = { shots: 6, shotsOnTarget: 4, possession: 55, passAccuracy: 85, fouls: 0, offsides: 0 };
+      } else if (sm.home === "ANIMESH" && sm.away === "DIBYAJOTI") {
+        homeScore = 3; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Zieliński', goals: 1 }];
+        homeStats = { shots: 8, shotsOnTarget: 5, possession: 58, passAccuracy: 88, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 1, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
+      } else if (sm.home === "ANIMESH" && sm.away === "SAMRIDDHA") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Al Dawsari', goals: 1 }];
+        awayScorers = [{ playerName: 'Zico', goals: 1 }];
+        homeStats = { shots: 5, shotsOnTarget: 3, possession: 48, passAccuracy: 82, fouls: 1, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 52, passAccuracy: 85, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "BARNIK") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Cantona', goals: 1 }, { playerName: 'Gullit', goals: 1 }];
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
+        homeStats = { shots: 6, shotsOnTarget: 4, possession: 52, passAccuracy: 86, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 48, passAccuracy: 82, fouls: 1, offsides: 0 };
+      } else if (sm.home === "RAJAT" && sm.away === "RANAJAY") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Mbappé', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 2, possession: 45, passAccuracy: 78, fouls: 1, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 1, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 };
       }
     }
 
@@ -444,6 +491,22 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 48,
+    title: "AYUSH_08 IN SHAMBLES! RAJAT'S DEFENSE IS A BRICK WALL!",
+    excerpt: "SHOCKING! Rajat (rd10) has just pulled off the impossible! Ayush Saha, the tournament's most feared attacker, was completely neutralized in a 1-0 thriller. 'I've never seen anything like it,' said one spectator. 'Rajat was everywhere!' With Zamorano's clinical strike, the league has a new giant killer!",
+    date: "29th March 2026",
+    category: "REACTION",
+    timestamp: Date.now() + 300000
+  },
+  {
+    id: 47,
+    title: "THE GIANT SLAYER: RAJAT SILENCES AYUSH!",
+    excerpt: "In the most shocking result of the tournament so far, rd10 (Rajat) has ended AYUSH_08's reign of terror with a clinical 1-0 masterclass. Despite Ayush's reputation, he was held to ZERO shots on goal as Rajat's defense turned into an impenetrable fortress. Zamorano's 69th-minute goal has sent shockwaves through the league!",
+    date: "29th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 200000
+  },
   {
     id: 46,
     title: "TOURNAMENT LEADERS: ARYAN AND SONU UNSTOPPABLE",
