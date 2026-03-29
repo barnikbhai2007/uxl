@@ -108,11 +108,6 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         ];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 40, passAccuracy: 60, fouls: 0, offsides: 0 };
         awayStats = { shots: 12, shotsOnTarget: 12, possession: 60, passAccuracy: 90, fouls: 1, offsides: 0 };
-      } else if (sm.home === "RANAJAY" && sm.away === "BARNIK") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 37, passAccuracy: 78, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 63, passAccuracy: 90, fouls: 0, offsides: 0 };
       } else if (sm.home === "BARNIK" && sm.away === "RAJAT") {
         homeScore = 0; awayScore = 1; status = 'finished';
         awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
@@ -244,10 +239,8 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       } else if (sm.home === "SONU" && sm.away === "ABHROJEET") {
         homeScore = 8; awayScore = 0; status = 'finished';
         homeScorers = [
-          { playerName: 'Völler', goals: 3 }, 
-          { playerName: 'Al Owairan', goals: 3 }, 
-          { playerName: 'Kuyt', goals: 1 },
-          { playerName: 'Messi', goals: 1 }
+          { playerName: 'Messi', goals: 4 }, 
+          { playerName: 'Kuyt', goals: 4 }
         ];
         homeStats = { shots: 12, shotsOnTarget: 10, possession: 56, passAccuracy: 93, fouls: 0, offsides: 2 };
         awayStats = { shots: 0, shotsOnTarget: 0, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
@@ -282,11 +275,37 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Cambiasso', goals: 1 }];
         homeStats = { shots: 4, shotsOnTarget: 2, possession: 61, passAccuracy: 83, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 4, possession: 39, passAccuracy: 78, fouls: 2, offsides: 0 };
-      } else if (sm.home === "RAJAT" && sm.away === "RANAJAY") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Mbappé', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 2, possession: 45, passAccuracy: 78, fouls: 1, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 1, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RANAJAY" && sm.away === "RAJAT") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Zico', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
+        awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
+        homeStats = { shots: 6, shotsOnTarget: 4, possession: 52, passAccuracy: 85, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 48, passAccuracy: 78, fouls: 1, offsides: 0 };
+      } else if (sm.home === "DIBYAJOTI" && sm.away === "ANIMESH") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Zieliński', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 0, possession: 47, passAccuracy: 71, fouls: 0, offsides: 0 };
+        awayStats = { shots: 9, shotsOnTarget: 7, possession: 53, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RANAJAY" && sm.away === "AYUSH") {
+        homeScore = 1; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Zico', goals: 1 }];
+        awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 49, passAccuracy: 78, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 2, possession: 51, passAccuracy: 80, fouls: 0, offsides: 1 };
+      } else if (sm.home === "RANAJAY" && sm.away === "SAYANTAN") {
+        homeScore = 8; awayScore = 0; status = 'finished';
+        homeScorers = [
+          { playerName: 'Lamine Yamal', goals: 6 }, 
+          { playerName: 'Charlton', goals: 1 },
+          { playerName: 'Al Owairan', goals: 1 }
+        ];
+        homeStats = { shots: 9, shotsOnTarget: 8, possession: 55, passAccuracy: 90, fouls: 0, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 57, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SAGNICK" && sm.away === "ABHROJEET") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 1, possession: 48, passAccuracy: 75, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 3, possession: 52, passAccuracy: 82, fouls: 0, offsides: 0 };
       }
     }
 
@@ -481,6 +500,14 @@ const NEWS_POSTS = [
     timestamp: Date.now() + 200000
   },
   {
+    id: 47,
+    title: "RANAJAY'S 8-0 DESTRUCTION: LAMINE YAMAL'S DOUBLE HAT-TRICK",
+    excerpt: "In a record-shattering Matchday 3 performance, Ranajay Bhowmik (GamerR) obliterated Sayantan 8-0. Lamine Yamal was the undisputed star, scoring a phenomenal double hat-trick (6 goals) in this absolute slaughter.",
+    date: "29th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 150000
+  },
+  {
     id: 46,
     title: "TOURNAMENT LEADERS: ARYAN AND SONU UNSTOPPABLE",
     excerpt: "As Matchday 3 concludes, Aryan Sarkar and Sonu Mandal have emerged as the clear favorites. Both players remain undefeated, showcasing clinical finishing and rock-solid defenses that have left their opponents scrambling for answers.",
@@ -514,8 +541,8 @@ const NEWS_POSTS = [
   },
   {
     id: 42,
-    title: "RANAJOY EDGES PRIYAM IN 5-GOAL THRILLER",
-    excerpt: "In one of the most exciting matches of the tournament, Ranajoy Bhowmik (GamerR) edged out Priyam 3-2. Goals from Nesta, Gabriel, and Pirlo secured the points in a high-octane battle.",
+    title: "RANAJAY EDGES PRIYAM IN 5-GOAL THRILLER",
+    excerpt: "In one of the most exciting matches of the tournament, Ranajay Bhowmik (GamerR) edged out Priyam 3-2. Goals from Nesta, Gabriel, and Pirlo secured the points in a high-octane battle.",
     date: "29th March 2026",
     category: "MATCH REPORT",
     timestamp: Date.now() + 2
