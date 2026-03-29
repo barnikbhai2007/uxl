@@ -213,6 +213,32 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       }
     }
 
+    // Inject results from images (Matchday 3)
+    if (sm.matchday === 3) {
+      if (sm.home === "SAGNICK" && sm.away === "ARYAN") {
+        homeScore = 0; awayScore = 3; status = 'finished';
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 2 }, { playerName: 'Fernando Hierro', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 0, possession: 48, passAccuracy: 80, fouls: 0, offsides: 1 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 77, fouls: 0, offsides: 1 };
+      } else if (sm.home === "RAJAT" && sm.away === "PRITAM") {
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'De Bruyne', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 0, possession: 52, passAccuracy: 72, fouls: 2, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 3, possession: 48, passAccuracy: 72, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "ARYAN") {
+        homeScore = 1; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Cantona', goals: 1 }];
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 2 }];
+        homeStats = { shots: 3, shotsOnTarget: 1, possession: 55, passAccuracy: 88, fouls: 1, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 3, possession: 45, passAccuracy: 82, fouls: 2, offsides: 1 };
+      } else if (sm.home === "SAGNIK" && sm.away === "BARNIK") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Gullit', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 1, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
+        awayStats = { shots: 6, shotsOnTarget: 2, possession: 58, passAccuracy: 85, fouls: 0, offsides: 2 };
+      }
+    }
+
     return {
       id: `m-${index + 1}`,
       matchNumber: sm.matchNumber || index + 1,
@@ -369,67 +395,108 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
+    id: 39,
+    title: "ARYAN'S DOMINANCE CONTINUES: 3-0 OVER SAGNICK",
+    excerpt: "Aryan Sarkar (Baby_Aryanrox121) is on fire! A clinical 3-0 victory over Sagnick Roy cements his position at the top of the table. Vini Jr. was once again the star with a brilliant brace.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: 1743235200000 + 39 // Base date + ID for sorting
+  },
+  {
+    id: 38,
+    title: "PRITAM EDGES RAJAT IN TACTICAL BATTLE",
+    excerpt: "In a masterclass of defensive discipline, Pritam Ghosh secured a vital 1-0 win over Rajat Das. Kevin De Bruyne's first-half strike was enough to separate the two sides in this Matchday 3 encounter.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: 1743235200000 + 38
+  },
+  {
+    id: 37,
+    title: "ARYAN'S LATE DRAMA: VINI JR. SINKS SOUMAJIT",
+    excerpt: "In a heart-stopping Matchday 3 clash, Aryan Sarkar (Baby_Aryanrox121) secured a dramatic 2-1 victory over Soumajit. Despite Cantona's early goal for Soumajit, Vini Jr. delivered a masterclass with a brace, including a 94th-minute winner.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: 1743235200000 + 37
+  },
+  {
+    id: 36,
+    title: "SAGNIK'S FIRST WIN: GULLIT'S MAGIC ENDS BARNIK'S RUN",
+    excerpt: "Sagnik Kundu (kundes) has finally arrived! In a shocking upset, Sagnik secured his first win of the tournament with a 1-0 victory over the formidable Barnik. Ruud Gullit's 71st-minute strike was the difference in this historic triumph.",
+    date: "29th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: 1743235200000 + 36
+  },
+  {
     id: 35,
     title: "ANIMESH CRUSHES ABHROJEET",
     excerpt: "Animesh delivers a dominant performance, defeating Abhrojeet 5-1. C. Ronaldo was the star of the show with a magnificent hat-trick.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 35
   },
   {
     id: 34,
     title: "RAJAT EDGES DIBYAJOTI",
     excerpt: "In a closely contested Matchday 2 fixture, Rajat secures a 2-1 victory over Dibyajyoti. Beckham and Raphinha provided the goals for the winners.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 34
   },
   {
     id: 33,
     title: "ARYAN SARKAR EDGES OUT BARNIK IN DEFENSIVE MASTERCLASS",
     excerpt: "In a tightly contested battle, Aryan Sarkar (Baby_Aryanrox121) secured a vital 1-0 victory over Barnik. A 78th-minute strike from Vini Jr. was the only difference in a match dominated by tactical discipline.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 33
   },
   {
     id: 32,
     title: "HISTORIC HUMILIATION: BARNIK CRUSHES SAYANTAN 10-0!",
     excerpt: "In a match that will be remembered for decades, Barnik (brokenaqua) delivered a masterclass performance, netting 10 goals against a helpless Sayantan. Al Owairan was the star with 4 goals, while Barcola secured a hat-trick in this unprecedented slaughter.",
     date: "28th March 2026",
-    category: "BREAKING NEWS"
+    category: "BREAKING NEWS",
+    timestamp: 1743148800000 + 32
   },
   {
     id: 31,
     title: "SONU MANDAL: THE GIANT KILLER",
     excerpt: "In a shocking Matchday 2 upset, Sonu Mandal takes down the heavyweight Animesh with a clinical 2-1 victory. Völler and Al Owairan provided the magic, ending Animesh's unbeaten run.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 31
   },
   {
     id: 30,
     title: "ZICO'S SYMPHONY: SAMRIDDHA'S REDEMPTION",
     excerpt: "After a narrow loss to Sonu, Samriddha Mandal unleashed a 5-1 demolition on Abhrojeet. Zico's brace was a masterclass in finishing, proving Samriddha is still a top-tier title contender.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 30
   },
   {
     id: 29,
     title: "MBAPPÉ'S ARRIVAL: SONU SINKS SAMRIDDHA",
     excerpt: "Kylian Mbappé has officially arrived in the Kolkata XI. His clinical brace was the difference as Sonu Mandal edged out Samriddha in a tactical battle that left fans breathless.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 29
   },
   {
     id: 28,
     title: "SONU MANDAL EDGES SAMRIDDHA IN TIGHT CLASH",
     excerpt: "Sonu Mandal secures a hard-fought 2-1 victory over Samriddha Mandal. A brace from Mbappé was the difference, despite Hazard's goal for Samriddha.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 28
   },
   {
     id: 27,
     title: "ARYAN SARKAR OBLITERATES SAYANTAN",
     excerpt: "In a dominant display, Aryan Sarkar secures a massive 6-0 victory over Sayantan Paul. Vini Jr. was clinical with a hat-trick, supported by a brace from C. Ronaldo.",
     date: "28th March 2026",
-    category: "MATCH REPORT"
+    category: "MATCH REPORT",
+    timestamp: 1743148800000 + 27
   },
   {
     id: 26,
@@ -1373,7 +1440,8 @@ export default function App() {
         category: newsCategory,
         date: newsDate,
         title: newsTitle,
-        excerpt: newsExcerpt
+        excerpt: newsExcerpt,
+        timestamp: Date.now()
       });
       setNewsTitle('');
       setNewsExcerpt('');
@@ -2037,7 +2105,15 @@ export default function App() {
               </div>
 
               <div className="space-y-4">
-                {[...news, ...NEWS_POSTS].map((post) => (
+                {[...news, ...NEWS_POSTS]
+                  .sort((a, b) => {
+                    const timeA = (a as any).timestamp || new Date(a.date).getTime();
+                    const timeB = (b as any).timestamp || new Date(b.date).getTime();
+                    if (timeB !== timeA) return timeB - timeA;
+                    // If timestamps are equal (e.g. same day hardcoded), use ID
+                    return Number(b.id || 0) - Number(a.id || 0);
+                  })
+                  .map((post) => (
                   <motion.article
                     key={post.id}
                     whileHover={{ x: 4 }}
