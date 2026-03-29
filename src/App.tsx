@@ -306,6 +306,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 1, possession: 48, passAccuracy: 75, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 3, possession: 52, passAccuracy: 82, fouls: 0, offsides: 0 };
+      } else if (sm.home === "BARNIK" && sm.away === "SOUMAJIT") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Messi', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 54, passAccuracy: 93, fouls: 0, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 46, passAccuracy: 79, fouls: 0, offsides: 1 };
       }
     }
 
@@ -484,6 +489,22 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
+    id: 50,
+    title: "MATCHDAY 3 BREAKDOWN: GOALS, DRAMA, AND DOMINANCE",
+    excerpt: "Matchday 3 has concluded with some of the most lopsided results in tournament history. From Sonu's and Ranajay's 8-0 demolitions to Aryan's continued dominance, the table is starting to take shape as we head into the next phase.",
+    date: "29th March 2026",
+    category: "TOURNAMENT UPDATE",
+    timestamp: Date.now() + 500000 // Highest timestamp to be at top
+  },
+  {
+    id: 49,
+    title: "BARNIK'S CLINICAL 1-0 OVER SOUMAJIT",
+    excerpt: "In a tightly contested Matchday 3 finale, Barnik (brokenaqua) secured a vital 1-0 win over Soumajit. Lionel Messi's strike just before half-time was the difference in this high-stakes encounter.",
+    date: "29th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 400000
+  },
+  {
     id: 48,
     title: "AYUSH_08 IN SHAMBLES! RAJAT'S DEFENSE IS A BRICK WALL!",
     excerpt: "SHOCKING! Rajat (rd10) has just pulled off the impossible! Ayush Saha, the tournament's most feared attacker, was completely neutralized in a 1-0 thriller. 'I've never seen anything like it,' said one spectator. 'Rajat was everywhere!' With Zamorano's clinical strike, the league has a new giant killer!",
@@ -493,19 +514,11 @@ const NEWS_POSTS = [
   },
   {
     id: 47,
-    title: "THE GIANT SLAYER: RAJAT SILENCES AYUSH!",
-    excerpt: "In the most shocking result of the tournament so far, rd10 (Rajat) has ended AYUSH_08's reign of terror with a clinical 1-0 masterclass. Despite Ayush's reputation, he was held to ZERO shots on goal as Rajat's defense turned into an impenetrable fortress. Zamorano's 69th-minute goal has sent shockwaves through the league!",
-    date: "29th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 200000
-  },
-  {
-    id: 47,
     title: "RANAJAY'S 8-0 DESTRUCTION: LAMINE YAMAL'S DOUBLE HAT-TRICK",
     excerpt: "In a record-shattering Matchday 3 performance, Ranajay Bhowmik (GamerR) obliterated Sayantan 8-0. Lamine Yamal was the undisputed star, scoring a phenomenal double hat-trick (6 goals) in this absolute slaughter.",
     date: "29th March 2026",
     category: "BREAKING NEWS",
-    timestamp: Date.now() + 150000
+    timestamp: Date.now() + 200000
   },
   {
     id: 46,
