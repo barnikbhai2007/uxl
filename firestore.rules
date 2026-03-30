@@ -66,15 +66,23 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() &&
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
          (request.auth.token.email == "webblogger82@gmail.com" && request.auth.token.email_verified == true));
     }
 
     function isVotingOpen(sessionDocId) {
-      let session = get(/databases/$(database)/documents/votingSessions/$(sessionDocId));
-      return session != null && 
-             session.data.isActive == true &&
-             (session.data.endTime == null || request.time <= session.data.endTime);
+      return exists(/databases/$(database)/documents/votingSessions/$(sessionDocId)) && 
+             get(/databases/$(database)/documents/votingSessions/$(sessionDocId)).data.isActive == true &&
+             (get(/databases/$(database)/documents/votingSessions/$(sessionDocId)).data.endTime == null || 
+              request.time <= get(/databases/$(database)/documents/votingSessions/$(sessionDocId)).data.endTime);
+    }
+
+    function isValidUser(data) {
+      return data.keys().hasAll(['uid', 'email', 'role']) &&
+             data.uid is string &&
+             data.email is string &&
+             data.role in ['admin', 'user'];
     }
 
     function isValidVote(data) {
@@ -101,7 +109,7 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId) && request.resource.data.role == 'user';
+      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'user';
       allow update: if isAdmin();
     }
 

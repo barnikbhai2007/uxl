@@ -320,7 +320,21 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
 
     // Inject results from images (Matchday 4)
     if (sm.matchday === 4) {
-      if (sm.home === "PRIYAM" && sm.away === "BARNIK") {
+      if (sm.home === "RANAJAY" && sm.away === "PRITAM") {
+        homeScore = 0; awayScore = 0; status = 'finished';
+        homeStats = { shots: 3, shotsOnTarget: 1, possession: 45, passAccuracy: 72, fouls: 2, offsides: 1 };
+        awayStats = { shots: 5, shotsOnTarget: 2, possession: 55, passAccuracy: 78, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SAMRIDDHA" && sm.away === "RANAJAY") {
+        homeScore = 4; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Rice', goals: 1 }, { playerName: 'Zico', goals: 1 }, { playerName: 'Kane', goals: 2 }];
+        homeStats = { shots: 9, shotsOnTarget: 6, possession: 61, passAccuracy: 84, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 39, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "SAGNICK") {
+        homeScore = 0; awayScore = 3; status = 'finished';
+        awayScorers = [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Bale', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 1, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
+        awayStats = { shots: 8, shotsOnTarget: 6, possession: 56, passAccuracy: 85, fouls: 0, offsides: 0 };
+      } else if (sm.home === "PRIYAM" && sm.away === "BARNIK") {
         homeScore = 2; awayScore = 0; status = 'finished';
         homeScorers = [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Cruyff', goals: 1 }];
         homeStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
@@ -419,6 +433,22 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Owen', goals: 1 }];
         homeStats = { shots: 1, shotsOnTarget: 1, possession: 54, passAccuracy: 80, fouls: 0, offsides: 0 };
         awayStats = { shots: 4, shotsOnTarget: 3, possession: 46, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNICK" && sm.away === "RANAJAY") {
+        homeScore = 0; awayScore = 4; status = 'finished';
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 3 }, { playerName: 'Lamine Yamal', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 51, passAccuracy: 75, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 49, passAccuracy: 68, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SAYANTAN" && sm.away === "DIBYAJOTI") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Verón', goals: 1 }, { playerName: 'Mbeumo', goals: 1 }];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 38, passAccuracy: 75, fouls: 0, offsides: 1 };
+        awayStats = { shots: 8, shotsOnTarget: 5, possession: 62, passAccuracy: 70, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNIK" && sm.away === "ABHROJEET") {
+        homeScore = 3; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Giuly', goals: 2 }, { playerName: 'Hazard', goals: 1 }];
+        awayScorers = [{ playerName: 'McTominay', goals: 1 }, { playerName: 'Doué', goals: 1 }];
+        homeStats = { shots: 5, shotsOnTarget: 4, possession: 57, passAccuracy: 84, fouls: 2, offsides: 1 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 43, passAccuracy: 66, fouls: 0, offsides: 0 };
       }
     }
 
@@ -596,6 +626,22 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 71,
+    title: "PRITAM SECURES QUARTER-FINAL BERTH!",
+    excerpt: "A hard-fought 0-0 draw against Ranajay was enough for Pritam Ghosh to mathematically secure his place in the quarter-finals. His consistent performances throughout the group stage have paid off.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 3000000
+  },
+  {
+    id: 70,
+    title: "SAMRIDDHA QUALIFIES FOR THE QUARTER-FINALS!",
+    excerpt: "After a dominant 4-0 victory over Ranajay, Samriddha Mandal has officially secured his spot in the quarter-finals. With clinical finishing from Kane and Zico, he remains a top contender for the title.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 2500000
+  },
   {
     id: 69,
     title: "PRIYAM QUALIFIES FOR THE QUARTER-FINALS!",
@@ -2105,6 +2151,7 @@ export default function App() {
 
   useEffect(() => {
     const seedBracket = async () => {
+      if (!isAdmin) return;
       const initialBracket: BracketMatch[] = [
         { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
         { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
@@ -2129,10 +2176,11 @@ export default function App() {
       }
     };
     seedBracket();
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     const seedNews = async () => {
+      if (!isAdmin) return;
       const initialNews = [
         {
           id: 'news-md4-aryan-pritam',
@@ -2181,6 +2229,14 @@ export default function App() {
           title: 'PRIYAM QUALIFIES FOR THE QUARTER-FINALS!',
           excerpt: 'With a series of dominant performances, Priyam Paul has officially secured his spot in the quarter-finals. His clinical finishing and tactical awareness have made him a force to be reckoned with.',
           timestamp: Date.now() + 4000
+        },
+        {
+          id: 'news-md4-eliminations',
+          category: 'Breaking News',
+          date: '30th March 2026',
+          title: 'DIBYAJOTI, SAGNICK, ABHROJEET, and SAYANTAN Eliminated',
+          excerpt: 'The tournament reaches a critical stage as Dibyajoti, Sagnick Roy, Abhrojeet Kundu, and Sayantan Paul are officially eliminated. Meanwhile, SAGNIK manages to edge through the qualifier rounds to keep his championship hopes alive.',
+          timestamp: Date.now() + 5000
         }
       ];
 
@@ -2193,11 +2249,11 @@ export default function App() {
       }
     };
     seedNews();
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     const deleteSpecificNews = async () => {
-      if (!news.length) return;
+      if (!isAdmin || !news.length) return;
       const titlesToDelete = [
         'Attack vs Defense Showdown – Match #24',
         'Matchday 1 Breakdown',
@@ -2980,7 +3036,7 @@ export default function App() {
                             <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
                               {team.fullName}
                             </span>
-                            {(team.points >= 20 || team.name === 'PRIYAM') && (
+                            {(team.points >= 20 || team.name === 'PRIYAM' || team.name === 'SAMRIDDHA' || team.name === 'PRITAM') && (
                               <span 
                                 className="inline-flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] md:text-[10px] font-bold"
                                 title="Virtually Qualified for Playoffs"
