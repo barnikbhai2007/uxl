@@ -3313,14 +3313,14 @@ export default function App() {
                     const match = getBracketMatch(`qual-${i}`);
                     return (
                       <div key={`qual-${i}`} className="relative">
-                        <div className="w-48 bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
-                            <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic pr-1">{match.homeTeamName}</span>
-                            <span className="font-mono font-bold text-white/60">{match.homeScore}</span>
+                        <div className="min-w-[220px] w-auto bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10 gap-4`}>
+                            <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-cyan-400">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''}`}>
-                            <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic pr-1">{match.awayTeamName}</span>
-                            <span className="font-mono font-bold text-white/60">{match.awayScore}</span>
+                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''} gap-4`}>
+                            <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-cyan-400">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line - Straight to Quarterfinal */}
@@ -3337,18 +3337,18 @@ export default function App() {
                     const match = getBracketMatch(`qf-${i}`);
                     return (
                       <div key={`qf-${i}`} className="relative">
-                        <div className="w-48 bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className="p-2 flex justify-between items-center text-sm relative z-10">
-                            <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${match.homeTeamName?.includes('Aryan') ? 'text-indigo-400' : 'text-white/40'}`}>
-                              {match.homeTeamName}
+                        <div className="min-w-[220px] w-auto bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-4">
+                            <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
+                              {match.homeTeamName || 'TBD'}
                             </span>
-                            <span className="font-mono font-bold text-white/60">{match.homeScore}</span>
+                            <span className="font-mono font-bold text-indigo-400">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                            <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${match.awayTeamName?.includes('Aryan') ? 'text-indigo-400' : 'text-white/40'}`}>
-                              {match.awayTeamName}
+                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-4">
+                            <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
+                              {match.awayTeamName || 'TBD'}
                             </span>
-                            <span className="font-mono font-bold text-white/60">{match.awayScore}</span>
+                            <span className="font-mono font-bold text-indigo-400">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -3368,14 +3368,14 @@ export default function App() {
                     const match = getBracketMatch(`sf-${i}`);
                     return (
                       <div key={`sf-${i}`} className="relative">
-                        <div className="w-48 bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className="p-2 flex justify-between items-center text-sm relative z-10">
-                            <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/60 transition-colors pr-1">{match.homeTeamName}</span>
-                            <span className="font-mono font-bold text-white/60">{match.homeScore}</span>
+                        <div className="min-w-[220px] w-auto bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-4">
+                            <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-purple-400">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                            <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/60 transition-colors pr-1">{match.awayTeamName}</span>
-                            <span className="font-mono font-bold text-white/60">{match.awayScore}</span>
+                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-4">
+                            <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-purple-400">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -3395,15 +3395,15 @@ export default function App() {
                     {(() => {
                       const match = getBracketMatch('final');
                       return (
-                        <div className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
+                        <div className="min-w-[260px] w-auto bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
                           <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
-                            <div className="p-4 flex justify-between items-center">
-                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/60 transition-colors pr-1">{match.homeTeamName}</span>
-                              <span className="font-mono font-black text-2xl text-white/80">{match.homeScore}</span>
+                            <div className="p-4 flex justify-between items-center gap-4">
+                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                              <span className="font-mono font-black text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
                             </div>
-                            <div className="p-4 flex justify-between items-center border-t border-white/5">
-                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/60 transition-colors pr-1">{match.awayTeamName}</span>
-                              <span className="font-mono font-black text-2xl text-white/80">{match.awayScore}</span>
+                            <div className="p-4 flex justify-between items-center border-t border-white/5 gap-4">
+                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                              <span className="font-mono font-black text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -3416,15 +3416,15 @@ export default function App() {
                     {(() => {
                       const match = getBracketMatch('third-place');
                       return (
-                        <div className="w-56 bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
+                        <div className="min-w-[260px] w-auto bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
                           <div className="bg-[#000020] rounded-lg overflow-hidden relative z-10">
-                            <div className="p-3 flex justify-between items-center">
-                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/40 transition-colors pr-1">{match.homeTeamName}</span>
-                              <span className="font-mono font-bold text-lg text-white/60">{match.homeScore}</span>
+                            <div className="p-3 flex justify-between items-center gap-4">
+                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                              <span className="font-mono font-bold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
                             </div>
-                            <div className="p-3 flex justify-between items-center border-t border-white/5">
-                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/40 transition-colors pr-1">{match.awayTeamName}</span>
-                              <span className="font-mono font-bold text-lg text-white/60">{match.awayScore}</span>
+                            <div className="p-3 flex justify-between items-center border-t border-white/5 gap-4">
+                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                              <span className="font-mono font-bold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>
