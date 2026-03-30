@@ -414,6 +414,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Beckham', goals: 1 }, { playerName: 'Mbappé', goals: 1 }, { playerName: 'Zamorano', goals: 2 }, { playerName: 'Raphinha', goals: 1 }];
         homeStats = { shots: 4, shotsOnTarget: 3, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
         awayStats = { shots: 7, shotsOnTarget: 5, possession: 51, passAccuracy: 85, fouls: 1, offsides: 1 };
+      } else if (sm.home === "SAGNIK" && sm.away === "ANIMESH") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Owen', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 54, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 3, possession: 46, passAccuracy: 86, fouls: 0, offsides: 0 };
       }
     }
 
@@ -591,6 +596,22 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 68,
+    title: "ANIMESH AT RISK: TOP 4 SPOT IN JEOPARDY",
+    excerpt: "Following a tough 1-0 loss to Sagnick, Animesh's position in the top 4 is no longer secure. With other contenders closing the gap, every upcoming match is now a must-win.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 2300000
+  },
+  {
+    id: 67,
+    title: "SAGNIK EDGES ANIMESH IN TIGHT CONTEST",
+    excerpt: "Sagnick Kundu secures a vital 1-0 victory over Animesh in a Matchday 4 defensive masterclass. Owen's 56th-minute strike proved to be the difference.",
+    date: "30th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 2200000
+  },
   {
     id: 66,
     title: "SONU SLIPS FROM TOP 4",
