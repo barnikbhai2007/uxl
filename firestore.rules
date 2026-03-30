@@ -136,5 +136,11 @@ service cloud.firestore {
       allow create, update: if isAdmin() && isValidBracketMatch(request.resource.data);
       allow delete: if isAdmin();
     }
+
+    match /stats/{statId} {
+      allow read: if true;
+      allow create: if isAdmin();
+      allow update: if true;
+    }
   }
 }

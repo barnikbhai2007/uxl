@@ -73,6 +73,15 @@
         "awayScore": { "type": "number" }
       },
       "required": ["id", "round", "homeTeamName", "awayTeamName"]
+    },
+    "GlobalStats": {
+      "title": "Global Stats",
+      "description": "Global statistics for the application.",
+      "type": "object",
+      "properties": {
+        "visitCount": { "type": "number", "description": "Total number of page visits." }
+      },
+      "required": ["visitCount"]
     }
   },
   "firestore": {
@@ -95,6 +104,10 @@
     "/bracket/{matchId}": {
       "schema": "BracketMatch",
       "description": "Collection of bracket matches."
+    },
+    "/stats/{statId}": {
+      "schema": "GlobalStats",
+      "description": "Collection of global statistics."
     }
   }
 }

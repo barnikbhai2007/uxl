@@ -6,7 +6,7 @@ import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment } from 'firebase/firestore';
 
 // Static data mapping
 const getMatchdayDate = (matchday: number) => {
@@ -2049,6 +2049,7 @@ export default function App() {
   const [adminShowResults, setAdminShowResults] = useState(true);
   const [isSavingAdmin, setIsSavingAdmin] = useState(false);
   const [news, setNews] = useState<News[]>([]);
+  const [visitCount, setVisitCount] = useState<number>(0);
   const [newsCategory, setNewsCategory] = useState('MATCH REPORT');
   const [newsDate, setNewsDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
   const [newsTitle, setNewsTitle] = useState('');
@@ -2107,6 +2108,26 @@ export default function App() {
       awayScore: 0
     };
   };
+
+  useEffect(() => {
+    const incrementVisitCount = async () => {
+      const statsRef = doc(db, 'stats', 'global');
+      try {
+        await setDoc(statsRef, { visitCount: increment(1) }, { merge: true });
+      } catch (error) {
+        console.error("Error incrementing visit count:", error);
+      }
+    };
+
+    const unsubscribe = onSnapshot(doc(db, 'stats', 'global'), (doc) => {
+      if (doc.exists()) {
+        setVisitCount(doc.data().visitCount || 0);
+      }
+    });
+
+    incrementVisitCount();
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'news'));
@@ -3540,6 +3561,10 @@ export default function App() {
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Matchdays</p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">5</p>
+                </div>
+                <div className="text-center md:text-left">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Visits</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{visitCount}</p>
                 </div>
           </div>
           <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest">
