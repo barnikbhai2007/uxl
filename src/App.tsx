@@ -320,7 +320,18 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
 
     // Inject results from images (Matchday 4)
     if (sm.matchday === 4) {
-      if (sm.home === "PRITAM" && sm.away === "ABHROJEET") {
+      if (sm.home === "PRIYAM" && sm.away === "BARNIK") {
+        homeScore = 2; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Cruyff', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
+        awayStats = { shots: 8, shotsOnTarget: 6, possession: 49, passAccuracy: 77, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAMRIDDHA" && sm.away === "BARNIK") {
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Hazard', goals: 1 }, { playerName: 'Aubameyang', goals: 1 }];
+        awayScorers = [{ playerName: 'Barcola', goals: 1 }];
+        homeStats = { shots: 5, shotsOnTarget: 5, possession: 43, passAccuracy: 77, fouls: 1, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 4, possession: 57, passAccuracy: 91, fouls: 0, offsides: 0 };
+      } else if (sm.home === "PRITAM" && sm.away === "ABHROJEET") {
         homeScore = 8; awayScore = 0; status = 'finished';
         homeScorers = [
           { playerName: 'Lamine Yamal', goals: 3 },
@@ -388,6 +399,21 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Courtois', goals: 2 }];
         homeStats = { shots: 4, shotsOnTarget: 4, possession: 49, passAccuracy: 82, fouls: 0, offsides: 0 };
         awayStats = { shots: 1, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "SAYANTAN") {
+        homeScore = 8; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Cantona', goals: 2 }, { playerName: 'Gullit', goals: 3 }, { playerName: 'Musiala', goals: 1 }];
+        homeStats = { shots: 8, shotsOnTarget: 8, possession: 52, passAccuracy: 86, fouls: 0, offsides: 0 };
+        awayStats = { shots: 3, shotsOnTarget: 2, possession: 48, passAccuracy: 61, fouls: 0, offsides: 0 };
+      } else if (sm.home === "RAJAT" && sm.away === "ABHROJEET") {
+        homeScore = 4; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Vitinha', goals: 1 }, { playerName: 'Zamorano', goals: 2 }, { playerName: 'Mbappé', goals: 1 }];
+        homeStats = { shots: 5, shotsOnTarget: 5, possession: 55, passAccuracy: 84, fouls: 1, offsides: 1 };
+        awayStats = { shots: 1, shotsOnTarget: 0, possession: 45, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAGNICK" && sm.away === "RAJAT") {
+        homeScore = 0; awayScore = 5; status = 'finished';
+        awayScorers = [{ playerName: 'Beckham', goals: 1 }, { playerName: 'Mbappé', goals: 1 }, { playerName: 'Zamorano', goals: 2 }, { playerName: 'Raphinha', goals: 1 }];
+        homeStats = { shots: 4, shotsOnTarget: 3, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 7, shotsOnTarget: 5, possession: 51, passAccuracy: 85, fouls: 1, offsides: 1 };
       }
     }
 
@@ -565,6 +591,14 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 66,
+    title: "SONU SLIPS FROM TOP 4",
+    excerpt: "In a shocking turn of events, Sonu has slipped out of the top 4 spots in the league standings after recent results.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 2100000
+  },
   {
     id: 65,
     title: "CRISIS FOR SONU: COULD HE DROP OUT OF THE TOP 4?",
