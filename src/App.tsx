@@ -6,7 +6,7 @@ import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote
 import { v4 as uuidv4 } from 'uuid';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer } from 'firebase/firestore';
 
 // Static data mapping
 const getMatchdayDate = (matchday: number) => {
@@ -1517,7 +1517,10 @@ const NEWS_POSTS = [
     newsExcerpt,
     setNewsExcerpt,
     isPostingNews,
-    handlePostNews
+    handlePostNews,
+    bracket,
+    isSavingBracket,
+    handleSaveBracket
   }: { 
     isAdmin: boolean,
     onClose: () => void,
@@ -1543,10 +1546,39 @@ const NEWS_POSTS = [
     newsExcerpt: string,
     setNewsExcerpt: (val: string) => void,
     isPostingNews: boolean,
-    handlePostNews: () => void
+    handlePostNews: () => void,
+    bracket: BracketMatch[],
+    isSavingBracket: boolean,
+    handleSaveBracket: (match: BracketMatch) => void
   }) => {
     const [newCandidateTeam, setNewCandidateTeam] = useState(TEAMS_LIST[0]);
-    const [activeTab, setActiveTab] = useState<'voting' | 'news'>('voting');
+    const [activeTab, setActiveTab] = useState<'voting' | 'news' | 'bracket'>('voting');
+    const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
+    const [editHomeName, setEditHomeName] = useState('');
+    const [editAwayName, setEditAwayName] = useState('');
+    const [editHomeScore, setEditHomeScore] = useState(0);
+    const [editAwayScore, setEditAwayScore] = useState(0);
+
+    const startEditingMatch = (match: BracketMatch) => {
+      setEditingMatchId(match.id);
+      setEditHomeName(match.homeTeamName || '');
+      setEditAwayName(match.awayTeamName || '');
+      setEditHomeScore(match.homeScore || 0);
+      setEditAwayScore(match.awayScore || 0);
+    };
+
+    const saveMatch = () => {
+      if (!editingMatchId) return;
+      handleSaveBracket({
+        id: editingMatchId,
+        homeTeamName: editHomeName,
+        awayTeamName: editAwayName,
+        homeScore: editHomeScore,
+        awayScore: editAwayScore,
+        round: bracket.find(m => m.id === editingMatchId)?.round || ''
+      });
+      setEditingMatchId(null);
+    };
 
     const addCandidate = () => {
       const details = TEAM_DETAILS[newCandidateTeam];
@@ -1611,6 +1643,12 @@ const NEWS_POSTS = [
               className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'news' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
               News
+            </button>
+            <button 
+              onClick={() => setActiveTab('bracket')}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bracket' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Bracket
             </button>
           </div>
 
@@ -1754,6 +1792,105 @@ const NEWS_POSTS = [
                 </button>
               </div>
             )}
+            {activeTab === 'bracket' && (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-4">
+                  {['Qualifier Round', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
+                    const roundMatches = bracket.filter(m => m.round === round);
+                    if (roundMatches.length === 0) return null;
+                    return (
+                      <div key={round} className="space-y-3">
+                        <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-400/60 border-b border-white/5 pb-1">{round}</h3>
+                        <div className="grid grid-cols-1 gap-3">
+                          {roundMatches.map(match => (
+                            <div key={match.id} className="p-4 bg-white/5 border border-white/10 rounded-xl">
+                              {editingMatchId === match.id ? (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                      <label className="text-[9px] font-black uppercase text-white/40">Home Team</label>
+                                      <input 
+                                        type="text" 
+                                        value={editHomeName} 
+                                        onChange={e => setEditHomeName(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[9px] font-black uppercase text-white/40">Away Team</label>
+                                      <input 
+                                        type="text" 
+                                        value={editAwayName} 
+                                        onChange={e => setEditAwayName(e.target.value)}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                      <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
+                                      <input 
+                                        type="number" 
+                                        value={editHomeScore} 
+                                        onChange={e => setEditHomeScore(Number(e.target.value))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                      />
+                                    </div>
+                                    <div className="space-y-1">
+                                      <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
+                                      <input 
+                                        type="number" 
+                                        value={editAwayScore} 
+                                        onChange={e => setEditAwayScore(Number(e.target.value))}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                      />
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2">
+                                    <button 
+                                      onClick={saveMatch}
+                                      disabled={isSavingBracket}
+                                      className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                      {isSavingBracket ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Save Match"}
+                                    </button>
+                                    <button 
+                                      onClick={() => setEditingMatchId(null)}
+                                      className="px-4 bg-white/5 hover:bg-white/10 text-white rounded-lg py-2 text-[10px] font-black uppercase tracking-widest transition-all"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1">
+                                    <div className="flex justify-between items-center mb-1">
+                                      <span className="text-xs font-bold text-white/80">{match.homeTeamName}</span>
+                                      <span className="text-xs font-mono font-bold text-blue-400">{match.homeScore}</span>
+                                    </div>
+                                    <div className="flex justify-between items-center">
+                                      <span className="text-xs font-bold text-white/80">{match.awayTeamName}</span>
+                                      <span className="text-xs font-mono font-bold text-blue-400">{match.awayScore}</span>
+                                    </div>
+                                  </div>
+                                  <button 
+                                    onClick={() => startEditingMatch(match)}
+                                    className="ml-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-blue-400 transition-all"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-8 border-t border-white/10 bg-white/5 flex flex-col md:flex-row gap-4">
@@ -1871,6 +2008,8 @@ export default function App() {
   const [newsTitle, setNewsTitle] = useState('');
   const [newsExcerpt, setNewsExcerpt] = useState('');
   const [isPostingNews, setIsPostingNews] = useState(false);
+  const [bracket, setBracket] = useState<BracketMatch[]>([]);
+  const [isSavingBracket, setIsSavingBracket] = useState(false);
 
   const handlePostNews = async () => {
     if (!isAdmin) return;
@@ -1900,6 +2039,29 @@ export default function App() {
     }
   };
 
+  const handleSaveBracket = async (match: BracketMatch) => {
+    if (!isAdmin) return;
+    setIsSavingBracket(true);
+    try {
+      await setDoc(doc(db, 'bracket', match.id), match);
+    } catch (error) {
+      console.error("Error saving bracket match:", error);
+      alert("Failed to save bracket match.");
+    } finally {
+      setIsSavingBracket(false);
+    }
+  };
+
+  const getBracketMatch = (id: string) => {
+    return bracket.find(m => m.id === id) || {
+      id,
+      homeTeamName: 'TBD',
+      awayTeamName: 'TBD',
+      homeScore: 0,
+      awayScore: 0
+    };
+  };
+
   useEffect(() => {
     const q = query(collection(db, 'news'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -1908,8 +2070,65 @@ export default function App() {
         newsData.push(doc.data() as News);
       });
       setNews(newsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'news');
     });
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'bracket'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const bracketData: BracketMatch[] = [];
+      snapshot.forEach((doc) => {
+        bracketData.push(doc.data() as BracketMatch);
+      });
+      setBracket([...bracketData]); // Force a re-render with a new array reference
+    }, (error) => {
+      handleFirestoreError(error, OperationType.LIST, 'bracket');
+    });
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const testConnection = async () => {
+      try {
+        await getDocFromServer(doc(db, 'bracket', 'qual-0'));
+      } catch (error) {
+        if(error instanceof Error && error.message.includes('the client is offline')) {
+          console.error("Please check your Firebase configuration. The client is offline.");
+        }
+      }
+    };
+    testConnection();
+  }, []);
+
+  useEffect(() => {
+    const seedBracket = async () => {
+      const initialBracket: BracketMatch[] = [
+        { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'Aryan / TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'Aryan / TBD', homeScore: 0, awayScore: 0 },
+        { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
+        { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
+        { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0 },
+        { id: 'third-place', round: '3rd Place Match', homeTeamName: 'Loser SF1', awayTeamName: 'Loser SF2', homeScore: 0, awayScore: 0 },
+      ];
+
+      for (const match of initialBracket) {
+        const docRef = doc(db, 'bracket', match.id);
+        const docSnap = await getDoc(docRef);
+        if (!docSnap.exists()) {
+          await setDoc(docRef, match);
+        }
+      }
+    };
+    seedBracket();
   }, []);
 
   useEffect(() => {
@@ -1954,6 +2173,14 @@ export default function App() {
           title: 'PRIYAM Secures Comfortable 3-0 Win',
           excerpt: 'Priyam cruised to a 3-0 victory over Dibyajoti, with Cruyff scoring twice and Vini Jr. adding another to secure all three points.',
           timestamp: Date.now() + 3000
+        },
+        {
+          id: 'news-priyam-qualified',
+          category: 'Breaking News',
+          date: '30th March 2026',
+          title: 'PRIYAM QUALIFIES FOR THE QUARTER-FINALS!',
+          excerpt: 'With a series of dominant performances, Priyam Paul has officially secured his spot in the quarter-finals. His clinical finishing and tactical awareness have made him a force to be reckoned with.',
+          timestamp: Date.now() + 4000
         }
       ];
 
@@ -2146,6 +2373,8 @@ export default function App() {
         });
         setSessionVotes(counts);
         setTotalVotes(total);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'votes');
       });
 
       return () => unsubscribe();
@@ -3003,170 +3232,127 @@ export default function App() {
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
                   <h3 className="text-cyan-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-cyan-400/10 py-1 rounded border border-cyan-400/20">Qualifier Round</h3>
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={`qual-${i}`} className="relative">
-                      <div 
-                        onClick={() => setSelectedMatch({
-                          id: `qual-${i}`,
-                          matchNumber: 100 + i,
-                          homeTeamId: 'TBD',
-                          awayTeamId: 'TBD',
-                          homeScore: 0,
-                          awayScore: 0,
-                          date: '31st March 2026',
-                          status: 'scheduled'
-                        })}
-                        className="w-48 bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-cyan-400/60 transition-all group/match relative"
-                      >
-                        <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
-                          <span className="font-mono font-bold text-white/20">0</span>
+                  {Array.from({ length: 4 }).map((_, i) => {
+                    const match = getBracketMatch(`qual-${i}`);
+                    return (
+                      <div key={`qual-${i}`} className="relative">
+                        <div className="w-48 bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10`}>
+                            <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic pr-1">{match.homeTeamName}</span>
+                            <span className="font-mono font-bold text-white/60">{match.homeScore}</span>
+                          </div>
+                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''}`}>
+                            <span className="font-display font-black truncate max-w-[100px] text-white/40 uppercase italic pr-1">{match.awayTeamName}</span>
+                            <span className="font-mono font-bold text-white/60">{match.awayScore}</span>
+                          </div>
                         </div>
-                        <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''}`}>
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
-                          <span className="font-mono font-bold text-white/20">0</span>
-                        </div>
+                        {/* Connector Line - Straight to Quarterfinal */}
+                        <div className={`absolute -right-16 top-1/2 w-16 h-[1px] bg-white/20`} />
                       </div>
-                      {/* Connector Line - Straight to Quarterfinal */}
-                      <div className={`absolute -right-16 top-1/2 w-16 h-[1px] bg-white/20`} />
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Quarter Finals */}
                 <div className="flex flex-col justify-around gap-16">
                   <h3 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-indigo-400/10 py-1 rounded border border-indigo-400/20">Quarter-Finals</h3>
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <div key={`qf-${i}`} className="relative">
-                      <div 
-                        onClick={() => setSelectedMatch({
-                          id: `qf-${i}`,
-                          matchNumber: 200 + i,
-                          homeTeamId: 'TBD',
-                          awayTeamId: 'TBD',
-                          homeScore: 0,
-                          awayScore: 0,
-                          date: '31st March 2026',
-                          status: 'scheduled'
-                        })}
-                        className="w-48 bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-indigo-400/60 transition-all group/match relative"
-                      >
-                        <div className="p-2 flex justify-between items-center text-sm relative z-10">
-                          <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${i === 0 ? 'text-indigo-400' : 'text-white/20 group-hover/match:text-white/40'}`}>
-                            {i === 0 ? "Aryan / TBD" : "TBD"}
-                          </span>
-                          <span className="font-mono font-bold text-white/20">0</span>
+                  {Array.from({ length: 4 }).map((_, i) => {
+                    const match = getBracketMatch(`qf-${i}`);
+                    return (
+                      <div key={`qf-${i}`} className="relative">
+                        <div className="w-48 bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className="p-2 flex justify-between items-center text-sm relative z-10">
+                            <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${match.homeTeamName?.includes('Aryan') ? 'text-indigo-400' : 'text-white/40'}`}>
+                              {match.homeTeamName}
+                            </span>
+                            <span className="font-mono font-bold text-white/60">{match.homeScore}</span>
+                          </div>
+                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
+                            <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${match.awayTeamName?.includes('Aryan') ? 'text-indigo-400' : 'text-white/40'}`}>
+                              {match.awayTeamName}
+                            </span>
+                            <span className="font-mono font-bold text-white/60">{match.awayScore}</span>
+                          </div>
                         </div>
-                        <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                          <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${i === 3 ? 'text-indigo-400' : 'text-white/20 group-hover/match:text-white/40'}`}>
-                            {i === 3 ? "Aryan / TBD" : "TBD"}
-                          </span>
-                          <span className="font-mono font-bold text-white/20">0</span>
-                        </div>
+                        {/* Connector Line */}
+                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
+                        {i % 2 === 0 ? (
+                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+112px)] bg-white/20" />
+                        ) : null}
                       </div>
-                      {/* Connector Line */}
-                      <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
-                      {i % 2 === 0 ? (
-                        <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+112px)] bg-white/20" />
-                      ) : null}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Semi Finals */}
                 <div className="flex flex-col justify-around gap-32">
                   <h3 className="text-purple-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-purple-400/10 py-1 rounded border border-purple-400/20">Semi-Finals</h3>
-                  {Array.from({ length: 2 }).map((_, i) => (
-                    <div key={`sf-${i}`} className="relative">
-                      <div 
-                        onClick={() => setSelectedMatch({
-                          id: `sf-${i}`,
-                          matchNumber: 300 + i,
-                          homeTeamId: 'TBD',
-                          awayTeamId: 'TBD',
-                          homeScore: 0,
-                          awayScore: 0,
-                          date: 'TBD',
-                          status: 'scheduled'
-                        })}
-                        className="w-48 bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-purple-400/60 transition-all group/match relative"
-                      >
-                        <div className="p-2 flex justify-between items-center text-sm relative z-10">
-                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Winner</span>
-                          <span className="font-mono font-bold">-</span>
+                  {Array.from({ length: 2 }).map((_, i) => {
+                    const match = getBracketMatch(`sf-${i}`);
+                    return (
+                      <div key={`sf-${i}`} className="relative">
+                        <div className="w-48 bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className="p-2 flex justify-between items-center text-sm relative z-10">
+                            <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/60 transition-colors pr-1">{match.homeTeamName}</span>
+                            <span className="font-mono font-bold text-white/60">{match.homeScore}</span>
+                          </div>
+                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
+                            <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/60 transition-colors pr-1">{match.awayTeamName}</span>
+                            <span className="font-mono font-bold text-white/60">{match.awayScore}</span>
+                          </div>
                         </div>
-                        <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                          <span className="font-display font-black truncate max-w-[100px] uppercase italic text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Winner</span>
-                          <span className="font-mono font-bold">-</span>
-                        </div>
+                        {/* Connector Line */}
+                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
+                        {i % 2 === 0 ? (
+                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+272px)] bg-white/20" />
+                        ) : null}
                       </div>
-                      {/* Connector Line */}
-                      <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
-                      {i % 2 === 0 ? (
-                        <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+272px)] bg-white/20" />
-                      ) : null}
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Final & 3rd Place */}
                 <div className="flex flex-col justify-center gap-16">
                   <div>
                     <h3 className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
-                    <div 
-                      onClick={() => setSelectedMatch({
-                        id: 'final',
-                        matchNumber: 400,
-                        homeTeamId: 'TBD',
-                        awayTeamId: 'TBD',
-                        homeScore: 0,
-                        awayScore: 0,
-                        date: '1st April 2026',
-                        status: 'scheduled',
-                        type: 'final'
-                      })}
-                      className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 cursor-pointer hover:border-yellow-400 transition-all group/match relative"
-                    >
-                      <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
-                        <div className="p-4 flex justify-between items-center">
-                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Finalist 1</span>
-                          <span className="font-mono font-black text-2xl">-</span>
+                    {(() => {
+                      const match = getBracketMatch('final');
+                      return (
+                        <div className="w-56 bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
+                          <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
+                            <div className="p-4 flex justify-between items-center">
+                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/60 transition-colors pr-1">{match.homeTeamName}</span>
+                              <span className="font-mono font-black text-2xl text-white/80">{match.homeScore}</span>
+                            </div>
+                            <div className="p-4 flex justify-between items-center border-t border-white/5">
+                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/60 transition-colors pr-1">{match.awayTeamName}</span>
+                              <span className="font-mono font-black text-2xl text-white/80">{match.awayScore}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="p-4 flex justify-between items-center border-t border-white/5">
-                          <span className="font-display font-black text-base uppercase italic tracking-tighter text-white/40 group-hover/match:text-white/60 transition-colors pr-1">Finalist 2</span>
-                          <span className="font-mono font-black text-2xl">-</span>
-                        </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   <div>
                     <h3 className="text-orange-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
-                    <div 
-                      onClick={() => setSelectedMatch({
-                        id: 'third-place',
-                        matchNumber: 399,
-                        homeTeamId: 'TBD',
-                        awayTeamId: 'TBD',
-                        homeScore: 0,
-                        awayScore: 0,
-                        date: '1st April 2026',
-                        status: 'scheduled',
-                        type: 'thirdplace'
-                      })}
-                      className="w-56 bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 cursor-pointer hover:border-orange-500/60 transition-all group/match relative"
-                    >
-                      <div className="bg-[#000020] rounded-lg overflow-hidden relative z-10">
-                        <div className="p-3 flex justify-between items-center">
-                          <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/20 group-hover/match:text-white/40 transition-colors pr-1">Loser SF1</span>
-                          <span className="font-mono font-bold text-lg">-</span>
+                    {(() => {
+                      const match = getBracketMatch('third-place');
+                      return (
+                        <div className="w-56 bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
+                          <div className="bg-[#000020] rounded-lg overflow-hidden relative z-10">
+                            <div className="p-3 flex justify-between items-center">
+                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/40 transition-colors pr-1">{match.homeTeamName}</span>
+                              <span className="font-mono font-bold text-lg text-white/60">{match.homeScore}</span>
+                            </div>
+                            <div className="p-3 flex justify-between items-center border-t border-white/5">
+                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/40 transition-colors pr-1">{match.awayTeamName}</span>
+                              <span className="font-mono font-bold text-lg text-white/60">{match.awayScore}</span>
+                            </div>
+                          </div>
                         </div>
-                        <div className="p-3 flex justify-between items-center border-t border-white/5">
-                          <span className="font-display font-black text-sm uppercase italic tracking-tighter text-white/20 group-hover/match:text-white/40 transition-colors pr-1">Loser SF2</span>
-                          <span className="font-mono font-bold text-lg">-</span>
-                        </div>
-                      </div>
-                    </div>
+                      );
+                    })()}
                   </div>
 
                   <div className="mt-4 flex flex-col items-center">
@@ -3276,6 +3462,9 @@ export default function App() {
             setNewsExcerpt={setNewsExcerpt}
             isPostingNews={isPostingNews}
             handlePostNews={handlePostNews}
+            bracket={bracket}
+            isSavingBracket={isSavingBracket}
+            handleSaveBracket={handleSaveBracket}
           />
         )}
       </AnimatePresence>

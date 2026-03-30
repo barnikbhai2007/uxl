@@ -53,6 +53,8 @@ export interface BracketMatch {
   id: string;
   homeTeamId?: string;
   awayTeamId?: string;
+  homeTeamName?: string;
+  awayTeamName?: string;
   homeScore?: number;
   awayScore?: number;
   winnerId?: string;

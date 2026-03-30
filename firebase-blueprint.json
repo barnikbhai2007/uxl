@@ -59,6 +59,20 @@
         "description": { "type": "string" }
       },
       "required": ["topic", "date", "title", "description"]
+    },
+    "BracketMatch": {
+      "title": "Bracket Match",
+      "description": "A match in the tournament bracket.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "round": { "type": "string" },
+        "homeTeamName": { "type": "string" },
+        "awayTeamName": { "type": "string" },
+        "homeScore": { "type": "number" },
+        "awayScore": { "type": "number" }
+      },
+      "required": ["id", "round", "homeTeamName", "awayTeamName"]
     }
   },
   "firestore": {
@@ -77,6 +91,10 @@
     "/news/{newsId}": {
       "schema": "News",
       "description": "Collection of news articles."
+    },
+    "/bracket/{matchId}": {
+      "schema": "BracketMatch",
+      "description": "Collection of bracket matches."
     }
   }
 }

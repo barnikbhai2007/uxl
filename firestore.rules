@@ -41,6 +41,16 @@ service cloud.firestore {
     //   - title: string (required)
     //   - description: string (required)
     //
+    // Collection: bracket
+    // Document ID: {matchId}
+    // Fields:
+    //   - id: string (required)
+    //   - round: string (required)
+    //   - homeTeamName: string (required)
+    //   - awayTeamName: string (required)
+    //   - homeScore: number (optional)
+    //   - awayScore: number (optional)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -75,12 +85,22 @@ service cloud.firestore {
              data.sessionId is string;
     }
 
+    function isValidBracketMatch(data) {
+      return data.keys().hasAll(['id', 'round', 'homeTeamName', 'awayTeamName']) &&
+             data.id is string &&
+             data.round is string &&
+             data.homeTeamName is string &&
+             data.awayTeamName is string &&
+             (!('homeScore' in data) || data.homeScore is number) &&
+             (!('awayScore' in data) || data.awayScore is number);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isAuthenticated();
+      allow read: if true;
       allow create: if isOwner(userId) && request.resource.data.role == 'user';
       allow update: if isAdmin();
     }
@@ -101,6 +121,12 @@ service cloud.firestore {
     match /news/{newsId} {
       allow read: if true;
       allow write: if isAdmin();
+    }
+
+    match /bracket/{matchId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidBracketMatch(request.resource.data);
+      allow delete: if isAdmin();
     }
   }
 }
