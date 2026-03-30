@@ -371,6 +371,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
         homeStats = { shots: 5, shotsOnTarget: 5, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 87, fouls: 1, offsides: 0 };
+      } else if (sm.home === "BARNIK" && sm.away === "ANIMESH") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'João Neves', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 62, passAccuracy: 81, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 0, possession: 38, passAccuracy: 80, fouls: 0, offsides: 0 };
       }
     }
 
@@ -548,6 +553,14 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 63,
+    title: "BARNIK SECURES LATE WIN OVER ANIMESH",
+    excerpt: "A late 82nd-minute strike from João Neves was enough to secure a vital 1-0 victory for Barnik against Animesh in a tightly contested Matchday 4 fixture.",
+    date: "30th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 1800000
+  },
   {
     id: 62,
     title: "AYUSH DROPS OUT OF THE TOP 4",
