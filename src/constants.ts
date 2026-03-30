@@ -143,10 +143,10 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 2
   { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 3
   { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 4
-  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 1
+  { away: "TBD", home: "Aryan / TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 1
   { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 2
   { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 3
-  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 4
+  { away: "Aryan / TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 4
 
   // Matchday 6 - 1st April (Semis, 3rd Place & Final)
   { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal' }, // Semi-final 1

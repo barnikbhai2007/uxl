@@ -2900,11 +2900,15 @@ export default function App() {
                         className="w-48 bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg cursor-pointer hover:border-indigo-400/60 transition-all group/match relative"
                       >
                         <div className="p-2 flex justify-between items-center text-sm relative z-10">
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
+                          <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${i === 0 ? 'text-indigo-400' : 'text-white/20 group-hover/match:text-white/40'}`}>
+                            {i === 0 ? "Aryan / TBD" : "TBD"}
+                          </span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                         <div className="p-2 flex justify-between items-center text-sm border-t border-white/5">
-                          <span className="font-display font-black truncate max-w-[100px] text-white/20 uppercase italic group-hover/match:text-white/40 transition-colors pr-1">TBD</span>
+                          <span className={`font-display font-black truncate max-w-[100px] uppercase italic transition-colors pr-1 ${i === 3 ? 'text-indigo-400' : 'text-white/20 group-hover/match:text-white/40'}`}>
+                            {i === 3 ? "Aryan / TBD" : "TBD"}
+                          </span>
                           <span className="font-mono font-bold text-white/20">0</span>
                         </div>
                       </div>
