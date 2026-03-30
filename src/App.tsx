@@ -355,6 +355,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Dembélé', goals: 1 }];
         homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 75, fouls: 0, offsides: 0 };
         awayStats = { shots: 1, shotsOnTarget: 0, possession: 60, passAccuracy: 87, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "AYUSH") {
+        homeScore = 3; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Mbappé', goals: 1 }, { playerName: 'Messi', goals: 1 }, { playerName: 'Al Owairan', goals: 1 }];
+        awayScorers = [{ playerName: 'Cafu', goals: 1 }, { playerName: 'Nesta', goals: 1 }];
+        homeStats = { shots: 4, shotsOnTarget: 4, possession: 61, passAccuracy: 93, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 4, possession: 39, passAccuracy: 70, fouls: 0, offsides: 0 };
       }
     }
 
