@@ -597,6 +597,14 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
+    id: 69,
+    title: "PRIYAM QUALIFIES FOR THE QUARTER-FINALS!",
+    excerpt: "With a series of dominant performances, Priyam Paul has officially secured his spot in the quarter-finals. His clinical finishing and tactical awareness have made him a force to be reckoned with.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 2400000
+  },
+  {
     id: 68,
     title: "ANIMESH AT RISK: TOP 4 SPOT IN JEOPARDY",
     excerpt: "Following a tough 1-0 loss to Sagnick, Animesh's position in the top 4 is no longer secure. With other contenders closing the gap, every upcoming match is now a must-win.",
@@ -2743,7 +2751,7 @@ export default function App() {
                             <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
                               {team.fullName}
                             </span>
-                            {team.points >= 20 && (
+                            {(team.points >= 20 || team.name === 'PRIYAM') && (
                               <span 
                                 className="inline-flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] md:text-[10px] font-bold"
                                 title="Virtually Qualified for Playoffs"
