@@ -539,6 +539,14 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS = [
   {
+    id: 59,
+    title: "SONU REMAINS THE LAST UNBEATEN PLAYER",
+    excerpt: "After Aryan's shock defeat, Sonu is now the only undefeated player left in the tournament. With just 2 matches remaining, can he maintain this incredible streak and secure the ultimate invincible title?",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 1400000
+  },
+  {
     id: 58,
     title: "AYUSH SHOCKS ARYAN: THE UNBEATEN RUN ENDS",
     excerpt: "Ayush Saha pulls off the unthinkable, handing Aryan Sarkar his first defeat of the tournament with a gritty 1-0 victory. Dembélé's 45th-minute strike was the difference as Ayush's defense held firm.",
