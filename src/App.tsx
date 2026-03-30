@@ -361,6 +361,16 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Cafu', goals: 1 }, { playerName: 'Nesta', goals: 1 }];
         homeStats = { shots: 4, shotsOnTarget: 4, possession: 61, passAccuracy: 93, fouls: 0, offsides: 0 };
         awayStats = { shots: 4, shotsOnTarget: 4, possession: 39, passAccuracy: 70, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "AYUSH") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Cambiasso', goals: 1 }];
+        homeStats = { shots: 4, shotsOnTarget: 3, possession: 52, passAccuracy: 84, fouls: 0, offsides: 0 };
+        awayStats = { shots: 3, shotsOnTarget: 3, possession: 48, passAccuracy: 77, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SOUMAJIT" && sm.away === "ANIMESH") {
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
+        homeStats = { shots: 5, shotsOnTarget: 5, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 87, fouls: 1, offsides: 0 };
       }
     }
 
@@ -538,6 +548,30 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 62,
+    title: "AYUSH DROPS OUT OF THE TOP 4",
+    excerpt: "Following a disastrous run of form and three consecutive defeats, Ayush has officially fallen out of the top 4. The pressure is mounting as the race for the quarter-finals intensifies.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 1700000
+  },
+  {
+    id: 61,
+    title: "AYUSH'S TOP 4 SPOT IN JEOPARDY",
+    excerpt: "Following three consecutive defeats, Ayush's position in the top 4 is now under serious threat. With players like Samriddha closing the gap, the race for the quarter-finals is heating up.",
+    date: "30th March 2026",
+    category: "TOURNAMENT UPDATE",
+    timestamp: Date.now() + 1600000
+  },
+  {
+    id: 60,
+    title: "AYUSH SUFFERS 3 CONSECUTIVE LOSSES",
+    excerpt: "After a strong start, Ayush has hit a major slump, suffering three back-to-back defeats. The latest 1-0 loss to Soumajit adds to the pressure as the tournament progresses.",
+    date: "30th March 2026",
+    category: "TOURNAMENT UPDATE",
+    timestamp: Date.now() + 1500000
+  },
   {
     id: 59,
     title: "SONU REMAINS THE LAST UNBEATEN PLAYER",
