@@ -376,6 +376,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'João Neves', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 62, passAccuracy: 81, fouls: 0, offsides: 0 };
         awayStats = { shots: 1, shotsOnTarget: 0, possession: 38, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "PRIYAM") {
+        homeScore = 2; awayScore = 3; status = 'finished';
+        homeScorers = [{ playerName: 'Pirlo', goals: 1 }, { playerName: 'Al Owairan', goals: 1 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Bale', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 49, passAccuracy: 82, fouls: 1, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 51, passAccuracy: 90, fouls: 1, offsides: 0 };
       }
     }
 
@@ -553,6 +559,14 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 64,
+    title: "SHOCKING: SONU SUFFERS FIRST DEFEAT!",
+    excerpt: "The invincible run is over! Priyam delivers a stunning 3-2 victory over the previously unbeaten Sonu in a thrilling Matchday 4 encounter. The tournament is now wide open!",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 1900000
+  },
   {
     id: 63,
     title: "BARNIK SECURES LATE WIN OVER ANIMESH",
