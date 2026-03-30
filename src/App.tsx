@@ -340,6 +340,21 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 78, fouls: 0, offsides: 0 };
         awayStats = { shots: 7, shotsOnTarget: 5, possession: 52, passAccuracy: 72, fouls: 0, offsides: 0 };
+      } else if (sm.home === "SAMRIDDHA" && sm.away === "DIBYAJOTI") {
+        homeScore = 8; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Zico', goals: 2 }, { playerName: 'Al Owairan', goals: 2 }, { playerName: 'Ferdinand', goals: 1 }, { playerName: 'Aubameyang', goals: 1 }];
+        homeStats = { shots: 9, shotsOnTarget: 9, possession: 52, passAccuracy: 84, fouls: 1, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 67, fouls: 1, offsides: 0 };
+      } else if (sm.home === "PRIYAM" && sm.away === "DIBYAJOTI") {
+        homeScore = 3; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Vini Jr.', goals: 1 }];
+        homeStats = { shots: 7, shotsOnTarget: 6, possession: 51, passAccuracy: 86, fouls: 0, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 49, passAccuracy: 57, fouls: 0, offsides: 0 };
+      } else if (sm.home === "AYUSH" && sm.away === "ARYAN") {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Dembélé', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 75, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 0, possession: 60, passAccuracy: 87, fouls: 0, offsides: 0 };
       }
     }
 
@@ -517,6 +532,30 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 58,
+    title: "AYUSH SHOCKS ARYAN: THE UNBEATEN RUN ENDS",
+    excerpt: "Ayush Saha pulls off the unthinkable, handing Aryan Sarkar his first defeat of the tournament with a gritty 1-0 victory. Dembélé's 45th-minute strike was the difference as Ayush's defense held firm.",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 1300000
+  },
+  {
+    id: 57,
+    title: "SAMRIDDHA DESTROYS DIBYAJOTI 8-0",
+    excerpt: "Samriddha Mandal showed no mercy in an 8-0 demolition of Dibyajoti. Zico and Al Owairan both bagged braces in a completely one-sided affair.",
+    date: "30th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 1200000
+  },
+  {
+    id: 56,
+    title: "PRIYAM SECURES COMFORTABLE 3-0 WIN",
+    excerpt: "Priyam cruised to a 3-0 victory over Dibyajoti, with Cruyff scoring twice and Vini Jr. adding another to secure all three points.",
+    date: "30th March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 1100000
+  },
   {
     id: 55,
     title: "ARYAN'S 3-0 MASTERCLASS OVER SAGNIK",
@@ -1739,6 +1778,30 @@ export default function App() {
           title: 'ARYAN Dominates SAGNIK with 3-0 Win',
           excerpt: 'C. Ronaldo bagged a brace and Al Owairan added another as ARYAN comfortably defeated SAGNIK 3-0, showcasing their attacking prowess.',
           timestamp: Date.now()
+        },
+        {
+          id: 'news-md4-ayush-aryan',
+          category: 'Breaking News',
+          date: '30th March 2026',
+          title: 'AYUSH Shocks ARYAN: The Unbeaten Run Ends',
+          excerpt: 'Ayush Saha pulls off the unthinkable, handing Aryan Sarkar his first defeat of the tournament with a gritty 1-0 victory. Dembélé\'s 45th-minute strike was the difference.',
+          timestamp: Date.now() + 1000
+        },
+        {
+          id: 'news-md4-samriddha-dibyajoti',
+          category: 'Match Report',
+          date: '30th March 2026',
+          title: 'SAMRIDDHA Destroys DIBYAJOTI 8-0',
+          excerpt: 'Samriddha Mandal showed no mercy in an 8-0 demolition of Dibyajoti. Zico and Al Owairan both bagged braces in a completely one-sided affair.',
+          timestamp: Date.now() + 2000
+        },
+        {
+          id: 'news-md4-priyam-dibyajoti',
+          category: 'Match Report',
+          date: '30th March 2026',
+          title: 'PRIYAM Secures Comfortable 3-0 Win',
+          excerpt: 'Priyam cruised to a 3-0 victory over Dibyajoti, with Cruyff scoring twice and Vini Jr. adding another to secure all three points.',
+          timestamp: Date.now() + 3000
         }
       ];
 
@@ -2532,10 +2595,18 @@ export default function App() {
                           </div>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4">
-                          <div className="flex items-center min-w-0">
+                          <div className="flex items-center min-w-0 gap-2">
                             <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
                               {team.fullName}
                             </span>
+                            {team.points >= 20 && (
+                              <span 
+                                className="inline-flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] md:text-[10px] font-bold"
+                                title="Virtually Qualified for Playoffs"
+                              >
+                                Q
+                              </span>
+                            )}
                           </div>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-mono text-xs text-white/40">{team.fcName}</td>
