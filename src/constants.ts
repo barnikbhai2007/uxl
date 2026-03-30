@@ -139,18 +139,29 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "PRIYAM", home: "SONU", matchday: 4 },
 
   // Matchday 5 - 31st March (Qualifiers & Quarterfinals)
-  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 1
-  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 2
-  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 3
-  { away: "TBD", home: "TBD", matchday: 5, type: 'qualifier' }, // Qualifier 4
-  { away: "TBD", home: "Aryan / TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 1
-  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 2
-  { away: "TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 3
-  { away: "Aryan / TBD", home: "TBD", matchday: 5, type: 'quarterfinal' }, // Quarterfinal 4
+  { away: "ANIMESH", home: "BARNIK", matchday: 5, type: 'qualifier', matchNumber: 73 },
+  { away: "RAJAT", home: "RANAJAY", matchday: 5, type: 'qualifier', matchNumber: 74 },
+  { away: "SONU", home: "SAGNIK", matchday: 5, type: 'qualifier', matchNumber: 75 },
+  { away: "AYUSH", home: "SOUMAJIT", matchday: 5, type: 'qualifier', matchNumber: 76 },
+  { away: "BARNIK", home: "ANIMESH", matchday: 5, type: 'qualifier', matchNumber: 77 },
+  { away: "RANAJAY", home: "RAJAT", matchday: 5, type: 'qualifier', matchNumber: 78 },
+  { away: "SAGNIK", home: "SONU", matchday: 5, type: 'qualifier', matchNumber: 79 },
+  { away: "SOUMAJIT", home: "AYUSH", matchday: 5, type: 'qualifier', matchNumber: 80 },
+
+  { away: "ARYAN", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 81 },
+  { away: "PRIYAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 82 },
+  { away: "PRITAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 83 },
+  { away: "SAMRIDDHA", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 84 },
+  { away: "TBD", home: "ARYAN", matchday: 5, type: 'quarterfinal', matchNumber: 85 },
+  { away: "TBD", home: "PRIYAM", matchday: 5, type: 'quarterfinal', matchNumber: 86 },
+  { away: "TBD", home: "PRITAM", matchday: 5, type: 'quarterfinal', matchNumber: 87 },
+  { away: "TBD", home: "SAMRIDDHA", matchday: 5, type: 'quarterfinal', matchNumber: 88 },
 
   // Matchday 6 - 1st April (Semis, 3rd Place & Final)
-  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal' }, // Semi-final 1
-  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal' }, // Semi-final 2
-  { away: "TBD", home: "TBD", matchday: 6, type: 'thirdplace' }, // 3rd Place Match
-  { away: "TBD", home: "TBD", matchday: 6, type: 'final' }, // Grand Final
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 89 },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 90 },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 91 },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 92 },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'thirdplace', matchNumber: 93 },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'final', matchNumber: 94 },
 ];

@@ -457,6 +457,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       status = 'live';
     }
 
+    // Set Matchday 5 Qualifiers (31st March) to live if not finished
+    if (sm.matchday === 5 && sm.type === 'qualifier' && status === 'scheduled') {
+      status = 'live';
+    }
+
     return {
       id: `m-${index + 1}`,
       matchNumber: sm.matchNumber || index + 1,
@@ -1268,9 +1273,9 @@ const NEWS_POSTS = [
                 <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
                   match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
                   match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                  ((match.date === '27th March 2026' || match.date === '28th March 2026' || match.date === '29th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                  match.status === 'live' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400'
                 }`}>
-                  {(match.date === '27th March 2026' || match.date === '28th March 2026' || match.date === '29th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
+                  {match.status === 'live' && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
@@ -1278,7 +1283,7 @@ const NEWS_POSTS = [
                   )}
                   {match.status === 'finished' ? 'Final Result' : 
                    match.status === 'rescheduled' ? 'Rescheduled' :
-                   ((match.date === '27th March 2026' || match.date === '28th March 2026' || match.date === '29th March 2026') ? 'Ongoing' : 'Match Scheduled')}
+                   match.status === 'live' ? 'Ongoing' : 'Match Scheduled'}
                 </div>
               </div>
 
@@ -1566,7 +1571,9 @@ const NEWS_POSTS = [
     handlePostNews,
     bracket,
     isSavingBracket,
-    handleSaveBracket
+    handleSaveBracket,
+    standings,
+    matches
   }: { 
     isAdmin: boolean,
     onClose: () => void,
@@ -1595,10 +1602,12 @@ const NEWS_POSTS = [
     handlePostNews: () => void,
     bracket: BracketMatch[],
     isSavingBracket: boolean,
-    handleSaveBracket: (match: BracketMatch) => void
+    handleSaveBracket: (match: BracketMatch) => void,
+    standings: Team[],
+    matches: Match[]
   }) => {
     const [newCandidateTeam, setNewCandidateTeam] = useState(TEAMS_LIST[0]);
-    const [activeTab, setActiveTab] = useState<'voting' | 'news' | 'bracket'>('voting');
+    const [activeTab, setActiveTab] = useState<'voting' | 'news' | 'bracket' | 'stats'>('voting');
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
     const [editHomeName, setEditHomeName] = useState('');
     const [editAwayName, setEditAwayName] = useState('');
@@ -1695,6 +1704,12 @@ const NEWS_POSTS = [
               className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bracket' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
+            </button>
+            <button 
+              onClick={() => setActiveTab('stats')}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stats' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Stats
             </button>
           </div>
 
@@ -1937,6 +1952,103 @@ const NEWS_POSTS = [
                 </div>
               </div>
             )}
+            {activeTab === 'stats' && (
+              <div className="space-y-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Total Matches</p>
+                    <p className="text-2xl font-display font-black italic text-white">{matches.filter(m => m.status === 'finished').length}</p>
+                  </div>
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Total Goals</p>
+                    <p className="text-2xl font-display font-black italic text-blue-400">
+                      {matches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0)}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Avg Goals/Match</p>
+                    <p className="text-2xl font-display font-black italic text-white">
+                      {(matches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0) / (matches.filter(m => m.status === 'finished').length || 1)).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Tournament Records</h3>
+                  <div className="grid grid-cols-1 gap-3">
+                    {(() => {
+                      const finishedMatches = matches.filter(m => m.status === 'finished');
+                      if (finishedMatches.length === 0) return <p className="text-xs text-white/40 italic">No finished matches yet.</p>;
+
+                      const biggestWin = [...finishedMatches].sort((a, b) => Math.abs((b.homeScore || 0) - (b.awayScore || 0)) - Math.abs((a.homeScore || 0) - (a.awayScore || 0)))[0];
+                      const highestScoringMatch = [...finishedMatches].sort((a, b) => ((b.homeScore || 0) + (b.awayScore || 0)) - ((a.homeScore || 0) + (a.awayScore || 0)))[0];
+                      
+                      const playerGoalsInMatch: { player: string, goals: number, match: Match, team: string }[] = [];
+                      finishedMatches.forEach(m => {
+                        m.homeScorers?.forEach(s => playerGoalsInMatch.push({ player: s.playerName, goals: s.goals, match: m, team: m.homeTeamId }));
+                        m.awayScorers?.forEach(s => playerGoalsInMatch.push({ player: s.playerName, goals: s.goals, match: m, team: m.awayTeamId }));
+                      });
+                      const topPlayerInMatch = playerGoalsInMatch.sort((a, b) => b.goals - a.goals)[0];
+
+                      return (
+                        <>
+                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Biggest Win</p>
+                              <p className="text-xs font-bold text-white">{biggestWin.homeScore} - {biggestWin.awayScore}</p>
+                              <p className="text-[9px] text-blue-400 uppercase font-black">{biggestWin.homeTeamId} vs {biggestWin.awayTeamId}</p>
+                            </div>
+                            <Trophy className="w-5 h-5 text-yellow-500/40" />
+                          </div>
+                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
+                            <div>
+                              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Highest Scoring Match</p>
+                              <p className="text-xs font-bold text-white">{(highestScoringMatch.homeScore || 0) + (highestScoringMatch.awayScore || 0)} Goals</p>
+                              <p className="text-[9px] text-blue-400 uppercase font-black">{highestScoringMatch.homeTeamId} {highestScoringMatch.homeScore} - {highestScoringMatch.awayScore} {highestScoringMatch.awayTeamId}</p>
+                            </div>
+                            <BarChart2 className="w-5 h-5 text-blue-500/40" />
+                          </div>
+                          {topPlayerInMatch && (
+                            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
+                              <div>
+                                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Most Goals by Player in a Match</p>
+                                <p className="text-xs font-bold text-white">{topPlayerInMatch.player} ({topPlayerInMatch.goals} Goals)</p>
+                                <p className="text-[9px] text-blue-400 uppercase font-black">For {topPlayerInMatch.team} vs {topPlayerInMatch.match.homeTeamId === topPlayerInMatch.team ? topPlayerInMatch.match.awayTeamId : topPlayerInMatch.match.homeTeamId}</p>
+                              </div>
+                              <Award className="w-5 h-5 text-purple-500/40" />
+                            </div>
+                          )}
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Team Stats</h3>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Best Attack (Most Goals)</p>
+                      {standings.slice().sort((a, b) => b.gf - a.gf).slice(0, 3).map((t, i) => (
+                        <div key={t.id} className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-white/80">{i+1}. {t.name}</span>
+                          <span className="text-xs font-bold text-blue-400">{t.gf}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Best Defense (Least GA)</p>
+                      {standings.slice().sort((a, b) => a.ga - b.ga).slice(0, 3).map((t, i) => (
+                        <div key={t.id} className="flex justify-between items-center mb-1">
+                          <span className="text-xs text-white/80">{i+1}. {t.name}</span>
+                          <span className="text-xs font-bold text-green-400">{t.ga}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="p-8 border-t border-white/10 bg-white/5 flex flex-col md:flex-row gap-4">
@@ -2174,14 +2286,14 @@ export default function App() {
     const seedBracket = async () => {
       if (!isAdmin) return;
       const initialBracket: BracketMatch[] = [
-        { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'Aryan / TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-        { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'Aryan / TBD', homeScore: 0, awayScore: 0 },
+        { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'BARNIK', awayTeamName: 'ANIMESH', homeScore: 0, awayScore: 0 },
+        { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'RANAJAY', awayTeamName: 'RAJAT', homeScore: 0, awayScore: 0 },
+        { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'SAGNIK', awayTeamName: 'SONU', homeScore: 0, awayScore: 0 },
+        { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'SOUMAJIT', awayTeamName: 'AYUSH', homeScore: 0, awayScore: 0 },
+        { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'ARYAN', homeScore: 0, awayScore: 0 },
+        { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'PRIYAM', homeScore: 0, awayScore: 0 },
+        { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'PRITAM', homeScore: 0, awayScore: 0 },
+        { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'SAMRIDDHA', homeScore: 0, awayScore: 0 },
         { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
         { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
         { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0 },
@@ -2636,6 +2748,9 @@ export default function App() {
   const firstUpcomingDay = useMemo(() => {
     const days = Object.keys(matchesByDay).sort((a, b) => {
       if (a === b) return 0;
+      if (a === '31st March 2026') return -1;
+      if (b === '31st March 2026') return 1;
+      
       if (a === '30th March 2026') return -1;
       if (b === '30th March 2026') return 1;
       
@@ -3157,6 +3272,9 @@ export default function App() {
                     const dateB = b[0];
                     
                     if (dateA === dateB) return 0;
+                    if (dateA === '31st March 2026') return -1;
+                    if (dateB === '31st March 2026') return 1;
+                    
                     if (dateA === '30th March 2026') return -1;
                     if (dateB === '30th March 2026') return 1;
                     
@@ -3256,17 +3374,19 @@ export default function App() {
                             <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
                               match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
                               match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                              ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026' || day === '30th March 2026') ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400')
+                              match.status === 'live' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400'
                             }`}>
-                              {(day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026' || day === '30th March 2026') && match.status !== 'finished' && match.status !== 'rescheduled' && (
+                              {match.status === 'live' && (
                                 <span className="relative flex h-1.5 w-1.5">
                                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
                                 </span>
                               )}
-                              {match.status === 'finished' ? 'Final' : 
-                               match.status === 'rescheduled' ? 'Rescheduled' :
-                               ((day === '27th March 2026' || day === '28th March 2026' || day === '29th March 2026' || day === '30th March 2026') ? 'Ongoing' : 'Upcoming')}
+                              <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">
+                                {match.status === 'finished' ? 'Final' : 
+                                 match.status === 'rescheduled' ? 'Rescheduled' :
+                                 match.status === 'live' ? 'Ongoing' : 'Upcoming'}
+                              </span>
                             </div>
                             <div className="flex items-center gap-2 md:gap-4">
                               <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
@@ -3313,12 +3433,12 @@ export default function App() {
                     const match = getBracketMatch(`qual-${i}`);
                     return (
                       <div key={`qual-${i}`} className="relative">
-                        <div className="min-w-[220px] w-auto bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10 gap-4`}>
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10 gap-6`}>
                             <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-cyan-400">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''} gap-4`}>
+                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''} gap-6`}>
                             <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-cyan-400">{match.awayScore ?? '-'}</span>
                           </div>
@@ -3331,20 +3451,21 @@ export default function App() {
                 </div>
 
                 {/* Quarter Finals */}
-                <div className="flex flex-col justify-around gap-16">
+                <div className="flex flex-col justify-center gap-16">
                   <h3 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-indigo-400/10 py-1 rounded border border-indigo-400/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const match = getBracketMatch(`qf-${i}`);
+                    const isDashed = i === 1 || i === 3;
                     return (
                       <div key={`qf-${i}`} className="relative">
-                        <div className="min-w-[220px] w-auto bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-4">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
                             <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
                               {match.homeTeamName || 'TBD'}
                             </span>
                             <span className="font-mono font-bold text-indigo-400">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-4">
+                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
                             <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
                               {match.awayTeamName || 'TBD'}
                             </span>
@@ -3352,37 +3473,45 @@ export default function App() {
                           </div>
                         </div>
                         {/* Connector Line */}
-                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
+                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] ${isDashed ? 'border-t border-dashed border-white/40' : 'bg-white/20'}`} />
                         {i % 2 === 0 ? (
-                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+112px)] bg-white/20" />
-                        ) : null}
+                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(50%+32px)] bg-white/20" />
+                        ) : (
+                          <div className={`absolute -right-8 bottom-1/2 w-[1px] h-[calc(50%+32px)] ${isDashed ? 'border-r border-dashed border-white/40' : 'bg-white/20'}`} />
+                        )}
                       </div>
                     );
                   })}
                 </div>
 
                 {/* Semi Finals */}
-                <div className="flex flex-col justify-around gap-32">
+                <div className="flex flex-col justify-center gap-32">
                   <h3 className="text-purple-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-purple-400/10 py-1 rounded border border-purple-400/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => {
                     const match = getBracketMatch(`sf-${i}`);
+                    const isDashed = i === 1;
                     return (
                       <div key={`sf-${i}`} className="relative">
-                        <div className="min-w-[220px] w-auto bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-4">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
                             <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-purple-400">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-4">
+                          <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
                             <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-purple-400">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
-                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20`} />
+                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] ${isDashed ? 'border-t border-dashed border-white/40' : 'bg-white/20'}`} />
                         {i % 2 === 0 ? (
-                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(100%+272px)] bg-white/20" />
-                        ) : null}
+                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(50%+64px)] bg-white/20" />
+                        ) : (
+                          <div className={`absolute -right-8 bottom-1/2 w-[1px] h-[calc(50%+64px)] ${isDashed ? 'border-r border-dashed border-white/40' : 'bg-white/20'}`}>
+                            {/* Horizontal line to next round */}
+                            <div className="absolute top-0 left-0 w-8 h-[1px] bg-white/20" />
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -3395,13 +3524,13 @@ export default function App() {
                     {(() => {
                       const match = getBracketMatch('final');
                       return (
-                        <div className="min-w-[260px] w-auto bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
+                        <div className="w-fit min-w-[200px] bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
                           <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
-                            <div className="p-4 flex justify-between items-center gap-4">
+                            <div className="p-4 flex justify-between items-center gap-8">
                               <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                               <span className="font-mono font-black text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
                             </div>
-                            <div className="p-4 flex justify-between items-center border-t border-white/5 gap-4">
+                            <div className="p-4 flex justify-between items-center border-t border-white/5 gap-8">
                               <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                               <span className="font-mono font-black text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
                             </div>
@@ -3416,13 +3545,13 @@ export default function App() {
                     {(() => {
                       const match = getBracketMatch('third-place');
                       return (
-                        <div className="min-w-[260px] w-auto bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
+                        <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
                           <div className="bg-[#000020] rounded-lg overflow-hidden relative z-10">
-                            <div className="p-3 flex justify-between items-center gap-4">
+                            <div className="p-3 flex justify-between items-center gap-8">
                               <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                               <span className="font-mono font-bold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
                             </div>
-                            <div className="p-3 flex justify-between items-center border-t border-white/5 gap-4">
+                            <div className="p-3 flex justify-between items-center border-t border-white/5 gap-8">
                               <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                               <span className="font-mono font-bold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
                             </div>
@@ -3437,6 +3566,21 @@ export default function App() {
                     <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500/50">Champion</span>
                   </div>
                 </div>
+              </div>
+              
+              {/* Legend */}
+              <div className="mt-12 flex flex-col items-center gap-4">
+                <div className="flex flex-wrap justify-center gap-8 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-[1px] bg-white/40" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Straight Line = 1st Leg Home</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-[1px] border-t border-dashed border-white/60" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Cutted Line = 2nd Leg Home</span>
+                  </div>
+                </div>
+                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400/40 italic">Note: Seeding benefit allows play second leg at home</p>
               </div>
             </motion.div>
           )}
@@ -3542,6 +3686,8 @@ export default function App() {
             bracket={bracket}
             isSavingBracket={isSavingBracket}
             handleSaveBracket={handleSaveBracket}
+            standings={standings}
+            matches={matches}
           />
         )}
       </AnimatePresence>
