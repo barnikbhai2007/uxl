@@ -382,6 +382,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Bale', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 49, passAccuracy: 82, fouls: 1, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 51, passAccuracy: 90, fouls: 1, offsides: 0 };
+      } else if (sm.home === "SONU" && sm.away === "RAJAT") {
+        homeScore = 3; awayScore = 3; status = 'finished';
+        homeScorers = [{ playerName: 'Nesta', goals: 1 }, { playerName: 'Völler', goals: 1 }, { playerName: 'Mbappé', goals: 1 }];
+        awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Courtois', goals: 2 }];
+        homeStats = { shots: 4, shotsOnTarget: 4, possession: 49, passAccuracy: 82, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
       }
     }
 
@@ -559,6 +565,14 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 65,
+    title: "CRISIS FOR SONU: COULD HE DROP OUT OF THE TOP 4?",
+    excerpt: "After a shocking defeat to Priyam and a chaotic 3-3 draw against Rajat, Sonu's previously unassailable position is crumbling. With points dropped in crucial matches, the former invincible leader is now at serious risk of falling out of the top 4 entirely!",
+    date: "30th March 2026",
+    category: "BREAKING NEWS",
+    timestamp: Date.now() + 2000000
+  },
   {
     id: 64,
     title: "SHOCKING: SONU SUFFERS FIRST DEFEAT!",
