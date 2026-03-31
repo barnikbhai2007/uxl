@@ -55,6 +55,7 @@ export interface RawMatch {
   type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
   rescheduled?: boolean;
   matchNumber?: number;
+  leg?: 'Leg 1' | 'Leg 2';
 }
 
 export const TOURNAMENT_SCHEDULE: RawMatch[] = [
@@ -139,29 +140,29 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "PRIYAM", home: "SONU", matchday: 4 },
 
   // Matchday 5 - 31st March (Qualifiers & Quarterfinals)
-  { away: "ANIMESH", home: "BARNIK", matchday: 5, type: 'qualifier', matchNumber: 73 },
-  { away: "RAJAT", home: "RANAJAY", matchday: 5, type: 'qualifier', matchNumber: 74 },
-  { away: "SONU", home: "SAGNIK", matchday: 5, type: 'qualifier', matchNumber: 75 },
-  { away: "AYUSH", home: "SOUMAJIT", matchday: 5, type: 'qualifier', matchNumber: 76 },
-  { away: "BARNIK", home: "ANIMESH", matchday: 5, type: 'qualifier', matchNumber: 77 },
-  { away: "RANAJAY", home: "RAJAT", matchday: 5, type: 'qualifier', matchNumber: 78 },
-  { away: "SAGNIK", home: "SONU", matchday: 5, type: 'qualifier', matchNumber: 79 },
-  { away: "SOUMAJIT", home: "AYUSH", matchday: 5, type: 'qualifier', matchNumber: 80 },
+  { away: "ANIMESH", home: "BARNIK", matchday: 5, type: 'qualifier', matchNumber: 73, leg: 'Leg 1' },
+  { away: "RAJAT", home: "RANAJAY", matchday: 5, type: 'qualifier', matchNumber: 74, leg: 'Leg 1' },
+  { away: "SONU", home: "SAGNIK", matchday: 5, type: 'qualifier', matchNumber: 75, leg: 'Leg 1' },
+  { away: "AYUSH", home: "SOUMAJIT", matchday: 5, type: 'qualifier', matchNumber: 76, leg: 'Leg 1' },
+  { away: "BARNIK", home: "ANIMESH", matchday: 5, type: 'qualifier', matchNumber: 77, leg: 'Leg 2' },
+  { away: "RANAJAY", home: "RAJAT", matchday: 5, type: 'qualifier', matchNumber: 78, leg: 'Leg 2' },
+  { away: "SAGNIK", home: "SONU", matchday: 5, type: 'qualifier', matchNumber: 79, leg: 'Leg 2' },
+  { away: "SOUMAJIT", home: "AYUSH", matchday: 5, type: 'qualifier', matchNumber: 80, leg: 'Leg 2' },
 
-  { away: "ARYAN", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 81 },
-  { away: "PRIYAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 82 },
-  { away: "PRITAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 83 },
-  { away: "SAMRIDDHA", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 84 },
-  { away: "TBD", home: "ARYAN", matchday: 5, type: 'quarterfinal', matchNumber: 85 },
-  { away: "TBD", home: "PRIYAM", matchday: 5, type: 'quarterfinal', matchNumber: 86 },
-  { away: "TBD", home: "PRITAM", matchday: 5, type: 'quarterfinal', matchNumber: 87 },
-  { away: "TBD", home: "SAMRIDDHA", matchday: 5, type: 'quarterfinal', matchNumber: 88 },
+  { away: "ARYAN", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 81, leg: 'Leg 1' },
+  { away: "PRIYAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 82, leg: 'Leg 1' },
+  { away: "PRITAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 83, leg: 'Leg 1' },
+  { away: "SAMRIDDHA", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 84, leg: 'Leg 1' },
+  { away: "TBD", home: "ARYAN", matchday: 5, type: 'quarterfinal', matchNumber: 85, leg: 'Leg 2' },
+  { away: "TBD", home: "PRIYAM", matchday: 5, type: 'quarterfinal', matchNumber: 86, leg: 'Leg 2' },
+  { away: "TBD", home: "PRITAM", matchday: 5, type: 'quarterfinal', matchNumber: 87, leg: 'Leg 2' },
+  { away: "TBD", home: "SAMRIDDHA", matchday: 5, type: 'quarterfinal', matchNumber: 88, leg: 'Leg 2' },
 
   // Matchday 6 - 1st April (Semis, 3rd Place & Final)
-  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 89 },
-  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 90 },
-  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 91 },
-  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 92 },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 89, leg: 'Leg 1' },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 90, leg: 'Leg 1' },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 91, leg: 'Leg 2' },
+  { away: "TBD", home: "TBD", matchday: 6, type: 'semifinal', matchNumber: 92, leg: 'Leg 2' },
   { away: "TBD", home: "TBD", matchday: 6, type: 'thirdplace', matchNumber: 93 },
   { away: "TBD", home: "TBD", matchday: 6, type: 'final', matchNumber: 94 },
 ];

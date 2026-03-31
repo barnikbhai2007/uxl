@@ -465,9 +465,9 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     // Inject results from images (Matchday 5)
     if (sm.matchday === 5) {
       if (sm.home === "RANAJAY" && sm.away === "RAJAT") {
-        homeScore = 1; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
-        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }, { playerName: 'Lamine Yamal', goals: 1 }];
+        homeScore = 2; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Zamorano', goals: 2 }];
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 3, shotsOnTarget: 2, possession: 50, passAccuracy: 82, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 86, fouls: 0, offsides: 0 };
       }
@@ -477,6 +477,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       id: `m-${index + 1}`,
       matchNumber: sm.matchNumber || index + 1,
       matchday: sm.matchday,
+      leg: sm.leg,
       homeTeamId: homeTeam?.id || 'TBD',
       awayTeamId: awayTeam?.id || 'TBD',
       homeScore,
@@ -1920,9 +1921,9 @@ const NEWS_POSTS = [
                                     <div className="space-y-1">
                                       <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
                                       <input 
-                                        type="number" 
+                                        type="text" 
                                         value={editHomeScore} 
-                                        onChange={e => setEditHomeScore(Number(e.target.value))}
+                                        onChange={e => setEditHomeScore(parseInt(e.target.value) || 0)}
                                         onKeyDown={e => {
                                           if (e.key === 'Enter') saveMatch();
                                           if (e.key === 'Escape') setEditingMatchId(null);
@@ -1933,9 +1934,9 @@ const NEWS_POSTS = [
                                     <div className="space-y-1">
                                       <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
                                       <input 
-                                        type="number" 
+                                        type="text" 
                                         value={editAwayScore} 
-                                        onChange={e => setEditAwayScore(Number(e.target.value))}
+                                        onChange={e => setEditAwayScore(parseInt(e.target.value) || 0)}
                                         onKeyDown={e => {
                                           if (e.key === 'Enter') saveMatch();
                                           if (e.key === 'Escape') setEditingMatchId(null);
@@ -3393,14 +3394,21 @@ export default function App() {
                             </div>
                             
                             {match.type && (
-                              <div className={`text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border ${
-                                match.type === 'qualifier' ? 'text-cyan-400 border-cyan-400/30 bg-cyan-400/5' :
-                                match.type === 'quarterfinal' ? 'text-indigo-400 border-indigo-400/30 bg-indigo-400/5' :
-                                match.type === 'semifinal' ? 'text-purple-400 border-purple-400/30 bg-purple-400/5' :
-                                match.type === 'thirdplace' ? 'text-orange-400 border-orange-400/30 bg-orange-400/5' :
-                                'text-yellow-400 border-yellow-400/30 bg-yellow-400/5'
-                              }`}>
-                                {match.type}
+                              <div className="flex flex-col gap-1 items-center">
+                                <div className={`text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border ${
+                                  match.type === 'qualifier' ? 'text-cyan-400 border-cyan-400/30 bg-cyan-400/5' :
+                                  match.type === 'quarterfinal' ? 'text-indigo-400 border-indigo-400/30 bg-indigo-400/5' :
+                                  match.type === 'semifinal' ? 'text-purple-400 border-purple-400/30 bg-purple-400/5' :
+                                  match.type === 'thirdplace' ? 'text-orange-400 border-orange-400/30 bg-orange-400/5' :
+                                  'text-yellow-400 border-yellow-400/30 bg-yellow-400/5'
+                                }`}>
+                                  {match.type}
+                                </div>
+                                {match.leg && (
+                                  <div className="text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-white/40">
+                                    {match.leg}
+                                  </div>
+                                )}
                               </div>
                             )}
 

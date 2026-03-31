@@ -48,6 +48,7 @@ export interface Match {
   type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
   rescheduled?: boolean;
   matchday?: number;
+  leg?: 'Leg 1' | 'Leg 2';
 }
 
 export interface BracketMatch {
@@ -61,6 +62,7 @@ export interface BracketMatch {
   winnerId?: string;
   nextMatchId?: string;
   round: string;
+  leg?: 'Leg 1' | 'Leg 2';
 }
 
 export interface VotingCandidate {
