@@ -31,6 +31,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     let awayScorers: Scorer[] = [];
     let homeStats: Match['homeStats'];
     let awayStats: Match['awayStats'];
+    let isDNF = false;
 
     // Inject results from images (Matchday 1)
     if (sm.matchday === 1) {
@@ -470,6 +471,31 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 3, shotsOnTarget: 2, possession: 50, passAccuracy: 82, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 73) {
+        homeScore = 2; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Gabriel', goals: 1 }, { playerName: 'Palmer', goals: 1 }];
+        homeStats = { shots: 4, shotsOnTarget: 3, possession: 57, passAccuracy: 91, fouls: 0, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 71, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 77) {
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Al Owairan', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 60, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 76) {
+        homeScore = 1; awayScore = 1; status = 'finished';
+        homeScorers = [{ playerName: 'Gullit', goals: 1 }];
+        awayScorers = [{ playerName: 'Dembélé', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 44, passAccuracy: 84, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 4, possession: 56, passAccuracy: 85, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 78) {
+        homeScore = 1; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 48, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 4, shotsOnTarget: 3, possession: 52, passAccuracy: 82, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 75 || sm.matchNumber === 79) {
+        status = 'finished';
+        isDNF = true;
       }
     }
 
@@ -490,6 +516,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       status: (sm.rescheduled && sm.matchday <= 2) ? 'rescheduled' : status,
       type: sm.type,
       rescheduled: sm.rescheduled,
+      isDNF,
     };
   });
 };
@@ -645,6 +672,30 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 };
 
 const NEWS_POSTS = [
+  {
+    id: 74,
+    title: "BARNIK ADVANCES TO QUARTER-FINALS!",
+    excerpt: "Barnik (brokenaqua) secured his place in the quarter-finals with a 1-0 win over Animesh in the second leg of their Qualifier. Al Owairan's clinical finish ensured a comfortable aggregate victory.",
+    date: "31st March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 4500000
+  },
+  {
+    id: 73,
+    title: "BARNIK DOMINATES ANIMESH 2-0 IN QUALIFIER LEG 1",
+    excerpt: "Barnik (brokenaqua) took a massive step towards the next round with a clinical 2-0 victory over Animesh. Gabriel's early strike and Palmer's late goal secured a dominant first-leg lead.",
+    date: "31st March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 4000000
+  },
+  {
+    id: 72,
+    title: "SOUMAJIT AND AYUSH BATTLE TO 1-1 DRAW",
+    excerpt: "In a high-intensity Qualifier Leg 1 encounter, Soumajit and Ayush played out a thrilling 1-1 draw. Gullit's 62nd-minute equalizer canceled out Dembélé's early opener, leaving the tie wide open.",
+    date: "31st March 2026",
+    category: "MATCH REPORT",
+    timestamp: Date.now() + 3500000
+  },
   {
     id: 71,
     title: "PRITAM SECURES QUARTER-FINAL BERTH!",
@@ -1275,9 +1326,15 @@ const NEWS_POSTS = [
               <div className="flex flex-col items-center gap-2 md:gap-4">
                 <div className="text-[10px] md:text-xs font-black text-blue-400/50 uppercase tracking-widest">Score</div>
                 <div className="flex items-center gap-4 md:gap-6">
-                  <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
-                  <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
-                  <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
+                  {match.isDNF ? (
+                    <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
+                  ) : (
+                    <>
+                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
+                      <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
+                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
+                    </>
+                  )}
                 </div>
                 {match.rescheduled && match.status !== 'rescheduled' && (
                   <div className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-orange-400 mb-2">
@@ -2251,12 +2308,51 @@ export default function App() {
   };
 
   const getBracketMatch = (id: string) => {
-    return bracket.find(m => m.id === id) || {
+    const bracketMatch = bracket.find(m => m.id === id);
+    
+    // For Qualifier Round, try to get aggregate scores from matches
+    if (id.startsWith('qual-')) {
+      const index = parseInt(id.split('-')[1]);
+      const matchNumbers = [
+        [73, 77], // qual-0: Barnik vs Animesh
+        [74, 78], // qual-1: Ranajay vs Rajat
+        [75, 79], // qual-2: Sagnik vs Sonu
+        [76, 80]  // qual-3: Soumajit vs Ayush
+      ][index];
+
+      if (matchNumbers) {
+        const leg1 = matches.find(m => m.matchNumber === matchNumbers[0]);
+        const leg2 = matches.find(m => m.matchNumber === matchNumbers[1]);
+        
+        if (leg1 || leg2) {
+          const homeTeam = teams.find(t => t.name === (leg1?.homeTeamId === 'TBD' ? '' : teams.find(team => team.id === leg1?.homeTeamId)?.name));
+          const awayTeam = teams.find(t => t.name === (leg1?.awayTeamId === 'TBD' ? '' : teams.find(team => team.id === leg1?.awayTeamId)?.name));
+
+          // Calculate aggregate scores
+          // Note: In Leg 2, home and away are swapped in the schedule
+          const homeScore = (leg1?.homeScore || 0) + (leg2?.awayScore || 0);
+          const awayScore = (leg1?.awayScore || 0) + (leg2?.homeScore || 0);
+
+          return {
+            ...bracketMatch,
+            id,
+            homeTeamName: leg1 ? teams.find(t => t.id === leg1.homeTeamId)?.name : bracketMatch?.homeTeamName || 'TBD',
+            awayTeamName: leg1 ? teams.find(t => t.id === leg1.awayTeamId)?.name : bracketMatch?.awayTeamName || 'TBD',
+            homeScore,
+            awayScore,
+            round: 'Qualifier Round'
+          };
+        }
+      }
+    }
+
+    return bracketMatch || {
       id,
       homeTeamName: 'TBD',
       awayTeamName: 'TBD',
       homeScore: 0,
-      awayScore: 0
+      awayScore: 0,
+      round: ''
     };
   };
 
@@ -2329,9 +2425,9 @@ export default function App() {
         { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'RANAJAY', awayTeamName: 'RAJAT', homeScore: 0, awayScore: 0 },
         { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'SAGNIK', awayTeamName: 'SONU', homeScore: 0, awayScore: 0 },
         { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'SOUMAJIT', awayTeamName: 'AYUSH', homeScore: 0, awayScore: 0 },
-        { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'ARYAN', homeScore: 0, awayScore: 0 },
-        { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'PRIYAM', homeScore: 0, awayScore: 0 },
-        { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'PRITAM', homeScore: 0, awayScore: 0 },
+        { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'BARNIK', awayTeamName: 'ARYAN', homeScore: 0, awayScore: 0 },
+        { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'RANAJAY', awayTeamName: 'PRIYAM', homeScore: 0, awayScore: 0 },
+        { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'SONU', awayTeamName: 'PRITAM', homeScore: 0, awayScore: 0 },
         { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'SAMRIDDHA', homeScore: 0, awayScore: 0 },
         { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
         { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },

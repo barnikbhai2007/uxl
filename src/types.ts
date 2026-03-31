@@ -47,6 +47,7 @@ export interface Match {
   status: 'scheduled' | 'live' | 'finished' | 'rescheduled';
   type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
   rescheduled?: boolean;
+  isDNF?: boolean;
   matchday?: number;
   leg?: 'Leg 1' | 'Leg 2';
 }

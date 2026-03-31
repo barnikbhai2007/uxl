@@ -149,13 +149,13 @@ export const TOURNAMENT_SCHEDULE: RawMatch[] = [
   { away: "SAGNIK", home: "SONU", matchday: 5, type: 'qualifier', matchNumber: 79, leg: 'Leg 2' },
   { away: "SOUMAJIT", home: "AYUSH", matchday: 5, type: 'qualifier', matchNumber: 80, leg: 'Leg 2' },
 
-  { away: "ARYAN", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 81, leg: 'Leg 1' },
-  { away: "PRIYAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 82, leg: 'Leg 1' },
-  { away: "PRITAM", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 83, leg: 'Leg 1' },
+  { away: "ARYAN", home: "BARNIK", matchday: 5, type: 'quarterfinal', matchNumber: 81, leg: 'Leg 1' },
+  { away: "PRIYAM", home: "RANAJAY", matchday: 5, type: 'quarterfinal', matchNumber: 82, leg: 'Leg 1' },
+  { away: "PRITAM", home: "SONU", matchday: 5, type: 'quarterfinal', matchNumber: 83, leg: 'Leg 1' },
   { away: "SAMRIDDHA", home: "TBD", matchday: 5, type: 'quarterfinal', matchNumber: 84, leg: 'Leg 1' },
-  { away: "TBD", home: "ARYAN", matchday: 5, type: 'quarterfinal', matchNumber: 85, leg: 'Leg 2' },
-  { away: "TBD", home: "PRIYAM", matchday: 5, type: 'quarterfinal', matchNumber: 86, leg: 'Leg 2' },
-  { away: "TBD", home: "PRITAM", matchday: 5, type: 'quarterfinal', matchNumber: 87, leg: 'Leg 2' },
+  { away: "BARNIK", home: "ARYAN", matchday: 5, type: 'quarterfinal', matchNumber: 85, leg: 'Leg 2' },
+  { away: "RANAJAY", home: "PRIYAM", matchday: 5, type: 'quarterfinal', matchNumber: 86, leg: 'Leg 2' },
+  { away: "SONU", home: "PRITAM", matchday: 5, type: 'quarterfinal', matchNumber: 87, leg: 'Leg 2' },
   { away: "TBD", home: "SAMRIDDHA", matchday: 5, type: 'quarterfinal', matchNumber: 88, leg: 'Leg 2' },
 
   // Matchday 6 - 1st April (Semis, 3rd Place & Final)
