@@ -477,10 +477,10 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeStats = { shots: 4, shotsOnTarget: 3, possession: 57, passAccuracy: 91, fouls: 0, offsides: 0 };
         awayStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 71, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 77) {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Al Owairan', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 60, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 0, offsides: 0 };
+        homeScore = 0; awayScore = 1; status = 'finished';
+        awayScorers = [{ playerName: 'Barnik Scorer', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 60, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 76) {
         homeScore = 1; awayScore = 1; status = 'finished';
         homeScorers = [{ playerName: 'Gullit', goals: 1 }];
@@ -488,11 +488,11 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 44, passAccuracy: 84, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 4, possession: 56, passAccuracy: 85, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 78) {
-        homeScore = 1; awayScore = 2; status = 'finished';
+        homeScore = 1; awayScore = 1; status = 'finished';
         homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 48, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 3, possession: 52, passAccuracy: 82, fouls: 0, offsides: 0 };
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 75 || sm.matchNumber === 79) {
         status = 'finished';
         isDNF = true;
