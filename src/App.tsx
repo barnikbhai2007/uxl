@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, Newspaper, Vote as VoteIcon, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
@@ -462,9 +462,21 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       status = 'live';
     }
 
+    // Inject results from images (Matchday 5)
+    if (sm.matchday === 5) {
+      if (sm.home === "RANAJAY" && sm.away === "RAJAT") {
+        homeScore = 1; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }, { playerName: 'Lamine Yamal', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 2, possession: 50, passAccuracy: 82, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 86, fouls: 0, offsides: 0 };
+      }
+    }
+
     return {
       id: `m-${index + 1}`,
       matchNumber: sm.matchNumber || index + 1,
+      matchday: sm.matchday,
       homeTeamId: homeTeam?.id || 'TBD',
       awayTeamId: awayTeam?.id || 'TBD',
       homeScore,
@@ -488,7 +500,8 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
   const sortedMatches = [...matches].sort((a, b) => a.matchNumber - b.matchNumber);
 
   sortedMatches.forEach(m => {
-    if (m.status === 'finished' && m.homeScore !== undefined && m.awayScore !== undefined) {
+    // Exclude knockout/qualifier matches (Matchday 5+) from standings
+    if (m.status === 'finished' && m.matchday < 5 && m.homeScore !== undefined && m.awayScore !== undefined) {
       const home = standings.find(t => t.id === m.homeTeamId);
       const away = standings.find(t => t.id === m.awayTeamId);
       
@@ -1613,6 +1626,13 @@ const NEWS_POSTS = [
     const [editAwayName, setEditAwayName] = useState('');
     const [editHomeScore, setEditHomeScore] = useState(0);
     const [editAwayScore, setEditAwayScore] = useState(0);
+    const firstInputRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+      if (editingMatchId && firstInputRef.current) {
+        firstInputRef.current.focus();
+      }
+    }, [editingMatchId]);
 
     const startEditingMatch = (match: BracketMatch) => {
       setEditingMatchId(match.id);
@@ -1689,25 +1709,25 @@ const NEWS_POSTS = [
           <div className="flex border-b border-white/10">
             <button 
               onClick={() => setActiveTab('voting')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'voting' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'voting' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
               Voting
             </button>
             <button 
               onClick={() => setActiveTab('news')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'news' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'news' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
               News
             </button>
             <button 
               onClick={() => setActiveTab('bracket')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'bracket' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'bracket' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
             </button>
             <button 
               onClick={() => setActiveTab('stats')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all ${activeTab === 'stats' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'stats' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
             >
               Stats
             </button>
@@ -1871,10 +1891,15 @@ const NEWS_POSTS = [
                                     <div className="space-y-1">
                                       <label className="text-[9px] font-black uppercase text-white/40">Home Team</label>
                                       <input 
+                                        ref={firstInputRef}
                                         type="text" 
                                         value={editHomeName} 
                                         onChange={e => setEditHomeName(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter') saveMatch();
+                                          if (e.key === 'Escape') setEditingMatchId(null);
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
                                       />
                                     </div>
                                     <div className="space-y-1">
@@ -1883,7 +1908,11 @@ const NEWS_POSTS = [
                                         type="text" 
                                         value={editAwayName} 
                                         onChange={e => setEditAwayName(e.target.value)}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter') saveMatch();
+                                          if (e.key === 'Escape') setEditingMatchId(null);
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
                                       />
                                     </div>
                                   </div>
@@ -1894,7 +1923,11 @@ const NEWS_POSTS = [
                                         type="number" 
                                         value={editHomeScore} 
                                         onChange={e => setEditHomeScore(Number(e.target.value))}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter') saveMatch();
+                                          if (e.key === 'Escape') setEditingMatchId(null);
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
                                       />
                                     </div>
                                     <div className="space-y-1">
@@ -1903,7 +1936,11 @@ const NEWS_POSTS = [
                                         type="number" 
                                         value={editAwayScore} 
                                         onChange={e => setEditAwayScore(Number(e.target.value))}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white"
+                                        onKeyDown={e => {
+                                          if (e.key === 'Enter') saveMatch();
+                                          if (e.key === 'Escape') setEditingMatchId(null);
+                                        }}
+                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
                                       />
                                     </div>
                                   </div>
@@ -1937,7 +1974,8 @@ const NEWS_POSTS = [
                                   </div>
                                   <button 
                                     onClick={() => startEditingMatch(match)}
-                                    className="ml-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-blue-400 transition-all"
+                                    aria-label={`Edit match ${match.homeTeamName} vs ${match.awayTeamName}`}
+                                    className="ml-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-blue-400 transition-all focus:ring-2 focus:ring-blue-500 outline-none"
                                   >
                                     <Plus className="w-4 h-4" />
                                   </button>
