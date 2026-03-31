@@ -481,6 +481,13 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 60, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 80) {
+        // Leg 2: Ayush vs Soumajit
+        homeScore = 1; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Mbappé', goals: 1 }];
+        awayScorers = [{ playerName: 'Olise', goals: 1 }, { playerName: 'Gullit', goals: 1 }];
+        homeStats = { shots: 1, shotsOnTarget: 1, possession: 44, passAccuracy: 75, fouls: 2, offsides: 0 };
+        awayStats = { shots: 3, shotsOnTarget: 3, possession: 56, passAccuracy: 90, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 76) {
         homeScore = 1; awayScore = 1; status = 'finished';
         homeScorers = [{ playerName: 'Gullit', goals: 1 }];
@@ -505,7 +512,20 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         homeScorers = [{ playerName: 'Gabriel', goals: 1 }];
         homeStats = { shots: 3, shotsOnTarget: 3, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 81 || sm.matchNumber === 83 || sm.matchNumber === 84 || sm.matchNumber === 85 || sm.matchNumber === 87 || sm.matchNumber === 88) {
+      } else if (sm.matchNumber === 83) {
+        // Leg 1: Pritam vs Sonu
+        homeScore = 2; awayScore = 2; status = 'finished';
+        homeScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }, { playerName: 'Saint-Maximin', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 30, passAccuracy: 79, fouls: 1, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 2, possession: 70, passAccuracy: 90, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 87) {
+        // Leg 2: Sonu vs Pritam
+        homeScore = 2; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Völler', goals: 1 }, { playerName: 'Zé Roberto', goals: 1 }];
+        homeStats = { shots: 5, shotsOnTarget: 4, possession: 60, passAccuracy: 87, fouls: 0, offsides: 0 };
+        awayStats = { shots: 2, shotsOnTarget: 0, possession: 40, passAccuracy: 83, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 81 || sm.matchNumber === 84 || sm.matchNumber === 85 || sm.matchNumber === 88) {
         status = 'live';
       } else if (sm.matchNumber === 75 || sm.matchNumber === 79) {
         status = 'finished';
@@ -1698,6 +1718,7 @@ const NEWS_POSTS = [
     const [editAwayName, setEditAwayName] = useState('');
     const [editHomeScore, setEditHomeScore] = useState(0);
     const [editAwayScore, setEditAwayScore] = useState(0);
+    const [editRound, setEditRound] = useState('');
     const firstInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -1712,6 +1733,7 @@ const NEWS_POSTS = [
       setEditAwayName(match.awayTeamName || '');
       setEditHomeScore(match.homeScore || 0);
       setEditAwayScore(match.awayScore || 0);
+      setEditRound(match.round || '');
     };
 
     const saveMatch = () => {
@@ -1722,7 +1744,7 @@ const NEWS_POSTS = [
         awayTeamName: editAwayName,
         homeScore: editHomeScore,
         awayScore: editAwayScore,
-        round: bracket.find(m => m.id === editingMatchId)?.round || ''
+        round: editRound
       });
       setEditingMatchId(null);
     };
@@ -1987,6 +2009,19 @@ const NEWS_POSTS = [
                                         className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
                                       />
                                     </div>
+                                  </div>
+                                  <div className="space-y-1">
+                                    <label className="text-[9px] font-black uppercase text-white/40">Round</label>
+                                    <input 
+                                      type="text" 
+                                      value={editRound} 
+                                      onChange={e => setEditRound(e.target.value)}
+                                      onKeyDown={e => {
+                                        if (e.key === 'Enter') saveMatch();
+                                        if (e.key === 'Escape') setEditingMatchId(null);
+                                      }}
+                                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
+                                    />
                                   </div>
                                   <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-1">
@@ -2309,10 +2344,12 @@ export default function App() {
   };
 
   const handleSaveBracket = async (match: BracketMatch) => {
+    console.log("handleSaveBracket called with:", match);
     if (!isAdmin) return;
     setIsSavingBracket(true);
     try {
       await setDoc(doc(db, 'bracket', match.id), match);
+      console.log("Bracket match saved successfully");
     } catch (error) {
       console.error("Error saving bracket match:", error);
       alert("Failed to save bracket match.");
@@ -2407,10 +2444,12 @@ export default function App() {
   useEffect(() => {
     const q = query(collection(db, 'bracket'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      console.log("Bracket snapshot received:", snapshot.size);
       const bracketData: BracketMatch[] = [];
       snapshot.forEach((doc) => {
         bracketData.push(doc.data() as BracketMatch);
       });
+      console.log("Bracket data:", bracketData);
       setBracket([...bracketData]); // Force a re-render with a new array reference
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'bracket');
