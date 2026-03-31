@@ -478,7 +478,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 71, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 77) {
         homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Barnik Scorer', goals: 1 }];
+        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
         homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 60, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 76) {
@@ -493,6 +493,20 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
         homeStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 82) {
+        // Leg 1: Ranajay vs Priyam
+        homeScore = 0; awayScore = 2; status = 'finished';
+        awayScorers = [{ playerName: 'Scholes', goals: 1 }, { playerName: 'Cruyff', goals: 1 }];
+        homeStats = { shots: 2, shotsOnTarget: 1, possession: 35, passAccuracy: 94, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 65, passAccuracy: 94, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 86) {
+        // Leg 2: Priyam vs Ranajay
+        homeScore = 1; awayScore = 0; status = 'finished';
+        homeScorers = [{ playerName: 'Gabriel', goals: 1 }];
+        homeStats = { shots: 3, shotsOnTarget: 3, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 };
+        awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 };
+      } else if (sm.matchNumber === 81 || sm.matchNumber === 83 || sm.matchNumber === 84 || sm.matchNumber === 85 || sm.matchNumber === 87 || sm.matchNumber === 88) {
+        status = 'live';
       } else if (sm.matchNumber === 75 || sm.matchNumber === 79) {
         status = 'finished';
         isDNF = true;
