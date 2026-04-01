@@ -2275,13 +2275,16 @@ const NEWS_POSTS = [
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'stats' | 'hallOfFame' | 'news'>('fixtures');
+  const [activeMonth, setActiveMonth] = useState<'April' | 'May'>('April');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const teams = useMemo(() => INITIAL_TEAMS, []);
   const matches = useMemo(() => getMatchesFromSchedule(teams), [teams]);
-  const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
-  const stats = useMemo(() => calculateStats(teams, matches).slice(0, 5), [teams, matches]);
-  const cleanSheets = useMemo(() => calculateCleanSheets(teams, matches).slice(0, 5), [teams, matches]);
+  const standingsApril = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
+  const standingsMay = useMemo(() => calculateStandings(teams, []), [teams]);
+  const standings = activeMonth === 'April' ? standingsApril : standingsMay;
+  const stats = useMemo(() => calculateStats(teams, activeMonth === 'April' ? matches : []).slice(0, 5), [teams, matches, activeMonth]);
+  const cleanSheets = useMemo(() => calculateCleanSheets(teams, activeMonth === 'April' ? matches : []).slice(0, 5), [teams, matches, activeMonth]);
   const upcomingRef = React.useRef<HTMLDivElement>(null);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -3319,6 +3322,36 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm"
             >
+              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => setActiveMonth('April')}
+                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
+                      activeMonth === 'April' 
+                        ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
+                        : 'text-white/40 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    April Table
+                  </button>
+                  <button
+                    onClick={() => setActiveMonth('May')}
+                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
+                      activeMonth === 'May' 
+                        ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
+                        : 'text-white/40 hover:text-white hover:bg-white/5'
+                    }`}
+                  >
+                    May Table
+                  </button>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className={`w-2 h-2 rounded-full ${activeMonth === 'April' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                    {activeMonth} Season
+                  </span>
+                </div>
+              </div>
               <table className="w-full text-left border-collapse">
                 <thead>
                   <tr className="bg-white/5 text-blue-200/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
@@ -3423,192 +3456,18 @@ export default function App() {
           {activeTab === 'fixtures' && (
             <motion.div
               key="fixtures"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-12"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-sm"
             >
-              <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-center justify-between bg-white/5 border border-white/10 p-4 md:p-6 rounded-2xl backdrop-blur-sm">
-                <div className="flex items-center gap-3 md:gap-4">
-                  <Info className="w-4 h-4 md:w-5 md:h-5 text-blue-400 shrink-0" />
-                  <p className="text-[10px] md:text-sm text-blue-200/80 italic pr-1">
-                    Note: <span className="text-white font-bold">Left</span> is Away, <span className="text-white font-bold">Right</span> is Home.
-                  </p>
-                </div>
-                <div className="relative w-full md:w-64">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                  <input
-                    type="text"
-                    placeholder="Search player, FC or full name..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2 text-sm focus:outline-none focus:border-blue-500/50 transition-all placeholder:text-white/20"
-                  />
-                  {searchTerm && (
-                    <button 
-                      onClick={() => setSearchTerm('')}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
-                    >
-                      &times;
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              {Object.entries(matchesByDay).sort((a, b) => {
-                    const dateA = a[0];
-                    const dateB = b[0];
-                    
-                    if (dateA === dateB) return 0;
-                    if (dateA === '31st March 2026') return -1;
-                    if (dateB === '31st March 2026') return 1;
-                    
-                    if (dateA === '30th March 2026') return -1;
-                    if (dateB === '30th March 2026') return 1;
-                    
-                    if (dateA === '27th March 2026') return -1;
-                    if (dateB === '27th March 2026') return 1;
-                    
-                    if (dateA === '28th March 2026') return -1;
-                    if (dateB === '28th March 2026') return 1;
-                    
-                    if (dateA === '29th March 2026') return -1;
-                    if (dateB === '29th March 2026') return 1;
-                    
-                    const isAprilA = dateA.includes('April');
-                    const isAprilB = dateB.includes('April');
-                    if (isAprilA && !isAprilB) return 1;
-                    if (!isAprilA && isAprilB) return -1;
-                    
-                    const dayA = parseInt(dateA);
-                    const dayB = parseInt(dateB);
-                    return dayA - dayB;
-                  }).map(([day, dayMatches]) => (
-                <div key={day} ref={day === firstUpcomingDay ? upcomingRef : null} className="space-y-6">
-                  <div className="flex items-center gap-4">
-                    <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent to-blue-500/30" />
-                    <h2 className="text-xl font-black uppercase italic tracking-widest text-blue-400 px-4 py-2 bg-blue-500/5 border border-blue-500/10 rounded-lg pr-5">
-                      {day}
-                    </h2>
-                    <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent to-blue-500/30" />
-                  </div>
-
-                  <div className="grid gap-4">
-                    {(dayMatches as Match[]).map((match) => {
-                      const homeTeam = teams.find(t => t.id === match.homeTeamId);
-                      const awayTeam = teams.find(t => t.id === match.awayTeamId);
-                      
-                      return (
-                        <div 
-                          key={match.id} 
-                          onClick={() => setSelectedMatch(match)}
-                          className={`group bg-white/5 border rounded-xl p-4 md:p-6 flex items-center justify-between transition-all duration-300 relative overflow-hidden cursor-pointer ${
-                            match.type === 'qualifier' ? 'border-cyan-400/30 hover:border-cyan-400/60' :
-                            match.type === 'quarterfinal' ? 'border-indigo-400/30 hover:border-indigo-400/60' :
-                            match.type === 'semifinal' ? 'border-purple-400/30 hover:border-purple-400/60' :
-                            match.type === 'thirdplace' ? 'border-orange-400/30 hover:border-orange-400/60' :
-                            match.type === 'final' ? 'border-yellow-400/30 hover:border-yellow-400/60 shadow-[0_0_20px_rgba(234,179,8,0.1)]' :
-                            'border-white/10 hover:border-blue-500/50'
-                          }`}
-                        >
-                          {/* Decorative Corner Accents */}
-                          <div className="absolute top-0 left-0 w-8 h-8 pointer-events-none">
-                            <div className="absolute top-0 left-0 w-[1px] h-4 bg-blue-500/30" />
-                            <div className="absolute top-0 left-0 w-4 h-[1px] bg-blue-500/30" />
-                          </div>
-                          <div className="absolute bottom-0 right-0 w-8 h-8 pointer-events-none">
-                            <div className="absolute bottom-0 right-0 w-[1px] h-4 bg-blue-500/30" />
-                            <div className="absolute bottom-0 right-0 w-4 h-[1px] bg-blue-500/30" />
-                          </div>
-
-                          {/* Background Match Number Decor - Fixed Positioning and Visibility */}
-                          <div className="absolute right-0 bottom-0 text-9xl md:text-[12rem] font-black text-white/[0.12] italic select-none pointer-events-none group-hover:text-blue-500/[0.25] transition-all duration-500 group-hover:-translate-y-2 pr-4">
-                            {match.matchNumber}
-                          </div>
-
-                          {/* Background Glow */}
-                          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
-                          
-                          {/* Away Team (Left) */}
-                          <div className="flex-1 flex justify-end pr-2 md:pr-8 relative z-10 min-w-0">
-                            <TeamNameWithCopy team={awayTeam} showCopy={false} copiedId={copiedId} copyToClipboard={copyToClipboard} />
-                          </div>
-                          
-                          {/* Score/VS (Center) */}
-                          <div className="flex flex-col items-center gap-1 md:gap-2 px-3 md:px-8 border-x border-white/10 relative z-10 min-w-[110px] md:min-w-[180px] shrink-0">
-                            <div className="flex items-center gap-1 md:gap-2">
-                              <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
-                              <span className="text-[8px] md:text-[9px] font-black text-blue-400/50 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match {match.matchNumber}</span>
-                              <div className="h-[1px] w-2 md:w-4 bg-blue-500/30" />
-                            </div>
-                            
-                            {match.type && (
-                              <div className="flex flex-col gap-1 items-center">
-                                <div className={`text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] px-2 py-0.5 rounded border ${
-                                  match.type === 'qualifier' ? 'text-cyan-400 border-cyan-400/30 bg-cyan-400/5' :
-                                  match.type === 'quarterfinal' ? 'text-indigo-400 border-indigo-400/30 bg-indigo-400/5' :
-                                  match.type === 'semifinal' ? 'text-purple-400 border-purple-400/30 bg-purple-400/5' :
-                                  match.type === 'thirdplace' ? 'text-orange-400 border-orange-400/30 bg-orange-400/5' :
-                                  'text-yellow-400 border-yellow-400/30 bg-yellow-400/5'
-                                }`}>
-                                  {match.type}
-                                </div>
-                                {match.leg && (
-                                  <div className="text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-white/40">
-                                    {match.leg}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {match.rescheduled && match.status !== 'rescheduled' && (
-                              <div className="text-[7px] md:text-[8px] font-black uppercase tracking-[0.2em] text-orange-400 mb-1">
-                                Rescheduled
-                              </div>
-                            )}
-                            <div className={`px-2 md:px-3 py-0.5 md:py-1 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-1.5 ${
-                              match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
-                              match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                              match.status === 'live' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400'
-                            }`}>
-                              {match.status === 'live' && (
-                                <span className="relative flex h-1.5 w-1.5">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                                  <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
-                                </span>
-                              )}
-                              <span className="text-[8px] md:text-[9px] font-black uppercase tracking-widest">
-                                {match.status === 'finished' ? 'Final' : 
-                                 match.status === 'rescheduled' ? 'Rescheduled' :
-                                 match.status === 'live' ? 'Ongoing' : 'Upcoming'}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2 md:gap-4">
-                              <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
-                                {match.awayScore ?? '-'}
-                              </span>
-                              <span className="text-white/10 font-bold text-[10px]">VS</span>
-                              <span className={`text-2xl md:text-3xl font-black tabular-nums ${match.status === 'finished' ? 'text-white' : 'text-white/20'}`}>
-                                {match.homeScore ?? '-'}
-                              </span>
-                            </div>
-                          </div>
-
-                          {/* Home Team (Right) */}
-                          <div className="flex-1 flex justify-start pl-2 md:pl-8 relative z-10 min-w-0">
-                            <TeamNameWithCopy team={homeTeam} reverse={true} showCopy={false} copiedId={copiedId} copyToClipboard={copyToClipboard} />
-                          </div>
-
-                          {/* Mobile Click Indicator */}
-                          <div className="md:hidden ml-2 text-white/20">
-                            <ChevronRight className="w-4 h-4" />
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))}
+              <Calendar className="w-16 h-16 text-blue-400/20 mb-6" />
+              <h2 className="text-3xl md:text-5xl font-display font-black italic uppercase tracking-tighter text-white mb-4 text-center px-4">
+                See you soon in <span className="text-blue-400">MAY</span>
+              </h2>
+              <p className="text-blue-200/50 font-medium text-center px-6 max-w-md">
+                The April season has concluded. All match records have been archived. Stay tuned for the next chapter of the tournament.
+              </p>
             </motion.div>
           )}
 
