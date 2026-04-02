@@ -37,7 +37,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     if (sm.matchday === 1) {
       if (sm.home === "SAGNICK" && sm.away === "PRIYAM") {
         homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Scholes', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }];
+        awayScorers = [{ playerName: 'Bale', goals: 2 }, { playerName: 'Cruyff', goals: 1 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 88, fouls: 0, offsides: 0 };
         awayStats = { shots: 6, shotsOnTarget: 6, possession: 55, passAccuracy: 89, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAGNIK" && sm.away === "DIBYAJOTI") {
@@ -47,7 +47,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 1 };
       } else if (sm.home === "SAGNIK" && sm.away === "PRIYAM") {
         homeScore = 0; awayScore = 4; status = 'finished';
-        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 2 }, { playerName: 'C. Ronaldo', goals: 1 }];
+        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 3 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 42, passAccuracy: 69, fouls: 0, offsides: 0 };
         awayStats = { shots: 10, shotsOnTarget: 9, possession: 58, passAccuracy: 92, fouls: 0, offsides: 0 };
       } else if (sm.home === "RANAJAY" && sm.away === "ARYAN") {
@@ -105,9 +105,9 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       } else if (sm.home === "SAYANTAN" && sm.away === "ANIMESH") {
         homeScore = 0; awayScore = 8; status = 'finished';
         awayScorers = [
-          { playerName: 'C. Ronaldo', goals: 4 },
+          { playerName: 'C. Ronaldo', goals: 1 },
           { playerName: 'Berghuis', goals: 1 },
-          { playerName: 'Zieliński', goals: 1 },
+          { playerName: 'Zieliński', goals: 4 },
           { playerName: 'Al Dawsari', goals: 1 },
           { playerName: 'O\'Reilly', goals: 1 }
         ];
@@ -135,7 +135,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 7, shotsOnTarget: 7, possession: 56, passAccuracy: 90, fouls: 0, offsides: 0 };
       } else if (sm.home === "PRIYAM" && sm.away === "AYUSH") {
         homeScore = 1; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Bale', goals: 1 }];
+        homeScorers = [{ playerName: 'Cruyff', goals: 1 }];
         awayScorers = [{ playerName: 'Dembélé', goals: 2 }];
         homeStats = { shots: 1, shotsOnTarget: 1, possession: 48, passAccuracy: 91, fouls: 1, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 52, passAccuracy: 70, fouls: 0, offsides: 0 };
@@ -147,7 +147,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 6, shotsOnTarget: 4, possession: 66, passAccuracy: 86, fouls: 0, offsides: 0 };
       } else if (sm.home === "ANIMESH" && sm.away === "ABHROJEET") {
         homeScore = 5; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'C. Ronaldo', goals: 3 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Al Dawsari', goals: 1 }];
+        homeScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Cambiasso', goals: 3 }, { playerName: 'Al Dawsari', goals: 1 }];
         awayScorers = [{ playerName: 'McTominay', goals: 1 }];
         homeStats = { shots: 7, shotsOnTarget: 6, possession: 54, passAccuracy: 85, fouls: 0, offsides: 0 };
         awayStats = { shots: 1, shotsOnTarget: 1, possession: 46, passAccuracy: 69, fouls: 1, offsides: 0 };
@@ -163,7 +163,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 3, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAGNIK" && sm.away === "PRITAM") {
         homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Messi', goals: 1 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 86, fouls: 0, offsides: 1 };
         awayStats = { shots: 7, shotsOnTarget: 5, possession: 53, passAccuracy: 84, fouls: 0, offsides: 0 };
       } else if (sm.home === "SOUMAJIT" && sm.away === "SAGNIK") {
@@ -173,7 +173,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 1, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAYANTAN" && sm.away === "ARYAN") {
         homeScore = 0; awayScore = 6; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Vini Jr.', goals: 3 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Vini Jr.', goals: 4 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 56, fouls: 0, offsides: 1 };
         awayStats = { shots: 9, shotsOnTarget: 9, possession: 53, passAccuracy: 77, fouls: 1, offsides: 0 };
       } else if (sm.home === "SONU" && sm.away === "SAMRIDDHA") {
@@ -261,13 +261,13 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAYANTAN" && sm.away === "PRIYAM") {
         homeScore = 0; awayScore = 7; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 4 }, { playerName: 'Bale', goals: 1 }, { playerName: 'Cruyff', goals: 1 }, { playerName: 'Scholes', goals: 1 }];
+        awayScorers = [{ playerName: 'Vini Jr.', goals: 3 }, { playerName: 'Bale', goals: 2 }, { playerName: 'Cruyff', goals: 1 }, { playerName: 'Scholes', goals: 1 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 63, fouls: 0, offsides: 0 };
         awayStats = { shots: 13, shotsOnTarget: 10, possession: 57, passAccuracy: 78, fouls: 1, offsides: 0 };
       } else if (sm.home === "RANAJAY" && sm.away === "PRIYAM") {
         homeScore = 3; awayScore = 2; status = 'finished';
         homeScorers = [{ playerName: 'Nesta', goals: 1 }, { playerName: 'Gabriel', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
-        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Vini Jr.', goals: 1 }];
+        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 1 }];
         homeStats = { shots: 6, shotsOnTarget: 4, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
         awayStats = { shots: 5, shotsOnTarget: 4, possession: 49, passAccuracy: 86, fouls: 0, offsides: 0 };
       } else if (sm.home === "RAJAT" && sm.away === "AYUSH") {
@@ -308,7 +308,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 57, fouls: 1, offsides: 0 };
       } else if (sm.home === "SAGNICK" && sm.away === "ABHROJEET") {
         homeScore = 3; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Bale', goals: 1 }];
+        homeScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 2 }];
         homeStats = { shots: 8, shotsOnTarget: 6, possession: 58, passAccuracy: 88, fouls: 0, offsides: 0 };
         awayStats = { shots: 2, shotsOnTarget: 0, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
       } else if (sm.home === "BARNIK" && sm.away === "SOUMAJIT") {
@@ -332,7 +332,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 1, shotsOnTarget: 1, possession: 39, passAccuracy: 86, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAYANTAN" && sm.away === "SAGNICK") {
         homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Bale', goals: 1 }];
+        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 2 }];
         homeStats = { shots: 2, shotsOnTarget: 1, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
         awayStats = { shots: 8, shotsOnTarget: 6, possession: 56, passAccuracy: 85, fouls: 0, offsides: 0 };
       } else if (sm.home === "PRIYAM" && sm.away === "BARNIK") {
@@ -363,7 +363,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 4, shotsOnTarget: 2, possession: 52, passAccuracy: 71, fouls: 1, offsides: 0 };
       } else if (sm.home === "SAGNIK" && sm.away === "ARYAN") {
         homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Al Owairan', goals: 2 }];
         homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 78, fouls: 0, offsides: 0 };
         awayStats = { shots: 7, shotsOnTarget: 5, possession: 52, passAccuracy: 72, fouls: 0, offsides: 0 };
       } else if (sm.home === "SAMRIDDHA" && sm.away === "DIBYAJOTI") {
@@ -394,7 +394,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 48, passAccuracy: 77, fouls: 1, offsides: 0 };
       } else if (sm.home === "SOUMAJIT" && sm.away === "ANIMESH") {
         homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 2 }];
+        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Zico', goals: 1 }];
         homeStats = { shots: 5, shotsOnTarget: 5, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
         awayStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 87, fouls: 1, offsides: 0 };
       } else if (sm.home === "BARNIK" && sm.away === "ANIMESH") {
@@ -502,16 +502,16 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
         awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 82) {
         // Leg 1: Ranajay vs Priyam
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Scholes', goals: 1 }, { playerName: 'Cruyff', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 1, possession: 35, passAccuracy: 94, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 65, passAccuracy: 94, fouls: 0, offsides: 0 };
+        homeScore = 0; awayScore = 0; status = 'live';
+        homeScorers = []; awayScorers = [];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 86) {
         // Leg 2: Priyam vs Ranajay
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Gabriel', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 };
+        homeScore = 0; awayScore = 0; status = 'live';
+        homeScorers = []; awayScorers = [];
+        homeStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
+        awayStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
       } else if (sm.matchNumber === 83) {
         // Leg 1: Pritam vs Sonu
         homeScore = 2; awayScore = 2; status = 'finished';
@@ -1245,6 +1245,56 @@ const NEWS_POSTS = [
     category: "MATCHDAY 1"
   }
 ];
+
+  const MatchCard = ({ match, teams, onClick }: { match: Match, teams: Team[], onClick: () => void, key?: string }) => {
+    const homeTeam = teams.find(t => t.id === match.homeTeamId);
+    const awayTeam = teams.find(t => t.id === match.awayTeamId);
+
+    return (
+      <motion.div
+        whileHover={{ scale: 1.01 }}
+        onClick={onClick}
+        className="bg-white/5 border border-white/10 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all group"
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex-1 flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg font-bold shrink-0">
+              {awayTeam?.name[0] || '?'}
+            </div>
+            <div className="min-w-0">
+              <div className="text-xs font-black text-white/40 uppercase tracking-widest truncate">{awayTeam?.name || 'TBD'}</div>
+              <div className="text-sm font-bold text-white truncate">{awayTeam?.fullName || 'TBD'}</div>
+            </div>
+          </div>
+
+          <div className="flex flex-col items-center gap-1 shrink-0 px-4 border-x border-white/5">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl font-black tabular-nums text-white/90">{match.awayScore ?? '-'}</span>
+              <span className="text-[10px] font-black text-white/20">VS</span>
+              <span className="text-2xl font-black tabular-nums text-white/90">{match.homeScore ?? '-'}</span>
+            </div>
+            <div className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+              match.status === 'finished' ? 'bg-green-500/20 text-green-400' :
+              match.status === 'live' ? 'bg-red-500/20 text-red-400' :
+              'bg-blue-500/20 text-blue-400'
+            }`}>
+              {match.status === 'finished' ? 'Final' : match.status === 'live' ? 'Live' : 'Scheduled'}
+            </div>
+          </div>
+
+          <div className="flex-1 flex items-center justify-end gap-3 min-w-0">
+            <div className="min-w-0 text-right">
+              <div className="text-xs font-black text-white/40 uppercase tracking-widest truncate">{homeTeam?.name || 'TBD'}</div>
+              <div className="text-sm font-bold text-white truncate">{homeTeam?.fullName || 'TBD'}</div>
+            </div>
+            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg font-bold shrink-0">
+              {homeTeam?.name[0] || '?'}
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard }: { 
     match: Match, 
@@ -2276,15 +2326,191 @@ const NEWS_POSTS = [
 export default function App() {
   const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'stats' | 'hallOfFame' | 'news'>('fixtures');
   const [activeMonth, setActiveMonth] = useState<'April' | 'May'>('April');
+  const [interestedCount, setInterestedCount] = useState(0);
+  const [hasInterested, setHasInterested] = useState(false);
+  const [hofMonth, setHofMonth] = useState<'April' | 'May'>('April');
+  const [bracketMonth, setBracketMonth] = useState<'April' | 'May'>('May');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const teams = useMemo(() => INITIAL_TEAMS, []);
   const matches = useMemo(() => getMatchesFromSchedule(teams), [teams]);
+  const hofStats = useMemo(() => {
+    const monthMatches = matches.filter(m => {
+      if (hofMonth === 'April') return m.matchday && m.matchday <= 6;
+      return m.id.startsWith('may-');
+    });
+    
+    const totalGoals = monthMatches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0);
+    const totalMatches = monthMatches.filter(m => m.status === 'finished').length;
+    const avgGoals = totalMatches > 0 ? (totalGoals / totalMatches).toFixed(2) : '0.00';
+    
+    // Find top scorer for the month
+    const playerGoals: { [key: string]: { goals: number, gamer: string } } = {};
+    monthMatches.forEach(m => {
+      [...(m.homeScorers || []), ...(m.awayScorers || [])].forEach(s => {
+        if (!playerGoals[s.playerName]) {
+          const team = teams.find(t => t.id === (m.homeScorers?.includes(s) ? m.homeTeamId : m.awayTeamId));
+          playerGoals[s.playerName] = { goals: 0, gamer: team?.name || 'Unknown' };
+        }
+        playerGoals[s.playerName].goals += s.goals;
+      });
+    });
+    
+    const topScorer = Object.entries(playerGoals)
+      .sort(([, a], [, b]) => b.goals - a.goals)[0];
+
+    // Team Stats
+    const teamStats: { [key: string]: { 
+      goalsScored: number, 
+      goalsConceded: number, 
+      possession: number, 
+      fouls: number, 
+      offsides: number, 
+      shots: number, 
+      shotsOnTarget: number,
+      matches: number
+    } } = {};
+
+    monthMatches.forEach(m => {
+      if (m.status === 'finished') {
+        const hId = m.homeTeamId;
+        const aId = m.awayTeamId;
+        
+        if (!teamStats[hId]) teamStats[hId] = { goalsScored: 0, goalsConceded: 0, possession: 0, fouls: 0, offsides: 0, shots: 0, shotsOnTarget: 0, matches: 0 };
+        if (!teamStats[aId]) teamStats[aId] = { goalsScored: 0, goalsConceded: 0, possession: 0, fouls: 0, offsides: 0, shots: 0, shotsOnTarget: 0, matches: 0 };
+        
+        teamStats[hId].goalsScored += (m.homeScore || 0);
+        teamStats[hId].goalsConceded += (m.awayScore || 0);
+        teamStats[hId].possession += (m.homeStats?.possession || 50);
+        teamStats[hId].fouls += (m.homeStats?.fouls || 0);
+        teamStats[hId].offsides += (m.homeStats?.offsides || 0);
+        teamStats[hId].shots += (m.homeStats?.shots || 0);
+        teamStats[hId].shotsOnTarget += (m.homeStats?.shotsOnTarget || 0);
+        teamStats[hId].matches += 1;
+
+        teamStats[aId].goalsScored += (m.awayScore || 0);
+        teamStats[aId].goalsConceded += (m.homeScore || 0);
+        teamStats[aId].possession += (m.awayStats?.possession || 50);
+        teamStats[aId].fouls += (m.awayStats?.fouls || 0);
+        teamStats[aId].offsides += (m.awayStats?.offsides || 0);
+        teamStats[aId].shots += (m.awayStats?.shots || 0);
+        teamStats[aId].shotsOnTarget += (m.awayStats?.shotsOnTarget || 0);
+        teamStats[aId].matches += 1;
+      }
+    });
+
+    const getTopTeam = (key: keyof typeof teamStats[string], mode: 'max' | 'min' = 'max') => {
+      return Object.entries(teamStats)
+        .map(([id, stats]) => {
+          const team = teams.find(t => t.id === id);
+          let value = stats[key] as number;
+          if (key === 'possession') value = value / stats.matches;
+          return { name: team?.name || 'Unknown', value };
+        })
+        .sort((a, b) => mode === 'max' ? b.value - a.value : a.value - b.value)[0];
+    };
+
+    return { 
+      totalGoals, 
+      totalMatches, 
+      avgGoals, 
+      topScorer: topScorer ? { name: topScorer[0], ...topScorer[1] } : null,
+      mostPossession: getTopTeam('possession'),
+      mostGoals: getTopTeam('goalsScored'),
+      leastConceded: getTopTeam('goalsConceded', 'min'),
+      mostFouls: getTopTeam('fouls'),
+      mostOffsides: getTopTeam('offsides'),
+      mostShots: getTopTeam('shots'),
+      mostShotsOnTarget: getTopTeam('shotsOnTarget')
+    };
+  }, [hofMonth, matches, teams]);
+  
+  const mayMatches = useMemo(() => [
+    {
+      id: 'may-m1',
+      matchNumber: 1,
+      matchday: 1,
+      homeTeamId: 'team-10', // PRIYAM
+      awayTeamId: 'team-5',  // SAMRIDDHA
+      homeScore: 4,
+      awayScore: 2,
+      homeScorers: [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Bale', goals: 1 }, { playerName: 'Cruyff', goals: 2 }],
+      awayScorers: [{ playerName: 'Kane', goals: 1 }, { playerName: 'Zico', goals: 1 }],
+      homeStats: { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 88, fouls: 0, offsides: 0 },
+      awayStats: { shots: 5, shotsOnTarget: 4, possession: 48, passAccuracy: 95, fouls: 1, offsides: 0 },
+      date: '1st May 2026',
+      status: 'finished',
+    },
+    {
+      id: 'may-m2',
+      matchNumber: 2,
+      matchday: 1,
+      homeTeamId: 'team-10', // PRIYAM
+      awayTeamId: 'team-2',  // ARYAN
+      homeScore: 3,
+      awayScore: 2,
+      homeScorers: [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Bale', goals: 1 }],
+      awayScorers: [{ playerName: 'Drogba', goals: 1 }, { playerName: 'Frimpong', goals: 1 }],
+      homeStats: { shots: 7, shotsOnTarget: 7, possession: 50, passAccuracy: 81, fouls: 0, offsides: 0 },
+      awayStats: { shots: 3, shotsOnTarget: 3, possession: 50, passAccuracy: 80, fouls: 0, offsides: 1 },
+      date: '1st May 2026',
+      status: 'finished',
+    },
+    {
+      id: 'may-m3',
+      matchNumber: 3,
+      matchday: 1,
+      homeTeamId: 'team-2',  // ARYAN
+      awayTeamId: 'team-10', // PRIYAM
+      homeScore: 1,
+      awayScore: 1,
+      homeScorers: [{ playerName: 'Drogba', goals: 1 }],
+      awayScorers: [{ playerName: 'C. Ronaldo', goals: 1 }],
+      homeStats: { shots: 1, shotsOnTarget: 1, possession: 60, passAccuracy: 82, fouls: 1, offsides: 0 },
+      awayStats: { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 1, offsides: 0 },
+      date: '1st May 2026',
+      status: 'finished',
+    },
+    {
+      id: 'may-m4',
+      matchNumber: 4,
+      matchday: 1,
+      homeTeamId: 'team-2',  // ARYAN
+      awayTeamId: 'team-10', // PRIYAM
+      homeScore: 2,
+      awayScore: 2,
+      homeScorers: [{ playerName: 'Drogba', goals: 2 }],
+      awayScorers: [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }],
+      homeStats: { shots: 4, shotsOnTarget: 4, possession: 49, passAccuracy: 86, fouls: 0, offsides: 0 },
+      awayStats: { shots: 4, shotsOnTarget: 4, possession: 51, passAccuracy: 97, fouls: 0, offsides: 0 },
+      date: '1st May 2026',
+      status: 'finished',
+    },
+    {
+      id: 'may-m5',
+      matchNumber: 5,
+      matchday: 1,
+      homeTeamId: 'team-10', // PRIYAM
+      awayTeamId: 'team-4',  // RANAJAY
+      homeScore: 1,
+      awayScore: 0,
+      homeScorers: [{ playerName: 'Gabriel', goals: 1 }],
+      awayScorers: [],
+      homeStats: { shots: 5, shotsOnTarget: 5, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 },
+      awayStats: { shots: 3, shotsOnTarget: 3, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 },
+      date: '1st May 2026',
+      status: 'finished',
+    }
+  ], [teams]);
+
   const standingsApril = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
-  const standingsMay = useMemo(() => calculateStandings(teams, []), [teams]);
+  const standingsMay = useMemo(() => calculateStandings(teams, mayMatches), [teams, mayMatches]);
   const standings = activeMonth === 'April' ? standingsApril : standingsMay;
-  const stats = useMemo(() => calculateStats(teams, activeMonth === 'April' ? matches : []).slice(0, 5), [teams, matches, activeMonth]);
-  const cleanSheets = useMemo(() => calculateCleanSheets(teams, activeMonth === 'April' ? matches : []).slice(0, 5), [teams, matches, activeMonth]);
+  
+  // Stats and Clean Sheets are cumulative for the whole tournament
+  const allTournamentMatches = useMemo(() => [...matches, ...mayMatches], [matches, mayMatches]);
+  const stats = useMemo(() => calculateStats(teams, allTournamentMatches).slice(0, 10), [teams, allTournamentMatches]);
+  const cleanSheets = useMemo(() => calculateCleanSheets(teams, allTournamentMatches).slice(0, 10), [teams, allTournamentMatches]);
   const upcomingRef = React.useRef<HTMLDivElement>(null);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -2351,7 +2577,8 @@ export default function App() {
     if (!isAdmin) return;
     setIsSavingBracket(true);
     try {
-      await setDoc(doc(db, 'bracket', match.id), match);
+      const matchWithMonth = { ...match, month: bracketMonth };
+      await setDoc(doc(db, 'bracket', `${bracketMonth.toLowerCase()}_${match.id}`), matchWithMonth);
       console.log("Bracket match saved successfully");
     } catch (error) {
       console.error("Error saving bracket match:", error);
@@ -2361,53 +2588,32 @@ export default function App() {
     }
   };
 
-  const getBracketMatch = (id: string) => {
-    const bracketMatch = bracket.find(m => m.id === id);
-    
-    // For Qualifier Round, try to get aggregate scores from matches
-    if (id.startsWith('qual-')) {
-      const index = parseInt(id.split('-')[1]);
-      const matchNumbers = [
-        [73, 77], // qual-0: Barnik vs Animesh
-        [74, 78], // qual-1: Ranajay vs Rajat
-        [75, 79], // qual-2: Sagnik vs Sonu
-        [76, 80]  // qual-3: Soumajit vs Ayush
-      ][index];
-
-      if (matchNumbers) {
-        const leg1 = matches.find(m => m.matchNumber === matchNumbers[0]);
-        const leg2 = matches.find(m => m.matchNumber === matchNumbers[1]);
-        
-        if (leg1 || leg2) {
-          const homeTeam = teams.find(t => t.name === (leg1?.homeTeamId === 'TBD' ? '' : teams.find(team => team.id === leg1?.homeTeamId)?.name));
-          const awayTeam = teams.find(t => t.name === (leg1?.awayTeamId === 'TBD' ? '' : teams.find(team => team.id === leg1?.awayTeamId)?.name));
-
-          // Calculate aggregate scores
-          // Note: In Leg 2, home and away are swapped in the schedule
-          const homeScore = (leg1?.homeScore || 0) + (leg2?.awayScore || 0);
-          const awayScore = (leg1?.awayScore || 0) + (leg2?.homeScore || 0);
-
-          return {
-            ...bracketMatch,
-            id,
-            homeTeamName: leg1 ? teams.find(t => t.id === leg1.homeTeamId)?.name : bracketMatch?.homeTeamName || 'TBD',
-            awayTeamName: leg1 ? teams.find(t => t.id === leg1.awayTeamId)?.name : bracketMatch?.awayTeamName || 'TBD',
-            homeScore,
-            awayScore,
-            round: 'Qualifier Round'
-          };
-        }
+  const handleInterested = async () => {
+    if (hasInterested) return;
+    try {
+      const docRef = doc(db, 'stats', 'may_event');
+      const docSnap = await getDoc(docRef);
+      if (!docSnap.exists()) {
+        await setDoc(docRef, { interestedCount: 1 });
+      } else {
+        await updateDoc(docRef, { interestedCount: increment(1) });
       }
+      setHasInterested(true);
+      localStorage.setItem('hasInterestedMayEvent', 'true');
+    } catch (error) {
+      console.error("Error updating interested count:", error);
     }
+  };
 
-    return bracketMatch || {
-      id,
-      homeTeamName: 'TBD',
-      awayTeamName: 'TBD',
-      homeScore: 0,
-      awayScore: 0,
-      round: ''
-    };
+  const getBracketMatch = (id: string) => {
+    const bracketMatch = bracket.find(m => m.id === id && m.month === bracketMonth);
+    if (bracketMatch) return bracketMatch;
+    
+    // Fallback for older data or if not found
+    const oldMatch = bracket.find(m => m.id === id && !m.month);
+    if (oldMatch && bracketMonth === 'April') return oldMatch;
+
+    return { id, round: '', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 };
   };
 
   useEffect(() => {
@@ -2426,8 +2632,20 @@ export default function App() {
       }
     });
 
+    const unsubscribeInterested = onSnapshot(doc(db, 'stats', 'may_event'), (doc) => {
+      if (doc.exists()) {
+        setInterestedCount(doc.data().interestedCount || 0);
+      }
+    });
+
+    const localInterested = localStorage.getItem('hasInterestedMayEvent');
+    if (localInterested) setHasInterested(true);
+
     incrementVisitCount();
-    return () => unsubscribe();
+    return () => {
+      unsubscribe();
+      unsubscribeInterested();
+    };
   }, []);
 
   useEffect(() => {
@@ -2476,26 +2694,29 @@ export default function App() {
   useEffect(() => {
     const seedBracket = async () => {
       if (!isAdmin) return;
-      const initialBracket: BracketMatch[] = [
-        { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'BARNIK', awayTeamName: 'ANIMESH', homeScore: 0, awayScore: 0 },
-        { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'RANAJAY', awayTeamName: 'RAJAT', homeScore: 0, awayScore: 0 },
-        { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'SAGNIK', awayTeamName: 'SONU', homeScore: 0, awayScore: 0 },
-        { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'SOUMAJIT', awayTeamName: 'AYUSH', homeScore: 0, awayScore: 0 },
-        { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'BARNIK', awayTeamName: 'ARYAN', homeScore: 0, awayScore: 0 },
-        { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'RANAJAY', awayTeamName: 'PRIYAM', homeScore: 0, awayScore: 0 },
-        { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'SONU', awayTeamName: 'PRITAM', homeScore: 0, awayScore: 0 },
-        { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'SAMRIDDHA', homeScore: 0, awayScore: 0 },
-        { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
-        { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0 },
-        { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0 },
-        { id: 'third-place', round: '3rd Place Match', homeTeamName: 'Loser SF1', awayTeamName: 'Loser SF2', homeScore: 0, awayScore: 0 },
-      ];
+      const rounds = ['April', 'May'];
+      for (const month of rounds) {
+        const initialBracket: BracketMatch[] = [
+          { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'BARNIK', awayTeamName: 'ANIMESH', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'RANAJAY', awayTeamName: 'RAJAT', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'SAGNIK', awayTeamName: 'SONU', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'SOUMAJIT', awayTeamName: 'AYUSH', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'BARNIK', awayTeamName: 'ARYAN', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'RANAJAY', awayTeamName: 'PRIYAM', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'SONU', awayTeamName: 'PRITAM', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'SAMRIDDHA', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0, month: month as any },
+          { id: 'third-place', round: '3rd Place Match', homeTeamName: 'Loser SF1', awayTeamName: 'Loser SF2', homeScore: 0, awayScore: 0, month: month as any },
+        ];
 
-      for (const match of initialBracket) {
-        const docRef = doc(db, 'bracket', match.id);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-          await setDoc(docRef, match);
+        for (const match of initialBracket) {
+          const docRef = doc(db, 'bracket', `${month.toLowerCase()}_${match.id}`);
+          const docSnap = await getDoc(docRef);
+          if (!docSnap.exists()) {
+            await setDoc(docRef, match);
+          }
         }
       }
     };
@@ -3288,29 +3509,212 @@ export default function App() {
           {activeTab === 'hallOfFame' && (
             <motion.div
               key="hallOfFame"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="flex flex-col items-center justify-center py-24 text-center"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className="max-w-4xl mx-auto px-4 py-8"
             >
-              <div className="relative mb-8">
-                <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-                <Award className="w-24 h-24 text-blue-400 relative z-10 animate-pulse" />
+              <div className="flex justify-center mb-12 gap-4">
+                <button
+                  onClick={() => setHofMonth('April')}
+                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    hofMonth === 'April' 
+                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
+                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  April Legends
+                </button>
+                <button
+                  onClick={() => setHofMonth('May')}
+                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    hofMonth === 'May' 
+                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
+                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  May Legends
+                </button>
               </div>
-              <h2 className="font-display text-4xl font-black uppercase italic tracking-tighter mb-4">Hall of Fame</h2>
-              <div className="max-w-md space-y-4">
-                <p className="text-blue-200/60 font-mono text-sm uppercase tracking-widest leading-relaxed">
-                  The legends of UXI are forged in the heat of competition.
-                </p>
-                <div className="p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
-                  <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
-                    Season Currently Ongoing
-                  </p>
-                  <p className="text-white/30 text-[9px] uppercase tracking-widest mt-2">
-                    Winners will be immortalized here upon completion.
-                  </p>
+
+              {hofMonth === 'April' ? (
+                <div className="bg-[#fdfcf0] text-[#2c2c2c] p-8 md:p-16 rounded-sm shadow-[20px_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden border border-[#dcd9c6] font-serif">
+                  {/* Paper Texture Overlay */}
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
+                  
+                  {/* Decorative Borders */}
+                  <div className="absolute top-4 left-4 right-4 bottom-4 border border-[#2c2c2c]/10 pointer-events-none" />
+                  
+                  <div className="relative z-10">
+                    <div className="text-center mb-16">
+                      <div className="inline-block border-b-2 border-[#2c2c2c] pb-2 mb-4">
+                        <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter">The April <span className="text-blue-700">Chronicles</span></h2>
+                      </div>
+                      <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[#2c2c2c]/60">Tournament Documentary • Vol. 01</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-20">
+                      <div className="text-center space-y-4">
+                        <div className="relative inline-block">
+                          <Trophy className="w-16 h-16 text-yellow-600 mx-auto mb-2" />
+                          <div className="absolute -top-2 -right-2 bg-yellow-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">1ST</div>
+                        </div>
+                        <h3 className="text-2xl font-black uppercase italic tracking-tight">{hofMonth === 'April' ? 'Priyam' : 'TBD'}</h3>
+                        <p className="text-xs uppercase font-bold tracking-widest text-[#2c2c2c]/40">Grand Champion</p>
+                      </div>
+                      <div className="text-center space-y-4 md:pt-8">
+                        <div className="relative inline-block">
+                          <Award className="w-12 h-12 text-gray-500 mx-auto mb-2" />
+                          <div className="absolute -top-1 -right-1 bg-gray-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">2ND</div>
+                        </div>
+                        <h3 className="text-xl font-black uppercase italic tracking-tight">{hofMonth === 'April' ? 'Samriddha' : 'TBD'}</h3>
+                        <p className="text-xs uppercase font-bold tracking-widest text-[#2c2c2c]/40">Runner Up</p>
+                      </div>
+                      <div className="text-center space-y-4 md:pt-8">
+                        <div className="relative inline-block">
+                          <Award className="w-12 h-12 text-orange-700 mx-auto mb-2" />
+                          <div className="absolute -top-1 -right-1 bg-orange-700 text-white text-[10px] font-black px-2 py-0.5 rounded-full">3RD</div>
+                        </div>
+                        <h3 className="text-xl font-black uppercase italic tracking-tight">{hofMonth === 'April' ? 'Aryan' : 'TBD'}</h3>
+                        <p className="text-xs uppercase font-bold tracking-widest text-[#2c2c2c]/40">Third Place</p>
+                      </div>
+                    </div>
+
+                    <div className="border-t border-b border-[#2c2c2c]/10 py-12 mb-16">
+                      <h4 className="text-center text-xs font-black uppercase tracking-[0.3em] mb-12 text-[#2c2c2c]/60">Statistical Summary</h4>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                        <div className="text-center">
+                          <p className="text-3xl font-black italic tracking-tighter">{hofMonth === 'April' ? '283' : hofStats.totalGoals}</p>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Total Goals</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-3xl font-black italic tracking-tighter">{hofStats.totalMatches}</p>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Matches Played</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-3xl font-black italic tracking-tighter">{hofStats.avgGoals}</p>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Goals / Match</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-3xl font-black italic tracking-tighter">{hofMonth === 'April' ? '61' : '0'}</p>
+                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Clean Sheets</p>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-16">
+                      <div className="space-y-8">
+                        <div className="space-y-4">
+                          <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">The Golden Boot</h5>
+                          {hofMonth === 'April' ? (
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-lg font-black uppercase italic">Cruyff</span>
+                                <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/40">Priyam • 13 Goals</span>
+                              </div>
+                              <Star className="w-6 h-6 text-yellow-600" />
+                            </div>
+                          ) : hofStats.topScorer ? (
+                            <div className="flex items-center justify-between">
+                              <div className="flex flex-col">
+                                <span className="text-lg font-black uppercase italic">{hofStats.topScorer.name}</span>
+                                <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/40">{hofStats.topScorer.gamer} • {hofStats.topScorer.goals} Goals</span>
+                              </div>
+                              <Star className="w-6 h-6 text-yellow-600" />
+                            </div>
+                          ) : (
+                            <p className="text-xs italic text-[#2c2c2c]/40">No scorers recorded yet.</p>
+                          )}
+                        </div>
+
+                        <div className="space-y-4">
+                          <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">Golden Glove</h5>
+                          <div className="flex items-center justify-between">
+                            <div className="flex flex-col">
+                              <span className="text-lg font-black uppercase italic">{hofMonth === 'April' ? 'Bounou' : 'TBD'}</span>
+                              <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/40">{hofMonth === 'April' ? 'Pritam • Most Clean Sheets' : 'Season Ongoing'}</span>
+                            </div>
+                            <Shield className="w-6 h-6 text-blue-600" />
+                          </div>
+                        </div>
+
+                        <div className="space-y-4">
+                          <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">Notable Matches</h5>
+                          <div className="space-y-4">
+                            <div>
+                              <p className="text-xs font-black uppercase italic tracking-tight">Best Match</p>
+                              <p className="text-[10px] leading-relaxed text-[#2c2c2c]/70">SAYANTAN 0 - 10 BARNIK: A historic display of dominance that rewrote the record books.</p>
+                            </div>
+                            <div>
+                              <p className="text-xs font-black uppercase italic tracking-tight">Best Competitive</p>
+                              <p className="text-[10px] leading-relaxed text-[#2c2c2c]/70">PRIYAM 3 - 2 AYUSH: A tactical masterclass where every goal felt like a tournament decider.</p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-8">
+                        <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">Team Records {hofMonth === 'April' && '(till group stage)'}</h5>
+                        <div className="grid grid-cols-1 gap-4">
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Possession</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.mostPossession?.name} ({hofStats.mostPossession?.value.toFixed(1)}%)</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Goals Scored</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.mostGoals?.name} ({hofStats.mostGoals?.value})</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Least Goals Conceded</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.leastConceded?.name} ({hofStats.leastConceded?.value})</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Fouls</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.mostFouls?.name} ({hofStats.mostFouls?.value})</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Offsides</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.mostOffsides?.name} ({hofStats.mostOffsides?.value})</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Shots</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.mostShots?.name} ({hofStats.mostShots?.value})</span>
+                          </div>
+                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
+                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Shots on Target</span>
+                            <span className="text-xs font-black italic uppercase">{hofStats.mostShotsOnTarget?.name} ({hofStats.mostShotsOnTarget?.value})</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-24 text-center opacity-40">
+                      <p className="text-[8px] uppercase tracking-[0.5em] font-black">UXI TOURNAMENT ARCHIVE • EST. 2026</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-24 text-center bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm">
+                  <div className="relative mb-8">
+                    <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
+                    <Award className="w-24 h-24 text-blue-400 relative z-10 animate-pulse" />
+                  </div>
+                  <h2 className="font-display text-4xl font-black uppercase italic tracking-tighter mb-4">May Legends</h2>
+                  <div className="max-w-md space-y-4">
+                    <p className="text-blue-200/60 font-mono text-sm uppercase tracking-widest leading-relaxed">
+                      The May season is currently in progress. Legends are being forged as we speak.
+                    </p>
+                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+                      <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
+                        Season Ongoing
+                      </p>
+                      <p className="text-white/30 text-[9px] uppercase tracking-widest mt-2">
+                        Winners will be immortalized here upon completion of the May bracket.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -3459,15 +3863,57 @@ export default function App() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-sm"
+              className="max-w-2xl mx-auto px-4 py-8 space-y-6"
             >
-              <Calendar className="w-16 h-16 text-blue-400/20 mb-6" />
-              <h2 className="text-3xl md:text-5xl font-display font-black italic uppercase tracking-tighter text-white mb-4 text-center px-4">
-                See you soon in <span className="text-blue-400">MAY</span>
-              </h2>
-              <p className="text-blue-200/50 font-medium text-center px-6 max-w-md">
-                The April season has concluded. All match records have been archived. Stay tuned for the next chapter of the tournament.
-              </p>
+              <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between w-full bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-sm">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
+                    <Calendar className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter">Tournament <span className="text-blue-400">Fixtures</span></h2>
+                    <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">Season April - May</p>
+                  </div>
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleInterested}
+                  disabled={hasInterested}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
+                    hasInterested 
+                      ? 'bg-green-500/20 text-green-400 border-green-500/30 opacity-80 cursor-default' 
+                      : 'bg-blue-600 text-white border-blue-400/30 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]'
+                  }`}
+                >
+                  {hasInterested ? <Check className="w-3 h-3" /> : <Star className="w-3 h-3" />}
+                  {hasInterested ? 'Interested' : 'Interested for May Event'}
+                  <span className="ml-1 px-2 py-0.5 bg-black/20 rounded-md text-[9px]">{interestedCount}</span>
+                </motion.button>
+              </div>
+
+              {activeMonth === 'April' ? (
+                <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-sm">
+                  <Calendar className="w-16 h-16 text-blue-400/20 mb-6" />
+                  <h2 className="text-3xl md:text-5xl font-display font-black italic uppercase tracking-tighter text-white mb-4 text-center px-4">
+                    See you soon in <span className="text-blue-400">MAY</span>
+                  </h2>
+                  <p className="text-blue-200/50 font-medium text-center px-6 max-w-md">
+                    The April season has concluded. All match records have been archived. Stay tuned for the next chapter of the tournament.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {mayMatches.map((match) => (
+                    <MatchCard 
+                      key={match.id} 
+                      match={match} 
+                      teams={teams}
+                      onClick={() => setSelectedMatch(match)}
+                    />
+                  ))}
+                </div>
+              )}
             </motion.div>
           )}
 
@@ -3479,6 +3925,28 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full overflow-x-auto pb-8"
             >
+              <div className="flex justify-center mb-8 gap-4">
+                <button
+                  onClick={() => setBracketMonth('April')}
+                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    bracketMonth === 'April' 
+                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
+                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  April Bracket
+                </button>
+                <button
+                  onClick={() => setBracketMonth('May')}
+                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
+                    bracketMonth === 'May' 
+                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
+                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  May Bracket
+                </button>
+              </div>
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
@@ -3752,7 +4220,7 @@ export default function App() {
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Matches</p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">72</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{matches.filter(m => m.status === 'finished').length}</p>
                 </div>
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Teams</p>

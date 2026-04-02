@@ -51,6 +51,12 @@ service cloud.firestore {
     //   - homeScore: number (optional)
     //   - awayScore: number (optional)
     //
+    // Collection: stats
+    // Document ID: global, may_event
+    // Fields:
+    //   - visitCount: number (for global)
+    //   - interestedCount: number (for may_event)
+    //
     // ===============================================================
 
     // ===============================================================

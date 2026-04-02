@@ -82,6 +82,15 @@
         "visitCount": { "type": "number", "description": "Total number of page visits." }
       },
       "required": ["visitCount"]
+    },
+    "InterestedStats": {
+      "title": "Interested Stats",
+      "description": "Statistics for users interested in future events.",
+      "type": "object",
+      "properties": {
+        "interestedCount": { "type": "number", "description": "Total number of interested users." }
+      },
+      "required": ["interestedCount"]
     }
   },
   "firestore": {
@@ -105,9 +114,13 @@
       "schema": "BracketMatch",
       "description": "Collection of bracket matches."
     },
-    "/stats/{statId}": {
+    "/stats/global": {
       "schema": "GlobalStats",
-      "description": "Collection of global statistics."
+      "description": "Global statistics document."
+    },
+    "/stats/may_event": {
+      "schema": "InterestedStats",
+      "description": "Statistics for the May event interest."
     }
   }
 }

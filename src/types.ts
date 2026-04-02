@@ -64,6 +64,7 @@ export interface BracketMatch {
   nextMatchId?: string;
   round: string;
   leg?: 'Leg 1' | 'Leg 2';
+  month?: 'April' | 'May';
 }
 
 export interface VotingCandidate {
@@ -98,4 +99,5 @@ export interface News {
   date: string;
   title: string;
   excerpt: string;
+  month?: 'April' | 'May';
 }
