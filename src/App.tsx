@@ -9,7 +9,18 @@ import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAn
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch } from 'firebase/firestore';
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+const getApiKey = () => {
+  try {
+    if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
+      return process.env.GEMINI_API_KEY;
+    }
+  } catch (e) {
+    // process.env access failed
+  }
+  return (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
+};
+
+const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 const INITIAL_BRACKET: BracketMatch[] = [
   { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
@@ -2734,10 +2745,10 @@ export default function App() {
                                   <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
                                     {team.fullName}
                                   </span>
-                                  {qualificationStatus[team.id] === 'Q' && (
+                                  {qualificationStatus && qualificationStatus[team.id] === 'Q' && (
                                     <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-[8px] font-black uppercase tracking-tighter rounded border border-green-500/30" title="Mathematically Qualified (Top 8 Guaranteed)">Q</span>
                                   )}
-                                  {qualificationStatus[team.id] === 'E' && (
+                                  {qualificationStatus && qualificationStatus[team.id] === 'E' && (
                                     <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-tighter rounded border border-red-500/30" title="Mathematically Eliminated">E</span>
                                   )}
                                 </div>
