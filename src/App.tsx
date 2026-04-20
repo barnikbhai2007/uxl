@@ -1857,10 +1857,13 @@ export default function App() {
 
   const handleAdminAiCommand = async (command: string) => {
     try {
+      // Send the available teams to the AI so it can properly resolve their IDs
+      const teamsContext = teams.map(t => ({ id: t.id, name: t.name, fcName: t.fcName }));
+
       const response = await fetch('/api/admin-ai-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ command })
+        body: JSON.stringify({ command, teams: teamsContext })
       });
       
       const result = await response.json();

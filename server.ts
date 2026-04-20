@@ -72,19 +72,27 @@ async function startServer() {
   // AI Endpoint for Admin Commands
   app.post("/api/admin-ai-command", async (req, res) => {
     try {
-      const { command } = req.body;
+      const { command, teams } = req.body;
       
+      const teamsStr = teams && Array.isArray(teams) 
+          ? teams.map((t: any) => `ID: "${t.id}", Names: ["${t.name}", "${t.fcName}"]`).join(' | ')
+          : 'No teams available';
+
       const result = await model.generateContent({
         contents: [{
           role: "user",
           parts: [{
             text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
             Today's date is ${new Date().toDateString()}.
+
+            Registered Teams Reference:
+            ${teamsStr}
+
             Each item MUST follow this EXACT structure:
             { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
             
             "matchId" must be spelled exactly as "matchId" not "matchld".
-            For homeTeamId and awayTeamId use the team name as-is, the frontend will match it.
+            CRITICAL: For homeTeamId and awayTeamId, you MUST use the EXACT 'ID' string from the "Registered Teams Reference" list above by semantically matching the team names the user asked for.
             For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
             NEVER use "command" as a key. ALWAYS use "type" and "data".
             
