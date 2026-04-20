@@ -6,3 +6,11 @@
   --font-display: "Outfit", sans-serif;
   --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
 }
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar {
+  -ms-overflow-style: none; /* IE and Edge */
+  scrollbar-width: none; /* Firefox */
+}

@@ -5,23 +5,9 @@ import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './
 import { Team, Match, BracketMatch, Scorer, Registration, Config } from './types';
 import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
-import { GoogleGenAI, Type } from "@google/genai";
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch } from 'firebase/firestore';
-
-const getApiKey = () => {
-  try {
-    if (typeof process !== 'undefined' && process.env && process.env.GEMINI_API_KEY) {
-      return process.env.GEMINI_API_KEY;
-    }
-  } catch (e) {
-    // process.env access failed
-  }
-  return (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
-};
-
-const ai = new GoogleGenAI({ apiKey: getApiKey() });
 
 const INITIAL_BRACKET: BracketMatch[] = [
   { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
@@ -684,7 +670,7 @@ const NEWS_POSTS: any[] = [];
             </div>
           </div>
 
-          <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
+          <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] hide-scrollbar">
             {!user || user.isAnonymous ? (
               <div className="text-center py-12 space-y-6">
                 <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto">
@@ -934,7 +920,7 @@ const NEWS_POSTS: any[] = [];
         className="fixed inset-0 z-[200] bg-[#00000a] text-white flex flex-col font-sans"
       >
         <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-20 gap-4">
-          <div className="flex items-center gap-3 md:gap-6 w-full md:w-auto overflow-x-auto no-scrollbar">
+          <div className="flex items-center gap-3 md:gap-6 w-full md:w-auto overflow-x-auto hide-scrollbar">
             <button 
               onClick={onClose}
               className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 shrink-0"
@@ -980,7 +966,7 @@ const NEWS_POSTS: any[] = [];
           </div>
         </div>
 
-        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 lg:p-12">
+        <div className="flex-1 overflow-y-auto hide-scrollbar p-4 md:p-8 lg:p-12">
           <div className="max-w-6xl mx-auto w-full">
             <div className="mb-12 bg-blue-600/5 border border-blue-500/20 rounded-3xl p-6 md:p-8">
               <div className="flex items-center gap-3 mb-6">
@@ -2396,7 +2382,7 @@ export default function App() {
       {/* Navigation */}
       <nav className="sticky top-0 z-50 bg-[#000030]/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
         <div className="max-w-xl mx-auto px-4">
-          <div className="relative flex p-1.5 bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-x-auto no-scrollbar">
+          <div className="relative flex p-1.5 bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-x-auto hide-scrollbar">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
               { id: 'table', label: 'Table', icon: TableIcon },

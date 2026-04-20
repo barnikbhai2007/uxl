@@ -4,6 +4,10 @@ import { fileURLToPath } from "url";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
+const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +33,40 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '10mb' }));
+
+  // AI Endpoint
+  app.post("/api/analyze-match", async (req, res) => {
+    try {
+      const { base64, mimeType, fcName } = req.body;
+      
+      const result = await model.generateContent([
+        {
+          inlineData: {
+            data: base64,
+            mimeType: mimeType
+          }
+        },
+        {
+          text: `Analyze this FC Mobile match result screenshot for player "${fcName}". 
+          Extract and return JSON: { homeTeam, awayTeam, homeScore, awayScore }.
+          If "${fcName}" is not listed as a participant, return error.`
+        }
+      ]);
+
+      const text = result.response.text();
+      const matchData = JSON.parse(text.replace(/```json\n?|\n?```/g, ""));
+      
+      if (!matchData.homeTeam || !matchData.awayTeam) {
+          throw new Error("Could not parse match data");
+      }
+
+      res.json({ success: true, matchData });
+    } catch (error: any) {
+      console.error("AI Error:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
 
   // API Route for Voting (Logging and IP tracking)
   app.post("/api/vote", async (req, res) => {
