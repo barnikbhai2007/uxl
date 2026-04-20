@@ -82,6 +82,7 @@ export interface Registration {
   status: 'pending' | 'approved' | 'rejected';
   email?: string;
   logoUrl?: string;
+  goalkeeper: string;
 }
 
 export interface AppContent {
@@ -91,4 +92,6 @@ export interface AppContent {
 
 export interface Config {
   registrationEnabled: boolean;
+  tabVisibility?: Record<string, boolean>;
+  dateOrder?: string[];
 }

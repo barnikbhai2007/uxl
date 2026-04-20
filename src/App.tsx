@@ -5,6 +5,24 @@ import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './
 import { Team, Match, BracketMatch, Scorer, Registration, Config } from './types';
 import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
+import { 
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  TouchSensor
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch } from 'firebase/firestore';
@@ -131,8 +149,8 @@ interface PlayerGoalStats {
   goals: number;
 }
 
-const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
-  const statsMap: Record<string, PlayerGoalStats> = {};
+const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { teamId: string })[] => {
+  const statsMap: Record<string, PlayerGoalStats & { teamId: string }> = {};
 
   matches.forEach(m => {
     if (m.status === 'finished') {
@@ -144,6 +162,7 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
           const key = `${s.playerName}-${homeTeam.id}`;
           if (!statsMap[key]) {
             statsMap[key] = {
+              teamId: homeTeam.id,
               playerName: s.playerName,
               gamerName: homeTeam.name,
               gamerFullName: homeTeam.fullName,
@@ -159,6 +178,7 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
           const key = `${s.playerName}-${awayTeam.id}`;
           if (!statsMap[key]) {
             statsMap[key] = {
+              teamId: awayTeam.id,
               playerName: s.playerName,
               gamerName: awayTeam.name,
               gamerFullName: awayTeam.fullName,
@@ -175,6 +195,7 @@ const calculateStats = (teams: Team[], matches: Match[]): PlayerGoalStats[] => {
 };
 
 interface CleanSheetStats {
+  teamId: string;
   goalkeeperName: string;
   gamerName: string;
   gamerFullName: string;
@@ -193,6 +214,7 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
         const key = homeTeam.id;
         if (!statsMap[key]) {
           statsMap[key] = {
+            teamId: homeTeam.id,
             goalkeeperName: homeTeam.goalkeeper || 'Unknown GK',
             gamerName: homeTeam.name,
             gamerFullName: homeTeam.fullName,
@@ -206,6 +228,7 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
         const key = awayTeam.id;
         if (!statsMap[key]) {
           statsMap[key] = {
+            teamId: awayTeam.id,
             goalkeeperName: awayTeam.goalkeeper || 'Unknown GK',
             gamerName: awayTeam.name,
             gamerFullName: awayTeam.fullName,
@@ -616,6 +639,25 @@ const NEWS_POSTS: any[] = [];
                    displayStatus === 'rescheduled' ? 'Rescheduled' :
                    (displayStatus === 'live' || displayStatus === 'ongoing') ? 'Ongoing' : 'Match Scheduled'}
                 </div>
+
+                {isEditingMode && (
+                  <div className="mt-4 flex flex-col items-center gap-2">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Edit Status</p>
+                    <select 
+                      value={match.status}
+                      onChange={(e) => {
+                        match.status = e.target.value as any;
+                        if (updateMatch) updateMatch(match);
+                      }}
+                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-blue-500 transition-all hover:bg-white/10"
+                    >
+                      <option value="scheduled" className="bg-[#000030]">Scheduled</option>
+                      <option value="ongoing" className="bg-[#000030]">Ongoing</option>
+                      <option value="finished" className="bg-[#000030]">Final Result</option>
+                      <option value="rescheduled" className="bg-[#000030]">Rescheduled</option>
+                    </select>
+                  </div>
+                )}
               </div>
 
               <div 
@@ -730,6 +772,191 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
+  const EditProfileModal = ({ 
+    registration,
+    onClose, 
+    handleUpdateRegistration, 
+    isSubmitting
+  }: { 
+    registration: Registration,
+    onClose: () => void, 
+    handleUpdateRegistration: (data: Registration) => Promise<void>, 
+    isSubmitting: boolean
+  }) => {
+    const [formData, setFormData] = useState({
+      ...registration,
+      name: registration.name || '',
+      age: (registration.age || '').toString(),
+      fcUid: registration.fcUid || '',
+      fcName: registration.fcName || '',
+      teamOvr: (registration.teamOvr || '').toString(),
+      experience: registration.experience || '',
+      goalkeeper: registration.goalkeeper || '',
+      logoUrl: registration.logoUrl || ''
+    });
+    const [isCompressing, setIsCompressing] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) return;
+
+      setIsCompressing(true);
+      try {
+        const options = {
+          maxSizeMB: 0.1,
+          maxWidthOrHeight: 400,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(file, options);
+        const base64 = await imageCompression.getDataUrlFromFile(compressedFile);
+        setFormData({ ...formData, logoUrl: base64 });
+      } catch (error) {
+        console.error("Compression error:", error);
+      } finally {
+        setIsCompressing(false);
+      }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (isCompressing) return;
+      await handleUpdateRegistration({
+        ...formData,
+        age: Number(formData.age),
+        teamOvr: Number(formData.teamOvr)
+      } as Registration);
+      onClose();
+    };
+
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+        />
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.9, opacity: 0, y: 20 }}
+          className="relative w-full max-w-lg bg-[#0a0a1a] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
+        >
+          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-blue-600/10 to-transparent">
+            <div className="flex justify-between items-start mb-4 md:mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-display font-black italic text-white tracking-tight uppercase leading-none mb-2">Edit Campaign Profile</h2>
+                <p className="text-blue-400/60 text-[10px] font-black uppercase tracking-[0.2em]">Update your tournament information</p>
+              </div>
+              <button 
+                onClick={onClose}
+                className="p-2 md:p-3 hover:bg-white/5 rounded-2xl transition-colors text-white/40 hover:text-white"
+              >
+                <X className="w-5 md:w-6 h-5 md:h-6" />
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] hide-scrollbar">
+            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Full Name</label>
+                <input 
+                  required
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Age</label>
+                <input 
+                  required
+                  type="number"
+                  value={formData.age}
+                  onChange={(e) => setFormData({...formData, age: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC UID</label>
+                <input 
+                  required
+                  type="text"
+                  value={formData.fcUid}
+                  onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC Name</label>
+                <input 
+                  required
+                  type="text"
+                  value={formData.fcName}
+                  onChange={(e) => setFormData({...formData, fcName: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Team OVR</label>
+                <input 
+                  required
+                  type="number"
+                  value={formData.teamOvr}
+                  onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Goalkeeper Name</label>
+                <input 
+                  required
+                  type="text"
+                  value={formData.goalkeeper}
+                  onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Experience</label>
+                <input 
+                  required
+                  type="text"
+                  value={formData.experience}
+                  onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                />
+              </div>
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Logo Photo</label>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
+                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-xl p-8 cursor-pointer hover:bg-white/10 hover:border-blue-500/50 transition-all">
+                  {formData.logoUrl ? (
+                    <img src={formData.logoUrl} className="w-16 h-16 rounded-full object-cover border-2 border-blue-500" />
+                  ) : <Plus className="w-6 h-6" />}
+                </label>
+              </div>
+              <div className="md:col-span-2 pt-4">
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting || isCompressing}
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                >
+                  {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </motion.div>
+      </div>
+    );
+  };
+
   const RegistrationModal = ({ 
     onClose, 
     handleRegister, 
@@ -750,6 +977,7 @@ const NEWS_POSTS: any[] = [];
       fcName: '',
       teamOvr: '',
       experience: '',
+      goalkeeper: '',
       logoUrl: ''
     });
     const [isCompressing, setIsCompressing] = useState(false);
@@ -759,7 +987,6 @@ const NEWS_POSTS: any[] = [];
       if (!file) return;
 
       if (file.size > 5 * 1024 * 1024) {
-        alert("File is too large! Please choose a photo under 5MB.");
         return;
       }
 
@@ -775,7 +1002,6 @@ const NEWS_POSTS: any[] = [];
         setFormData({ ...formData, logoUrl: base64 });
       } catch (error) {
         console.error("Compression error:", error);
-        alert("Failed to process image. Please try another one.");
       } finally {
         setIsCompressing(false);
       }
@@ -784,7 +1010,6 @@ const NEWS_POSTS: any[] = [];
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (isCompressing) {
-        alert("Please wait while the image is processing...");
         return;
       }
       handleRegister({
@@ -914,6 +1139,17 @@ const NEWS_POSTS: any[] = [];
                   />
                 </div>
                 <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Goalkeeper Name</label>
+                  <input 
+                    required
+                    type="text"
+                    value={formData.goalkeeper}
+                    onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
+                    placeholder="Enter Goalkeeper Name"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
                   <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Play Time / Experience</label>
                   <input 
                     required
@@ -995,7 +1231,8 @@ const NEWS_POSTS: any[] = [];
     matchLabels,
     updateMatchLabel,
     matchesByDay,
-    handleAnalyzeQualification
+    handleAnalyzeQualification,
+    handleUpdateConfig
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -1017,12 +1254,65 @@ const NEWS_POSTS: any[] = [];
     matchLabels: Record<string, string>,
     updateMatchLabel: (date: string, status: string) => Promise<void>,
     matchesByDay: Record<string, Match[]>,
-    handleAnalyzeQualification: () => Promise<void>
+    handleAnalyzeQualification: () => Promise<void>,
+    handleUpdateConfig: (config: Config) => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility'>('bracket');
     const [confirmReset, setConfirmReset] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isResetting, setIsResetting] = useState(false);
+
+    const sensors = useSensors(
+      useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+      useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+      useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+    );
+
+    const handleDragEnd = async (event: DragEndEvent) => {
+      const { active, over } = event;
+      if (over && active.id !== over.id) {
+        const oldIndex = sortedDates.indexOf(active.id as string);
+        const newIndex = sortedDates.indexOf(over.id as string);
+        const newOrder = arrayMove(sortedDates, oldIndex, newIndex) as string[];
+        await handleUpdateConfig({ ...config, dateOrder: newOrder });
+      }
+    };
+
+    const sortedDates = useMemo(() => {
+      const allDates = Object.keys(matchesByDay);
+      if (config.dateOrder && config.dateOrder.length > 0) {
+        const existingDates = config.dateOrder.filter(d => allDates.includes(d));
+        const newDates = allDates.filter(d => !config.dateOrder!.includes(d)).sort();
+        // Use Set to ensure final list has no duplicates
+        return Array.from(new Set([...existingDates, ...newDates]));
+      }
+      return allDates.sort();
+    }, [matchesByDay, config.dateOrder]);
+
+    const SortableDateItem = ({ date, matchLabels, updateMatchLabel }: { date: string, matchLabels: Record<string, string>, updateMatchLabel: (date: string, status: string) => Promise<void>, key?: any }) => {
+      const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: date });
+      const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
+
+      return (
+        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 ${isDragging ? 'shadow-2xl bg-blue-600/20 border-blue-500/50' : ''}`}>
+          <div className="flex items-center gap-4">
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-lg transition-colors">
+              <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
+            </div>
+            <span className="text-sm font-bold text-white uppercase italic">{date}</span>
+          </div>
+          <select 
+            value={matchLabels[date] || 'scheduled'}
+            onChange={(e) => updateMatchLabel(date, e.target.value)}
+            className="bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-blue-500"
+          >
+            <option value="scheduled">Scheduled</option>
+            <option value="ongoing">Ongoing</option>
+            <option value="finished">Final Result</option>
+          </select>
+        </div>
+      );
+    };
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
     const [editHomeName, setEditHomeName] = useState('');
     const [editAwayName, setEditAwayName] = useState('');
@@ -1091,31 +1381,37 @@ const NEWS_POSTS: any[] = [];
             </div>
           </div>
 
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
             <button 
               onClick={() => setIsEditingMode(!isEditingMode)}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
             >
               {isEditingMode ? 'Editing Enabled' : 'Editing Disabled'}
             </button>
-            <div className="w-px bg-white/10 mx-2" />
+            <div className="w-px bg-white/10 mx-2 flex-shrink-0" />
             <button 
               onClick={() => setActiveTab('bracket')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'bracket' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
             </button>
             <button 
               onClick={() => setActiveTab('registrations')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'registrations' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
             </button>
             <button 
               onClick={() => setActiveTab('label')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'label' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Label
+            </button>
+            <button 
+              onClick={() => setActiveTab('visibility')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Visibility
             </button>
           </div>
         </div>
@@ -1439,24 +1735,51 @@ const NEWS_POSTS: any[] = [];
               </div>
             )}
             
-            {activeTab === 'label' && (
+            {activeTab === 'visibility' && (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
-                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Date Label Management</h3>
+                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Tab Visibility Management</h3>
                 <div className="space-y-4">
-                  {Object.keys(matchesByDay).sort().map(date => (
-                    <div key={date} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
-                      <span className="text-sm font-bold text-white">{date}</span>
-                      <select 
-                        value={matchLabels[date] || 'scheduled'}
-                        onChange={(e) => updateMatchLabel(date, e.target.value)}
-                        className="bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-bold uppercase tracking-widest"
+                  {['Fixtures', 'Table', 'Bracket', 'Registration', 'Stats', 'Campaign'].map(tab => (
+                    <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                      <span className="text-sm font-bold text-white">{tab}</span>
+                      <button 
+                        onClick={() => {
+                          const newTabs = { ...(config.tabVisibility || {}), [tab.toLowerCase()]: !(config.tabVisibility?.[tab.toLowerCase()] ?? true) };
+                          handleUpdateConfig({ ...config, tabVisibility: newTabs });
+                        }}
+                        className={`px-4 py-2 rounded-lg font-black text-xs uppercase ${!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}
                       >
-                        <option value="scheduled">Scheduled</option>
-                        <option value="ongoing">Ongoing</option>
-                        <option value="finished">Final</option>
-                      </select>
+                        {!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'Disabled' : 'Enabled'}
+                      </button>
                     </div>
                   ))}
+                </div>
+              </div>
+            )}
+            
+            {activeTab === 'label' && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Date Label Management (Drag to Reorder)</h3>
+                <div className="space-y-4">
+                  <DndContext 
+                    sensors={sensors}
+                    collisionDetection={closestCenter}
+                    onDragEnd={handleDragEnd}
+                  >
+                    <SortableContext 
+                      items={sortedDates}
+                      strategy={verticalListSortingStrategy}
+                    >
+                      {sortedDates.map(date => (
+                        <SortableDateItem 
+                          key={date} 
+                          date={date} 
+                          matchLabels={matchLabels} 
+                          updateMatchLabel={updateMatchLabel} 
+                        />
+                      ))}
+                    </SortableContext>
+                  </DndContext>
                 </div>
               </div>
             )}
@@ -1717,10 +2040,8 @@ export default function App() {
       });
 
       await setDoc(doc(db, 'config', 'qualification'), { statuses });
-      alert("Table analyzed successfully. Qualification statuses updated.");
     } catch (error) {
       console.error("Qualification analysis failed:", error);
-      alert("Failed to analyze qualification.");
     }
   };
 
@@ -1729,6 +2050,7 @@ export default function App() {
     await setDoc(doc(db, 'match_labels', date), { status }, { merge: true });
   };
   const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const isAdmin = useMemo(() => {
@@ -1868,7 +2190,18 @@ export default function App() {
       }, { merge: true });
     } catch (error) {
       console.error("Error toggling registration:", error);
-      alert("Failed to toggle registration.");
+    } finally {
+      setIsSavingAdmin(false);
+    }
+  };
+
+  const handleUpdateConfig = async (newConfig: Config) => {
+    if (!isAdmin) return;
+    setIsSavingAdmin(true);
+    try {
+      await setDoc(doc(db, 'config', 'system'), newConfig, { merge: true });
+    } catch (error) {
+      console.error("Error updating config:", error);
     } finally {
       setIsSavingAdmin(false);
     }
@@ -1914,10 +2247,8 @@ export default function App() {
     }
     try {
       await updateDoc(doc(db, 'registrations', id), { status: 'approved' });
-      alert("Registration approved!");
     } catch (error) {
       console.error("Approval failed:", error);
-      alert("Approval failed: " + (error as any).message);
     }
   };
 
@@ -1928,24 +2259,29 @@ export default function App() {
     }
     try {
       await deleteDoc(doc(db, 'registrations', id));
-      alert("Registration deleted!");
     } catch (error) {
       console.error("Delete failed:", error);
-      alert("Delete failed: " + (error as any).message);
     }
   };
 
   const handleRejectRegistration = async (id: string) => {
-    if (!isAdmin) {
-      alert("Permission denied");
-      return;
-    }
+    if (!isAdmin) return;
     try {
       await updateDoc(doc(db, 'registrations', id), { status: 'rejected' });
-      alert("Registration rejected!");
     } catch (error) {
       console.error("Rejection failed:", error);
-      alert("Rejection failed: " + (error as any).message);
+    }
+  };
+
+  const handleUpdateRegistration = async (reg: Registration) => {
+    if (!user || user.uid !== reg.userId) return;
+    setIsSubmittingRegistration(true);
+    try {
+      await setDoc(doc(db, 'registrations', reg.userId), reg, { merge: true });
+    } catch (error) {
+      console.error("Error updating registration:", error);
+    } finally {
+      setIsSubmittingRegistration(false);
     }
   };
 
@@ -2163,7 +2499,6 @@ export default function App() {
 
     } catch (error) {
       console.error("Vision AI Error:", error);
-      alert("DEBUG AI ERROR: " + (error instanceof Error ? error.message : JSON.stringify(error)));
       setAiAnalysisResult("AI failed to analyze the image. Please try again or update manually via admin.");
     } finally {
       setIsSubmittingImg(false);
@@ -2195,10 +2530,8 @@ export default function App() {
         timestamp: serverTimestamp()
       });
       setHasRegistered(true);
-      alert("Registration submitted! Waiting for admin approval.");
     } catch (error) {
       console.error("Registration failed:", error);
-      alert("Registration failed. Please try again.");
     } finally {
       setIsSubmittingRegistration(false);
     }
@@ -2235,6 +2568,7 @@ export default function App() {
           ovr: data.teamOvr,
           uid: data.fcUid,
           logoUrl: data.logoUrl,
+          goalkeeper: data.goalkeeper,
           played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
         };
       });
@@ -2608,7 +2942,10 @@ export default function App() {
             ].filter(tab => {
               if (tab.id === 'registration') return config.registrationEnabled;
               if (tab.id === 'campaign') return !!user;
-              return true;
+
+              // Check custom visibility
+              const isVisible = config.tabVisibility?.[tab.id] ?? true;
+              return isVisible;
             }).map((tab) => (
               <button
                 key={tab.id}
@@ -2649,12 +2986,19 @@ export default function App() {
                 <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
                   <UserIcon className="w-6 h-6 text-blue-400" />
                 </div>
-                <div>
+                <div className="flex-1">
                   <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none" />
                   <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">
                     <EditableText id="campaign_sub" defaultText="Player Portal & Performance" />
                   </p>
                 </div>
+                <button 
+                  onClick={() => setIsEditingProfile(true)}
+                  className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group"
+                >
+                  <Edit3 className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Edit Info</span>
+                </button>
               </div>
 
               {!user ? (
@@ -2827,49 +3171,8 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              {/* Team Statistics Grid */}
+              {/* Top Scorers Section */}
               <div className="flex items-center gap-4 mb-4 mt-2">
-                <div className="p-3 bg-indigo-600/20 rounded-2xl border border-indigo-500/30">
-                  <BarChart2 className="w-6 h-6 text-indigo-400" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Team Overview</h2>
-                  <p className="text-white/40 text-xs uppercase tracking-widest mt-1">Tournament Averages</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-blue-400/60 tracking-widest mb-1">Highest Average Possession</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.mostPossession?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 font-bold text-sm">
-                    {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-green-400/60 tracking-widest mb-1">Most Goals Scored</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.mostGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 font-bold text-sm">
-                    {hofStats.mostGoals?.value || 0} Goals
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-cyan-400/60 tracking-widest mb-1">Best Defense</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.leastConceded?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 font-bold text-sm">
-                    {hofStats.leastConceded?.value || 0} Goals Conceded
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-orange-400/60 tracking-widest mb-1">Most Shots Taken</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.mostShots?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400 font-bold text-sm">
-                    {hofStats.mostShots?.value || 0} Shots
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex items-center gap-4 mb-4 mt-8">
                 <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
                   <BarChart2 className="w-6 h-6 text-blue-400" />
                 </div>
@@ -2881,7 +3184,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white/5 text-blue-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
@@ -2894,7 +3197,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {stats.length > 0 ? stats.map((stat, index) => (
-                      <tr key={`${stat.playerName}-${stat.gamerName}`} className="hover:bg-white/5 transition-colors">
+                      <tr key={`${stat.playerName}-${stat.teamId}`} className="hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                             index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
@@ -2936,7 +3239,7 @@ export default function App() {
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center">
+                        <td colSpan={5} className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center gap-3 opacity-20">
                             <Info className="w-8 h-8" />
                             <p className="text-xs uppercase font-black tracking-widest">No goals recorded yet</p>
@@ -2948,17 +3251,18 @@ export default function App() {
                 </table>
               </div>
 
-              <div className="flex items-center gap-4 mb-8 mt-12">
+              {/* Clean Sheets Section */}
+              <div className="flex items-center gap-4 mb-4 mt-8">
                 <div className="p-3 bg-green-600/20 rounded-2xl border border-green-500/30">
                   <Shield className="w-6 h-6 text-green-400" />
                 </div>
                 <div>
-                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none">Clean Sheets</h2>
+                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Clean Sheets</h2>
                   <p className="text-green-200/40 text-xs uppercase tracking-widest mt-1">Top Goalkeepers</p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white/5 text-green-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
@@ -2971,7 +3275,7 @@ export default function App() {
                   </thead>
                   <tbody className="divide-y divide-white/5">
                     {cleanSheets.length > 0 ? cleanSheets.map((stat, index) => (
-                      <tr key={`${stat.goalkeeperName}-${stat.gamerName}`} className="hover:bg-white/5 transition-colors">
+                      <tr key={stat.teamId} className="hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                             index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
@@ -3023,6 +3327,48 @@ export default function App() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Team Statistics Grid */}
+              <div className="flex items-center gap-4 mb-4 mt-8">
+                <div className="p-3 bg-indigo-600/20 rounded-2xl border border-indigo-500/30">
+                  <BarChart2 className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Team Overview</h2>
+                  <p className="text-white/40 text-xs uppercase tracking-widest mt-1">Tournament Averages</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-24">
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-blue-400/60 tracking-widest mb-1">Highest Average Possession</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 font-bold text-sm">
+                    {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-green-400/60 tracking-widest mb-1">Most Goals Scored</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 font-bold text-sm">
+                    {hofStats.mostGoals?.value || 0} Goals
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-cyan-400/60 tracking-widest mb-1">Best Defense</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.leastConceded?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 font-bold text-sm">
+                    {hofStats.leastConceded?.value || 0} Goals Conceded
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-orange-400/60 tracking-widest mb-1">Most Shots Taken</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400 font-bold text-sm">
+                    {hofStats.mostShots?.value || 0} Shots
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -3184,20 +3530,34 @@ export default function App() {
                 </div>
               </div>
 
-                    {Object.keys(matchesByDay).length === 0 ? (
-                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6">
-                        <div className="w-20 h-20 bg-blue-600/10 rounded-full flex items-center justify-center border border-blue-500/20">
-                          <Calendar className="w-10 h-10 text-blue-400" />
-                        </div>
-                        <div>
-                          <EditableText id="loading_fixtures_title" defaultText="Fixtures Loading" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
-                          <p className="text-white/40 text-sm font-bold uppercase tracking-widest">
-                            <EditableText id="loading_fixtures_sub" defaultText="Mark will update soon" isAdmin={isAdmin} />
-                          </p>
-                        </div>
-                      </div>
-                    ) : (
-                      Object.keys(matchesByDay).map(day => (
+                    {(() => {
+                      const allDays = Object.keys(matchesByDay);
+                      let orderedDays = [];
+                      if (config.dateOrder && config.dateOrder.length > 0) {
+                        const existingInConfig = config.dateOrder.filter(d => allDays.includes(d));
+                        const missingInConfig = allDays.filter(d => !config.dateOrder!.includes(d)).sort();
+                        orderedDays = [...new Set([...existingInConfig, ...missingInConfig])];
+                      } else {
+                        orderedDays = allDays.sort();
+                      }
+
+                      if (orderedDays.length === 0) {
+                        return (
+                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6">
+                            <div className="w-20 h-20 bg-blue-600/10 rounded-full flex items-center justify-center border border-blue-500/20">
+                              <Calendar className="w-10 h-10 text-blue-400" />
+                            </div>
+                            <div>
+                              <EditableText id="loading_fixtures_title" defaultText="Fixtures Loading" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
+                              <p className="text-white/40 text-sm font-bold uppercase tracking-widest">
+                                <EditableText id="loading_fixtures_sub" defaultText="Mark will update soon" isAdmin={isAdmin} />
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      }
+
+                      return orderedDays.map(day => (
                         <div key={day} className="space-y-6">
                           <div className="flex items-center gap-4">
                             <div className="px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-xl">
@@ -3217,8 +3577,8 @@ export default function App() {
                             ))}
                           </div>
                         </div>
-                      ))
-                    )}
+                      ));
+                    })()}
                 </motion.div>
               )}
 
@@ -3517,6 +3877,14 @@ export default function App() {
             user={user}
           />
         )}
+        {isEditingProfile && myRegistrationData && (
+          <EditProfileModal
+            registration={myRegistrationData}
+            onClose={() => setIsEditingProfile(false)}
+            handleUpdateRegistration={handleUpdateRegistration}
+            isSubmitting={isSubmittingRegistration}
+          />
+        )}
         {isAdminModalOpen && (
           <AdminModal 
             isAdmin={isAdmin}
@@ -3540,6 +3908,7 @@ export default function App() {
             updateMatchLabel={updateMatchLabel}
             matchesByDay={matchesByDay}
             handleAnalyzeQualification={handleAnalyzeQualification}
+            handleUpdateConfig={handleUpdateConfig}
           />
         )}
         {selectedTeam && (
