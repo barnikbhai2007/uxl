@@ -19,6 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             text: `You are a Tournament Manager AI. 
             Return ONLY a raw JSON array.
             Available Commands:
+            - CREATE_MATCH: { homeTeamId, awayTeamId, date, matchNumber, type }
             - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
             - RESET: { type: 'matches' | 'bracket' | 'all' }
             - UPDATE_CONTENT: { elementId, text, isImage: boolean }

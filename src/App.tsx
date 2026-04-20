@@ -1876,6 +1876,9 @@ export default function App() {
           if (cmd.data.matchId) {
             await updateDoc(doc(db, 'matches', cmd.data.matchId), cmd.data);
           }
+        } else if (cmd.type === 'CREATE_MATCH') {
+          const matchId = uuidv4();
+          await setDoc(doc(db, 'matches', matchId), { ...cmd.data, id: matchId, status: 'scheduled' });
         } else if (cmd.type === 'RESET') {
           await handleAdminReset(cmd.data.type);
         } else if (cmd.type === 'UPDATE_CONTENT') {
