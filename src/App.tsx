@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config } from './types';
+import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
 import { GoogleGenAI, Type } from "@google/genai";
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
@@ -239,6 +240,16 @@ const NEWS_POSTS: any[] = [];
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
+    const TeamLogo = ({ team }: { team: Team | undefined }) => (
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+        {team?.logoUrl ? (
+          <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+        ) : (
+          team?.name[0] || '?'
+        )}
+      </div>
+    );
+
     return (
       <motion.div
         whileHover={{ scale: 1.01, y: -2 }}
@@ -251,9 +262,7 @@ const NEWS_POSTS: any[] = [];
         
         <div className="flex items-center justify-between gap-4 relative z-10">
           <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform">
-              {awayTeam?.name[0] || '?'}
-            </div>
+            <TeamLogo team={awayTeam} />
             <div className="text-center">
               <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{awayTeam?.name || 'TBD'}</div>
               <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{awayTeam?.fullName || 'TBD'}</div>
@@ -283,9 +292,7 @@ const NEWS_POSTS: any[] = [];
           </div>
 
           <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
-            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform">
-              {homeTeam?.name[0] || '?'}
-            </div>
+            <TeamLogo team={homeTeam} />
             <div className="text-center">
               <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{homeTeam?.name || 'TBD'}</div>
               <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{homeTeam?.fullName || 'TBD'}</div>
@@ -602,11 +609,44 @@ const NEWS_POSTS: any[] = [];
       fcUid: '',
       fcName: '',
       teamOvr: '',
-      experience: ''
+      experience: '',
+      logoUrl: ''
     });
+    const [isCompressing, setIsCompressing] = useState(false);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+
+      if (file.size > 5 * 1024 * 1024) {
+        alert("File is too large! Please choose a photo under 5MB.");
+        return;
+      }
+
+      setIsCompressing(true);
+      try {
+        const options = {
+          maxSizeMB: 0.1, // Target 100KB to fit comfortably in Firestore
+          maxWidthOrHeight: 400,
+          useWebWorker: true,
+        };
+        const compressedFile = await imageCompression(file, options);
+        const base64 = await imageCompression.getDataUrlFromFile(compressedFile);
+        setFormData({ ...formData, logoUrl: base64 });
+      } catch (error) {
+        console.error("Compression error:", error);
+        alert("Failed to process image. Please try another one.");
+      } finally {
+        setIsCompressing(false);
+      }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      if (isCompressing) {
+        alert("Please wait while the image is processing...");
+        return;
+      }
       handleRegister({
         ...formData,
         age: Number(formData.age),
@@ -744,10 +784,43 @@ const NEWS_POSTS: any[] = [];
                     className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
                   />
                 </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Team Logo / Photo (Optional, under 5MB)</label>
+                  <div className="relative">
+                    <input 
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <label 
+                      htmlFor="logo-upload"
+                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-xl p-8 cursor-pointer hover:bg-white/10 hover:border-blue-500/50 transition-all group"
+                    >
+                      {formData.logoUrl ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-lg" />
+                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Photo Selected</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-3 bg-white/5 rounded-full group-hover:bg-blue-600/20 group-hover:text-blue-400 transition-all">
+                            {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                          </div>
+                          <div className="text-left">
+                            <p className="text-sm font-bold text-white">Click to Upload Photo</p>
+                            <p className="text-[10px] text-white/30 uppercase font-black">PNG, JPG up to 5MB</p>
+                          </div>
+                        </>
+                      )}
+                    </label>
+                  </div>
+                </div>
                 <div className="md:col-span-2 pt-4">
                   <button 
                     type="submit"
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isCompressing}
                     className="w-full py-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-blue-600/20"
                   >
                     {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Registration"}
@@ -1149,7 +1222,7 @@ const NEWS_POSTS: any[] = [];
                   ) : (
                     registrations.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(reg => (
                       <div key={reg.id} className="bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 hover:bg-white/10 transition-all group">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 items-center">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-6 items-center">
                           <div className="flex items-center gap-2">
                              <div className="mr-2">
                                <p className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-0.5">Status</p>
@@ -1159,34 +1232,45 @@ const NEWS_POSTS: any[] = [];
                                  'bg-yellow-500/20 text-yellow-500'
                                }`}>{reg.status}</span>
                              </div>
-                             <button 
-                               onClick={() => handleApproveRegistration(reg.id)}
-                               className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-xl"
-                               title="Approve"
-                             >
-                               <Check className="w-4 h-4" />
-                             </button>
-                             <button 
-                               onClick={() => handleRejectRegistration(reg.id)}
-                               className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-xl"
-                               title="Reject"
-                             >
-                               <X className="w-4 h-4" />
-                             </button>
-                             <button 
-                               onClick={() => {
-                                 if (confirmDeleteId === reg.id) {
-                                   handleDeleteRegistration(reg.id);
-                                   setConfirmDeleteId(null);
-                                 } else {
-                                   setConfirmDeleteId(reg.id);
-                                 }
-                               }}
-                               className={`p-2 transition-all rounded-xl ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
-                               title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
-                             >
-                               <Trash2 className="w-4 h-4" />
-                             </button>
+                             <div className="flex flex-col gap-1">
+                               <button 
+                                 onClick={() => handleApproveRegistration(reg.id)}
+                                 className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-xl"
+                                 title="Approve"
+                               >
+                                 <Check className="w-4 h-4" />
+                               </button>
+                               <button 
+                                 onClick={() => handleRejectRegistration(reg.id)}
+                                 className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-xl"
+                                 title="Reject"
+                               >
+                                 <X className="w-4 h-4" />
+                               </button>
+                               <button 
+                                 onClick={() => {
+                                   if (confirmDeleteId === reg.id) {
+                                     handleDeleteRegistration(reg.id);
+                                     setConfirmDeleteId(null);
+                                   } else {
+                                     setConfirmDeleteId(reg.id);
+                                   }
+                                 }}
+                                 className={`p-2 transition-all rounded-xl ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
+                                 title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
+                               >
+                                 <Trash2 className="w-4 h-4" />
+                               </button>
+                             </div>
+                          </div>
+                          <div className="flex justify-center lg:justify-start">
+                             <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
+                               {reg.logoUrl ? (
+                                 <img src={reg.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                               ) : (
+                                 <Plus className="w-8 h-8 text-white/10" />
+                               )}
+                             </div>
                           </div>
                           <div>
                              <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">FC Name</p>
@@ -1245,6 +1329,9 @@ const NEWS_POSTS: any[] = [];
   const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true, copiedId, copyToClipboard }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean, showCopy?: boolean, copiedId: string | null, copyToClipboard: (uid: string) => void }) => {
     if (!team) return (
       <div className={`flex items-center ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
+        <div className={`${size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'} rounded bg-white/10 flex items-center justify-center text-[10px] font-black uppercase text-white/40 shrink-0 ${reverse ? 'ml-2' : 'mr-2'}`}>
+          ?
+        </div>
         <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>TBD</span>
@@ -1252,9 +1339,23 @@ const NEWS_POSTS: any[] = [];
     );
     return (
       <div className={`flex items-center ${showCopy ? 'gap-2 md:gap-3' : ''} group/name ${reverse ? 'flex-row-reverse' : ''} min-w-0`}>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
-          size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
-        }`}>{team.name}</span>
+        <div className={`shrink-0 flex items-center ${reverse ? 'flex-row-reverse' : ''}`}>
+          {team.logoUrl ? (
+            <img 
+              src={team.logoUrl} 
+              alt={team.name} 
+              className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-lg object-cover border border-white/10 shadow-lg ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
+              {team.name[0]}
+            </div>
+          )}
+          <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
+            size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
+          }`}>{team.name}</span>
+        </div>
         {showCopy && (
           <button
             onClick={(e) => {
@@ -1954,6 +2055,7 @@ export default function App() {
           fcName: data.fcName,
           ovr: data.teamOvr,
           uid: data.fcUid,
+          logoUrl: data.logoUrl,
           played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
         };
       });
@@ -2739,7 +2841,14 @@ export default function App() {
                             </div>
                           </td>
                           <td className="px-3 md:px-6 py-3 md:py-4">
-                            <div className="flex items-center min-w-0 gap-2">
+                            <div className="flex items-center min-w-0 gap-3">
+                              <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-white/5 flex items-center justify-center">
+                                {team.logoUrl ? (
+                                  <img src={team.logoUrl} alt={team.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                ) : (
+                                  <span className="text-[10px] font-black text-white/20">{team.name[0]}</span>
+                                )}
+                              </div>
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
                                   <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">

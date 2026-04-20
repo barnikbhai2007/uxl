@@ -16,6 +16,7 @@ export interface Team {
   gd: number;
   points: number;
   form: string[];
+  logoUrl?: string;
 }
 
 export interface Scorer {
@@ -79,6 +80,7 @@ export interface Registration {
   timestamp: any;
   status: 'pending' | 'approved' | 'rejected';
   email?: string;
+  logoUrl?: string;
 }
 
 export interface AppContent {
