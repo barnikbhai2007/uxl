@@ -220,13 +220,150 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
   return Object.values(statsMap).sort((a, b) => b.cleanSheets - a.cleanSheets);
 };
 
+const TeamProfileModal = ({ team, matches, teams, onClose }: { team: Team, matches: Match[], teams: Team[], onClose: () => void }) => {
+  const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id);
+  const finishedMatches = teamMatches.filter(m => m.status === 'finished').sort((a, b) => b.matchNumber - a.matchNumber);
+  const upcomingMatches = teamMatches.filter(m => m.status !== 'finished').sort((a, b) => a.matchNumber - b.matchNumber);
+  
+  const recentMatches = finishedMatches.slice(0, 5);
+
+  let totalGoalsScored = 0;
+  let totalGoalsConceded = 0;
+  let totalPossession = 0;
+  let matchesWithStats = 0;
+  let totalShots = 0;
+  const scorers: Record<string, number> = {};
+
+  finishedMatches.forEach(m => {
+    const isHome = m.homeTeamId === team.id;
+    totalGoalsScored += isHome ? (m.homeScore || 0) : (m.awayScore || 0);
+    totalGoalsConceded += isHome ? (m.awayScore || 0) : (m.homeScore || 0);
+    
+    const myStats = isHome ? m.homeStats : m.awayStats;
+    if (myStats) {
+      totalPossession += myStats.possession;
+      totalShots += myStats.shots;
+      matchesWithStats++;
+    }
+
+    const myScorers = isHome ? m.homeScorers : m.awayScorers;
+    if (myScorers) {
+      myScorers.forEach(s => {
+        scorers[s.playerName] = (scorers[s.playerName] || 0) + s.goals;
+      });
+    }
+  });
+
+  const avgPossession = matchesWithStats > 0 ? (totalPossession / matchesWithStats).toFixed(1) : 0;
+  const topScorerInfo = Object.entries(scorers).sort((a, b) => b[1] - a[1])[0] || ['None', 0];
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="relative w-full max-w-4xl bg-gradient-to-b from-[#000030] to-blue-900/20 border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
+      >
+        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-20">
+          <X className="w-5 h-5 text-white/60" />
+        </button>
+
+        <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
+            {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : team.name[0]}
+          </div>
+          <div className="flex-1 space-y-2">
+            <h2 className="text-3xl md:text-5xl font-display font-black uppercase italic tracking-tighter leading-none">{team.fullName}</h2>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="px-3 py-1 bg-white/10 rounded-lg text-xs font-black uppercase tracking-widest text-white/60">FC: {team.fcName}</span>
+              <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-xs font-black uppercase tracking-widest text-blue-400">OVR {team.ovr}</span>
+              <div className="px-3 py-1 bg-white/5 rounded-lg flex items-center gap-1.5 text-xs text-white/40 font-mono">
+                 UID: <span>{team.uid}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Total Goals</span>
+            <span className="text-2xl font-black text-green-400">{totalGoalsScored}</span>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Goals Conceded</span>
+            <span className="text-2xl font-black text-red-400">{totalGoalsConceded}</span>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Avg Possession</span>
+            <span className="text-2xl font-black text-blue-400">{avgPossession}%</span>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Top Scorer</span>
+            <span className="text-lg font-black text-orange-400 truncate w-full px-2" title={topScorerInfo[0] as string}>{topScorerInfo[0]}</span>
+            <span className="text-[10px] font-bold text-orange-400/50">{topScorerInfo[1]} Goals</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Upcoming Matches</h3>
+            {upcomingMatches.length > 0 ? upcomingMatches.slice(0, 3).map(m => {
+              const opp = m.homeTeamId === team.id ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
+              return (
+                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="w-4 h-4 text-blue-400/50" />
+                    <span className="text-xs font-bold uppercase">{opp?.name || 'TBD'}</span>
+                  </div>
+                  <span className="text-[10px] uppercase font-black text-white/30 tracking-widest">{m.date}</span>
+                </div>
+              );
+            }) : (
+               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-xl border border-white/10">No upcoming matches</div>
+            )}
+          </div>
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Recent Form</h3>
+            {recentMatches.length > 0 ? recentMatches.map(m => {
+              const isHome = m.homeTeamId === team.id;
+              const opp = isHome ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
+              const myScore = isHome ? m.homeScore! : m.awayScore!;
+              const oppScore = isHome ? m.awayScore! : m.homeScore!;
+              const isWin = myScore > oppScore;
+              const isDraw = myScore === oppScore;
+              return (
+                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                  <div className="flex items-center gap-3">
+                    <span className={`w-2 h-2 rounded-full ${isWin ? 'bg-green-500' : isDraw ? 'bg-gray-400' : 'bg-red-500'}`} />
+                    <span className="text-xs font-bold uppercase">{opp?.name || 'Unknown'}</span>
+                  </div>
+                  <div className="flex items-center gap-3 font-mono font-bold">
+                    <span className={isWin ? 'text-green-400' : (isDraw ? 'text-gray-400' : 'text-white/40')}>{myScore}</span>
+                    <span className="text-white/20">-</span>
+                    <span className={!isWin && !isDraw ? 'text-red-400' : 'text-white/40'}>{oppScore}</span>
+                  </div>
+                </div>
+              );
+            }) : (
+               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-xl border border-white/10">No recent matches</div>
+            )}
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 const NEWS_POSTS: any[] = [];
 
   const MatchCard = ({ match, teams, overrideStatus, onClick }: { match: Match, teams: Team[], overrideStatus?: string, onClick: () => void, key?: any }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
-    const displayStatus = overrideStatus || match.status;
+    const displayStatus = match.status === 'finished' ? 'finished' : (overrideStatus || match.status);
 
     const TeamLogo = ({ team }: { team: Team | undefined }) => (
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
@@ -304,7 +441,7 @@ const NEWS_POSTS: any[] = [];
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
-    const displayStatus = match._overrideStatus || match.status;
+    const displayStatus = match.status === 'finished' ? 'finished' : (match._overrideStatus || match.status);
 
     const StatRow = ({ home, away, label, suffix = '', homeVal, awayVal }: { home: number | string, away: number | string, label: string, suffix?: string, homeVal?: number, awayVal?: number }) => {
       const h = homeVal ?? (typeof home === 'number' ? home : parseFloat(home as string));
@@ -376,9 +513,12 @@ const NEWS_POSTS: any[] = [];
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
-              <div className="flex-1 flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg">
-                  {awayTeam?.name[0] || '?'}
+              <div 
+                className="flex-1 flex flex-col items-center text-center gap-4 cursor-pointer hover:bg-white/5 p-4 rounded-3xl transition-colors"
+                onClick={() => { if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                  {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.fullName || 'TBD'}</h2>
@@ -478,9 +618,12 @@ const NEWS_POSTS: any[] = [];
                 </div>
               </div>
 
-              <div className="flex-1 flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg">
-                  {homeTeam?.name[0] || '?'}
+              <div 
+                className="flex-1 flex flex-col items-center text-center gap-4 cursor-pointer hover:bg-white/5 p-4 rounded-3xl transition-colors"
+                onClick={() => { if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
+              >
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                  {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
                 </div>
                 <div className="space-y-1">
                   <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.fullName || 'TBD'}</h2>
@@ -1380,6 +1523,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'registration' | 'stats' | 'campaign'>('fixtures');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
 
   const [dbTeams, setDbTeams] = useState<Team[]>([]);
   const [dbMatches, setDbMatches] = useState<Match[]>([]);
@@ -1503,7 +1647,17 @@ export default function App() {
       snapshot.forEach(doc => labels[doc.id] = doc.data().status);
       setMatchLabels(labels);
     });
-    return unsub;
+
+    const handleOpenProfile = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setSelectedTeam(customEvent.detail);
+    };
+    window.addEventListener('openTeamProfile', handleOpenProfile);
+
+    return () => {
+      unsub();
+      window.removeEventListener('openTeamProfile', handleOpenProfile);
+    };
   }, []);
 
   useEffect(() => {
@@ -2673,7 +2827,49 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <div className="flex items-center gap-4 mb-8">
+              {/* Team Statistics Grid */}
+              <div className="flex items-center gap-4 mb-4 mt-2">
+                <div className="p-3 bg-indigo-600/20 rounded-2xl border border-indigo-500/30">
+                  <BarChart2 className="w-6 h-6 text-indigo-400" />
+                </div>
+                <div>
+                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Team Overview</h2>
+                  <p className="text-white/40 text-xs uppercase tracking-widest mt-1">Tournament Averages</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-blue-400/60 tracking-widest mb-1">Highest Average Possession</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.mostPossession?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 font-bold text-sm">
+                    {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-green-400/60 tracking-widest mb-1">Most Goals Scored</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.mostGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 font-bold text-sm">
+                    {hofStats.mostGoals?.value || 0} Goals
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-cyan-400/60 tracking-widest mb-1">Best Defense</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.leastConceded?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 font-bold text-sm">
+                    {hofStats.leastConceded?.value || 0} Goals Conceded
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-orange-400/60 tracking-widest mb-1">Most Shots Taken</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white">{hofStats.mostShots?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400 font-bold text-sm">
+                    {hofStats.mostShots?.value || 0} Shots
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-4 mb-4 mt-8">
                 <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
                   <BarChart2 className="w-6 h-6 text-blue-400" />
                 </div>
@@ -2878,7 +3074,7 @@ export default function App() {
                       let rowClass = "hover:bg-white/5 transition-colors";
                       
                       return (
-                        <tr key={team.id} className={`${rowClass} relative group/row`}>
+                        <tr key={team.id} className={`${rowClass} relative group/row cursor-pointer`} onClick={() => setSelectedTeam(team)}>
                           <td className="px-3 md:px-6 py-3 md:py-4 relative text-center">
                             <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
                               index < 8 ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/30' : 
@@ -3344,6 +3540,14 @@ export default function App() {
             updateMatchLabel={updateMatchLabel}
             matchesByDay={matchesByDay}
             handleAnalyzeQualification={handleAnalyzeQualification}
+          />
+        )}
+        {selectedTeam && (
+          <TeamProfileModal
+            team={selectedTeam}
+            teams={teams}
+            matches={matches}
+            onClose={() => setSelectedTeam(null)}
           />
         )}
       </AnimatePresence>
