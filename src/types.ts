@@ -67,37 +67,25 @@ export interface BracketMatch {
   month?: 'April' | 'May';
 }
 
-export interface VotingCandidate {
+export interface Registration {
   id: string;
-  name: string;
-  fcName: string;
-}
-
-export interface VotingSession {
-  id: string;
-  sessionId: string;
-  matchday: number;
-  startTime: any;
-  endTime: any;
-  candidates: VotingCandidate[];
-  isActive: boolean;
-  showResults?: boolean;
-}
-
-export interface Vote {
-  voterId: string;
   userId: string;
-  candidateId: string;
-  matchday: number;
-  sessionId: string;
+  name: string;
+  age: number;
+  fcUid: string;
+  fcName: string;
+  teamOvr: number;
+  experience: string;
   timestamp: any;
+  status: 'pending' | 'approved' | 'rejected';
+  email?: string;
 }
 
-export interface News {
-  id: string | number;
-  category: string;
-  date: string;
-  title: string;
-  excerpt: string;
-  month?: 'April' | 'May';
+export interface AppContent {
+  id: string;
+  text: string;
+}
+
+export interface Config {
+  registrationEnabled: boolean;
 }

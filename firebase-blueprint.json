@@ -1,41 +1,29 @@
 {
   "entities": {
-    "VotingSession": {
-      "title": "Voting Session",
-      "description": "A session for voting on the best performer of a matchday.",
+    "Registration": {
+      "title": "Registration",
+      "description": "User registration for the tournament.",
       "type": "object",
       "properties": {
-        "matchday": { "type": "number", "description": "The matchday this session is for." },
-        "startTime": { "type": "string", "format": "date-time", "description": "When the voting started." },
-        "endTime": { "type": "string", "format": "date-time", "description": "When the voting ends (12 hours after start)." },
-        "candidates": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "properties": {
-              "id": { "type": "string" },
-              "name": { "type": "string" },
-              "fcName": { "type": "string" }
-            }
-          },
-          "description": "The 4 gamers nominated for best performance."
-        },
-        "isActive": { "type": "boolean", "description": "Whether the session is currently active." }
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "age": { "type": "number" },
+        "fcUid": { "type": "string" },
+        "fcName": { "type": "string" },
+        "teamOvr": { "type": "number" },
+        "experience": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
       },
-      "required": ["matchday", "startTime", "endTime", "candidates", "isActive"]
+      "required": ["userId", "name", "age", "fcUid", "fcName", "teamOvr", "experience", "timestamp"]
     },
-    "Vote": {
-      "title": "Vote",
-      "description": "A single vote cast by a user.",
+    "Config": {
+      "title": "Config",
+      "description": "System configuration.",
       "type": "object",
       "properties": {
-        "voterId": { "type": "string", "description": "The persistent browser ID of the voter." },
-        "candidateId": { "type": "string", "description": "The ID of the gamer being voted for." },
-        "matchday": { "type": "number", "description": "The matchday this vote is for." },
-        "timestamp": { "type": "string", "format": "date-time", "description": "When the vote was cast." },
-        "ip": { "type": "string", "description": "The IP address of the voter for tracking." }
+        "registrationEnabled": { "type": "boolean" }
       },
-      "required": ["voterId", "candidateId", "matchday", "timestamp"]
+      "required": ["registrationEnabled"]
     },
     "User": {
       "title": "User",
@@ -47,18 +35,6 @@
         "role": { "type": "string", "enum": ["admin", "user"] }
       },
       "required": ["uid", "email", "role"]
-    },
-    "News": {
-      "title": "News",
-      "description": "News article about matchdays.",
-      "type": "object",
-      "properties": {
-        "topic": { "type": "string" },
-        "date": { "type": "string", "format": "date" },
-        "title": { "type": "string" },
-        "description": { "type": "string" }
-      },
-      "required": ["topic", "date", "title", "description"]
     },
     "BracketMatch": {
       "title": "Bracket Match",
@@ -83,32 +59,44 @@
       },
       "required": ["visitCount"]
     },
-    "InterestedStats": {
-      "title": "Interested Stats",
-      "description": "Statistics for users interested in future events.",
+    "Match": {
+      "title": "Match",
+      "description": "A tournament match fixture.",
       "type": "object",
       "properties": {
-        "interestedCount": { "type": "number", "description": "Total number of interested users." }
+        "id": { "type": "string" },
+        "homeTeamId": { "type": "string" },
+        "awayTeamId": { "type": "string" },
+        "homeScore": { "type": "number" },
+        "awayScore": { "type": "number" },
+        "status": { "type": "string", "enum": ["upcoming", "live", "finished", "rescheduled"] },
+        "date": { "type": "string" },
+        "matchNumber": { "type": "number" }
       },
-      "required": ["interestedCount"]
+      "required": ["id", "homeTeamId", "awayTeamId", "status", "date", "matchNumber"]
+    },
+    "CMSContent": {
+      "title": "CMS Content",
+      "description": "Editable text content for the website.",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string" }
+      },
+      "required": ["text"]
     }
   },
   "firestore": {
-    "/votingSessions/{sessionId}": {
-      "schema": "VotingSession",
-      "description": "Collection of voting sessions."
+    "/registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Collection of user registrations."
     },
-    "/votes/{voteId}": {
-      "schema": "Vote",
-      "description": "Collection of individual votes."
+    "/config/system": {
+      "schema": "Config",
+      "description": "System configuration document."
     },
     "/users/{userId}": {
       "schema": "User",
       "description": "Collection of user profiles."
-    },
-    "/news/{newsId}": {
-      "schema": "News",
-      "description": "Collection of news articles."
     },
     "/bracket/{matchId}": {
       "schema": "BracketMatch",
@@ -118,9 +106,13 @@
       "schema": "GlobalStats",
       "description": "Global statistics document."
     },
-    "/stats/may_event": {
-      "schema": "InterestedStats",
-      "description": "Statistics for the May event interest."
+    "/matches/{matchId}": {
+      "schema": "Match",
+      "description": "Collection of match fixtures."
+    },
+    "/content/{contentId}": {
+      "schema": "CMSContent",
+      "description": "Collection of editable text content."
     }
   }
 }

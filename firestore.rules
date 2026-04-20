@@ -5,26 +5,22 @@ service cloud.firestore {
     // Assumed Data Model
     // ===============================================================
     //
-    // Collection: votingSessions
-    // Document ID: matchday-{number}
+    // Collection: registrations
+    // Document ID: {registrationId}
     // Fields:
-    //   - id: string (required)
-    //   - sessionId: string (required)
-    //   - matchday: number (required)
-    //   - startTime: timestamp (required)
-    //   - endTime: timestamp (required)
-    //   - candidates: list (required)
-    //   - isActive: bool (required)
-    //
-    // Collection: votes
-    // Document ID: {voterId}_{sessionId}
-    // Fields:
-    //   - voterId: string (required)
     //   - userId: string (required)
-    //   - candidateId: string (required)
-    //   - matchday: number (required)
-    //   - sessionId: string (required)
+    //   - name: string (required)
+    //   - age: number (required)
+    //   - fcUid: string (required)
+    //   - fcName: string (required)
+    //   - teamOvr: number (required)
+    //   - experience: string (required)
     //   - timestamp: timestamp (required)
+    //
+    // Collection: config
+    // Document ID: system
+    // Fields:
+    //   - registrationEnabled: bool (required)
     //
     // Collection: users
     // Document ID: {userId}
@@ -32,14 +28,6 @@ service cloud.firestore {
     //   - uid: string (required)
     //   - email: string (required)
     //   - role: string (required, 'admin' or 'user')
-    //
-    // Collection: news
-    // Document ID: {newsId}
-    // Fields:
-    //   - topic: string (required)
-    //   - date: string (required)
-    //   - title: string (required)
-    //   - description: string (required)
     //
     // Collection: bracket
     // Document ID: {matchId}
@@ -52,10 +40,9 @@ service cloud.firestore {
     //   - awayScore: number (optional)
     //
     // Collection: stats
-    // Document ID: global, may_event
+    // Document ID: global
     // Fields:
     //   - visitCount: number (for global)
-    //   - interestedCount: number (for may_event)
     //
     // ===============================================================
 
@@ -71,17 +58,11 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return isAuthenticated() &&
+      return isAuthenticated() && (
+        request.auth.token.email == "webblogger82@gmail.com" ||
         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "webblogger82@gmail.com" && request.auth.token.email_verified == true));
-    }
-
-    function isVotingOpen(sessionDocId) {
-      return exists(/databases/$(database)/documents/votingSessions/$(sessionDocId)) && 
-             get(/databases/$(database)/documents/votingSessions/$(sessionDocId)).data.isActive == true &&
-             (get(/databases/$(database)/documents/votingSessions/$(sessionDocId)).data.endTime == null || 
-              request.time <= get(/databases/$(database)/documents/votingSessions/$(sessionDocId)).data.endTime);
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "admin")
+      );
     }
 
     function isValidUser(data) {
@@ -89,14 +70,6 @@ service cloud.firestore {
              data.uid is string &&
              data.email is string &&
              data.role in ['admin', 'user'];
-    }
-
-    function isValidVote(data) {
-      return data.keys().hasAll(['voterId', 'userId', 'candidateId', 'matchday', 'sessionId', 'timestamp']) &&
-             data.userId == request.auth.uid &&
-             data.candidateId is string &&
-             (data.matchday is number || data.matchday is string) &&
-             data.sessionId is string;
     }
 
     function isValidBracketMatch(data) {
@@ -109,30 +82,61 @@ service cloud.firestore {
              (!('awayScore' in data) || data.awayScore is number);
     }
 
+    function isValidRegistration(data) {
+      return data.keys().hasAll(['userId', 'fcName', 'fcUid', 'name', 'status', 'timestamp', 'age', 'teamOvr', 'experience']) &&
+             data.userId == request.auth.uid &&
+             data.name is string &&
+             data.fcUid is string &&
+             data.fcName is string &&
+             data.status in ['pending', 'approved', 'rejected'] &&
+             // Removed strict equality check on server time to allow serverTimestamp() to process
+             data.age is number &&
+             data.teamOvr is number &&
+             data.experience is string;
+    }
+
+    function isValidMatch(data) {
+      return (!('id' in data) || data.id is string) &&
+             (!('homeTeamId' in data) || data.homeTeamId is string) &&
+             (!('awayTeamId' in data) || data.awayTeamId is string) &&
+             (!('status' in data) || data.status in ['scheduled', 'upcoming', 'live', 'ongoing', 'finished', 'rescheduled', 'postponed']) &&
+             (!('date' in data) || data.date is string) &&
+             (!('matchNumber' in data) || data.matchNumber is number);
+    }
+
+    function isValidMatchCreate(data) {
+      return data.keys().hasAll(['id', 'homeTeamId', 'awayTeamId', 'status', 'date', 'matchNumber']) &&
+             isValidMatch(data);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
 
     match /users/{userId} {
       allow read: if true;
-      allow create: if isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'user';
-      allow update: if isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update, delete: if isAdmin();
     }
 
-    match /votingSessions/{sessionId} {
+    match /registrations/{registrationId} {
+      allow get: if isAdmin() || isOwner(registrationId);
+      allow list: if isAdmin() || (resource.data.status == 'approved');
+      allow create: if isAuthenticated() && isValidRegistration(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /site_content/{contentId} {
       allow read: if true;
       allow write: if isAdmin();
     }
 
-    match /votes/{voteId} {
+    match /config/system {
       allow read: if true;
-      allow create: if isAuthenticated() && 
-                      isValidVote(request.resource.data) && 
-                      isVotingOpen(request.resource.data.get('sessionDocId', request.resource.data.sessionId));
-      allow update, delete: if false;
+      allow write: if isAdmin();
     }
-
-    match /news/{newsId} {
+    
+    match /config/qualification {
       allow read: if true;
       allow write: if isAdmin();
     }
@@ -141,6 +145,23 @@ service cloud.firestore {
       allow read: if true;
       allow create, update: if isAdmin() && isValidBracketMatch(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /matches/{matchId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidMatchCreate(request.resource.data);
+      allow update: if isAdmin() && isValidMatch(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /match_labels/{date} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /content/{contentId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
 
     match /stats/{statId} {

@@ -1,14 +1,31 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, Newspaper, Vote as VoteIcon, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
-import { Team, Match, BracketMatch, Scorer, VotingSession, VotingCandidate, Vote, News } from './types';
+import { Team, Match, BracketMatch, Scorer, Registration, Config } from './types';
 import { v4 as uuidv4 } from 'uuid';
+import { GoogleGenAI, Type } from "@google/genai";
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch } from 'firebase/firestore';
 
-// Static data mapping
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+const INITIAL_BRACKET: BracketMatch[] = [
+  { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner QF1', awayTeamName: 'Winner QF2', homeScore: 0, awayScore: 0 },
+  { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner QF3', awayTeamName: 'Winner QF4', homeScore: 0, awayScore: 0 },
+  { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0 },
+  { id: 'third-place', round: '3rd Place Match', homeTeamName: 'Loser SF1', awayTeamName: 'Loser SF2', homeScore: 0, awayScore: 0 },
+];
+
 const getMatchdayDate = (matchday: number) => {
   if (matchday === 1) return "27th March 2026";
   if (matchday === 2) return "28th March 2026";
@@ -26,512 +43,12 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     
     let homeScore = 0;
     let awayScore = 0;
-    let status: 'scheduled' | 'live' | 'finished' = (sm.matchday >= 1 && sm.matchday <= 4) ? 'live' : 'scheduled';
+    let status: 'scheduled' | 'live' | 'finished' = 'scheduled';
     let homeScorers: Scorer[] = [];
     let awayScorers: Scorer[] = [];
     let homeStats: Match['homeStats'];
     let awayStats: Match['awayStats'];
     let isDNF = false;
-
-    // Inject results from images (Matchday 1)
-    if (sm.matchday === 1) {
-      if (sm.home === "SAGNICK" && sm.away === "PRIYAM") {
-        homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'Bale', goals: 2 }, { playerName: 'Cruyff', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 88, fouls: 0, offsides: 0 };
-        awayStats = { shots: 6, shotsOnTarget: 6, possession: 55, passAccuracy: 89, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAGNIK" && sm.away === "DIBYAJOTI") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Rooney', goals: 2 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 89, fouls: 0, offsides: 1 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 1 };
-      } else if (sm.home === "SAGNIK" && sm.away === "PRIYAM") {
-        homeScore = 0; awayScore = 4; status = 'finished';
-        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 3 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 42, passAccuracy: 69, fouls: 0, offsides: 0 };
-        awayStats = { shots: 10, shotsOnTarget: 9, possession: 58, passAccuracy: 92, fouls: 0, offsides: 0 };
-      } else if (sm.home === "RANAJAY" && sm.away === "ARYAN") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 45, passAccuracy: 76, fouls: 1, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 2, possession: 55, passAccuracy: 69, fouls: 1, offsides: 0 };
-      } else if (sm.home === "PRITAM" && sm.away === "AYUSH") {
-        homeScore = 2; awayScore = 3; status = 'finished';
-        homeScorers = [{ playerName: 'Lamine Yamal', goals: 2 }];
-        awayScorers = [{ playerName: 'Garrincha', goals: 1 }, { playerName: 'Dembélé', goals: 1 }, { playerName: 'Raphinha', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 81, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 53, passAccuracy: 78, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "ARYAN") {
-        homeScore = 1; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Messi', goals: 1 }];
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 53, passAccuracy: 88, fouls: 1, offsides: 1 };
-        awayStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 75, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "SONU") {
-        homeScore = 0; awayScore = 0; status = 'finished';
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 49, passAccuracy: 82, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 1, possession: 51, passAccuracy: 79, fouls: 1, offsides: 0 };
-      } else if (sm.home === "AYUSH" && sm.away === "ABHROJEET") {
-        homeScore = 5; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Garrincha', goals: 2 }, { playerName: 'Dembélé', goals: 1 }, { playerName: 'Raphinha', goals: 2 }];
-        homeStats = { shots: 6, shotsOnTarget: 6, possession: 49, passAccuracy: 85, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 2, possession: 51, passAccuracy: 73, fouls: 2, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "ABHROJEET") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Dembélé', goals: 1 }, { playerName: 'King', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 47, passAccuracy: 68, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 3, possession: 53, passAccuracy: 82, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAGNICK" && sm.away === "ANIMESH") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Zieliński', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 82, fouls: 0, offsides: 1 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 76, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "SAMRIDDHA") {
-        homeScore = 1; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Ribéry', goals: 1 }];
-        awayScorers = [{ playerName: 'Zico', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 46, passAccuracy: 70, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 54, passAccuracy: 74, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "RAJAT") {
-        homeScore = 2; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Hazard', goals: 1 }, { playerName: 'Kane', goals: 1 }];
-        homeStats = { shots: 6, shotsOnTarget: 5, possession: 54, passAccuracy: 87, fouls: 0, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 3, possession: 46, passAccuracy: 77, fouls: 0, offsides: 0 };
-      } else if (sm.home === "PRITAM" && sm.away === "DIBYAJOTI") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Saint-Maximin', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 2, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 55, passAccuracy: 85, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "ANIMESH") {
-        homeScore = 0; awayScore = 8; status = 'finished';
-        awayScorers = [
-          { playerName: 'C. Ronaldo', goals: 1 },
-          { playerName: 'Berghuis', goals: 1 },
-          { playerName: 'Zieliński', goals: 4 },
-          { playerName: 'Al Dawsari', goals: 1 },
-          { playerName: 'O\'Reilly', goals: 1 }
-        ];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 40, passAccuracy: 60, fouls: 0, offsides: 0 };
-        awayStats = { shots: 12, shotsOnTarget: 12, possession: 60, passAccuracy: 90, fouls: 1, offsides: 0 };
-      } else if (sm.home === "BARNIK" && sm.away === "RAJAT") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 4, possession: 55, passAccuracy: 76, fouls: 1, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 3, possession: 45, passAccuracy: 60, fouls: 0, offsides: 0 };
-      } else if (sm.home === "BARNIK" && sm.away === "RANAJAY") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Al Owairan', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 63, passAccuracy: 90, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 37, passAccuracy: 78, fouls: 0, offsides: 0 };
-      }
-    }
-
-    // Inject results from images (Matchday 2)
-    if (sm.matchday === 2) {
-      if (sm.home === "SAGNICK" && sm.away === "AYUSH") {
-        homeScore = 0; awayScore = 4; status = 'finished';
-        awayScorers = [{ playerName: 'Raphinha', goals: 1 }, { playerName: 'Garrincha', goals: 2 }, { playerName: 'Park Ji Sung', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 44, passAccuracy: 76, fouls: 0, offsides: 0 };
-        awayStats = { shots: 7, shotsOnTarget: 7, possession: 56, passAccuracy: 90, fouls: 0, offsides: 0 };
-      } else if (sm.home === "PRIYAM" && sm.away === "AYUSH") {
-        homeScore = 1; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Cruyff', goals: 1 }];
-        awayScorers = [{ playerName: 'Dembélé', goals: 2 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 48, passAccuracy: 91, fouls: 1, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 52, passAccuracy: 70, fouls: 0, offsides: 0 };
-      } else if (sm.home === "RAJAT" && sm.away === "DIBYAJOTI") {
-        homeScore = 2; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Beckham', goals: 1 }, { playerName: 'Raphinha', goals: 1 }];
-        awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 34, passAccuracy: 81, fouls: 0, offsides: 0 };
-        awayStats = { shots: 6, shotsOnTarget: 4, possession: 66, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.home === "ANIMESH" && sm.away === "ABHROJEET") {
-        homeScore = 5; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Cambiasso', goals: 3 }, { playerName: 'Al Dawsari', goals: 1 }];
-        awayScorers = [{ playerName: 'McTominay', goals: 1 }];
-        homeStats = { shots: 7, shotsOnTarget: 6, possession: 54, passAccuracy: 85, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 46, passAccuracy: 69, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SAGNICK" && sm.away === "PRITAM") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Messi', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 44, passAccuracy: 76, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 4, possession: 56, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "DIBYAJOTI") {
-        homeScore = 5; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cantona', goals: 4 }, { playerName: 'Rice', goals: 1 }];
-        homeStats = { shots: 7, shotsOnTarget: 7, possession: 49, passAccuracy: 90, fouls: 0, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAGNIK" && sm.away === "PRITAM") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Messi', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 86, fouls: 0, offsides: 1 };
-        awayStats = { shots: 7, shotsOnTarget: 5, possession: 53, passAccuracy: 84, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "SAGNIK") {
-        homeScore = 5; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cantona', goals: 2 }, { playerName: 'Gullit', goals: 2 }, { playerName: 'Musiala', goals: 1 }];
-        homeStats = { shots: 6, shotsOnTarget: 6, possession: 49, passAccuracy: 85, fouls: 1, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "ARYAN") {
-        homeScore = 0; awayScore = 6; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Cambiasso', goals: 1 }, { playerName: 'Vini Jr.', goals: 4 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 47, passAccuracy: 56, fouls: 0, offsides: 1 };
-        awayStats = { shots: 9, shotsOnTarget: 9, possession: 53, passAccuracy: 77, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "SAMRIDDHA") {
-        homeScore = 2; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Mbappé', goals: 2 }];
-        awayScorers = [{ playerName: 'Hazard', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 62, passAccuracy: 90, fouls: 1, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 38, passAccuracy: 73, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "ANIMESH") {
-        homeScore = 2; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Völler', goals: 1 }, { playerName: 'Al Owairan', goals: 1 }];
-        awayScorers = [{ playerName: 'Mbeumo', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 2, possession: 55, passAccuracy: 83, fouls: 1, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 45, passAccuracy: 77, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "ABHROJEET") {
-        homeScore = 5; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Zico', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }, { playerName: 'Hazard', goals: 1 }, { playerName: 'Kane', goals: 1 }];
-        awayScorers = [{ playerName: 'Dembélé', goals: 1 }];
-        homeStats = { shots: 11, shotsOnTarget: 11, possession: 46, passAccuracy: 83, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 54, passAccuracy: 70, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "BARNIK") {
-        homeScore = 0; awayScore = 10; status = 'finished';
-        awayScorers = [
-          { playerName: 'Al Owairan', goals: 4 },
-          { playerName: 'Barcola', goals: 3 },
-          { playerName: 'Vidić', goals: 1 },
-          { playerName: 'Matheus Cunha', goals: 1 },
-          { playerName: 'Nesta', goals: 1 }
-        ];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 38, passAccuracy: 56, fouls: 0, offsides: 0 };
-        awayStats = { shots: 13, shotsOnTarget: 13, possession: 62, passAccuracy: 89, fouls: 0, offsides: 0 };
-      } else if (sm.home === "BARNIK" && sm.away === "ARYAN") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 52, passAccuracy: 84, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 48, passAccuracy: 86, fouls: 1, offsides: 1 };
-      }
-    }
-
-    // Inject results from images (Matchday 3)
-    if (sm.matchday === 3) {
-      if (sm.home === "SAGNICK" && sm.away === "ARYAN") {
-        homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 2 }, { playerName: 'Fernando Hierro', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 0, possession: 48, passAccuracy: 80, fouls: 0, offsides: 1 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 77, fouls: 0, offsides: 1 };
-      } else if (sm.home === "RAJAT" && sm.away === "PRITAM") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'De Bruyne', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 0, possession: 52, passAccuracy: 72, fouls: 2, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 3, possession: 48, passAccuracy: 72, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "ARYAN") {
-        homeScore = 1; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Cantona', goals: 1 }];
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 2 }];
-        homeStats = { shots: 3, shotsOnTarget: 1, possession: 55, passAccuracy: 88, fouls: 1, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 3, possession: 45, passAccuracy: 82, fouls: 2, offsides: 1 };
-      } else if (sm.home === "SAGNIK" && sm.away === "BARNIK") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Gullit', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 1, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
-        awayStats = { shots: 6, shotsOnTarget: 2, possession: 58, passAccuracy: 85, fouls: 0, offsides: 2 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "SAGNIK") {
-        homeScore = 5; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Kane', goals: 2 }, { playerName: 'Al Owairan', goals: 1 }, { playerName: 'Zico', goals: 1 }, { playerName: 'Hazard', goals: 1 }];
-        homeStats = { shots: 8, shotsOnTarget: 8, possession: 54, passAccuracy: 83, fouls: 0, offsides: 1 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 46, passAccuracy: 87, fouls: 0, offsides: 2 };
-      } else if (sm.home === "SONU" && sm.away === "ABHROJEET") {
-        homeScore = 8; awayScore = 0; status = 'finished';
-        homeScorers = [
-          { playerName: 'Messi', goals: 4 }, 
-          { playerName: 'Kuyt', goals: 4 }
-        ];
-        homeStats = { shots: 12, shotsOnTarget: 10, possession: 56, passAccuracy: 93, fouls: 0, offsides: 2 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "DIBYAJOTI") {
-        homeScore = 2; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Völler', goals: 1 }, { playerName: 'Messi', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 45, passAccuracy: 79, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 1, possession: 55, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "PRIYAM" && sm.away === "PRITAM") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Messi', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 55, passAccuracy: 77, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 45, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "PRIYAM") {
-        homeScore = 0; awayScore = 7; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 3 }, { playerName: 'Bale', goals: 2 }, { playerName: 'Cruyff', goals: 1 }, { playerName: 'Scholes', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 63, fouls: 0, offsides: 0 };
-        awayStats = { shots: 13, shotsOnTarget: 10, possession: 57, passAccuracy: 78, fouls: 1, offsides: 0 };
-      } else if (sm.home === "RANAJAY" && sm.away === "PRIYAM") {
-        homeScore = 3; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Nesta', goals: 1 }, { playerName: 'Gabriel', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
-        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 1 }];
-        homeStats = { shots: 6, shotsOnTarget: 4, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 4, possession: 49, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.home === "RAJAT" && sm.away === "AYUSH") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 1, possession: 42, passAccuracy: 78, fouls: 2, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 58, passAccuracy: 88, fouls: 0, offsides: 1 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "ANIMESH") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Cambiasso', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 2, possession: 61, passAccuracy: 83, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 4, possession: 39, passAccuracy: 78, fouls: 2, offsides: 0 };
-      } else if (sm.home === "RANAJAY" && sm.away === "RAJAT") {
-        homeScore = 2; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Zico', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
-        awayScorers = [{ playerName: 'Mbappé', goals: 1 }];
-        homeStats = { shots: 6, shotsOnTarget: 4, possession: 52, passAccuracy: 85, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 2, possession: 48, passAccuracy: 78, fouls: 1, offsides: 0 };
-      } else if (sm.home === "DIBYAJOTI" && sm.away === "ANIMESH") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Zieliński', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 0, possession: 47, passAccuracy: 71, fouls: 0, offsides: 0 };
-        awayStats = { shots: 9, shotsOnTarget: 7, possession: 53, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "RANAJAY" && sm.away === "AYUSH") {
-        homeScore = 1; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Zico', goals: 1 }];
-        awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 49, passAccuracy: 78, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 2, possession: 51, passAccuracy: 80, fouls: 0, offsides: 1 };
-      } else if (sm.home === "RANAJAY" && sm.away === "SAYANTAN") {
-        homeScore = 8; awayScore = 0; status = 'finished';
-        homeScorers = [
-          { playerName: 'Lamine Yamal', goals: 6 }, 
-          { playerName: 'Charlton', goals: 1 },
-          { playerName: 'Al Owairan', goals: 1 }
-        ];
-        homeStats = { shots: 9, shotsOnTarget: 8, possession: 55, passAccuracy: 90, fouls: 0, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 45, passAccuracy: 57, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SAGNICK" && sm.away === "ABHROJEET") {
-        homeScore = 3; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 2 }];
-        homeStats = { shots: 8, shotsOnTarget: 6, possession: 58, passAccuracy: 88, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 0, possession: 42, passAccuracy: 75, fouls: 1, offsides: 0 };
-      } else if (sm.home === "BARNIK" && sm.away === "SOUMAJIT") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Messi', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 54, passAccuracy: 93, fouls: 0, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 46, passAccuracy: 79, fouls: 0, offsides: 1 };
-      }
-    }
-
-    // Inject results from images (Matchday 4)
-    if (sm.matchday === 4) {
-      if (sm.home === "RANAJAY" && sm.away === "PRITAM") {
-        homeScore = 0; awayScore = 0; status = 'finished';
-        homeStats = { shots: 3, shotsOnTarget: 1, possession: 45, passAccuracy: 72, fouls: 2, offsides: 1 };
-        awayStats = { shots: 5, shotsOnTarget: 2, possession: 55, passAccuracy: 78, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "RANAJAY") {
-        homeScore = 4; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Rice', goals: 1 }, { playerName: 'Zico', goals: 1 }, { playerName: 'Kane', goals: 2 }];
-        homeStats = { shots: 9, shotsOnTarget: 6, possession: 61, passAccuracy: 84, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 39, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "SAGNICK") {
-        homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'Bale', goals: 2 }];
-        homeStats = { shots: 2, shotsOnTarget: 1, possession: 44, passAccuracy: 65, fouls: 0, offsides: 0 };
-        awayStats = { shots: 8, shotsOnTarget: 6, possession: 56, passAccuracy: 85, fouls: 0, offsides: 0 };
-      } else if (sm.home === "PRIYAM" && sm.away === "BARNIK") {
-        homeScore = 2; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Cruyff', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 85, fouls: 0, offsides: 0 };
-        awayStats = { shots: 8, shotsOnTarget: 6, possession: 49, passAccuracy: 77, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "BARNIK") {
-        homeScore = 2; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Hazard', goals: 1 }, { playerName: 'Aubameyang', goals: 1 }];
-        awayScorers = [{ playerName: 'Barcola', goals: 1 }];
-        homeStats = { shots: 5, shotsOnTarget: 5, possession: 43, passAccuracy: 77, fouls: 1, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 4, possession: 57, passAccuracy: 91, fouls: 0, offsides: 0 };
-      } else if (sm.home === "PRITAM" && sm.away === "ABHROJEET") {
-        homeScore = 8; awayScore = 0; status = 'finished';
-        homeScorers = [
-          { playerName: 'Lamine Yamal', goals: 3 },
-          { playerName: 'C. Ronaldo', goals: 1 },
-          { playerName: 'Saint-Maximin', goals: 1 },
-          { playerName: 'Messi', goals: 1 }
-        ];
-        homeStats = { shots: 12, shotsOnTarget: 11, possession: 63, passAccuracy: 78, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 0, possession: 37, passAccuracy: 68, fouls: 1, offsides: 0 };
-      } else if (sm.home === "PRITAM" && sm.away === "ARYAN") {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 2, possession: 48, passAccuracy: 68, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 2, possession: 52, passAccuracy: 71, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SAGNIK" && sm.away === "ARYAN") {
-        homeScore = 0; awayScore = 3; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Al Owairan', goals: 2 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 78, fouls: 0, offsides: 0 };
-        awayStats = { shots: 7, shotsOnTarget: 5, possession: 52, passAccuracy: 72, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAMRIDDHA" && sm.away === "DIBYAJOTI") {
-        homeScore = 8; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Zico', goals: 2 }, { playerName: 'Al Owairan', goals: 2 }, { playerName: 'Ferdinand', goals: 1 }, { playerName: 'Aubameyang', goals: 1 }];
-        homeStats = { shots: 9, shotsOnTarget: 9, possession: 52, passAccuracy: 84, fouls: 1, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 48, passAccuracy: 67, fouls: 1, offsides: 0 };
-      } else if (sm.home === "PRIYAM" && sm.away === "DIBYAJOTI") {
-        homeScore = 3; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Vini Jr.', goals: 1 }];
-        homeStats = { shots: 7, shotsOnTarget: 6, possession: 51, passAccuracy: 86, fouls: 0, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 49, passAccuracy: 57, fouls: 0, offsides: 0 };
-      } else if (sm.home === "AYUSH" && sm.away === "ARYAN") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Dembélé', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 75, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 0, possession: 60, passAccuracy: 87, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "AYUSH") {
-        homeScore = 3; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Mbappé', goals: 1 }, { playerName: 'Messi', goals: 1 }, { playerName: 'Al Owairan', goals: 1 }];
-        awayScorers = [{ playerName: 'Cafu', goals: 1 }, { playerName: 'Nesta', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 4, possession: 61, passAccuracy: 93, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 4, possession: 39, passAccuracy: 70, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "AYUSH") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cambiasso', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 3, possession: 52, passAccuracy: 84, fouls: 0, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 3, possession: 48, passAccuracy: 77, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "ANIMESH") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Zico', goals: 1 }];
-        homeStats = { shots: 5, shotsOnTarget: 5, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 3, possession: 51, passAccuracy: 87, fouls: 1, offsides: 0 };
-      } else if (sm.home === "BARNIK" && sm.away === "ANIMESH") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'João Neves', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 62, passAccuracy: 81, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 0, possession: 38, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "PRIYAM") {
-        homeScore = 2; awayScore = 3; status = 'finished';
-        homeScorers = [{ playerName: 'Pirlo', goals: 1 }, { playerName: 'Al Owairan', goals: 1 }];
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }, { playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Bale', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 49, passAccuracy: 82, fouls: 1, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 51, passAccuracy: 90, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SONU" && sm.away === "RAJAT") {
-        homeScore = 3; awayScore = 3; status = 'finished';
-        homeScorers = [{ playerName: 'Nesta', goals: 1 }, { playerName: 'Völler', goals: 1 }, { playerName: 'Mbappé', goals: 1 }];
-        awayScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Courtois', goals: 2 }];
-        homeStats = { shots: 4, shotsOnTarget: 4, possession: 49, passAccuracy: 82, fouls: 0, offsides: 0 };
-        awayStats = { shots: 1, shotsOnTarget: 1, possession: 51, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SOUMAJIT" && sm.away === "SAYANTAN") {
-        homeScore = 8; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Cantona', goals: 2 }, { playerName: 'Gullit', goals: 3 }, { playerName: 'Musiala', goals: 1 }];
-        homeStats = { shots: 8, shotsOnTarget: 8, possession: 52, passAccuracy: 86, fouls: 0, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 2, possession: 48, passAccuracy: 61, fouls: 0, offsides: 0 };
-      } else if (sm.home === "RAJAT" && sm.away === "ABHROJEET") {
-        homeScore = 4; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Vitinha', goals: 1 }, { playerName: 'Zamorano', goals: 2 }, { playerName: 'Mbappé', goals: 1 }];
-        homeStats = { shots: 5, shotsOnTarget: 5, possession: 55, passAccuracy: 84, fouls: 1, offsides: 1 };
-        awayStats = { shots: 1, shotsOnTarget: 0, possession: 45, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAGNICK" && sm.away === "RAJAT") {
-        homeScore = 0; awayScore = 5; status = 'finished';
-        awayScorers = [{ playerName: 'Beckham', goals: 1 }, { playerName: 'Mbappé', goals: 1 }, { playerName: 'Zamorano', goals: 2 }, { playerName: 'Raphinha', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 3, possession: 49, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 7, shotsOnTarget: 5, possession: 51, passAccuracy: 85, fouls: 1, offsides: 1 };
-      } else if (sm.home === "SAGNIK" && sm.away === "ANIMESH") {
-        homeScore = 1; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Owen', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 54, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 4, shotsOnTarget: 3, possession: 46, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAGNICK" && sm.away === "RANAJAY") {
-        homeScore = 0; awayScore = 4; status = 'finished';
-        awayScorers = [{ playerName: 'Vini Jr.', goals: 3 }, { playerName: 'Lamine Yamal', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 51, passAccuracy: 75, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 5, possession: 49, passAccuracy: 68, fouls: 1, offsides: 0 };
-      } else if (sm.home === "SAYANTAN" && sm.away === "DIBYAJOTI") {
-        homeScore = 0; awayScore = 2; status = 'finished';
-        awayScorers = [{ playerName: 'Verón', goals: 1 }, { playerName: 'Mbeumo', goals: 1 }];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 38, passAccuracy: 75, fouls: 0, offsides: 1 };
-        awayStats = { shots: 8, shotsOnTarget: 5, possession: 62, passAccuracy: 70, fouls: 0, offsides: 0 };
-      } else if (sm.home === "SAGNIK" && sm.away === "ABHROJEET") {
-        homeScore = 3; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Giuly', goals: 2 }, { playerName: 'Hazard', goals: 1 }];
-        awayScorers = [{ playerName: 'McTominay', goals: 1 }, { playerName: 'Doué', goals: 1 }];
-        homeStats = { shots: 5, shotsOnTarget: 4, possession: 57, passAccuracy: 84, fouls: 2, offsides: 1 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 43, passAccuracy: 66, fouls: 0, offsides: 0 };
-      }
-    }
-
-    // Set Matchday 4 matches (30th March) to live if not finished
-    if (sm.matchday === 4 && status === 'scheduled') {
-      status = 'live';
-    }
-
-    // Set Matchday 5 Qualifiers (31st March) to live if not finished
-    if (sm.matchday === 5 && sm.type === 'qualifier' && status === 'scheduled') {
-      status = 'live';
-    }
-
-    // Inject results from images (Matchday 5)
-    if (sm.matchday === 5) {
-      if (sm.home === "RANAJAY" && sm.away === "RAJAT") {
-        homeScore = 2; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Zamorano', goals: 2 }];
-        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 2, possession: 50, passAccuracy: 82, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 86, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 73) {
-        homeScore = 2; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Gabriel', goals: 1 }, { playerName: 'Palmer', goals: 1 }];
-        homeStats = { shots: 4, shotsOnTarget: 3, possession: 57, passAccuracy: 91, fouls: 0, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 43, passAccuracy: 71, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 77) {
-        homeScore = 0; awayScore = 1; status = 'finished';
-        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 60, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 80) {
-        // Leg 2: Ayush vs Soumajit
-        homeScore = 1; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Mbappé', goals: 1 }];
-        awayScorers = [{ playerName: 'Olise', goals: 1 }, { playerName: 'Gullit', goals: 1 }];
-        homeStats = { shots: 1, shotsOnTarget: 1, possession: 44, passAccuracy: 75, fouls: 2, offsides: 0 };
-        awayStats = { shots: 3, shotsOnTarget: 3, possession: 56, passAccuracy: 90, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 76) {
-        homeScore = 1; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Gullit', goals: 1 }];
-        awayScorers = [{ playerName: 'Dembélé', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 44, passAccuracy: 84, fouls: 0, offsides: 0 };
-        awayStats = { shots: 5, shotsOnTarget: 4, possession: 56, passAccuracy: 85, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 78) {
-        homeScore = 1; awayScore = 1; status = 'finished';
-        homeScorers = [{ playerName: 'Zamorano', goals: 1 }];
-        awayScorers = [{ playerName: 'C. Ronaldo', goals: 1 }];
-        homeStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 82) {
-        // Leg 1: Ranajay vs Priyam
-        homeScore = 0; awayScore = 0; status = 'live';
-        homeScorers = []; awayScorers = [];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 86) {
-        // Leg 2: Priyam vs Ranajay
-        homeScore = 0; awayScore = 0; status = 'live';
-        homeScorers = []; awayScorers = [];
-        homeStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
-        awayStats = { shots: 0, shotsOnTarget: 0, possession: 50, passAccuracy: 80, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 83) {
-        // Leg 1: Pritam vs Sonu
-        homeScore = 2; awayScore = 2; status = 'finished';
-        homeScorers = [{ playerName: 'Lamine Yamal', goals: 1 }, { playerName: 'Pirlo', goals: 1 }];
-        awayScorers = [{ playerName: 'Al Owairan', goals: 1 }, { playerName: 'Saint-Maximin', goals: 1 }];
-        homeStats = { shots: 3, shotsOnTarget: 3, possession: 30, passAccuracy: 79, fouls: 1, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 2, possession: 70, passAccuracy: 90, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 87) {
-        // Leg 2: Sonu vs Pritam
-        homeScore = 2; awayScore = 0; status = 'finished';
-        homeScorers = [{ playerName: 'Völler', goals: 1 }, { playerName: 'Zé Roberto', goals: 1 }];
-        homeStats = { shots: 5, shotsOnTarget: 4, possession: 60, passAccuracy: 87, fouls: 0, offsides: 0 };
-        awayStats = { shots: 2, shotsOnTarget: 0, possession: 40, passAccuracy: 83, fouls: 0, offsides: 0 };
-      } else if (sm.matchNumber === 81 || sm.matchNumber === 84 || sm.matchNumber === 85 || sm.matchNumber === 88) {
-        status = 'live';
-      } else if (sm.matchNumber === 75 || sm.matchNumber === 79) {
-        status = 'finished';
-        isDNF = true;
-      }
-    }
 
     return {
       id: `m-${index + 1}`,
@@ -705,590 +222,62 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
   return Object.values(statsMap).sort((a, b) => b.cleanSheets - a.cleanSheets);
 };
 
-const NEWS_POSTS = [
-  {
-    id: 74,
-    title: "BARNIK ADVANCES TO QUARTER-FINALS!",
-    excerpt: "Barnik (brokenaqua) secured his place in the quarter-finals with a 1-0 win over Animesh in the second leg of their Qualifier. Al Owairan's clinical finish ensured a comfortable aggregate victory.",
-    date: "31st March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 4500000
-  },
-  {
-    id: 73,
-    title: "BARNIK DOMINATES ANIMESH 2-0 IN QUALIFIER LEG 1",
-    excerpt: "Barnik (brokenaqua) took a massive step towards the next round with a clinical 2-0 victory over Animesh. Gabriel's early strike and Palmer's late goal secured a dominant first-leg lead.",
-    date: "31st March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 4000000
-  },
-  {
-    id: 72,
-    title: "SOUMAJIT AND AYUSH BATTLE TO 1-1 DRAW",
-    excerpt: "In a high-intensity Qualifier Leg 1 encounter, Soumajit and Ayush played out a thrilling 1-1 draw. Gullit's 62nd-minute equalizer canceled out Dembélé's early opener, leaving the tie wide open.",
-    date: "31st March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 3500000
-  },
-  {
-    id: 71,
-    title: "PRITAM SECURES QUARTER-FINAL BERTH!",
-    excerpt: "A hard-fought 0-0 draw against Ranajay was enough for Pritam Ghosh to mathematically secure his place in the quarter-finals. His consistent performances throughout the group stage have paid off.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 3000000
-  },
-  {
-    id: 70,
-    title: "SAMRIDDHA QUALIFIES FOR THE QUARTER-FINALS!",
-    excerpt: "After a dominant 4-0 victory over Ranajay, Samriddha Mandal has officially secured his spot in the quarter-finals. With clinical finishing from Kane and Zico, he remains a top contender for the title.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 2500000
-  },
-  {
-    id: 69,
-    title: "PRIYAM QUALIFIES FOR THE QUARTER-FINALS!",
-    excerpt: "With a series of dominant performances, Priyam Paul has officially secured his spot in the quarter-finals. His clinical finishing and tactical awareness have made him a force to be reckoned with.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 2400000
-  },
-  {
-    id: 68,
-    title: "ANIMESH AT RISK: TOP 4 SPOT IN JEOPARDY",
-    excerpt: "Following a tough 1-0 loss to Sagnick, Animesh's position in the top 4 is no longer secure. With other contenders closing the gap, every upcoming match is now a must-win.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 2300000
-  },
-  {
-    id: 67,
-    title: "SAGNIK EDGES ANIMESH IN TIGHT CONTEST",
-    excerpt: "Sagnick Kundu secures a vital 1-0 victory over Animesh in a Matchday 4 defensive masterclass. Owen's 56th-minute strike proved to be the difference.",
-    date: "30th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 2200000
-  },
-  {
-    id: 66,
-    title: "SONU SLIPS FROM TOP 4",
-    excerpt: "In a shocking turn of events, Sonu has slipped out of the top 4 spots in the league standings after recent results.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 2100000
-  },
-  {
-    id: 65,
-    title: "CRISIS FOR SONU: COULD HE DROP OUT OF THE TOP 4?",
-    excerpt: "After a shocking defeat to Priyam and a chaotic 3-3 draw against Rajat, Sonu's previously unassailable position is crumbling. With points dropped in crucial matches, the former invincible leader is now at serious risk of falling out of the top 4 entirely!",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 2000000
-  },
-  {
-    id: 64,
-    title: "SHOCKING: SONU SUFFERS FIRST DEFEAT!",
-    excerpt: "The invincible run is over! Priyam delivers a stunning 3-2 victory over the previously unbeaten Sonu in a thrilling Matchday 4 encounter. The tournament is now wide open!",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 1900000
-  },
-  {
-    id: 63,
-    title: "BARNIK SECURES LATE WIN OVER ANIMESH",
-    excerpt: "A late 82nd-minute strike from João Neves was enough to secure a vital 1-0 victory for Barnik against Animesh in a tightly contested Matchday 4 fixture.",
-    date: "30th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 1800000
-  },
-  {
-    id: 62,
-    title: "AYUSH DROPS OUT OF THE TOP 4",
-    excerpt: "Following a disastrous run of form and three consecutive defeats, Ayush has officially fallen out of the top 4. The pressure is mounting as the race for the quarter-finals intensifies.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 1700000
-  },
-  {
-    id: 61,
-    title: "AYUSH'S TOP 4 SPOT IN JEOPARDY",
-    excerpt: "Following three consecutive defeats, Ayush's position in the top 4 is now under serious threat. With players like Samriddha closing the gap, the race for the quarter-finals is heating up.",
-    date: "30th March 2026",
-    category: "TOURNAMENT UPDATE",
-    timestamp: Date.now() + 1600000
-  },
-  {
-    id: 60,
-    title: "AYUSH SUFFERS 3 CONSECUTIVE LOSSES",
-    excerpt: "After a strong start, Ayush has hit a major slump, suffering three back-to-back defeats. The latest 1-0 loss to Soumajit adds to the pressure as the tournament progresses.",
-    date: "30th March 2026",
-    category: "TOURNAMENT UPDATE",
-    timestamp: Date.now() + 1500000
-  },
-  {
-    id: 59,
-    title: "SONU REMAINS THE LAST UNBEATEN PLAYER",
-    excerpt: "After Aryan's shock defeat, Sonu is now the only undefeated player left in the tournament. With just 2 matches remaining, can he maintain this incredible streak and secure the ultimate invincible title?",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 1400000
-  },
-  {
-    id: 58,
-    title: "AYUSH SHOCKS ARYAN: THE UNBEATEN RUN ENDS",
-    excerpt: "Ayush Saha pulls off the unthinkable, handing Aryan Sarkar his first defeat of the tournament with a gritty 1-0 victory. Dembélé's 45th-minute strike was the difference as Ayush's defense held firm.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 1300000
-  },
-  {
-    id: 57,
-    title: "SAMRIDDHA DESTROYS DIBYAJOTI 8-0",
-    excerpt: "Samriddha Mandal showed no mercy in an 8-0 demolition of Dibyajoti. Zico and Al Owairan both bagged braces in a completely one-sided affair.",
-    date: "30th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 1200000
-  },
-  {
-    id: 56,
-    title: "PRIYAM SECURES COMFORTABLE 3-0 WIN",
-    excerpt: "Priyam cruised to a 3-0 victory over Dibyajoti, with Cruyff scoring twice and Vini Jr. adding another to secure all three points.",
-    date: "30th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 1100000
-  },
-  {
-    id: 55,
-    title: "ARYAN'S 3-0 MASTERCLASS OVER SAGNIK",
-    excerpt: "Aryan Sarkar (Baby_Aryanrox121) continues his unstoppable run with a 3-0 victory over Sagnik. C. Ronaldo's brace and Al Owairan's strike secured another clean sheet and three points.",
-    date: "30th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 1000000
-  },
-  {
-    id: 54,
-    title: "PRITAM'S 8-0 DEMOLITION: LAMINE YAMAL HAT-TRICK",
-    excerpt: "In a record-equaling performance, Pritam Ghosh obliterated Abhrojeet 8-0. Lamine Yamal was the star with a clinical hat-trick, while Ronaldo, Messi, and Saint-Maximin also found the net.",
-    date: "30th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 900000
-  },
-  {
-    id: 53,
-    title: "ARYAN EDGES PRITAM IN TOP-OF-TABLE CLASH",
-    excerpt: "In a tactical masterclass, Aryan Sarkar secured a vital 1-0 win over Pritam. Al Owairan's 31st-minute goal was enough to decide this high-stakes Matchday 4 encounter.",
-    date: "30th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 800000
-  },
-  {
-    id: 52,
-    title: "MATCHDAY 4 BEGINS: ARYAN AND PRITAM SET THE PACE",
-    excerpt: "Matchday 4 has kicked off with some explosive results. Aryan Sarkar cements his lead with two massive wins, while Pritam Ghosh bounces back from a loss with an 8-0 slaughter.",
-    date: "30th March 2026",
-    category: "TOURNAMENT UPDATE",
-    timestamp: Date.now() + 700000
-  },
-  {
-    id: 51,
-    title: "SAGNICK'S 3-0 CLINICAL WIN OVER ABHROJEET",
-    excerpt: "Sagnick Roy (AYU45) secured a vital 3-0 victory over Abhrojeet in Matchday 3. A dominant performance from start to finish, with Cruyff and Bale providing the clinical edge.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 600000
-  },
-  {
-    id: 50,
-    title: "MATCHDAY 3 BREAKDOWN: GOALS, DRAMA, AND DOMINANCE",
-    excerpt: "Matchday 3 has concluded with some of the most lopsided results in tournament history. From Sonu's and Ranajay's 8-0 demolitions to Sagnick's 3-0 clinical win, the table is starting to take shape as we head into the next phase.",
-    date: "29th March 2026",
-    category: "TOURNAMENT UPDATE",
-    timestamp: Date.now() + 500000 // Highest timestamp to be at top
-  },
-  {
-    id: 49,
-    title: "BARNIK'S CLINICAL 1-0 OVER SOUMAJIT",
-    excerpt: "In a tightly contested Matchday 3 finale, Barnik (brokenaqua) secured a vital 1-0 win over Soumajit. Lionel Messi's strike just before half-time was the difference in this high-stakes encounter.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 400000
-  },
-  {
-    id: 48,
-    title: "AYUSH_08 IN SHAMBLES! RAJAT'S DEFENSE IS A BRICK WALL!",
-    excerpt: "SHOCKING! Rajat (rd10) has just pulled off the impossible! Ayush Saha, the tournament's most feared attacker, was completely neutralized in a 1-0 thriller. 'I've never seen anything like it,' said one spectator. 'Rajat was everywhere!' With Zamorano's clinical strike, the league has a new giant killer!",
-    date: "29th March 2026",
-    category: "REACTION",
-    timestamp: Date.now() + 300000
-  },
-  {
-    id: 47,
-    title: "RANAJAY'S 8-0 DESTRUCTION: LAMINE YAMAL'S DOUBLE HAT-TRICK",
-    excerpt: "In a record-shattering Matchday 3 performance, Ranajay Bhowmik (GamerR) obliterated Sayantan 8-0. Lamine Yamal was the undisputed star, scoring a phenomenal double hat-trick (6 goals) in this absolute slaughter.",
-    date: "29th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 200000
-  },
-  {
-    id: 46,
-    title: "TOURNAMENT LEADERS: ARYAN AND SONU UNSTOPPABLE",
-    excerpt: "As Matchday 3 concludes, Aryan Sarkar and Sonu Mandal have emerged as the clear favorites. Both players remain undefeated, showcasing clinical finishing and rock-solid defenses that have left their opponents scrambling for answers.",
-    date: "29th March 2026",
-    category: "TOURNAMENT UPDATE",
-    timestamp: Date.now() + 100000 // Ensure this stays at the very top
-  },
-  {
-    id: 45,
-    title: "SONU'S 8-0 SLAUGHTER: ABHROJEET LEFT SPEECHLESS",
-    excerpt: "In an absolute demolition, Sonu Mandal (sonu2007) crushed Abhrojeet 8-0. Al Owairan was the star with a hat-trick, while Völler added a brace in this record-breaking Matchday 3 victory.",
-    date: "29th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: Date.now() + 5
-  },
-  {
-    id: 44,
-    title: "PRIYAM'S 7-0 REVENGE: VINI JR. HAT-TRICK CRUSHES SAYANTAN",
-    excerpt: "Priyam Paul (Priyam2007) delivered a statement win, obliterating Sayantan 7-0. Vini Jr. was unstoppable with a clinical hat-trick, supported by goals from Bale, Cruyff, and Scholes.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 4
-  },
-  {
-    id: 43,
-    title: "SAMRIDDHA'S 5-0 MASTERCLASS: KANE BRACE SINKS SAGNIK",
-    excerpt: "Samriddha Mandal (sam1017) returned to winning ways with a dominant 5-0 victory over Sagnik. Harry Kane's first-half brace set the tone for a flawless performance.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 3
-  },
-  {
-    id: 42,
-    title: "RANAJAY EDGES PRIYAM IN 5-GOAL THRILLER",
-    excerpt: "In one of the most exciting matches of the tournament, Ranajay Bhowmik (GamerR) edged out Priyam 3-2. Goals from Nesta, Gabriel, and Pirlo secured the points in a high-octane battle.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 2
-  },
-  {
-    id: 41,
-    title: "SONU'S WINNING STREAK: 2-0 OVER DIBYAJYOTI",
-    excerpt: "Sonu Mandal continues his relentless march with a professional 2-0 win against Dibyajyoti. Völler and Messi provided the goals in a match controlled from start to finish.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now() + 1
-  },
-  {
-    id: 40,
-    title: "PRITAM'S CLINICAL 1-0 OVER PRIYAM",
-    excerpt: "Pritam Ghosh secured a vital three points with a narrow 1-0 victory over Priyam. A 36th-minute strike from Lionel Messi was enough to decide this tactical encounter.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: Date.now()
-  },
-  {
-    id: 39,
-    title: "ARYAN'S DOMINANCE CONTINUES: 3-0 OVER SAGNICK",
-    excerpt: "Aryan Sarkar (Baby_Aryanrox121) is on fire! A clinical 3-0 victory over Sagnick Roy cements his position at the top of the table. Vini Jr. was once again the star with a brilliant brace.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743235200000 + 39 // Base date + ID for sorting
-  },
-  {
-    id: 38,
-    title: "PRITAM EDGES RAJAT IN TACTICAL BATTLE",
-    excerpt: "In a masterclass of defensive discipline, Pritam Ghosh secured a vital 1-0 win over Rajat Das. Kevin De Bruyne's first-half strike was enough to separate the two sides in this Matchday 3 encounter.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743235200000 + 38
-  },
-  {
-    id: 37,
-    title: "ARYAN'S LATE DRAMA: VINI JR. SINKS SOUMAJIT",
-    excerpt: "In a heart-stopping Matchday 3 clash, Aryan Sarkar (Baby_Aryanrox121) secured a dramatic 2-1 victory over Soumajit. Despite Cantona's early goal for Soumajit, Vini Jr. delivered a masterclass with a brace, including a 94th-minute winner.",
-    date: "29th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743235200000 + 37
-  },
-  {
-    id: 36,
-    title: "SAGNIK'S FIRST WIN: GULLIT'S MAGIC ENDS BARNIK'S RUN",
-    excerpt: "Sagnik Kundu (kundes) has finally arrived! In a shocking upset, Sagnik secured his first win of the tournament with a 1-0 victory over the formidable Barnik. Ruud Gullit's 71st-minute strike was the difference in this historic triumph.",
-    date: "29th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: 1743235200000 + 36
-  },
-  {
-    id: 35,
-    title: "ANIMESH CRUSHES ABHROJEET",
-    excerpt: "Animesh delivers a dominant performance, defeating Abhrojeet 5-1. C. Ronaldo was the star of the show with a magnificent hat-trick.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 35
-  },
-  {
-    id: 34,
-    title: "RAJAT EDGES DIBYAJOTI",
-    excerpt: "In a closely contested Matchday 2 fixture, Rajat secures a 2-1 victory over Dibyajyoti. Beckham and Raphinha provided the goals for the winners.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 34
-  },
-  {
-    id: 33,
-    title: "ARYAN SARKAR EDGES OUT BARNIK IN DEFENSIVE MASTERCLASS",
-    excerpt: "In a tightly contested battle, Aryan Sarkar (Baby_Aryanrox121) secured a vital 1-0 victory over Barnik. A 78th-minute strike from Vini Jr. was the only difference in a match dominated by tactical discipline.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 33
-  },
-  {
-    id: 32,
-    title: "HISTORIC HUMILIATION: BARNIK CRUSHES SAYANTAN 10-0!",
-    excerpt: "In a match that will be remembered for decades, Barnik (brokenaqua) delivered a masterclass performance, netting 10 goals against a helpless Sayantan. Al Owairan was the star with 4 goals, while Barcola secured a hat-trick in this unprecedented slaughter.",
-    date: "28th March 2026",
-    category: "BREAKING NEWS",
-    timestamp: 1743148800000 + 32
-  },
-  {
-    id: 31,
-    title: "SONU MANDAL: THE GIANT KILLER",
-    excerpt: "In a shocking Matchday 2 upset, Sonu Mandal takes down the heavyweight Animesh with a clinical 2-1 victory. Völler and Al Owairan provided the magic, ending Animesh's unbeaten run.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 31
-  },
-  {
-    id: 30,
-    title: "ZICO'S SYMPHONY: SAMRIDDHA'S REDEMPTION",
-    excerpt: "After a narrow loss to Sonu, Samriddha Mandal unleashed a 5-1 demolition on Abhrojeet. Zico's brace was a masterclass in finishing, proving Samriddha is still a top-tier title contender.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 30
-  },
-  {
-    id: 29,
-    title: "MBAPPÉ'S ARRIVAL: SONU SINKS SAMRIDDHA",
-    excerpt: "Kylian Mbappé has officially arrived in the Kolkata XI. His clinical brace was the difference as Sonu Mandal edged out Samriddha in a tactical battle that left fans breathless.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 29
-  },
-  {
-    id: 28,
-    title: "SONU MANDAL EDGES SAMRIDDHA IN TIGHT CLASH",
-    excerpt: "Sonu Mandal secures a hard-fought 2-1 victory over Samriddha Mandal. A brace from Mbappé was the difference, despite Hazard's goal for Samriddha.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 28
-  },
-  {
-    id: 27,
-    title: "ARYAN SARKAR OBLITERATES SAYANTAN",
-    excerpt: "In a dominant display, Aryan Sarkar secures a massive 6-0 victory over Sayantan Paul. Vini Jr. was clinical with a hat-trick, supported by a brace from C. Ronaldo.",
-    date: "28th March 2026",
-    category: "MATCH REPORT",
-    timestamp: 1743148800000 + 27
-  },
-  {
-    id: 26,
-    title: "SOUMAJIT BISWAS CRUSHES SAGNIK KUNDU",
-    excerpt: "Soumajit Biswas continues his fine form with a 5-0 win over Sagnik Kundu. Cantona and Gullit both scored twice in the rout.",
-    date: "28th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 25,
-    title: "PRITAM GHOSH SECURES SECOND WIN OF THE DAY",
-    excerpt: "Pritam Ghosh defeats Sagnik Kundu 2-0, with C. Ronaldo netting both goals in a professional performance.",
-    date: "28th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 24,
-    title: "SOUMAJIT BISWAS DOMINATES DIBYAJOTI",
-    excerpt: "Soumajit Biswas puts on a masterclass, defeating Dibyajyoti Sarkar 5-0. Cantona was the star of the show with four goals.",
-    date: "28th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 23,
-    title: "PRITAM GHOSH DEFEATS SAGNICK ROY",
-    excerpt: "Pritam Ghosh secures a solid 2-0 victory over Sagnick Roy. Lamine Yamal and Messi provided the goals in a controlled display.",
-    date: "28th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 22,
-    title: "AYUSH SAHA EDGES PRIYAM PAUL",
-    excerpt: "In a closely contested match, Ayush Saha secures a 2-1 win over Priyam Paul. Dembélé's brace was enough to overcome Bale's strike.",
-    date: "28th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 21,
-    title: "AYUSH SAHA CLINICAL AGAINST SAGNICK",
-    excerpt: "Ayush Saha starts Matchday 2 with a convincing 4-0 win over Sagnick Roy. Garrincha's double led the way for the Raiganj Mafias star.",
-    date: "28th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 20,
-    title: "PRITAM EDGES OUT DIBYAJOTI",
-    excerpt: "In a tight encounter, Pritam secures a narrow 1-0 victory over Dibyajyoti, with Saint-Maximin scoring the only goal.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 18,
-    title: "RAJAT DEFEATS BARNIK",
-    excerpt: "Rajat secures a narrow 1-0 victory over Barnik, with Mbappé scoring the only goal of the match.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 19,
-    title: "BARNIK EDGES OUT RANAJAY",
-    excerpt: "In a closely fought match, Barnik secures a 1-0 victory over Ranajay, with Al Owairan scoring the decisive goal.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 16,
-    title: "ANIMESH OBLITERATES SAYANTAN",
-    excerpt: "In a historic Matchday 1 performance, Animesh secures an 8-0 victory over Sayantan Paul. C. Ronaldo was unstoppable, netting four goals.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 15,
-    title: "SAMRIDDHA SHINES AGAINST RAJAT",
-    excerpt: "Samriddha Mandal secures a convincing 2-0 win over Rajat Das. Hazard and Kane provided the goals in a dominant performance.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 14,
-    title: "SAMRIDDHA AND SOUMAJIT BATTLE TO A DRAW",
-    excerpt: "A closely contested match between Samriddha Mandal and Soumajit Biswas ends 1-1. Ribéry opened the scoring early, but Zico equalized in the second half.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 13,
-    title: "ANIMESH SECURES COMFORTABLE WIN",
-    excerpt: "Animesh defeats Sagnick Roy 2-0 in a dominant display. Zieliński and C. Ronaldo provided the clinical finishes.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 12,
-    title: "ABHROJEET BOUNCES BACK",
-    excerpt: "After a tough loss earlier, Abhrojeet Kundu secures a solid 2-0 victory over Sayantan Paul. Dembélé and King provided the goals.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 11,
-    title: "AYUSH SAHA DOMINATES ABHROJEET",
-    excerpt: "Ayush Saha puts on a clinical performance, defeating Abhrojeet Kundu 5-0. Garrincha and Raphinha both bagged braces in the rout.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 10,
-    title: "STALEMATE FOR SONU AND SOUMAJIT",
-    excerpt: "A defensive masterclass from both sides results in a 0-0 draw. Scoring opportunities were rare in this Matchday 1 clash.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 9,
-    title: "ARYAN AND SONU SHARE POINTS",
-    excerpt: "A tactical battle between Aryan Sarkar and Sonu Mandal ends in a 1-1 draw, with C. Ronaldo and Messi both finding the net.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 8,
-    title: "AYUSH EDGES PRITAM IN THRILLER",
-    excerpt: "Ayush Saha secures a hard-fought 3-2 victory over Pritam Ghosh in the first high-scoring match of the tournament.",
-    date: "27th March 2026",
-    category: "MATCH REPORT"
-  },
-  {
-    id: 4,
-    title: "MATCHDAY 1: 14/16 COMPLETED",
-    excerpt: "The tournament is in full swing with 14 matches completed. Only 2 more high-stakes fixtures remain for today.",
-    date: "27th March 2026",
-    category: "TOURNAMENT STATUS"
-  },
-  {
-    id: 3,
-    title: "ARYAN EDGES RANAJAY",
-    excerpt: "In a tight contest, Aryan Sarkar secures a 1-0 win over Ranajay Bhowmik with a goal from C. Ronaldo.",
-    date: "27th March 2026",
-    category: "MATCHDAY 1"
-  },
-  {
-    id: 2,
-    title: "ROONEY BRACE FOR DIBYAJOTI",
-    excerpt: "Dibyajyoti Sarkar defeats Sagnik Kundu 2-0 thanks to a clinical double from Wayne Rooney.",
-    date: "27th March 2026",
-    category: "MATCHDAY 1"
-  },
-  {
-    id: 1,
-    title: "PRIYAM PAUL ON FIRE",
-    excerpt: "Priyam Paul secures two massive clean-sheet victories against Sagnick (3-0) and Sagnik (4-0), scoring 7 goals in total.",
-    date: "27th March 2026",
-    category: "MATCHDAY 1"
-  }
-];
+const NEWS_POSTS: any[] = [];
 
-  const MatchCard = ({ match, teams, onClick }: { match: Match, teams: Team[], onClick: () => void, key?: string }) => {
+  const MatchCard = ({ match, teams, onClick }: { match: Match, teams: Team[], onClick: () => void, key?: any }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
     return (
       <motion.div
-        whileHover={{ scale: 1.01 }}
+        whileHover={{ scale: 1.01, y: -2 }}
         onClick={onClick}
-        className="bg-white/5 border border-white/10 rounded-2xl p-4 cursor-pointer hover:bg-white/10 transition-all group"
+        className="bg-white/5 border border-white/10 rounded-3xl p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-hidden backdrop-blur-sm"
       >
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex-1 flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg font-bold shrink-0">
+        <div className="absolute top-0 right-0 p-2 opacity-5">
+           <Trophy className="w-12 h-12" />
+        </div>
+        
+        <div className="flex items-center justify-between gap-4 relative z-10">
+          <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform">
               {awayTeam?.name[0] || '?'}
             </div>
-            <div className="min-w-0">
-              <div className="text-xs font-black text-white/40 uppercase tracking-widest truncate">{awayTeam?.name || 'TBD'}</div>
-              <div className="text-sm font-bold text-white truncate">{awayTeam?.fullName || 'TBD'}</div>
+            <div className="text-center">
+              <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{awayTeam?.name || 'TBD'}</div>
+              <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{awayTeam?.fullName || 'TBD'}</div>
             </div>
           </div>
 
-          <div className="flex flex-col items-center gap-1 shrink-0 px-4 border-x border-white/5">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-black tabular-nums text-white/90">{match.awayScore ?? '-'}</span>
-              <span className="text-[10px] font-black text-white/20">VS</span>
-              <span className="text-2xl font-black tabular-nums text-white/90">{match.homeScore ?? '-'}</span>
+          <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
+            <div className="flex items-center gap-4">
+              <span className={`text-3xl font-black tabular-nums ${match.status === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+                {match.awayScore ?? '-'}
+              </span>
+              <div className="flex flex-col items-center">
+                 <span className="text-[10px] font-black text-white/20">VS</span>
+                 <div className="h-4 w-[1px] bg-white/10 my-1" />
+              </div>
+              <span className={`text-3xl font-black tabular-nums ${match.status === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+                {match.homeScore ?? '-'}
+              </span>
             </div>
-            <div className={`text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
-              match.status === 'finished' ? 'bg-green-500/20 text-green-400' :
-              match.status === 'live' ? 'bg-red-500/20 text-red-400' :
-              'bg-blue-500/20 text-blue-400'
+            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
+              match.status === 'finished' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+              match.status === 'live' ? 'bg-red-500/10 text-red-100 animate-pulse border border-red-500/20' :
+              'bg-blue-500/10 text-blue-100 border border-blue-500/20'
             }`}>
-              {match.status === 'finished' ? 'Final' : match.status === 'live' ? 'Live' : 'Scheduled'}
+              {match.status === 'finished' ? 'Final' : match.status === 'live' ? 'Live' : 'Upcoming'}
             </div>
           </div>
 
-          <div className="flex-1 flex items-center justify-end gap-3 min-w-0">
-            <div className="min-w-0 text-right">
-              <div className="text-xs font-black text-white/40 uppercase tracking-widest truncate">{homeTeam?.name || 'TBD'}</div>
-              <div className="text-sm font-bold text-white truncate">{homeTeam?.fullName || 'TBD'}</div>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg font-bold shrink-0">
+          <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
+            <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform">
               {homeTeam?.name[0] || '?'}
+            </div>
+            <div className="text-center">
+              <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{homeTeam?.name || 'TBD'}</div>
+              <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{homeTeam?.fullName || 'TBD'}</div>
             </div>
           </div>
         </div>
@@ -1296,12 +285,15 @@ const NEWS_POSTS = [
     );
   };
 
-  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard }: { 
+  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode }: { 
     match: Match, 
     onClose: () => void,
     teams: Team[],
     copiedId: string | null,
-    copyToClipboard: (id: string) => void
+    copyToClipboard: (id: string) => void,
+    updateMatch?: (match: Match) => void,
+    deleteMatch?: (matchId: string) => void,
+    isEditingMode?: boolean
   }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
@@ -1347,6 +339,17 @@ const NEWS_POSTS = [
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
           
           <div className="p-8 relative z-10">
+            {isEditingMode && (
+              <div className="flex justify-end gap-2 mb-4">
+                <button 
+                  onClick={() => { if(deleteMatch) deleteMatch(match.id); onClose(); }}
+                  className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 rounded-lg text-red-400 text-xs font-black uppercase"
+                >
+                  Delete Match
+                </button>
+              </div>
+            )}
+            
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] md:text-[20rem] font-black text-white/[0.02] italic select-none pointer-events-none">
               {match.matchNumber}
             </div>
@@ -1399,9 +402,22 @@ const NEWS_POSTS = [
                 {match.awayScorers && match.awayScorers.length > 0 && (
                   <div className="mt-4 flex flex-col items-center gap-1">
                     {match.awayScorers.map((s, i) => (
-                      <span key={i} className="text-[10px] font-bold text-white/40 italic">
-                        {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
-                      </span>
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-white/40 italic">
+                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
+                        </span>
+                        {isEditingMode && (
+                          <input 
+                            type="number" 
+                            defaultValue={s.goals} 
+                            onChange={(e) => {
+                              match.awayScorers![i].goals = parseInt(e.target.value);
+                              if (updateMatch) updateMatch(match);
+                            }}
+                            className="w-8 h-6 bg-white/10 rounded text-center text-xs font-black text-white"
+                          />
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1412,6 +428,18 @@ const NEWS_POSTS = [
                 <div className="flex items-center gap-4 md:gap-6">
                   {match.isDNF ? (
                     <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
+                  ) : isEditingMode ? (
+                    <div className="flex items-center gap-2">
+                      <input type="number" defaultValue={match.awayScore ?? 0} onChange={(e) => {
+                          match.awayScore = parseInt(e.target.value);
+                          if(updateMatch) updateMatch(match);
+                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
+                      <span className="text-2xl text-white/20">VS</span>
+                      <input type="number" defaultValue={match.homeScore ?? 0} onChange={(e) => {
+                          match.homeScore = parseInt(e.target.value);
+                          if(updateMatch) updateMatch(match);
+                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
+                    </div>
                   ) : (
                     <>
                       <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
@@ -1476,9 +504,22 @@ const NEWS_POSTS = [
                 {match.homeScorers && match.homeScorers.length > 0 && (
                   <div className="mt-4 flex flex-col items-center gap-1">
                     {match.homeScorers.map((s, i) => (
-                      <span key={i} className="text-[10px] font-bold text-white/40 italic">
-                        {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
-                      </span>
+                      <div key={i} className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold text-white/40 italic">
+                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
+                        </span>
+                        {isEditingMode && (
+                          <input 
+                            type="number" 
+                            defaultValue={s.goals} 
+                            onChange={(e) => {
+                              match.homeScorers![i].goals = parseInt(e.target.value);
+                              if (updateMatch) updateMatch(match);
+                            }}
+                            className="w-8 h-6 bg-white/10 rounded text-center text-xs font-black text-white"
+                          />
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}
@@ -1486,11 +527,11 @@ const NEWS_POSTS = [
             </div>
 
             {match.status === 'finished' && match.homeStats && match.awayStats && (
-              <div className="mt-8 space-y-4 p-6 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-center mb-2">
-                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-[0.3em]">Match Statistics</span>
+              <div className="mt-6 md:mt-8 space-y-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
+                <div className="text-center mb-1 md:mb-2">
+                  <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
                 </div>
-                <div className="grid gap-4">
+                <div className="grid gap-3 md:gap-4">
                   <StatRow 
                     home={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
                     away={`${match.homeStats.shotsOnTarget}/${match.homeStats.shots}`} 
@@ -1506,14 +547,14 @@ const NEWS_POSTS = [
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4 p-6 bg-white/5 rounded-2xl border border-white/5">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
               <div className="text-center space-y-1">
-                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Match Date</div>
-                <div className="text-sm font-bold text-blue-400">{match.date}</div>
+                <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match Date</div>
+                <div className="text-xs md:text-sm font-bold text-blue-400">{match.date}</div>
               </div>
               <div className="text-center space-y-1 border-l border-white/5">
-                <div className="text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
-                <div className="text-sm font-bold text-blue-400">#{match.matchNumber}</div>
+                <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
+                <div className="text-xs md:text-sm font-bold text-blue-400">#{match.matchNumber}</div>
               </div>
             </div>
 
@@ -1531,760 +572,661 @@ const NEWS_POSTS = [
     );
   };
 
-  const VotingModal = ({ session, onClose, user, isVoting, hasVoted, handleVote, sessionVotes, totalVotes, votedCandidateId, isAdmin }: { 
-    session: VotingSession, 
-    onClose: () => void,
-    user: User | null,
-    isVoting: boolean,
-    hasVoted: boolean,
-    handleVote: (id: string) => void,
-    sessionVotes: Record<string, number>,
-    totalVotes: number,
-    votedCandidateId: string | null,
-    isAdmin: boolean
+  const RegistrationModal = ({ 
+    onClose, 
+    handleRegister, 
+    isSubmitting, 
+    hasRegistered,
+    user
+  }: { 
+    onClose: () => void, 
+    handleRegister: (data: any) => void, 
+    isSubmitting: boolean,
+    hasRegistered: boolean,
+    user: User | null
   }) => {
-    const [selectedId, setSelectedId] = useState<string | null>(null);
-    const showResults = (session.showResults ?? true);
-    const timeLeft = useMemo(() => {
-      if (!session.endTime) return null;
-      const end = session.endTime.toDate();
-      const now = new Date();
-      const diff = end.getTime() - now.getTime();
-      if (diff <= 0) return "Ended";
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-      return `${hours}h ${minutes}m left`;
-    }, [session.endTime]);
+    const [formData, setFormData] = useState({
+      name: '',
+      age: '',
+      fcUid: '',
+      fcName: '',
+      teamOvr: '',
+      experience: ''
+    });
+
+    const handleSubmit = (e: React.FormEvent) => {
+      e.preventDefault();
+      handleRegister({
+        ...formData,
+        age: Number(formData.age),
+        teamOvr: Number(formData.teamOvr)
+      });
+    };
 
     return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-[#000030]/95 backdrop-blur-sm"
-        onClick={onClose}
-      >
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+        />
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="w-full max-w-md bg-[#000040] border border-white/10 rounded-[2rem] overflow-hidden shadow-2xl relative"
-          onClick={e => e.stopPropagation()}
+          className="relative w-full max-w-lg bg-[#0a0a1a] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
         >
-          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/10 to-transparent pointer-events-none" />
-          
-          <div className="p-8 relative z-10">
-            <div className="flex justify-between items-center mb-8">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-blue-600/20 rounded-xl border border-blue-500/30">
-                  <VoteIcon className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <h2 className="font-display font-black text-xl uppercase italic tracking-tight">{session.matchday}</h2>
-                  <p className="text-blue-400/60 text-[10px] font-black uppercase tracking-widest">{timeLeft}</p>
-                </div>
+          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-blue-600/10 to-transparent">
+            <div className="flex justify-between items-start mb-4 md:mb-6">
+              <div>
+                <h2 className="text-2xl md:text-3xl font-display font-black italic text-white tracking-tight uppercase leading-none mb-2">Tournament Registration</h2>
+                <p className="text-blue-400/60 text-[10px] font-black uppercase tracking-[0.2em]">Join the Elite Competition</p>
               </div>
-              <button onClick={onClose} className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors">
-                <span className="text-xl">&times;</span>
+              <button 
+                onClick={onClose}
+                className="p-2 md:p-3 hover:bg-white/5 rounded-2xl transition-colors text-white/40 hover:text-white"
+              >
+                <X className="w-5 md:w-6 h-5 md:h-6" />
               </button>
             </div>
+          </div>
 
-            <div className="space-y-3 mb-8">
-              <p className="text-xs font-bold text-white/40 uppercase tracking-widest mb-4">
-                {showResults ? 'Voting Results' : 'Vote for Best Performer'}
-              </p>
-              {(() => {
-                let displayCandidates = [...session.candidates];
-                if (showResults) {
-                  displayCandidates.sort((a, b) => (sessionVotes[b.id] || 0) - (sessionVotes[a.id] || 0));
-                }
-                
-                return displayCandidates.map((candidate, index) => {
-                  const votes = sessionVotes[candidate.id] || 0;
-                  const percentage = totalVotes > 0 ? Math.round((votes / totalVotes) * 100) : 0;
-                  const isWinner = showResults && index === 0 && votes > 0;
-
-                  return (
-                    <div
-                      key={candidate.id}
-                      className={`w-full p-4 rounded-2xl border transition-all relative overflow-hidden ${
-                        selectedId === candidate.id || votedCandidateId === candidate.id
-                          ? 'bg-blue-600/20 border-blue-500' 
-                          : isWinner 
-                            ? 'bg-yellow-500/20 border-yellow-500 shadow-[0_0_15px_rgba(234,179,8,0.2)]'
-                            : 'bg-white/5 border-white/5'
-                      } ${hasVoted && votedCandidateId !== candidate.id && session.isActive ? 'opacity-50 grayscale' : ''}`}
-                    >
-                      {showResults && (
-                        <div 
-                          className="absolute inset-0 bg-blue-500/10 transition-all duration-1000"
-                          style={{ width: `${percentage}%` }}
-                        />
-                      )}
-
-                      <button
-                        disabled={hasVoted || isVoting || !session.isActive}
-                        onClick={() => setSelectedId(candidate.id)}
-                        className="w-full flex items-center justify-between relative z-10"
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-black text-sm transition-colors ${
-                            selectedId === candidate.id || votedCandidateId === candidate.id 
-                              ? 'bg-blue-500 text-white' 
-                              : isWinner
-                                ? 'bg-yellow-500 text-white'
-                                : 'bg-white/5 text-white/40'
-                          }`}>
-                            {isWinner ? <Trophy className="w-5 h-5" /> : (!session.isActive ? index + 1 : candidate.name[0])}
-                          </div>
-                          <div className="text-left">
-                            <div className="font-display font-black text-sm uppercase italic tracking-tight flex items-center gap-2">
-                              {candidate.name}
-                              {isWinner && <span className="px-2 py-0.5 bg-yellow-500 text-black text-[8px] font-black rounded-full uppercase tracking-tighter">Winner</span>}
-                            </div>
-                            <div className="text-[9px] font-black text-blue-400/50 uppercase tracking-widest">{candidate.fcName}</div>
-                          </div>
-                        </div>
-                        
-                        <div className="text-right">
-                          <div className="flex flex-col items-end">
-                            {showResults && (
-                              <>
-                                <div className="font-display font-black text-sm italic text-white">{percentage}%</div>
-                                <div className="text-[9px] font-black text-white/40 uppercase tracking-widest">{votes} Votes</div>
-                              </>
-                            )}
-                          </div>
-                          {session.isActive && (selectedId === candidate.id || votedCandidateId === candidate.id) && (
-                            <Check className="w-5 h-5 text-blue-400" />
-                          )}
-                        </div>
-                      </button>
-                    </div>
-                  );
-                });
-              })()}
-            </div>
-
-            {session.isActive ? (
-              hasVoted ? (
-                <div className="w-full py-4 bg-green-500/10 border border-green-500/20 text-green-400 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl flex items-center justify-center gap-2">
-                  <Check className="w-4 h-4" />
-                  Vote Recorded
+          <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] custom-scrollbar">
+            {!user || user.isAnonymous ? (
+              <div className="text-center py-12 space-y-6">
+                <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto">
+                  <LogIn className="w-10 h-10 text-blue-400" />
                 </div>
-              ) : (
-                <button
-                  disabled={!selectedId || isVoting}
-                  onClick={() => selectedId && handleVote(selectedId)}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:bg-white/10 disabled:text-white/20 text-white font-black uppercase text-xs tracking-[0.2em] rounded-2xl transition-all shadow-lg flex items-center justify-center gap-2"
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-display font-black text-white italic">Google Sign-In Required</h3>
+                  <p className="text-white/40 text-sm max-w-xs mx-auto">To ensure secure registration and verify your identity, please sign in with your Google account.</p>
+                </div>
+                <button 
+                  onClick={() => handleRegister({} as any)} 
+                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20"
                 >
-                  {isVoting ? <Loader2 className="w-4 h-4 animate-spin" /> : <VoteIcon className="w-4 h-4" />}
-                  Submit Vote
+                  <LogIn className="w-4 h-4" />
+                  Continue with Google
                 </button>
-              )
-            ) : (
-              <div className="w-full py-4 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 font-black uppercase text-[10px] tracking-[0.2em] rounded-2xl flex items-center justify-center gap-2">
-                <Award className="w-4 h-4" />
-                Voting Ended • {totalVotes} Total Votes
               </div>
+            ) : hasRegistered ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <Check className="w-10 h-10 text-green-500" />
+                </div>
+                <h3 className="text-2xl font-display font-black text-white italic">Already Registered!</h3>
+                <p className="text-white/40 text-sm">Your application has been received. Good luck!</p>
+                <button 
+                  onClick={onClose}
+                  className="mt-6 w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                >
+                  Close
+                </button>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Full Name</label>
+                  <input 
+                    required
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    placeholder="Enter your name"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Age</label>
+                  <input 
+                    required
+                    type="number"
+                    value={formData.age}
+                    onChange={(e) => setFormData({...formData, age: e.target.value})}
+                    placeholder="21"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC UID</label>
+                  <input 
+                    required
+                    type="text"
+                    value={formData.fcUid}
+                    onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
+                    placeholder="Unique ID"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC Name</label>
+                  <input 
+                    required
+                    type="text"
+                    value={formData.fcName}
+                    onChange={(e) => setFormData({...formData, fcName: e.target.value})}
+                    placeholder="In-game name"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Team OVR</label>
+                  <input 
+                    required
+                    type="number"
+                    value={formData.teamOvr}
+                    onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
+                    placeholder="90"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Play Time / Experience</label>
+                  <input 
+                    required
+                    type="text"
+                    value={formData.experience}
+                    onChange={(e) => setFormData({...formData, experience: e.target.value})}
+                    placeholder="e.g. 2 years, since FIFA 22"
+                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  />
+                </div>
+                <div className="md:col-span-2 pt-4">
+                  <button 
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full py-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-blue-600/20"
+                  >
+                    {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Registration"}
+                  </button>
+                </div>
+              </form>
             )}
-            
-            <p className="mt-6 text-center text-[9px] font-bold text-white/20 uppercase tracking-widest">
-              One vote per browser • Ends 12h after start
-            </p>
           </div>
         </motion.div>
-      </motion.div>
+      </div>
     );
   };
 
   const AdminModal = ({ 
-    isAdmin,
     onClose, 
-    adminMatchday, 
-    setAdminMatchday, 
-    adminCandidates, 
-    setAdminCandidates, 
-    adminHours, 
-    setAdminHours, 
-    activeSession, 
-    isSavingAdmin, 
-    handleSaveAdmin, 
-    handleToggleResults, 
-    handleEndVote,
-    sessionVotes,
-    totalVotes,
-    newsCategory,
-    setNewsCategory,
-    newsDate,
-    setNewsDate,
-    newsTitle,
-    setNewsTitle,
-    newsExcerpt,
-    setNewsExcerpt,
-    isPostingNews,
-    handlePostNews,
+    isAdmin,
+    user,
     bracket,
     isSavingBracket,
     handleSaveBracket,
-    standings,
-    matches
+    registrations,
+    config,
+    handleToggleRegistration,
+    isSavingAdmin,
+    handleAdminAiCommand,
+    handleAdminReset,
+    handleApproveRegistration,
+    handleRejectRegistration,
+    handleDeleteRegistration,
+    isEditingMode,
+    setIsEditingMode,
+    matchLabels,
+    updateMatchLabel,
+    matchesByDay,
+    handleAnalyzeQualification
   }: { 
+    onClose: () => void, 
     isAdmin: boolean,
-    onClose: () => void,
-    adminMatchday: string | number,
-    setAdminMatchday: (val: string | number) => void,
-    adminCandidates: VotingCandidate[],
-    setAdminCandidates: (val: VotingCandidate[]) => void,
-    adminHours: number,
-    setAdminHours: (val: number) => void,
-    activeSession: VotingSession | null,
-    isSavingAdmin: boolean,
-    handleSaveAdmin: () => void,
-    handleToggleResults: () => void,
-    handleEndVote: () => void,
-    sessionVotes: Record<string, number>,
-    totalVotes: number,
-    newsCategory: string,
-    setNewsCategory: (val: string) => void,
-    newsDate: string,
-    setNewsDate: (val: string) => void,
-    newsTitle: string,
-    setNewsTitle: (val: string) => void,
-    newsExcerpt: string,
-    setNewsExcerpt: (val: string) => void,
-    isPostingNews: boolean,
-    handlePostNews: () => void,
+    user: User | null,
     bracket: BracketMatch[],
     isSavingBracket: boolean,
-    handleSaveBracket: (match: BracketMatch) => void,
-    standings: Team[],
-    matches: Match[]
+    handleSaveBracket: (m: BracketMatch) => Promise<void>,
+    registrations: Registration[],
+    config: Config,
+    handleToggleRegistration: () => void,
+    isSavingAdmin: boolean,
+    handleAdminAiCommand: (command: string) => Promise<void>,
+    handleAdminReset: (type: 'matches' | 'bracket' | 'table' | 'registrations' | 'all') => Promise<void>,
+    handleApproveRegistration: (id: string) => Promise<void>,
+    handleRejectRegistration: (id: string) => Promise<void>,
+    handleDeleteRegistration: (id: string) => Promise<void>,
+    isEditingMode: boolean,
+    setIsEditingMode: (mode: boolean) => void,
+    matchLabels: Record<string, string>,
+    updateMatchLabel: (date: string, status: string) => Promise<void>,
+    matchesByDay: Record<string, Match[]>,
+    handleAnalyzeQualification: () => Promise<void>
   }) => {
-    const [newCandidateTeam, setNewCandidateTeam] = useState(TEAMS_LIST[0]);
-    const [activeTab, setActiveTab] = useState<'voting' | 'news' | 'bracket' | 'stats'>('voting');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label'>('bracket');
+    const [confirmReset, setConfirmReset] = useState<string | null>(null);
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+    const [isResetting, setIsResetting] = useState(false);
     const [editingMatchId, setEditingMatchId] = useState<string | null>(null);
     const [editHomeName, setEditHomeName] = useState('');
     const [editAwayName, setEditAwayName] = useState('');
+    const [editRound, setEditRound] = useState('');
     const [editHomeScore, setEditHomeScore] = useState(0);
     const [editAwayScore, setEditAwayScore] = useState(0);
-    const [editRound, setEditRound] = useState('');
-    const firstInputRef = useRef<HTMLInputElement>(null);
-
-    useEffect(() => {
-      if (editingMatchId && firstInputRef.current) {
-        firstInputRef.current.focus();
-      }
-    }, [editingMatchId]);
+    const firstInputRef = React.useRef<HTMLInputElement>(null);
 
     const startEditingMatch = (match: BracketMatch) => {
       setEditingMatchId(match.id);
       setEditHomeName(match.homeTeamName || '');
       setEditAwayName(match.awayTeamName || '');
+      setEditRound(match.round || '');
       setEditHomeScore(match.homeScore || 0);
       setEditAwayScore(match.awayScore || 0);
-      setEditRound(match.round || '');
+      setTimeout(() => firstInputRef.current?.focus(), 100);
     };
 
-    const saveMatch = () => {
+    const saveMatch = async () => {
       if (!editingMatchId) return;
-      handleSaveBracket({
+      await handleSaveBracket({
         id: editingMatchId,
         homeTeamName: editHomeName,
         awayTeamName: editAwayName,
+        round: editRound,
         homeScore: editHomeScore,
-        awayScore: editAwayScore,
-        round: editRound
+        awayScore: editAwayScore
       });
       setEditingMatchId(null);
     };
 
-    const addCandidate = () => {
-      const details = TEAM_DETAILS[newCandidateTeam];
-      if (!details) return;
-      
-      if (adminCandidates.find(c => c.id === details.uid)) {
-        alert("Candidate already added.");
-        return;
-      }
+    const [aiCommand, setAiCommand] = useState('');
+    const [isAiLoading, setIsAiLoading] = useState(false);
 
-      const newCandidate: VotingCandidate = {
-        id: details.uid || uuidv4(),
-        name: details.fullName,
-        fcName: details.fcName
-      };
-      setAdminCandidates([...adminCandidates, newCandidate]);
-    };
-
-    const removeCandidate = (id: string) => {
-      setAdminCandidates(adminCandidates.filter(c => c.id !== id));
+    const handleAiSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!aiCommand.trim()) return;
+      setIsAiLoading(true);
+      await handleAdminAiCommand(aiCommand);
+      setAiCommand('');
+      setIsAiLoading(false);
     };
 
     return (
-      <motion.div
+      <motion.div 
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[70] flex items-center justify-center p-4 bg-[#000030]/95 backdrop-blur-md"
-        onClick={onClose}
+        className="fixed inset-0 z-[200] bg-[#00000a] text-white flex flex-col font-sans"
       >
-        <motion.div
-          initial={{ scale: 0.9, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl relative max-h-[90vh] flex flex-col"
-          onClick={e => e.stopPropagation()}
-        >
-          <div className="p-8 border-b border-white/10 flex justify-between items-center bg-white/5">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/20 rounded-2xl border border-yellow-500/30">
-                <Star className="w-6 h-6 text-yellow-400" />
-              </div>
-              <div>
-                <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none">Admin Panel</h2>
-                <p className="text-yellow-400/60 text-[10px] font-black uppercase tracking-widest mt-1">Manage Content</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
-              <X className="w-6 h-6" />
+        <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-20 gap-4">
+          <div className="flex items-center gap-3 md:gap-6 w-full md:w-auto overflow-x-auto no-scrollbar">
+            <button 
+              onClick={onClose}
+              className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 shrink-0"
+            >
+              <ArrowLeft className="w-4 md:w-5 h-4 md:h-5 text-blue-400 group-hover:-translate-x-1 transition-transform" />
+              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Back</span>
             </button>
+            <div className="h-6 md:h-8 w-[1px] bg-white/10 shrink-0" />
+            <div className="min-w-0 text-left">
+              <h2 className="text-lg md:text-2xl font-display font-black italic uppercase leading-none text-white tracking-tight truncate">Admin Terminal</h2>
+              <p className="text-blue-400/40 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] mt-0.5 md:mt-1 truncate max-w-[200px]">
+                {user?.email || 'System'} | {isAdmin ? 'AUTHORIZED' : 'ACCESS DENIED'}
+              </p>
+            </div>
           </div>
 
-          <div className="flex border-b border-white/10">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto">
             <button 
-              onClick={() => setActiveTab('voting')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'voting' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              onClick={() => setIsEditingMode(!isEditingMode)}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
             >
-              Voting
+              {isEditingMode ? 'Editing Enabled' : 'Editing Disabled'}
             </button>
-            <button 
-              onClick={() => setActiveTab('news')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'news' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
-            >
-              News
-            </button>
+            <div className="w-px bg-white/10 mx-2" />
             <button 
               onClick={() => setActiveTab('bracket')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'bracket' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'bracket' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
             </button>
             <button 
-              onClick={() => setActiveTab('stats')}
-              className={`flex-1 py-4 text-xs font-black uppercase tracking-widest transition-all focus:bg-white/10 outline-none ${activeTab === 'stats' ? 'text-white bg-white/10' : 'text-white/40 hover:text-white/60'}`}
+              onClick={() => setActiveTab('registrations')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'registrations' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
-              Stats
+              Applicants
+            </button>
+            <button 
+              onClick={() => setActiveTab('label')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'label' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Label
             </button>
           </div>
+        </div>
 
-          <div className="p-8 overflow-y-auto custom-scrollbar flex-1 space-y-8">
-            {activeTab === 'voting' && (
-              <>
-                {isAdmin && activeSession && (
-                  <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl mb-6">
-                    <span className="text-xs font-bold text-white">Show Results</span>
-                    <button 
-                      onClick={handleToggleResults}
-                      className={`w-12 h-6 rounded-full transition-all ${activeSession.showResults ? 'bg-green-500' : 'bg-white/10'}`}
-                    >
-                      <div className={`w-4 h-4 rounded-full bg-white transition-all ${activeSession.showResults ? 'ml-7' : 'ml-1'}`} />
-                    </button>
-                  </div>
-                )}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Session Title</label>
-                    <input 
-                      type="text"
-                      value={adminMatchday}
-                      onChange={(e) => setAdminMatchday(e.target.value)}
-                      placeholder="e.g. Matchday 1, Semi-Finals"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Voting Duration (Hours)</label>
-                    <input 
-                      type="number"
-                      value={adminHours}
-                      onChange={(e) => setAdminHours(Number(e.target.value))}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                    />
+        <div className="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-8 lg:p-12">
+          <div className="max-w-6xl mx-auto w-full">
+            <div className="mb-12 bg-blue-600/5 border border-blue-500/20 rounded-3xl p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
+                  <Star className="w-5 h-5 text-blue-400 animate-pulse" />
+                </div>
+                <div className="text-left">
+                  <h3 className="text-lg font-display font-black italic uppercase text-white">AI Tournament Assistant</h3>
+                  <p className="text-blue-400/40 text-[9px] uppercase tracking-widest">Natural Language Processing</p>
+                </div>
+              </div>
+              <form onSubmit={handleAiSubmit} className="flex gap-4">
+                <input 
+                  type="text" 
+                  value={aiCommand}
+                  onChange={e => setAiCommand(e.target.value)}
+                  placeholder="e.g. 'Team A vs Team B ended 3-2. Scorers: John x2, Mike x1' or 'Reset all matches'"
+                  className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all"
+                />
+                <button 
+                  disabled={isAiLoading}
+                  className="px-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-blue-600/20 flex items-center gap-3 shrink-0"
+                >
+                  {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
+                  Execute
+                </button>
+              </form>
+            </div>
+            {activeTab === 'bracket' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div className="space-y-12">
+                  <div>
+                    <h3 className="text-xl font-display font-black italic uppercase text-blue-400 mb-6 flex items-center gap-3">
+                      <Layout className="w-6 h-6" />
+                      Live Bracket Editor
+                    </h3>
+                    <div className="space-y-4">
+                      {['Qualifier Round', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
+                        const roundMatches = bracket.filter(m => m.round === round);
+                        if (roundMatches.length === 0) return null;
+                        return (
+                          <div key={round} className="space-y-4">
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 border-b border-white/5 pb-2">{round}</h4>
+                            <div className="grid grid-cols-1 gap-3">
+                              {roundMatches.map(match => (
+                                <div key={match.id} className={`p-4 md:p-5 rounded-2xl border transition-all ${editingMatchId === match.id ? 'bg-blue-600/10 border-blue-500' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+                                  {editingMatchId === match.id ? (
+                                    <div className="space-y-4">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                          <label className="text-[9px] font-black uppercase text-white/40">Home Team</label>
+                                          <input ref={firstInputRef} type="text" value={editHomeName} onChange={e => setEditHomeName(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <label className="text-[9px] font-black uppercase text-white/40">Away Team</label>
+                                          <input type="text" value={editAwayName} onChange={e => setEditAwayName(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
+                                        </div>
+                                      </div>
+                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        <div className="space-y-2">
+                                          <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
+                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
+                                        </div>
+                                        <div className="space-y-2">
+                                          <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
+                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
+                                        </div>
+                                        <div className="flex items-end gap-2">
+                                          <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-green-400 transition-all">Save</button>
+                                          <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-white/20 transition-all">Cancel</button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between group">
+                                      <div className="flex-1 space-y-2">
+                                        <div className="flex justify-between items-center bg-black/20 p-2 px-3 rounded-lg">
+                                          <span className="text-xs font-bold text-white/90">{match.homeTeamName}</span>
+                                          <span className="text-lg font-display font-black italic text-blue-400">{match.homeScore}</span>
+                                        </div>
+                                        <div className="flex justify-between items-center bg-black/20 p-2 px-3 rounded-lg">
+                                          <span className="text-xs font-bold text-white/90">{match.awayTeamName}</span>
+                                          <span className="text-lg font-display font-black italic text-blue-400">{match.awayScore}</span>
+                                        </div>
+                                      </div>
+                                      <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-blue-400 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
+                                        <Edit3 className="w-4 md:w-5 h-4 md:h-5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                         );
+                      })}
+                    </div>
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Select Candidate</label>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 items-end">
-                    <div className="md:col-span-3">
-                      <select 
-                        value={newCandidateTeam}
-                        onChange={(e) => setNewCandidateTeam(e.target.value)}
-                        className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none transition-all"
-                      >
-                        {TEAMS_LIST.map(team => (
-                          <option key={team} value={team} className="bg-[#000040]">{TEAM_DETAILS[team]?.fullName} ({team})</option>
-                        ))}
-                      </select>
-                    </div>
-                    <button 
-                      onClick={addCandidate}
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl p-3 flex items-center justify-center gap-2 font-black uppercase text-[10px] tracking-widest transition-all"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Add
-                    </button>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
-                    {adminCandidates.map(candidate => (
-                      <div key={candidate.id} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl group">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center font-black text-xs text-blue-400">
-                            {candidate.name[0]}
-                          </div>
-                          <div>
-                            <p className="text-xs font-bold text-white">{candidate.name}</p>
-                            <p className="text-[9px] font-black text-blue-400 uppercase tracking-widest">{candidate.fcName}</p>
-                          </div>
+                <div className="space-y-12">
+                  <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sticky top-0">
+                    <h3 className="text-xl font-display font-black italic uppercase text-blue-400 mb-6 flex items-center gap-3">
+                      <Settings className="w-6 h-6" />
+                      Global Config
+                    </h3>
+                    <div className="space-y-6">
+                      <div className="flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-2xl group">
+                        <div>
+                          <p className="text-sm font-bold text-white mb-1">Registration Portal</p>
+                          <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Enable or disable user applications</p>
                         </div>
                         <button 
-                          onClick={() => removeCandidate(candidate.id)}
-                          className="p-2 text-white/20 hover:text-red-400 transition-colors"
+                          onClick={handleToggleRegistration}
+                          disabled={isSavingAdmin}
+                          className={`w-14 h-8 rounded-full flex items-center p-1 transition-all ${config.registrationEnabled ? 'bg-green-500' : 'bg-white/10'}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-all ${config.registrationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                         </button>
                       </div>
-                    ))}
+
+                      <div className="p-6 bg-blue-600/10 border border-blue-500/20 rounded-2xl">
+                        <div className="flex items-center gap-3 mb-3">
+                          <Users className="w-5 h-5 text-blue-400" />
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Applicants</h4>
+                        </div>
+                        <p className="text-5xl font-display font-black italic text-white">{registrations.length}</p>
+                      </div>
+                    <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
+                      <div className="flex items-center gap-3 mb-4 text-red-400">
+                        <Trash2 className="w-5 h-5" />
+                        <h4 className="text-[10px] font-black uppercase tracking-widest">Danger Zone</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button 
+                          disabled={isResetting}
+                          onClick={() => {
+                            if (confirmReset === 'matches') {
+                              setIsResetting(true);
+                              handleAdminReset('matches').finally(() => setIsResetting(false));
+                              setConfirmReset(null);
+                            } else {
+                              setConfirmReset('matches');
+                            }
+                          }} 
+                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'matches' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                        >
+                          {isResetting && confirmReset === 'matches' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'matches' ? 'Confirm Reset Matches' : 'Reset Matches')}
+                        </button>
+                        <button 
+                          disabled={isResetting}
+                          onClick={() => {
+                            if (confirmReset === 'bracket') {
+                              setIsResetting(true);
+                              handleAdminReset('bracket').finally(() => setIsResetting(false));
+                              setConfirmReset(null);
+                            } else {
+                              setConfirmReset('bracket');
+                            }
+                          }} 
+                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'bracket' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                        >
+                          {isResetting && confirmReset === 'bracket' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'bracket' ? 'Confirm Reset Bracket' : 'Reset Bracket')}
+                        </button>
+                        <button 
+                          disabled={isResetting}
+                          onClick={() => {
+                            if (confirmReset === 'registrations') {
+                              setIsResetting(true);
+                              handleAdminReset('registrations').finally(() => setIsResetting(false));
+                              setConfirmReset(null);
+                            } else {
+                              setConfirmReset('registrations');
+                            }
+                          }} 
+                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'registrations' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                        >
+                          {isResetting && confirmReset === 'registrations' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'registrations' ? 'Confirm Reset Applicants' : 'Reset Applicants')}
+                        </button>
+                        <button 
+                          disabled={isResetting}
+                          onClick={() => {
+                            if (confirmReset === 'all') {
+                              setIsResetting(true);
+                              handleAdminReset('all').finally(() => setIsResetting(false));
+                              setConfirmReset(null);
+                            } else {
+                              setConfirmReset('all');
+                            }
+                          }} 
+                          className={`relative px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-800 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
+                        >
+                          {isResetting && confirmReset === 'all' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'all' ? 'Confirm PURGE ALL' : 'Purge All Data')}
+                        </button>
+                      </div>
+                      {confirmReset && (
+                        <p className="mt-4 text-[9px] font-black uppercase text-red-400/60 text-center animate-bounce">Click again to confirm action</p>
+                      )}
+                    </div>
+                    
+                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-6">
+                      <div className="flex items-center gap-3 mb-4 text-yellow-500">
+                        <BarChart2 className="w-5 h-5" />
+                        <h4 className="text-[10px] font-black uppercase tracking-widest">Table Analysis</h4>
+                      </div>
+                      <button 
+                        onClick={handleAnalyzeQualification}
+                        className="w-full px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500/20 transition-all flex items-center justify-center gap-2"
+                      >
+                        <RotateCcw className="w-4 h-4" />
+                        Calculate Q/E Statuses
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </>
-            )}
-            {activeTab === 'news' && (
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Category</label>
-                    <select 
-                      value={newsCategory}
-                      onChange={(e) => setNewsCategory(e.target.value)}
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                    >
-                      <option value="MATCH REPORT" className="bg-[#000040]">Match Report</option>
-                      <option value="TOURNAMENT UPDATE" className="bg-[#000040]">Tournament Update</option>
-                      <option value="PLAYER SPOTLIGHT" className="bg-[#000040]">Player Spotlight</option>
-                      <option value="BREAKING NEWS" className="bg-[#000040]">Breaking News</option>
-                    </select>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Date</label>
-                    <input 
-                      type="text"
-                      value={newsDate}
-                      onChange={(e) => setNewsDate(e.target.value)}
-                      placeholder="e.g. 28th March 2026"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Title</label>
-                  <input 
-                    type="text"
-                    value={newsTitle}
-                    onChange={(e) => setNewsTitle(e.target.value)}
-                    placeholder="Enter news title"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Excerpt</label>
-                  <textarea 
-                    value={newsExcerpt}
-                    onChange={(e) => setNewsExcerpt(e.target.value)}
-                    placeholder="Enter news excerpt"
-                    rows={4}
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all resize-none"
-                  />
-                </div>
-                <button 
-                  onClick={handlePostNews}
-                  disabled={isPostingNews}
-                  className="w-full bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all shadow-lg shadow-blue-600/20"
-                >
-                  {isPostingNews ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  Post Update
-                </button>
               </div>
-            )}
-            {activeTab === 'bracket' && (
-              <div className="space-y-6">
+            </div>
+          )}
+
+            {activeTab === 'registrations' && (
+              <div className="space-y-8">
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 gap-4">
+                   <div className="text-center sm:text-left">
+                    <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Registered Users</h3>
+                    <p className="text-blue-400/40 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review applicant field data</p>
+                   </div>
+                   <div className="px-4 md:px-6 py-2 md:py-3 bg-blue-600/20 border border-blue-500/30 rounded-2xl flex items-center gap-3">
+                      <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-widest">Active applicants:</span>
+                      <span className="text-xl md:text-2xl font-display font-black italic text-white">{registrations.length}</span>
+                   </div>
+                </div>
+
                 <div className="grid grid-cols-1 gap-4">
-                  {['Qualifier Round', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
-                    const roundMatches = bracket.filter(m => m.round === round);
-                    if (roundMatches.length === 0) return null;
-                    return (
-                      <div key={round} className="space-y-3">
-                        <h3 className="text-[10px] font-black uppercase tracking-widest text-blue-400/60 border-b border-white/5 pb-1">{round}</h3>
-                        <div className="grid grid-cols-1 gap-3">
-                          {roundMatches.map(match => (
-                            <div key={match.id} className="p-4 bg-white/5 border border-white/10 rounded-xl">
-                              {editingMatchId === match.id ? (
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                      <label className="text-[9px] font-black uppercase text-white/40">Home Team</label>
-                                      <input 
-                                        ref={firstInputRef}
-                                        type="text" 
-                                        value={editHomeName} 
-                                        onChange={e => setEditHomeName(e.target.value)}
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter') saveMatch();
-                                          if (e.key === 'Escape') setEditingMatchId(null);
-                                        }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <label className="text-[9px] font-black uppercase text-white/40">Away Team</label>
-                                      <input 
-                                        type="text" 
-                                        value={editAwayName} 
-                                        onChange={e => setEditAwayName(e.target.value)}
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter') saveMatch();
-                                          if (e.key === 'Escape') setEditingMatchId(null);
-                                        }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="space-y-1">
-                                    <label className="text-[9px] font-black uppercase text-white/40">Round</label>
-                                    <input 
-                                      type="text" 
-                                      value={editRound} 
-                                      onChange={e => setEditRound(e.target.value)}
-                                      onKeyDown={e => {
-                                        if (e.key === 'Enter') saveMatch();
-                                        if (e.key === 'Escape') setEditingMatchId(null);
-                                      }}
-                                      className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
-                                    />
-                                  </div>
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-1">
-                                      <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
-                                      <input 
-                                        type="text" 
-                                        value={editHomeScore} 
-                                        onChange={e => setEditHomeScore(parseInt(e.target.value) || 0)}
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter') saveMatch();
-                                          if (e.key === 'Escape') setEditingMatchId(null);
-                                        }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
-                                      />
-                                    </div>
-                                    <div className="space-y-1">
-                                      <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
-                                      <input 
-                                        type="text" 
-                                        value={editAwayScore} 
-                                        onChange={e => setEditAwayScore(parseInt(e.target.value) || 0)}
-                                        onKeyDown={e => {
-                                          if (e.key === 'Enter') saveMatch();
-                                          if (e.key === 'Escape') setEditingMatchId(null);
-                                        }}
-                                        className="w-full bg-white/5 border border-white/10 rounded-lg p-2 text-xs text-white focus:border-blue-500 outline-none"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className="flex gap-2">
-                                    <button 
-                                      onClick={saveMatch}
-                                      disabled={isSavingBracket}
-                                      className="flex-1 bg-green-600 hover:bg-green-700 text-white rounded-lg py-2 text-[10px] font-black uppercase tracking-widest transition-all"
-                                    >
-                                      {isSavingBracket ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : "Save Match"}
-                                    </button>
-                                    <button 
-                                      onClick={() => setEditingMatchId(null)}
-                                      className="px-4 bg-white/5 hover:bg-white/10 text-white rounded-lg py-2 text-[10px] font-black uppercase tracking-widest transition-all"
-                                    >
-                                      Cancel
-                                    </button>
-                                  </div>
-                                </div>
-                              ) : (
-                                <div className="flex items-center justify-between">
-                                  <div className="flex-1">
-                                    <div className="flex justify-between items-center mb-1">
-                                      <span className="text-xs font-bold text-white/80">{match.homeTeamName}</span>
-                                      <span className="text-xs font-mono font-bold text-blue-400">{match.homeScore}</span>
-                                    </div>
-                                    <div className="flex justify-between items-center">
-                                      <span className="text-xs font-bold text-white/80">{match.awayTeamName}</span>
-                                      <span className="text-xs font-mono font-bold text-blue-400">{match.awayScore}</span>
-                                    </div>
-                                  </div>
-                                  <button 
-                                    onClick={() => startEditingMatch(match)}
-                                    aria-label={`Edit match ${match.homeTeamName} vs ${match.awayTeamName}`}
-                                    className="ml-4 p-2 bg-white/5 hover:bg-white/10 rounded-lg text-blue-400 transition-all focus:ring-2 focus:ring-blue-500 outline-none"
-                                  >
-                                    <Plus className="w-4 h-4" />
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          ))}
+                  {registrations.length === 0 ? (
+                    <div className="p-20 text-center bg-white/5 border border-white/5 rounded-3xl">
+                      <Users className="w-16 h-16 text-white/10 mx-auto mb-4" />
+                      <p className="text-white/40 font-bold">No registrations yet.</p>
+                    </div>
+                  ) : (
+                    registrations.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(reg => (
+                      <div key={reg.id} className="bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 hover:bg-white/10 transition-all group">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4 md:gap-6 items-center">
+                          <div className="flex items-center gap-2">
+                             <div className="mr-2">
+                               <p className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-0.5">Status</p>
+                               <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                                 reg.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                                 reg.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                 'bg-yellow-500/20 text-yellow-500'
+                               }`}>{reg.status}</span>
+                             </div>
+                             <button 
+                               onClick={() => handleApproveRegistration(reg.id)}
+                               className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-xl"
+                               title="Approve"
+                             >
+                               <Check className="w-4 h-4" />
+                             </button>
+                             <button 
+                               onClick={() => handleRejectRegistration(reg.id)}
+                               className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-xl"
+                               title="Reject"
+                             >
+                               <X className="w-4 h-4" />
+                             </button>
+                             <button 
+                               onClick={() => {
+                                 if (confirmDeleteId === reg.id) {
+                                   handleDeleteRegistration(reg.id);
+                                   setConfirmDeleteId(null);
+                                 } else {
+                                   setConfirmDeleteId(reg.id);
+                                 }
+                               }}
+                               className={`p-2 transition-all rounded-xl ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
+                               title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
+                             >
+                               <Trash2 className="w-4 h-4" />
+                             </button>
+                          </div>
+                          <div>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">FC Name</p>
+                             <p className="text-xs md:text-sm font-bold text-white">{reg.fcName}</p>
+                          </div>
+                          <div>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Age</p>
+                             <p className="text-xs md:text-sm font-bold text-white">{reg.age} years</p>
+                          </div>
+                          <div>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Team OVR</p>
+                             <div className="flex items-center gap-2">
+                               <span className="text-lg md:text-xl font-display font-black italic text-yellow-500">{reg.teamOvr}</span>
+                               <span className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-widest">Rating</span>
+                             </div>
+                          </div>
+                          <div>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Experience</p>
+                             <p className="text-[9px] md:text-[10px] font-black text-white/60 uppercase">{reg.experience}</p>
+                          </div>
                         </div>
                       </div>
-                    );
-                  })}
+                    ))
+                  )}
                 </div>
               </div>
             )}
-            {activeTab === 'stats' && (
-              <div className="space-y-8">
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Total Matches</p>
-                    <p className="text-2xl font-display font-black italic text-white">{matches.filter(m => m.status === 'finished').length}</p>
-                  </div>
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Total Goals</p>
-                    <p className="text-2xl font-display font-black italic text-blue-400">
-                      {matches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0)}
-                    </p>
-                  </div>
-                  <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Avg Goals/Match</p>
-                    <p className="text-2xl font-display font-black italic text-white">
-                      {(matches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0) / (matches.filter(m => m.status === 'finished').length || 1)).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
+            
+            {activeTab === 'label' && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Date Label Management</h3>
                 <div className="space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Tournament Records</h3>
-                  <div className="grid grid-cols-1 gap-3">
-                    {(() => {
-                      const finishedMatches = matches.filter(m => m.status === 'finished');
-                      if (finishedMatches.length === 0) return <p className="text-xs text-white/40 italic">No finished matches yet.</p>;
-
-                      const biggestWin = [...finishedMatches].sort((a, b) => Math.abs((b.homeScore || 0) - (b.awayScore || 0)) - Math.abs((a.homeScore || 0) - (a.awayScore || 0)))[0];
-                      const highestScoringMatch = [...finishedMatches].sort((a, b) => ((b.homeScore || 0) + (b.awayScore || 0)) - ((a.homeScore || 0) + (a.awayScore || 0)))[0];
-                      
-                      const playerGoalsInMatch: { player: string, goals: number, match: Match, team: string }[] = [];
-                      finishedMatches.forEach(m => {
-                        m.homeScorers?.forEach(s => playerGoalsInMatch.push({ player: s.playerName, goals: s.goals, match: m, team: m.homeTeamId }));
-                        m.awayScorers?.forEach(s => playerGoalsInMatch.push({ player: s.playerName, goals: s.goals, match: m, team: m.awayTeamId }));
-                      });
-                      const topPlayerInMatch = playerGoalsInMatch.sort((a, b) => b.goals - a.goals)[0];
-
-                      return (
-                        <>
-                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Biggest Win</p>
-                              <p className="text-xs font-bold text-white">{biggestWin.homeScore} - {biggestWin.awayScore}</p>
-                              <p className="text-[9px] text-blue-400 uppercase font-black">{biggestWin.homeTeamId} vs {biggestWin.awayTeamId}</p>
-                            </div>
-                            <Trophy className="w-5 h-5 text-yellow-500/40" />
-                          </div>
-                          <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Highest Scoring Match</p>
-                              <p className="text-xs font-bold text-white">{(highestScoringMatch.homeScore || 0) + (highestScoringMatch.awayScore || 0)} Goals</p>
-                              <p className="text-[9px] text-blue-400 uppercase font-black">{highestScoringMatch.homeTeamId} {highestScoringMatch.homeScore} - {highestScoringMatch.awayScore} {highestScoringMatch.awayTeamId}</p>
-                            </div>
-                            <BarChart2 className="w-5 h-5 text-blue-500/40" />
-                          </div>
-                          {topPlayerInMatch && (
-                            <div className="p-4 bg-white/5 border border-white/10 rounded-2xl flex justify-between items-center">
-                              <div>
-                                <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Most Goals by Player in a Match</p>
-                                <p className="text-xs font-bold text-white">{topPlayerInMatch.player} ({topPlayerInMatch.goals} Goals)</p>
-                                <p className="text-[9px] text-blue-400 uppercase font-black">For {topPlayerInMatch.team} vs {topPlayerInMatch.match.homeTeamId === topPlayerInMatch.team ? topPlayerInMatch.match.awayTeamId : topPlayerInMatch.match.homeTeamId}</p>
-                              </div>
-                              <Award className="w-5 h-5 text-purple-500/40" />
-                            </div>
-                          )}
-                        </>
-                      );
-                    })()}
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <h3 className="text-xs font-black uppercase tracking-widest text-blue-400">Team Stats</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Best Attack (Most Goals)</p>
-                      {standings.slice().sort((a, b) => b.gf - a.gf).slice(0, 3).map((t, i) => (
-                        <div key={t.id} className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-white/80">{i+1}. {t.name}</span>
-                          <span className="text-xs font-bold text-blue-400">{t.gf}</span>
-                        </div>
-                      ))}
+                  {Object.keys(matchesByDay).sort().map(date => (
+                    <div key={date} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                      <span className="text-sm font-bold text-white">{date}</span>
+                      <select 
+                        value={matchLabels[date] || 'scheduled'}
+                        onChange={(e) => updateMatchLabel(date, e.target.value)}
+                        className="bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-bold uppercase tracking-widest"
+                      >
+                        <option value="scheduled">Scheduled</option>
+                        <option value="ongoing">Ongoing</option>
+                        <option value="finished">Final</option>
+                      </select>
                     </div>
-                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Best Defense (Least GA)</p>
-                      {standings.slice().sort((a, b) => a.ga - b.ga).slice(0, 3).map((t, i) => (
-                        <div key={t.id} className="flex justify-between items-center mb-1">
-                          <span className="text-xs text-white/80">{i+1}. {t.name}</span>
-                          <span className="text-xs font-bold text-green-400">{t.ga}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                  ))}
                 </div>
               </div>
             )}
           </div>
-
-          <div className="p-8 border-t border-white/10 bg-white/5 flex flex-col md:flex-row gap-4">
-            <button 
-              onClick={handleSaveAdmin}
-              disabled={isSavingAdmin}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all shadow-lg shadow-blue-600/20"
-            >
-              {isSavingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-              {activeSession ? "Update Session" : "Start New Vote"}
-            </button>
-            {activeSession && (
-              <button 
-                onClick={handleToggleResults}
-                disabled={isSavingAdmin}
-                className={`md:w-1/3 border rounded-2xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all ${
-                  (activeSession.showResults ?? true) 
-                    ? "bg-orange-600/20 hover:bg-orange-600/30 border-orange-500/30 text-orange-400" 
-                    : "bg-green-600/20 hover:bg-green-600/30 border-green-500/30 text-green-400"
-                }`}
-              >
-                {isSavingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : ((activeSession.showResults ?? true) ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />)}
-                {(activeSession.showResults ?? true) ? "Hide Results" : "Show Results"}
-              </button>
-            )}
-            {activeSession && (
-              <button 
-                onClick={handleEndVote}
-                disabled={isSavingAdmin}
-                className={`md:w-1/3 rounded-2xl py-4 flex items-center justify-center gap-3 font-black uppercase text-xs tracking-[0.2em] transition-all ${
-                  activeSession.isActive 
-                    ? "bg-red-600/20 hover:bg-red-600/30 border border-red-500/30 text-red-400" 
-                    : "bg-blue-600/20 hover:bg-blue-600/30 border border-blue-500/30 text-blue-400"
-                }`}
-              >
-                {isSavingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : (activeSession.isActive ? <X className="w-4 h-4" /> : <RotateCcw className="w-4 h-4" />)}
-                {activeSession.isActive ? "End Vote" : "Reset Vote"}
-              </button>
-            )}
-          </div>
-        </motion.div>
+        </div>
       </motion.div>
     );
   };
@@ -2323,22 +1265,25 @@ const NEWS_POSTS = [
     );
   };
 
+  // Main app component follows...
+
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'stats' | 'hallOfFame' | 'news'>('fixtures');
-  const [activeMonth, setActiveMonth] = useState<'April' | 'May'>('April');
-  const [interestedCount, setInterestedCount] = useState(0);
-  const [hasInterested, setHasInterested] = useState(false);
-  const [hofMonth, setHofMonth] = useState<'April' | 'May'>('April');
-  const [bracketMonth, setBracketMonth] = useState<'April' | 'May'>('May');
+  const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'registration' | 'stats' | 'campaign'>('fixtures');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const teams = useMemo(() => INITIAL_TEAMS, []);
-  const matches = useMemo(() => getMatchesFromSchedule(teams), [teams]);
+
+  const [dbTeams, setDbTeams] = useState<Team[]>([]);
+  const [dbMatches, setDbMatches] = useState<Match[]>([]);
+  const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [bracket, setBracket] = useState<BracketMatch[]>([]);
+  const [isSubmittingImg, setIsSubmittingImg] = useState(false);
+  const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
+
+  const teams = useMemo(() => dbTeams, [dbTeams]);
+  const matches = useMemo(() => dbMatches, [dbMatches]);
   const hofStats = useMemo(() => {
-    const monthMatches = matches.filter(m => {
-      if (hofMonth === 'April') return m.matchday && m.matchday <= 6;
-      return m.id.startsWith('may-');
-    });
+    const monthMatches = matches;
     
     const totalGoals = monthMatches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0);
     const totalMatches = monthMatches.filter(m => m.status === 'finished').length;
@@ -2423,163 +1368,252 @@ export default function App() {
       mostShots: getTopTeam('shots'),
       mostShotsOnTarget: getTopTeam('shotsOnTarget')
     };
-  }, [hofMonth, matches, teams]);
+  }, [matches, teams]);
   
-  const mayMatches = useMemo(() => [
-    {
-      id: 'may-m1',
-      matchNumber: 1,
-      matchday: 1,
-      homeTeamId: 'team-10', // PRIYAM
-      awayTeamId: 'team-5',  // SAMRIDDHA
-      homeScore: 4,
-      awayScore: 2,
-      homeScorers: [{ playerName: 'Vini Jr.', goals: 1 }, { playerName: 'Bale', goals: 1 }, { playerName: 'Cruyff', goals: 2 }],
-      awayScorers: [{ playerName: 'Kane', goals: 1 }, { playerName: 'Zico', goals: 1 }],
-      homeStats: { shots: 5, shotsOnTarget: 5, possession: 52, passAccuracy: 88, fouls: 0, offsides: 0 },
-      awayStats: { shots: 5, shotsOnTarget: 4, possession: 48, passAccuracy: 95, fouls: 1, offsides: 0 },
-      date: '1st May 2026',
-      status: 'finished',
-    },
-    {
-      id: 'may-m2',
-      matchNumber: 2,
-      matchday: 1,
-      homeTeamId: 'team-10', // PRIYAM
-      awayTeamId: 'team-2',  // ARYAN
-      homeScore: 3,
-      awayScore: 2,
-      homeScorers: [{ playerName: 'Cruyff', goals: 2 }, { playerName: 'Bale', goals: 1 }],
-      awayScorers: [{ playerName: 'Drogba', goals: 1 }, { playerName: 'Frimpong', goals: 1 }],
-      homeStats: { shots: 7, shotsOnTarget: 7, possession: 50, passAccuracy: 81, fouls: 0, offsides: 0 },
-      awayStats: { shots: 3, shotsOnTarget: 3, possession: 50, passAccuracy: 80, fouls: 0, offsides: 1 },
-      date: '1st May 2026',
-      status: 'finished',
-    },
-    {
-      id: 'may-m3',
-      matchNumber: 3,
-      matchday: 1,
-      homeTeamId: 'team-2',  // ARYAN
-      awayTeamId: 'team-10', // PRIYAM
-      homeScore: 1,
-      awayScore: 1,
-      homeScorers: [{ playerName: 'Drogba', goals: 1 }],
-      awayScorers: [{ playerName: 'C. Ronaldo', goals: 1 }],
-      homeStats: { shots: 1, shotsOnTarget: 1, possession: 60, passAccuracy: 82, fouls: 1, offsides: 0 },
-      awayStats: { shots: 1, shotsOnTarget: 1, possession: 40, passAccuracy: 78, fouls: 1, offsides: 0 },
-      date: '1st May 2026',
-      status: 'finished',
-    },
-    {
-      id: 'may-m4',
-      matchNumber: 4,
-      matchday: 1,
-      homeTeamId: 'team-2',  // ARYAN
-      awayTeamId: 'team-10', // PRIYAM
-      homeScore: 2,
-      awayScore: 2,
-      homeScorers: [{ playerName: 'Drogba', goals: 2 }],
-      awayScorers: [{ playerName: 'Cruyff', goals: 1 }, { playerName: 'C. Ronaldo', goals: 1 }],
-      homeStats: { shots: 4, shotsOnTarget: 4, possession: 49, passAccuracy: 86, fouls: 0, offsides: 0 },
-      awayStats: { shots: 4, shotsOnTarget: 4, possession: 51, passAccuracy: 97, fouls: 0, offsides: 0 },
-      date: '1st May 2026',
-      status: 'finished',
-    },
-    {
-      id: 'may-m5',
-      matchNumber: 5,
-      matchday: 1,
-      homeTeamId: 'team-10', // PRIYAM
-      awayTeamId: 'team-4',  // RANAJAY
-      homeScore: 1,
-      awayScore: 0,
-      homeScorers: [{ playerName: 'Gabriel', goals: 1 }],
-      awayScorers: [],
-      homeStats: { shots: 5, shotsOnTarget: 5, possession: 55, passAccuracy: 82, fouls: 0, offsides: 0 },
-      awayStats: { shots: 3, shotsOnTarget: 3, possession: 45, passAccuracy: 86, fouls: 0, offsides: 0 },
-      date: '1st May 2026',
-      status: 'finished',
-    }
-  ], [teams]);
-
-  const standingsApril = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
-  const standingsMay = useMemo(() => calculateStandings(teams, mayMatches), [teams, mayMatches]);
-  const standings = activeMonth === 'April' ? standingsApril : standingsMay;
-  
-  // Stats and Clean Sheets are cumulative for the whole tournament
-  const allTournamentMatches = useMemo(() => [...matches, ...mayMatches], [matches, mayMatches]);
-  const stats = useMemo(() => calculateStats(teams, allTournamentMatches).slice(0, 10), [teams, allTournamentMatches]);
-  const cleanSheets = useMemo(() => calculateCleanSheets(teams, allTournamentMatches).slice(0, 10), [teams, allTournamentMatches]);
+  const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
+  const stats = useMemo(() => calculateStats(teams, matches).slice(0, 10), [teams, matches]);
+  const cleanSheets = useMemo(() => calculateCleanSheets(teams, matches).slice(0, 10), [teams, matches]);
   const upcomingRef = React.useRef<HTMLDivElement>(null);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Firebase State
   const [user, setUser] = useState<User | null>(null);
-  const [activeSession, setActiveSession] = useState<VotingSession | null>(null);
-  const [sessionVotes, setSessionVotes] = useState<Record<string, number>>({});
-  const [totalVotes, setTotalVotes] = useState(0);
-  const [hasVoted, setHasVoted] = useState<boolean>(false);
-  const [isVotingModalOpen, setIsVotingModalOpen] = useState(false);
-  const [isVoting, setIsVoting] = useState(false);
-  const [votedCandidateId, setVotedCandidateId] = useState<string | null>(null);
-  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+  const [config, setConfig] = useState<Config>({ registrationEnabled: false });
+  const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
+  const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
+  const [hasRegistered, setHasRegistered] = useState(false);
+  const [matchLabels, setMatchLabels] = useState<Record<string, string>>({}); // date -> status
+  const [qualificationStatus, setQualificationStatus] = useState<Record<string, string>>({});
 
-  const isAdmin = user?.email === 'webblogger82@gmail.com';
-  console.log("App.tsx isAdmin:", isAdmin);
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'match_labels'), (snapshot) => {
+      const labels: Record<string, string> = {};
+      snapshot.forEach(doc => labels[doc.id] = doc.data().status);
+      setMatchLabels(labels);
+    });
+    return unsub;
+  }, []);
 
-  const [adminMatchday, setAdminMatchday] = useState<string | number>('Matchday 1');
-  const [adminCandidates, setAdminCandidates] = useState<VotingCandidate[]>([]);
-  const [adminHours, setAdminHours] = useState(12);
-  const [adminShowResults, setAdminShowResults] = useState(true);
-  const [isSavingAdmin, setIsSavingAdmin] = useState(false);
-  const [news, setNews] = useState<News[]>([]);
-  const [visitCount, setVisitCount] = useState<number>(0);
-  const [newsCategory, setNewsCategory] = useState('MATCH REPORT');
-  const [newsDate, setNewsDate] = useState(new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }));
-  const [newsTitle, setNewsTitle] = useState('');
-  const [newsExcerpt, setNewsExcerpt] = useState('');
-  const [isPostingNews, setIsPostingNews] = useState(false);
-  const [bracket, setBracket] = useState<BracketMatch[]>([]);
-  const [isSavingBracket, setIsSavingBracket] = useState(false);
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'config', 'qualification'), (docSnap) => {
+      if (docSnap.exists() && docSnap.data().statuses) {
+        setQualificationStatus(docSnap.data().statuses);
+      }
+    });
+    return unsub;
+  }, []);
 
-  const handlePostNews = async () => {
+  const handleAnalyzeQualification = async () => {
     if (!isAdmin) return;
-    if (!newsTitle || !newsExcerpt) {
-      alert("Please fill in all fields.");
-      return;
-    }
-    setIsPostingNews(true);
     try {
-      const newsId = uuidv4();
-      await setDoc(doc(db, 'news', newsId), {
-        id: newsId,
-        category: newsCategory,
-        date: newsDate,
-        title: newsTitle,
-        excerpt: newsExcerpt,
-        timestamp: Date.now()
+      const K = 8;
+      const remainingMatches: Record<string, number> = {};
+      
+      INITIAL_TEAMS.forEach(t => {
+         let played = 0;
+         matches.forEach(m => {
+            if (m.matchday && m.matchday < 5 && m.status === 'finished') {
+               if (m.homeTeamId === t.id || m.awayTeamId === t.id) played++;
+            }
+         });
+         let totalFixtures = 0;
+         matches.forEach(m => {
+            if (m.matchday && m.matchday < 5 && (m.homeTeamId === t.id || m.awayTeamId === t.id)) totalFixtures++;
+         });
+         remainingMatches[t.id] = totalFixtures - played;
       });
-      setNewsTitle('');
-      setNewsExcerpt('');
-      alert("News posted successfully!");
+
+      const currentStandings = calculateStandings(INITIAL_TEAMS, matches);
+      // Sort to determine current ranks
+      currentStandings.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+
+      const statuses: Record<string, string> = {};
+      
+      currentStandings.forEach(t => {
+         const currentPoints = t.points;
+         const maxPoints = currentPoints + (remainingMatches[t.id] * 3);
+         
+         const otherTeamsMaxPoints = currentStandings
+             .filter(other => other.id !== t.id)
+             .map(other => other.points + (remainingMatches[other.id] * 3))
+             .sort((a, b) => b - a);
+             
+         const eighthBestOther = otherTeamsMaxPoints[K - 1];
+         
+         if (currentPoints > eighthBestOther) {
+             statuses[t.id] = 'Q';
+         } else {
+             const currentEighthPoints = currentStandings[K - 1]?.points || 0;
+             if (maxPoints < currentEighthPoints) {
+                 statuses[t.id] = 'E';
+             }
+         }
+      });
+
+      await setDoc(doc(db, 'config', 'qualification'), { statuses });
+      alert("Table analyzed successfully. Qualification statuses updated.");
     } catch (error) {
-      console.error("Error posting news:", error);
-      alert("Failed to post news.");
-    } finally {
-      setIsPostingNews(false);
+      console.error("Qualification analysis failed:", error);
+      alert("Failed to analyze qualification.");
     }
   };
 
-  const handleSaveBracket = async (match: BracketMatch) => {
-    console.log("handleSaveBracket called with:", match);
+  const updateMatchLabel = async (date: string, status: string) => {
+    if (!isAdmin) return;
+    await setDoc(doc(db, 'match_labels', date), { status }, { merge: true });
+  };
+  const [isEditingMode, setIsEditingMode] = useState(false);
+  const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
+
+  const isAdmin = useMemo(() => {
+    const isEmailAdmin = user?.email === 'webblogger82@gmail.com';
+    // Optional additional check if we ever want to trust the DB role prop
+    return isEmailAdmin;
+  }, [user]);
+
+  // For debugging, only shown in development console
+  useEffect(() => {
+    if (user) {
+      console.log("Admin Status Check:", { email: user.email, isAdmin });
+    }
+  }, [user, isAdmin]);
+
+  const [isSavingAdmin, setIsSavingAdmin] = useState(false);
+  const [visitCount, setVisitCount] = useState<number>(0);
+  const [isSavingBracket, setIsSavingBracket] = useState(false);
+  const [siteContent, setSiteContent] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    const q = query(collection(db, 'site_content'));
+    return onSnapshot(q, (snapshot) => {
+      const content: Record<string, any> = {};
+      snapshot.forEach(doc => {
+        content[doc.id] = doc.data(); // Store whole object
+      });
+      setSiteContent(content);
+    });
+  }, []);
+
+  const updateSiteContent = async (id: string, content: string, isImage: boolean = false) => {
+    if (!isAdmin) return;
+    try {
+      await setDoc(doc(db, 'site_content', id), { 
+        [isImage ? 'imageUrl' : 'text']: content, 
+        updatedAt: serverTimestamp() 
+      }, { merge: true });
+    } catch (err) {
+      console.error("Failed to update site content:", err);
+    }
+  };
+
+  const EditableText = ({ 
+    id, 
+    defaultText, 
+    as: Component = 'span', 
+    className = "", 
+    isAdmin,
+    isImage = false 
+  }: { 
+    id: string, 
+    defaultText: string, 
+    as?: any, 
+    className?: string, 
+    isAdmin?: any,
+    isImage?: boolean 
+  }) => {
+    const data = siteContent[id] || {};
+    const text = data.text || defaultText;
+    const imageUrl = data.imageUrl;
+    const [isEditing, setIsEditing] = useState(false);
+    const [tempContent, setTempContent] = useState(isImage ? imageUrl : text);
+
+    useEffect(() => {
+      setTempContent(isImage ? imageUrl : text);
+    }, [text, imageUrl, isImage]);
+
+    const handleSave = async () => {
+      if (!isAdmin) return;
+      try {
+        await updateSiteContent(id, tempContent, isImage);
+        setIsEditing(false);
+      } catch (err) {
+        console.error("Save failed:", err);
+      }
+    };
+
+    if (isEditing && isAdmin) {
+      return (
+        <div className="inline-flex items-center gap-2 group/edit-mode">
+          <input 
+            type="text"
+            value={tempContent || ''}
+            onChange={(e) => setTempContent(e.target.value)}
+            className="bg-white/20 border border-blue-500 rounded p-1 outline-none text-white text-xs font-sans"
+            autoFocus
+            placeholder={isImage ? "Image URL" : "Text"}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleSave();
+              if (e.key === 'Escape') setIsEditing(false);
+            }}
+          />
+          <div className="flex flex-col gap-1">
+            <button onClick={handleSave} className="p-1 bg-green-500 rounded text-black hover:bg-green-400">
+              <Check className="w-3 h-3" />
+            </button>
+            <button onClick={() => setIsEditing(false)} className="p-1 bg-red-500 rounded text-white hover:bg-red-400">
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <span className={`group/edit relative inline-flex items-center ${className}`}>
+        {isImage ? (
+          <img src={imageUrl || defaultText} alt={id} className={className} referrerPolicy="no-referrer" />
+        ) : (
+          <Component>{text}</Component>
+        )}
+        {isAdmin && isEditingMode && (
+          <button 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setTempContent(isImage ? imageUrl : text);
+              setIsEditing(true);
+            }}
+            className="p-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-all scale-75 absolute -right-8 top-1/2 -translate-y-1/2 z-[100] shadow-xl border border-blue-400"
+            title={isImage ? "Edit Image" : "Edit Text"}
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+          </button>
+        )}
+      </span>
+    );
+  };
+
+  const handleToggleRegistration = async () => {
+    if (!isAdmin) return;
+    setIsSavingAdmin(true);
+    try {
+      await setDoc(doc(db, 'config', 'system'), {
+        registrationEnabled: !config.registrationEnabled
+      }, { merge: true });
+    } catch (error) {
+      console.error("Error toggling registration:", error);
+      alert("Failed to toggle registration.");
+    } finally {
+      setIsSavingAdmin(false);
+    }
+  };
+
+  const handleSaveBracket = async (bracketMatch: BracketMatch) => {
     if (!isAdmin) return;
     setIsSavingBracket(true);
     try {
-      const matchWithMonth = { ...match, month: bracketMonth };
-      await setDoc(doc(db, 'bracket', `${bracketMonth.toLowerCase()}_${match.id}`), matchWithMonth);
-      console.log("Bracket match saved successfully");
+      await setDoc(doc(db, 'bracket', bracketMatch.id), bracketMatch, { merge: true });
     } catch (error) {
       console.error("Error saving bracket match:", error);
       alert("Failed to save bracket match.");
@@ -2588,33 +1622,344 @@ export default function App() {
     }
   };
 
-  const handleInterested = async () => {
-    if (hasInterested) return;
+  const handleDeleteMatch = async (id: string) => {
+    if (!isAdmin) return;
     try {
-      const docRef = doc(db, 'stats', 'may_event');
-      const docSnap = await getDoc(docRef);
-      if (!docSnap.exists()) {
-        await setDoc(docRef, { interestedCount: 1 });
-      } else {
-        await updateDoc(docRef, { interestedCount: increment(1) });
-      }
-      setHasInterested(true);
-      localStorage.setItem('hasInterestedMayEvent', 'true');
+      await deleteDoc(doc(db, 'matches', id));
     } catch (error) {
-      console.error("Error updating interested count:", error);
+      console.error("Error deleting match:", error);
+      alert("Failed to delete match.");
+    }
+  };
+
+  const handleUpdateMatch = async (match: Match) => {
+    if (!isAdmin) return;
+    try {
+      await updateDoc(doc(db, 'matches', match.id), { ...match });
+    } catch (error) {
+      console.error("Error updating match:", error);
+      alert("Failed to update match.");
+    }
+  };
+
+  const handleApproveRegistration = async (id: string) => {
+    if (!isAdmin) {
+      alert("Permission denied");
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'registrations', id), { status: 'approved' });
+      alert("Registration approved!");
+    } catch (error) {
+      console.error("Approval failed:", error);
+      alert("Approval failed: " + (error as any).message);
+    }
+  };
+
+  const handleDeleteRegistration = async (id: string) => {
+    if (!isAdmin) {
+      alert("Permission denied");
+      return;
+    }
+    try {
+      await deleteDoc(doc(db, 'registrations', id));
+      alert("Registration deleted!");
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Delete failed: " + (error as any).message);
+    }
+  };
+
+  const handleRejectRegistration = async (id: string) => {
+    if (!isAdmin) {
+      alert("Permission denied");
+      return;
+    }
+    try {
+      await updateDoc(doc(db, 'registrations', id), { status: 'rejected' });
+      alert("Registration rejected!");
+    } catch (error) {
+      console.error("Rejection failed:", error);
+      alert("Rejection failed: " + (error as any).message);
+    }
+  };
+
+  const seedBracket = async () => {
+    if (!isAdmin) return;
+    console.log("Seeding bracket with initial data...");
+    try {
+      const batch = writeBatch(db);
+      for (const match of INITIAL_BRACKET) {
+        const docRef = doc(db, 'bracket', match.id);
+        batch.set(docRef, match);
+      }
+      await batch.commit();
+      console.log("Bracket seeded successfully via batch.");
+    } catch (error) {
+      console.error("Bracket seeding failed:", error);
+      throw error;
+    }
+  };
+
+  const handleAdminReset = async (type: 'matches' | 'bracket' | 'table' | 'registrations' | 'all') => {
+    if (!isAdmin) {
+      alert("Admin access required.");
+      return;
+    }
+    console.log(`Starting admin reset: ${type}`);
+    
+    // Bypass window.confirm for now due to iframe issues
+    try {
+      const batch = writeBatch(db);
+      
+      if (type === 'matches' || type === 'all') {
+        console.log("Deleting matches...");
+        const mSnap = await getDocs(collection(db, 'matches'));
+        mSnap.docs.forEach(d => batch.delete(d.ref));
+      }
+      
+      if (type === 'bracket' || type === 'all') {
+        console.log("Resetting bracket collection...");
+        const bSnap = await getDocs(collection(db, 'bracket'));
+        bSnap.docs.forEach(d => batch.delete(d.ref));
+      }
+      
+      if (type === 'registrations' || type === 'all') {
+        console.log("Deleting registrations...");
+        const rSnap = await getDocs(collection(db, 'registrations'));
+        rSnap.docs.forEach(d => batch.delete(d.ref));
+      }
+      
+      if (type === 'all') {
+        console.log("Purging users and stats...");
+        const uSnap = await getDocs(collection(db, 'users'));
+        uSnap.docs.forEach(d => {
+          if (d.id !== user?.uid) batch.delete(d.ref);
+        });
+        batch.set(doc(db, 'stats', 'global'), { visitCount: 0 });
+      }
+      
+      await batch.commit();
+      console.log("Batch commit successful for reset:", type);
+
+      if (type === 'bracket' || type === 'all') {
+        // Wait a small moment for consistency
+        await new Promise(resolve => setTimeout(resolve, 500));
+        // Re-seed bracket after clear
+        await seedBracket();
+      }
+      
+      alert(`${type} reset successful!`);
+    } catch (error) {
+      console.error("Reset failed:", error);
+      alert(`Reset failed: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  };
+
+  const handleAdminAiCommand = async (command: string) => {
+    try {
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        config: {
+          systemInstruction: `You are a Tournament Manager AI. 
+          Current Teams: ${JSON.stringify(teams.map(t => ({id: t.id, name: t.name})))}
+          Available Commands:
+          - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
+          - RESET: { type: 'matches' | 'bracket' | 'all' }
+          - UPDATE_CONTENT: { elementId, text, isImage: boolean }
+          - APPROVE_REGISTRATION: { registrationId }
+          - REJECT_REGISTRATION: { registrationId }
+          
+          Respond only with a JSON array of commands. Example: [{"type": "UPDATE_MATCH", "data": {...}}]`,
+          responseMimeType: "application/json"
+        },
+        contents: command
+      });
+
+      const result = JSON.parse(response.text);
+      for (const cmd of result) {
+        if (cmd.type === 'UPDATE_MATCH') {
+          // Identify existing match by ID provided, or fallback
+          if (cmd.data.matchId) {
+            await updateDoc(doc(db, 'matches', cmd.data.matchId), cmd.data);
+          }
+        } else if (cmd.type === 'RESET') {
+          await handleAdminReset(cmd.data.type);
+        } else if (cmd.type === 'UPDATE_CONTENT') {
+          await updateSiteContent(cmd.data.elementId, cmd.data.text, cmd.data.isImage);
+        } else if (cmd.type === 'APPROVE_REGISTRATION') {
+          await handleApproveRegistration(cmd.data.registrationId);
+        } else if (cmd.type === 'REJECT_REGISTRATION') {
+          await handleRejectRegistration(cmd.data.registrationId);
+        }
+      }
+      alert("AI Assistant successfully processed your request.");
+    } catch (error) {
+      console.error("AI Error:", error);
+      alert("AI Assistant failed to process command.");
+    }
+  };
+
+  const processMatchResultImage = async (file: File, playerRegistration: Registration) => {
+    setIsSubmittingImg(true);
+    setAiAnalysisResult(null);
+    try {
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result?.toString().split(',')[1] || '');
+        reader.readAsDataURL(file);
+      });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        config: {
+          systemInstruction: `Analyze the FC Mobile match result screenshot. 
+          The uploader FC Name is "${playerRegistration.fcName}".
+          Extract: 
+          - homeTeam (FC name)
+          - awayTeam (FC name)
+          - homeScore
+          - awayScore
+          - scorers (list of {name, goals, team})
+          - homeStats (object {shots, shotsOnTarget, possession, passAccuracy, fouls, offsides})
+          - awayStats (object {shots, shotsOnTarget, possession, passAccuracy, fouls, offsides})
+          - manOfTheMatch (string)
+          
+          If the uploader's FC name is not visible in the photo as one of the players, reject the scan.
+          Return JSON.`,
+          responseMimeType: "application/json"
+        },
+        contents: {
+          parts: [
+            { text: "Verify this match result and extract data." },
+            { inlineData: { data: base64, mimeType: file.type } }
+          ]
+        }
+      });
+
+      const data = JSON.parse(response.text);
+      if (data.homeTeam !== playerRegistration.fcName && data.awayTeam !== playerRegistration.fcName) {
+        setAiAnalysisResult("REJECTED: Your FC Name was not detected as a participant in this match screenshot.");
+        return;
+      }
+
+      // Auto-update match
+      const homeTeam = teams.find(t => t.name.toLowerCase() === data.homeTeam.toLowerCase());
+      const awayTeam = teams.find(t => t.name.toLowerCase() === data.awayTeam.toLowerCase());
+
+      if (homeTeam && awayTeam) {
+        // Find existing match
+        const existingMatch = matches.find(m => 
+          (m.homeTeamId === homeTeam.id && m.awayTeamId === awayTeam.id) ||
+          (m.homeTeamId === awayTeam.id && m.awayTeamId === homeTeam.id)
+        );
+
+        if (existingMatch) {
+          const matchRef = doc(db, 'matches', existingMatch.id);
+          await updateDoc(matchRef, {
+            homeScore: data.homeScore,
+            awayScore: data.awayScore,
+            status: 'finished',
+            // Need to handle scorers based on who is home/away
+            homeScorers: existingMatch.homeTeamId === homeTeam.id 
+              ? data.scorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
+              : data.scorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
+            awayScorers: existingMatch.awayTeamId === awayTeam.id 
+              ? data.scorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
+              : data.scorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
+            homeStats: data.homeStats,
+            awayStats: data.awayStats,
+            manOfTheMatch: data.manOfTheMatch
+          });
+          setAiAnalysisResult("SUCCESS: Match result verified and updated!");
+        } else {
+          setAiAnalysisResult("ERROR: No scheduled match found between these teams.");
+        }
+      } else {
+        setAiAnalysisResult("ERROR: Could not identify one or both teams from the database.");
+      }
+
+    } catch (error) {
+      console.error("Vision AI Error:", error);
+      setAiAnalysisResult("AI failed to analyze the image. Please try again or update manually via admin.");
+    } finally {
+      setIsSubmittingImg(false);
+    }
+  };
+
+  const handleRegister = async (regData: Omit<Registration, 'id' | 'userId' | 'timestamp' | 'status'>) => {
+    let currentUser = user;
+    if (!currentUser || currentUser.isAnonymous) {
+      try {
+        currentUser = await signIn(); // Force Google login for registration
+      } catch (error) {
+        console.error("Auth failed:", error);
+        return;
+      }
+    }
+
+    if (!currentUser) return;
+
+    setIsSubmittingRegistration(true);
+    try {
+      const regId = currentUser.uid;
+      await setDoc(doc(db, 'registrations', regId), {
+        ...regData,
+        id: regId,
+        userId: currentUser.uid,
+        email: currentUser.email,
+        status: 'pending',
+        timestamp: serverTimestamp()
+      });
+      setHasRegistered(true);
+      alert("Registration submitted! Waiting for admin approval.");
+    } catch (error) {
+      console.error("Registration failed:", error);
+      alert("Registration failed. Please try again.");
+    } finally {
+      setIsSubmittingRegistration(false);
     }
   };
 
   const getBracketMatch = (id: string) => {
-    const bracketMatch = bracket.find(m => m.id === id && m.month === bracketMonth);
+    const bracketMatch = bracket.find(m => m.id === id);
     if (bracketMatch) return bracketMatch;
     
-    // Fallback for older data or if not found
-    const oldMatch = bracket.find(m => m.id === id && !m.month);
-    if (oldMatch && bracketMonth === 'April') return oldMatch;
-
     return { id, round: '', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 };
   };
+
+  useEffect(() => {
+
+
+    // Teams listener (approved registrations)
+    const unsubscribeTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
+      const teamsList: Team[] = snapshot.docs.map(doc => {
+        const data = doc.data() as Registration;
+        return {
+          id: data.id,
+          name: data.fcName,
+          shortName: data.fcName.substring(0, 3).toUpperCase(),
+          fullName: data.name,
+          fcName: data.fcName,
+          ovr: data.teamOvr,
+          uid: data.fcUid,
+          played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+        };
+      });
+      setDbTeams(teamsList);
+    });
+
+    // Matches listener
+    const unsubscribeMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
+      const matchesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
+      setDbMatches(matchesList);
+    });
+
+    return () => {
+      unsubscribeTeams();
+      unsubscribeMatches();
+    };
+  }, []);
 
   useEffect(() => {
     const incrementVisitCount = async () => {
@@ -2632,46 +1977,25 @@ export default function App() {
       }
     });
 
-    const unsubscribeInterested = onSnapshot(doc(db, 'stats', 'may_event'), (doc) => {
-      if (doc.exists()) {
-        setInterestedCount(doc.data().interestedCount || 0);
-      }
-    });
-
-    const localInterested = localStorage.getItem('hasInterestedMayEvent');
-    if (localInterested) setHasInterested(true);
-
     incrementVisitCount();
     return () => {
       unsubscribe();
-      unsubscribeInterested();
     };
-  }, []);
-
-  useEffect(() => {
-    const q = query(collection(db, 'news'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const newsData: News[] = [];
-      snapshot.forEach((doc) => {
-        newsData.push(doc.data() as News);
-      });
-      setNews(newsData.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'news');
-    });
-    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'bracket'));
     const unsubscribe = onSnapshot(q, (snapshot) => {
       console.log("Bracket snapshot received:", snapshot.size);
-      const bracketData: BracketMatch[] = [];
+      const bracketDataMap: Record<string, BracketMatch> = {};
       snapshot.forEach((doc) => {
-        bracketData.push(doc.data() as BracketMatch);
+        const data = doc.data() as BracketMatch;
+        // Use a map to ensure unique matches by ID
+        bracketDataMap[data.id] = data;
       });
-      console.log("Bracket data:", bracketData);
-      setBracket([...bracketData]); // Force a re-render with a new array reference
+      const uniqueBracketData = Object.values(bracketDataMap);
+      console.log("Unique bracket data:", uniqueBracketData);
+      setBracket(uniqueBracketData);
     }, (error) => {
       handleFirestoreError(error, OperationType.LIST, 'bracket');
     });
@@ -2681,234 +2005,74 @@ export default function App() {
   useEffect(() => {
     const testConnection = async () => {
       try {
-        await getDocFromServer(doc(db, 'bracket', 'qual-0'));
+        await getDocFromServer(doc(db, 'config', 'system'));
+        console.log("Firebase Connection: OK");
       } catch (error) {
-        if(error instanceof Error && error.message.includes('the client is offline')) {
-          console.error("Please check your Firebase configuration. The client is offline.");
-        }
+        console.error("Firebase Connection Error:", error);
       }
     };
     testConnection();
-  }, []);
+  }, [isAdmin, user]);
 
   useEffect(() => {
-    const seedBracket = async () => {
-      if (!isAdmin) return;
-      const rounds = ['April', 'May'];
-      for (const month of rounds) {
-        const initialBracket: BracketMatch[] = [
-          { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'BARNIK', awayTeamName: 'ANIMESH', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'RANAJAY', awayTeamName: 'RAJAT', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'SAGNIK', awayTeamName: 'SONU', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'SOUMAJIT', awayTeamName: 'AYUSH', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'BARNIK', awayTeamName: 'ARYAN', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'RANAJAY', awayTeamName: 'PRIYAM', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'SONU', awayTeamName: 'PRITAM', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'SAMRIDDHA', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner', awayTeamName: 'Winner', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0, month: month as any },
-          { id: 'third-place', round: '3rd Place Match', homeTeamName: 'Loser SF1', awayTeamName: 'Loser SF2', homeScore: 0, awayScore: 0, month: month as any },
-        ];
-
-        for (const match of initialBracket) {
-          const docRef = doc(db, 'bracket', `${month.toLowerCase()}_${match.id}`);
-          const docSnap = await getDoc(docRef);
-          if (!docSnap.exists()) {
-            await setDoc(docRef, match);
-          }
-        }
-      }
-    };
     seedBracket();
   }, [isAdmin]);
 
   useEffect(() => {
-    const seedNews = async () => {
-      if (!isAdmin) return;
-      const initialNews = [
-        {
-          id: 'news-md4-aryan-pritam',
-          category: 'Match Report',
-          date: '30th March 2026',
-          title: 'ARYAN Edges Past PRITAM in Tight Contest',
-          excerpt: 'A solitary goal from Al Owairan was enough for ARYAN to secure a crucial 1-0 victory over PRITAM in a closely fought Matchday 4 encounter.',
-          timestamp: Date.now() - 1000
-        },
-        {
-          id: 'news-md4-aryan-sagnik',
-          category: 'Match Report',
-          date: '30th March 2026',
-          title: 'ARYAN Dominates SAGNIK with 3-0 Win',
-          excerpt: 'C. Ronaldo bagged a brace and Al Owairan added another as ARYAN comfortably defeated SAGNIK 3-0, showcasing their attacking prowess.',
-          timestamp: Date.now()
-        },
-        {
-          id: 'news-md4-ayush-aryan',
-          category: 'Breaking News',
-          date: '30th March 2026',
-          title: 'AYUSH Shocks ARYAN: The Unbeaten Run Ends',
-          excerpt: 'Ayush Saha pulls off the unthinkable, handing Aryan Sarkar his first defeat of the tournament with a gritty 1-0 victory. Dembélé\'s 45th-minute strike was the difference.',
-          timestamp: Date.now() + 1000
-        },
-        {
-          id: 'news-md4-samriddha-dibyajoti',
-          category: 'Match Report',
-          date: '30th March 2026',
-          title: 'SAMRIDDHA Destroys DIBYAJOTI 8-0',
-          excerpt: 'Samriddha Mandal showed no mercy in an 8-0 demolition of Dibyajoti. Zico and Al Owairan both bagged braces in a completely one-sided affair.',
-          timestamp: Date.now() + 2000
-        },
-        {
-          id: 'news-md4-priyam-dibyajoti',
-          category: 'Match Report',
-          date: '30th March 2026',
-          title: 'PRIYAM Secures Comfortable 3-0 Win',
-          excerpt: 'Priyam cruised to a 3-0 victory over Dibyajoti, with Cruyff scoring twice and Vini Jr. adding another to secure all three points.',
-          timestamp: Date.now() + 3000
-        },
-        {
-          id: 'news-priyam-qualified',
-          category: 'Breaking News',
-          date: '30th March 2026',
-          title: 'PRIYAM QUALIFIES FOR THE QUARTER-FINALS!',
-          excerpt: 'With a series of dominant performances, Priyam Paul has officially secured his spot in the quarter-finals. His clinical finishing and tactical awareness have made him a force to be reckoned with.',
-          timestamp: Date.now() + 4000
-        },
-        {
-          id: 'news-md4-eliminations',
-          category: 'Breaking News',
-          date: '30th March 2026',
-          title: 'DIBYAJOTI, SAGNICK, ABHROJEET, and SAYANTAN Eliminated',
-          excerpt: 'The tournament reaches a critical stage as Dibyajoti, Sagnick Roy, Abhrojeet Kundu, and Sayantan Paul are officially eliminated. Meanwhile, SAGNIK manages to edge through the qualifier rounds to keep his championship hopes alive.',
-          timestamp: Date.now() + 5000
-        }
-      ];
-
-      for (const article of initialNews) {
-        const docRef = doc(db, 'news', article.id);
-        const docSnap = await getDoc(docRef);
-        if (!docSnap.exists()) {
-          await setDoc(docRef, article);
-        }
+    // Listen for config
+    const unsubscribeConfig = onSnapshot(doc(db, 'config', 'system'), (doc) => {
+      if (doc.exists()) {
+        setConfig(doc.data() as Config);
       }
-    };
-    seedNews();
+    });
+
+    // Listen for registrations (admin only)
+    if (isAdmin) {
+      const q = query(collection(db, 'registrations'));
+      const unsubscribeRegs = onSnapshot(q, (snapshot) => {
+        const regs: Registration[] = [];
+        snapshot.forEach((doc) => {
+          regs.push({ ...doc.data(), id: doc.id } as Registration);
+        });
+        setRegistrations(regs);
+      }, (error) => {
+        handleFirestoreError(error, OperationType.LIST, 'registrations');
+      });
+      return () => {
+        unsubscribeConfig();
+        unsubscribeRegs();
+      };
+    }
+
+    return () => unsubscribeConfig();
   }, [isAdmin]);
 
   useEffect(() => {
-    const deleteSpecificNews = async () => {
-      if (!isAdmin || !news.length) return;
-      const titlesToDelete = [
-        'Attack vs Defense Showdown – Match #24',
-        'Matchday 1 Breakdown',
-        '🔥 Pool 1 Power Takes Over'
-      ];
-      
-      for (const title of titlesToDelete) {
-        const q = query(collection(db, 'news'), where('title', '==', title));
-        const snapshot = await getDocs(q);
-        snapshot.forEach(async (document) => {
-          await deleteDoc(doc(db, 'news', document.id));
-        });
-      }
-    };
-    deleteSpecificNews();
-  }, [news]);
-
-  useEffect(() => {
-    if (activeSession) {
-      setAdminMatchday(activeSession.matchday);
-      setAdminCandidates(activeSession.candidates);
-      setAdminShowResults(activeSession.showResults ?? true);
-      // Calculate hours remaining or set default
-      setAdminHours(12);
-    }
-  }, [activeSession]);
-
-  const handleSaveAdmin = async () => {
-    if (!isAdmin) return;
-    setIsSavingAdmin(true);
-    try {
-      // Update or Create voting session
-      const sessionId = `matchday-${adminMatchday}`;
-      const newSessionId = uuidv4();
-      const startTime = serverTimestamp();
-      const endTime = new Date(Date.now() + adminHours * 60 * 60 * 1000);
-
-      await setDoc(doc(db, 'votingSessions', sessionId), {
-        id: sessionId,
-        sessionId: newSessionId,
-        matchday: adminMatchday,
-        startTime: startTime,
-        endTime: endTime,
-        candidates: adminCandidates,
-        isActive: true,
-        showResults: adminShowResults
+    // Check if user has already registered
+    if (user) {
+      const unsubscribe = onSnapshot(doc(db, 'registrations', user.uid), (doc) => {
+        if (doc.exists()) {
+          setHasRegistered(true);
+        } else {
+          setHasRegistered(false);
+        }
       });
-
-      setIsAdminModalOpen(false);
-    } catch (error) {
-      console.error("Error saving admin settings:", error);
-      alert("Failed to save settings.");
-    } finally {
-      setIsSavingAdmin(false);
+      return () => unsubscribe();
+    } else {
+      setHasRegistered(false);
     }
-  };
-
-  const handleEndVote = async () => {
-    if (!isAdmin || !activeSession) return;
-    setIsSavingAdmin(true);
-    try {
-      const newIsActive = !activeSession.isActive;
-      const updateData: any = {
-        isActive: newIsActive
-      };
-      
-      // If we are resetting the vote, hide results too
-      if (newIsActive) {
-        updateData.showResults = false;
-        setAdminShowResults(false);
-      }
-
-      await updateDoc(doc(db, 'votingSessions', activeSession.id), updateData);
-      // Don't close modal, just update status
-    } catch (error) {
-      console.error("Error toggling vote status:", error);
-      alert("Failed to update vote status.");
-    } finally {
-      setIsSavingAdmin(false);
-    }
-  };
-
-  const handleToggleResults = async () => {
-    if (!isAdmin || !activeSession) return;
-    setIsSavingAdmin(true);
-    try {
-      const newShowResults = !(activeSession.showResults ?? true);
-      const updateData: any = {
-        showResults: newShowResults
-      };
-      
-      // If we are showing results, immediately end the vote
-      if (newShowResults) {
-        updateData.isActive = false;
-      }
-
-      await updateDoc(doc(db, 'votingSessions', activeSession.id), updateData);
-      setAdminShowResults(newShowResults);
-    } catch (error) {
-      console.error("Error toggling results:", error);
-      alert("Failed to toggle results.");
-    } finally {
-      setIsSavingAdmin(false);
-    }
-  };
+  }, [user]);
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       if (!u) {
-        signInAnon().catch(console.error);
+        signInAnon().catch((error) => {
+          if (error.code === 'auth/network-request-failed') {
+            console.error("Anonymous sign-in failed: Network error. Please check your internet connection.");
+          } else {
+            console.error("Anonymous sign-in error:", error);
+          }
+        });
       }
     });
 
@@ -2920,186 +2084,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  useEffect(() => {
-    // Listen for the most recent voting session (active or not)
-    const q = query(
-      collection(db, 'votingSessions'),
-      limit(10)
-    );
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      if (!snapshot.empty) {
-        // Find the "most relevant" session (active one, or the one with highest matchday)
-        const sessions = snapshot.docs.map(d => {
-          const data = d.data();
-          return { 
-            id: d.id, 
-            ...data,
-            sessionId: data.sessionId || d.id // Ensure sessionId is always present
-          } as VotingSession;
-        });
-        const active = sessions.find(s => s.isActive);
-        if (active) {
-          setActiveSession(active);
-        } else {
-          // If no active, pick the one with highest matchday that was recently active
-          const sorted = sessions.sort((a, b) => b.matchday - a.matchday);
-          setActiveSession(sorted[0] || null);
-        }
-      } else {
-        setActiveSession(null);
-      }
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'votingSessions');
-    });
-
-    return () => unsubscribe();
-  }, []);
-
-  useEffect(() => {
-    // Listen for votes in the current session
-    if (activeSession) {
-      const q = query(
-        collection(db, 'votes'),
-        where('sessionId', '==', activeSession.sessionId)
-      );
-
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        const counts: Record<string, number> = {};
-        let total = 0;
-        snapshot.docs.forEach(doc => {
-          const vote = doc.data();
-          counts[vote.candidateId] = (counts[vote.candidateId] || 0) + 1;
-          total++;
-        });
-        setSessionVotes(counts);
-        setTotalVotes(total);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'votes');
-      });
-
-      return () => unsubscribe();
-    }
-  }, [activeSession?.sessionId]);
-
-  useEffect(() => {
-    const voterId = localStorage.getItem('voter_id');
-    if (voterId && activeSession) {
-      const q = query(
-        collection(db, 'votes'),
-        where('voterId', '==', voterId),
-        where('sessionId', '==', activeSession.sessionId),
-        limit(1)
-      );
-      
-      const unsubscribe = onSnapshot(q, (snapshot) => {
-        if (!snapshot.empty) {
-          setHasVoted(true);
-          setVotedCandidateId(snapshot.docs[0].data().candidateId);
-        } else {
-          setHasVoted(false);
-          setVotedCandidateId(null);
-        }
-      }, (error) => {
-        console.error("Error listening for vote status:", error);
-      });
-      return () => unsubscribe();
-    } else {
-      setHasVoted(false);
-      setVotedCandidateId(null);
-    }
-  }, [activeSession?.sessionId]);
-
-  const handleVote = async (candidateId: string) => {
-    let currentUser = user;
-    if (!currentUser) {
-      try {
-        currentUser = await signInAnon();
-      } catch (error) {
-        console.error("Anonymous sign-in failed:", error);
-        alert("Failed to sign in for voting. Please try again.");
-        return;
-      }
-    }
-
-    if (!currentUser || !activeSession || hasVoted || isVoting) return;
-
-    // Browser-level check (LocalStorage)
-    const storageKey = `voted_session_${activeSession.sessionId}`;
-    if (localStorage.getItem(storageKey)) {
-      alert("You have already voted in this session!");
-      return;
-    }
-
-    const voterId = localStorage.getItem('voter_id');
-    if (!voterId) return;
-
-    setIsVoting(true);
-    
-    try {
-      // Check if voting is still open (12h limit)
-      const now = new Date();
-      const endTime = activeSession.endTime.toDate();
-      if (now > endTime || !activeSession.isActive) {
-        alert("Voting has ended for this session.");
-        setIsVoting(false);
-        return;
-      }
-
-      // Primary: Direct Firestore write (bypasses server IAM issues)
-      const currentSessionId = activeSession.sessionId || activeSession.id;
-      const sessionDocId = activeSession.id;
-      const voteDocId = `${voterId}_${currentSessionId}`;
-      
-      try {
-        await setDoc(doc(db, 'votes', voteDocId), {
-          voterId,
-          userId: currentUser.uid,
-          candidateId,
-          matchday: activeSession.matchday,
-          sessionId: currentSessionId,
-          sessionDocId: sessionDocId,
-          timestamp: serverTimestamp()
-        });
-      } catch (fsError: any) {
-        // If it's a permission error, it might be because they already voted (exists check in rules)
-        // or a real permission issue.
-        if (fsError.code === 'permission-denied' || fsError.message?.includes('insufficient permissions')) {
-          // Check if it's a duplicate vote by trying to get the document
-          const existingVote = await getDoc(doc(db, 'votes', voteDocId));
-          if (existingVote.exists()) {
-            throw new Error("You have already voted in this session!");
-          }
-          throw new Error("Missing or insufficient permissions to vote.");
-        }
-        throw fsError;
-      }
-
-      // Optional: Notify server for IP tracking (non-blocking)
-      fetch('/api/vote', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          candidateId,
-          matchday: activeSession.matchday,
-          voterId,
-          userId: currentUser.uid,
-          sessionId: currentSessionId
-        })
-      }).catch(err => console.warn("Server IP check failed (ignoring):", err));
-      
-      // Set local storage to prevent repeat voting in this browser
-      localStorage.setItem(storageKey, 'true');
-      
-      setHasVoted(true);
-      setVotedCandidateId(candidateId);
-    } catch (error: any) {
-      alert(error.message || "An error occurred while voting.");
-      console.error("Voting error:", error);
-    } finally {
-      setIsVoting(false);
-    }
-  };
+  // Voting listeners removed
 
   const copyToClipboard = (uid: string) => {
     if (!uid) return;
@@ -3153,8 +2138,44 @@ export default function App() {
     Object.keys(grouped).forEach(day => {
       grouped[day].sort((a, b) => a.matchNumber - b.matchNumber);
     });
+
+    // Helper to get IST date string
+    const getISTDate = () => {
+      const d = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000;
+      const istDate = new Date(d.getTime() + istOffset);
+      const day = istDate.getUTCDate();
+      const month = istDate.toLocaleString('en-US', { month: 'long', timeZone: 'UTC' });
+      const year = istDate.getUTCFullYear();
+      
+      const daySuffix = (n: number) => {
+        if (n > 3 && n < 21) return 'th';
+        switch (n % 10) {
+          case 1:  return "st";
+          case 2:  return "nd";
+          case 3:  return "rd";
+          default: return "th";
+        }
+      };
+      
+      return `${day}${daySuffix(day)} ${month} ${year}`;
+    };
+
+    const todayIST = getISTDate();
     
-    return grouped;
+    const sortedDays = Object.keys(grouped).sort((a, b) => {
+       if (a === todayIST) return -1;
+       if (b === todayIST) return 1;
+       // Fallback to chronological if not today
+       return new Date(a).getTime() - new Date(b).getTime();
+    });
+
+    const finalGrouped: Record<string, Match[]> = {};
+    sortedDays.forEach(day => {
+      finalGrouped[day] = grouped[day];
+    });
+    
+    return finalGrouped;
   }, [matches, searchTerm, teams]);
 
   const firstUpcomingDay = useMemo(() => {
@@ -3212,14 +2233,14 @@ export default function App() {
         <motion.div 
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="z-10 text-center px-4"
+          className="z-10 text-center px-4 w-full"
         >
-          <div className="absolute top-4 right-4 flex items-center gap-3">
+          <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
             {user && !user.isAnonymous ? (
-              <div className="flex items-center gap-3">
-                <div className="hidden md:block text-right">
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest">Admin</p>
-                  <p className="text-xs font-bold text-blue-400">{user.displayName || user.email}</p>
+              <div className="flex items-center gap-2">
+                <div className="hidden sm:block text-right">
+                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">Logged In</p>
+                  <p className="text-xs font-bold text-blue-400 truncate max-w-[100px]">{user.displayName || user.email}</p>
                 </div>
                 <button 
                   onClick={() => logout()}
@@ -3231,28 +2252,31 @@ export default function App() {
                 {isAdmin && (
                   <button
                     onClick={() => setIsAdminModalOpen(true)}
-                    className="px-3 py-1.5 bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 rounded-lg text-[9px] font-black uppercase tracking-widest hover:bg-yellow-600/30 transition-all flex items-center gap-2"
+                    className="px-3 py-2 bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-600/30 transition-all flex items-center gap-2"
                   >
-                    <Star className="w-3 h-3" />
-                    Admin Panel
+                    <Settings className="w-3.5 h-3.5" />
+                    Terminal
                   </button>
                 )}
               </div>
             ) : (
               <button 
                 onClick={() => signIn()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30 transition-all text-[10px] font-black uppercase tracking-widest"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                Admin Login
+                Login
               </button>
             )}
           </div>
+
           <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
           <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none pr-2">
-            UXI <span className="text-blue-400">Tournament</span>
+            <EditableText id="hero_title_main" defaultText="UXI Tournament" />
           </h1>
-          <p className="text-blue-200/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">Elite Competition</p>
+          <p className="text-blue-200/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">
+            <EditableText id="hero_subtitle" defaultText="Elite Competition" />
+          </p>
         </motion.div>
       </header>
 
@@ -3265,9 +2289,13 @@ export default function App() {
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
               { id: 'stats', label: 'Stats', icon: BarChart2 },
-              { id: 'news', label: 'News', icon: Newspaper },
-              { id: 'hallOfFame', label: 'H.O.F', icon: Award },
-            ].map((tab) => (
+              { id: 'registration', label: 'Registration', icon: Layout },
+              { id: 'campaign', label: 'My Campaign', icon: UserIcon },
+            ].filter(tab => {
+              if (tab.id === 'registration') return config.registrationEnabled;
+              if (tab.id === 'campaign') return !!user;
+              return true;
+            }).map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
@@ -3295,6 +2323,188 @@ export default function App() {
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-12">
         <AnimatePresence mode="wait">
+          {activeTab === 'campaign' && (
+            <motion.div
+              key="campaign"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-12"
+            >
+              <div className="flex items-center gap-4 mb-4">
+                <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
+                  <UserIcon className="w-6 h-6 text-blue-400" />
+                </div>
+                <div>
+                  <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none" />
+                  <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">
+                    <EditableText id="campaign_sub" defaultText="Player Portal & Performance" />
+                  </p>
+                </div>
+              </div>
+
+              {!user ? (
+                <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
+                  <p className="text-white/40 mb-6">Please login to access your campaign portal.</p>
+                  <button onClick={() => signIn()} className="px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all">Login Now</button>
+                </div>
+              ) : (
+                (() => {
+                  const myRegistration = registrations.find(r => r.userId === user.uid);
+                  if (!myRegistration) {
+                     return (
+                        <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
+                          <p className="text-white/40 mb-6 font-bold">You are not registered for the tournament.</p>
+                          <button onClick={() => setActiveTab('registration')} className="px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all">Register Now</button>
+                        </div>
+                     );
+                  }
+
+                  if (myRegistration.status === 'pending') {
+                    return (
+                      <div className="p-12 text-center bg-yellow-500/5 rounded-3xl border border-yellow-500/20">
+                        <Loader2 className="w-12 h-12 text-yellow-500/40 mx-auto mb-6 animate-spin" />
+                        <h3 className="text-xl font-display font-black text-yellow-500 uppercase italic">Waiting for Verification</h3>
+                        <p className="text-white/40 text-sm mt-2">Admin is currently reviewing your registration details.</p>
+                      </div>
+                    );
+                  }
+
+                  if (myRegistration.status === 'rejected') {
+                    return (
+                      <div className="p-12 text-center bg-red-500/5 rounded-3xl border border-red-500/20">
+                        <X className="w-12 h-12 text-red-500/40 mx-auto mb-6" />
+                        <h3 className="text-xl font-display font-black text-red-500 uppercase italic">Registration Rejected</h3>
+                        <p className="text-white/40 text-sm mt-2">Your application was not approved for this tournament.</p>
+                      </div>
+                    );
+                  }
+
+                  // Approved Campaign
+                  const myTeam = teams.find(t => t.id === myRegistration.id);
+                  const myMatches = matches.filter(m => m.homeTeamId === myRegistration.id || m.awayTeamId === myRegistration.id)
+                    .sort((a, b) => b.matchNumber - a.matchNumber);
+                  
+                  if (myMatches.length === 0) {
+                    return (
+                      <div className="p-12 text-center bg-blue-600/5 rounded-3xl border border-blue-500/20">
+                        <Calendar className="w-12 h-12 text-blue-500/40 mx-auto mb-6" />
+                        <h3 className="text-xl font-display font-black text-blue-400 uppercase italic">Waiting for Fixture Update</h3>
+                        <p className="text-white/40 text-sm mt-2">You are registered and approved! Matches will appear here once the schedule is released.</p>
+                      </div>
+                    );
+                  }
+
+                  const myStats = calculateStats(teams, matches).filter(s => s.gamerName === myRegistration.fcName);
+
+                  return (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-2 space-y-8">
+                        {/* Performance Snapshot */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                              <EditableText id="stats_status_label" defaultText="Status" />
+                            </p>
+                            <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
+                          </div>
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">OVR</p>
+                            <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
+                          </div>
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Goals</p>
+                            <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
+                          </div>
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Played</p>
+                            <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
+                          </div>
+                        </div>
+
+                        {/* Last 5 Games */}
+                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                          <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Recent Form</h3>
+                          <div className="space-y-4">
+                            {myMatches.length === 0 ? (
+                               <p className="text-white/20 text-center py-8 font-bold italic">Waiting for fixture update...</p>
+                            ) : (
+                              myMatches.slice(0, 5).map(m => (
+                                <MatchCard key={m.id} match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
+                              ))
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Goal Scorers */}
+                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                          <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Top Scorers</h3>
+                          <div className="space-y-4">
+                            {myStats.length === 0 ? (
+                              <p className="text-white/20 text-center py-4 text-sm uppercase font-black tracking-widest">No goals recorded yet</p>
+                            ) : (
+                              myStats.map(s => (
+                                <div key={s.playerName} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                  <span className="font-bold text-white">{s.playerName}</span>
+                                  <span className="font-display font-black text-blue-400 text-xl italic">{s.goals}</span>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-8">
+                        {/* Result Submission AI */}
+                        <div className="bg-blue-600/5 border border-blue-500/20 rounded-[2rem] p-8 relative overflow-hidden">
+                          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[60px] pointer-events-none" />
+                          <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-blue-400 mb-2" />
+                          <p className="text-white/40 text-[10px] uppercase tracking-widest mb-6">
+                            <EditableText id="ai_verify_sub" defaultText="AI-Powered Verification" />
+                          </p>
+                          
+                          <div className="space-y-6">
+                            <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/50 transition-all group cursor-pointer relative">
+                              <input 
+                                type="file" 
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) {
+                                    if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
+                                    processMatchResultImage(file, myRegistration);
+                                  }
+                                }}
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                              />
+                              <Plus className="w-8 h-8 text-blue-400/40 mb-3 group-hover:text-blue-400 transition-colors" />
+                              <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                            </div>
+
+                            {isSubmittingImg && (
+                               <div className="flex items-center justify-center gap-3 text-blue-400">
+                                 <Loader2 className="w-4 h-4 animate-spin" />
+                                 <span className="text-[10px] font-black uppercase tracking-widest">AI Analyzing Photo...</span>
+                               </div>
+                            )}
+
+                            {aiAnalysisResult && (
+                              <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                                aiAnalysisResult.startsWith('SUCCESS') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                              }`}>
+                                {aiAnalysisResult}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })()
+              )}
+            </motion.div>
+          )}
+
           {activeTab === 'stats' && (
             <motion.div
               key="stats"
@@ -3308,8 +2518,10 @@ export default function App() {
                   <BarChart2 className="w-6 h-6 text-blue-400" />
                 </div>
                 <div>
-                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none">Top Scorers</h2>
-                  <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">Individual Player Statistics</p>
+                  <EditableText id="scorers_header" defaultText="Top Scorers" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none" />
+                  <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">
+                    <EditableText id="individual_stats_sub" defaultText="Individual Player Statistics" />
+                  </p>
                 </div>
               </div>
 
@@ -3459,265 +2671,6 @@ export default function App() {
             </motion.div>
           )}
 
-          {activeTab === 'news' && (
-            <motion.div
-              key="news"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-2xl mx-auto px-4 py-8 space-y-6"
-            >
-              <div className="flex items-center gap-4 mb-8">
-                <Newspaper className="w-6 h-6 text-blue-400" />
-                <h2 className="text-2xl font-black uppercase italic tracking-tighter">Latest <span className="text-blue-400">Updates</span></h2>
-              </div>
-
-              <div className="space-y-4">
-                {[...news, ...NEWS_POSTS]
-                  .sort((a, b) => {
-                    const timeA = (a as any).timestamp || new Date(a.date).getTime();
-                    const timeB = (b as any).timestamp || new Date(b.date).getTime();
-                    if (timeB !== timeA) return timeB - timeA;
-                    // If timestamps are equal (e.g. same day hardcoded), use ID
-                    return Number(b.id || 0) - Number(a.id || 0);
-                  })
-                  .map((post) => (
-                  <motion.article
-                    key={post.id}
-                    whileHover={{ x: 4 }}
-                    className="bg-white/5 border-l-2 border-blue-500 p-5 rounded-r-2xl shadow-lg group cursor-pointer hover:bg-white/[0.08] transition-all"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-[9px] font-black text-blue-400 uppercase tracking-widest">
-                        {post.category}
-                      </span>
-                      <span className="w-1 h-1 rounded-full bg-white/20" />
-                      <span className="text-[9px] font-bold text-white/30 uppercase tracking-widest">{post.date}</span>
-                    </div>
-                    <h3 className="text-lg font-black uppercase italic tracking-tight mb-1 group-hover:text-blue-400 transition-colors">
-                      {post.title}
-                    </h3>
-                    <p className="text-xs text-white/50 leading-relaxed font-medium">
-                      {post.excerpt}
-                    </p>
-                  </motion.article>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {activeTab === 'hallOfFame' && (
-            <motion.div
-              key="hallOfFame"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="max-w-4xl mx-auto px-4 py-8"
-            >
-              <div className="flex justify-center mb-12 gap-4">
-                <button
-                  onClick={() => setHofMonth('April')}
-                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                    hofMonth === 'April' 
-                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
-                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  April Legends
-                </button>
-                <button
-                  onClick={() => setHofMonth('May')}
-                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                    hofMonth === 'May' 
-                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
-                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  May Legends
-                </button>
-              </div>
-
-              {hofMonth === 'April' ? (
-                <div className="bg-[#fdfcf0] text-[#2c2c2c] p-8 md:p-16 rounded-sm shadow-[20px_20px_60px_rgba(0,0,0,0.5)] relative overflow-hidden border border-[#dcd9c6] font-serif">
-                  {/* Paper Texture Overlay */}
-                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/paper-fibers.png')]" />
-                  
-                  {/* Decorative Borders */}
-                  <div className="absolute top-4 left-4 right-4 bottom-4 border border-[#2c2c2c]/10 pointer-events-none" />
-                  
-                  <div className="relative z-10">
-                    <div className="text-center mb-16">
-                      <div className="inline-block border-b-2 border-[#2c2c2c] pb-2 mb-4">
-                        <h2 className="text-4xl md:text-6xl font-black uppercase italic tracking-tighter">The April <span className="text-blue-700">Chronicles</span></h2>
-                      </div>
-                      <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-[#2c2c2c]/60">Tournament Documentary • Vol. 01</p>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-20">
-                      <div className="text-center space-y-4">
-                        <div className="relative inline-block">
-                          <Trophy className="w-16 h-16 text-yellow-600 mx-auto mb-2" />
-                          <div className="absolute -top-2 -right-2 bg-yellow-600 text-white text-[10px] font-black px-2 py-0.5 rounded-full">1ST</div>
-                        </div>
-                        <h3 className="text-2xl font-black uppercase italic tracking-tight">{hofMonth === 'April' ? 'Priyam' : 'TBD'}</h3>
-                        <p className="text-xs uppercase font-bold tracking-widest text-[#2c2c2c]/40">Grand Champion</p>
-                      </div>
-                      <div className="text-center space-y-4 md:pt-8">
-                        <div className="relative inline-block">
-                          <Award className="w-12 h-12 text-gray-500 mx-auto mb-2" />
-                          <div className="absolute -top-1 -right-1 bg-gray-500 text-white text-[10px] font-black px-2 py-0.5 rounded-full">2ND</div>
-                        </div>
-                        <h3 className="text-xl font-black uppercase italic tracking-tight">{hofMonth === 'April' ? 'Samriddha' : 'TBD'}</h3>
-                        <p className="text-xs uppercase font-bold tracking-widest text-[#2c2c2c]/40">Runner Up</p>
-                      </div>
-                      <div className="text-center space-y-4 md:pt-8">
-                        <div className="relative inline-block">
-                          <Award className="w-12 h-12 text-orange-700 mx-auto mb-2" />
-                          <div className="absolute -top-1 -right-1 bg-orange-700 text-white text-[10px] font-black px-2 py-0.5 rounded-full">3RD</div>
-                        </div>
-                        <h3 className="text-xl font-black uppercase italic tracking-tight">{hofMonth === 'April' ? 'Aryan' : 'TBD'}</h3>
-                        <p className="text-xs uppercase font-bold tracking-widest text-[#2c2c2c]/40">Third Place</p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-b border-[#2c2c2c]/10 py-12 mb-16">
-                      <h4 className="text-center text-xs font-black uppercase tracking-[0.3em] mb-12 text-[#2c2c2c]/60">Statistical Summary</h4>
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                        <div className="text-center">
-                          <p className="text-3xl font-black italic tracking-tighter">{hofMonth === 'April' ? '283' : hofStats.totalGoals}</p>
-                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Total Goals</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-3xl font-black italic tracking-tighter">{hofStats.totalMatches}</p>
-                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Matches Played</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-3xl font-black italic tracking-tighter">{hofStats.avgGoals}</p>
-                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Goals / Match</p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-3xl font-black italic tracking-tighter">{hofMonth === 'April' ? '61' : '0'}</p>
-                          <p className="text-[10px] uppercase font-bold tracking-widest text-[#2c2c2c]/40">Clean Sheets</p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-16 mb-16">
-                      <div className="space-y-8">
-                        <div className="space-y-4">
-                          <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">The Golden Boot</h5>
-                          {hofMonth === 'April' ? (
-                            <div className="flex items-center justify-between">
-                              <div className="flex flex-col">
-                                <span className="text-lg font-black uppercase italic">Cruyff</span>
-                                <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/40">Priyam • 13 Goals</span>
-                              </div>
-                              <Star className="w-6 h-6 text-yellow-600" />
-                            </div>
-                          ) : hofStats.topScorer ? (
-                            <div className="flex items-center justify-between">
-                              <div className="flex flex-col">
-                                <span className="text-lg font-black uppercase italic">{hofStats.topScorer.name}</span>
-                                <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/40">{hofStats.topScorer.gamer} • {hofStats.topScorer.goals} Goals</span>
-                              </div>
-                              <Star className="w-6 h-6 text-yellow-600" />
-                            </div>
-                          ) : (
-                            <p className="text-xs italic text-[#2c2c2c]/40">No scorers recorded yet.</p>
-                          )}
-                        </div>
-
-                        <div className="space-y-4">
-                          <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">Golden Glove</h5>
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-lg font-black uppercase italic">{hofMonth === 'April' ? 'Bounou' : 'TBD'}</span>
-                              <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/40">{hofMonth === 'April' ? 'Pritam • Most Clean Sheets' : 'Season Ongoing'}</span>
-                            </div>
-                            <Shield className="w-6 h-6 text-blue-600" />
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">Notable Matches</h5>
-                          <div className="space-y-4">
-                            <div>
-                              <p className="text-xs font-black uppercase italic tracking-tight">Best Match</p>
-                              <p className="text-[10px] leading-relaxed text-[#2c2c2c]/70">SAYANTAN 0 - 10 BARNIK: A historic display of dominance that rewrote the record books.</p>
-                            </div>
-                            <div>
-                              <p className="text-xs font-black uppercase italic tracking-tight">Best Competitive</p>
-                              <p className="text-[10px] leading-relaxed text-[#2c2c2c]/70">PRIYAM 3 - 2 AYUSH: A tactical masterclass where every goal felt like a tournament decider.</p>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-8">
-                        <h5 className="text-sm font-black uppercase tracking-widest border-b border-[#2c2c2c]/20 pb-2">Team Records {hofMonth === 'April' && '(till group stage)'}</h5>
-                        <div className="grid grid-cols-1 gap-4">
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Possession</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.mostPossession?.name} ({hofStats.mostPossession?.value.toFixed(1)}%)</span>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Goals Scored</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.mostGoals?.name} ({hofStats.mostGoals?.value})</span>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Least Goals Conceded</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.leastConceded?.name} ({hofStats.leastConceded?.value})</span>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Fouls</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.mostFouls?.name} ({hofStats.mostFouls?.value})</span>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Offsides</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.mostOffsides?.name} ({hofStats.mostOffsides?.value})</span>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Shots</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.mostShots?.name} ({hofStats.mostShots?.value})</span>
-                          </div>
-                          <div className="flex justify-between items-center border-b border-[#2c2c2c]/5 pb-2">
-                            <span className="text-[10px] uppercase font-bold text-[#2c2c2c]/60">Most Shots on Target</span>
-                            <span className="text-xs font-black italic uppercase">{hofStats.mostShotsOnTarget?.name} ({hofStats.mostShotsOnTarget?.value})</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-24 text-center opacity-40">
-                      <p className="text-[8px] uppercase tracking-[0.5em] font-black">UXI TOURNAMENT ARCHIVE • EST. 2026</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center py-24 text-center bg-white/5 rounded-3xl border border-white/10 backdrop-blur-sm">
-                  <div className="relative mb-8">
-                    <div className="absolute inset-0 bg-blue-500/20 blur-3xl rounded-full" />
-                    <Award className="w-24 h-24 text-blue-400 relative z-10 animate-pulse" />
-                  </div>
-                  <h2 className="font-display text-4xl font-black uppercase italic tracking-tighter mb-4">May Legends</h2>
-                  <div className="max-w-md space-y-4">
-                    <p className="text-blue-200/60 font-mono text-sm uppercase tracking-widest leading-relaxed">
-                      The May season is currently in progress. Legends are being forged as we speak.
-                    </p>
-                    <div className="p-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
-                      <p className="text-[10px] font-black text-blue-400 uppercase tracking-[0.2em]">
-                        Season Ongoing
-                      </p>
-                      <p className="text-white/30 text-[9px] uppercase tracking-widest mt-2">
-                        Winners will be immortalized here upon completion of the May bracket.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </motion.div>
-          )}
-
           {activeTab === 'table' && (
             <motion.div
               key="table"
@@ -3728,31 +2681,16 @@ export default function App() {
             >
               <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-4">
-                  <button
-                    onClick={() => setActiveMonth('April')}
-                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                      activeMonth === 'April' 
-                        ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
-                        : 'text-white/40 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    April Table
-                  </button>
-                  <button
-                    onClick={() => setActiveMonth('May')}
-                    className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-widest transition-all ${
-                      activeMonth === 'May' 
-                        ? 'bg-blue-600 text-white shadow-[0_0_15px_rgba(37,99,235,0.3)]' 
-                        : 'text-white/40 hover:text-white hover:bg-white/5'
-                    }`}
-                  >
-                    May Table
-                  </button>
+                  <h2 className="text-xl font-black uppercase italic tracking-tighter">
+                    <EditableText id="league_table_header" defaultText="League" /> <span className="text-blue-400">
+                      <EditableText id="league_table_header_bold" defaultText="Table" />
+                    </span>
+                  </h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className={`w-2 h-2 rounded-full ${activeMonth === 'April' ? 'bg-green-500' : 'bg-blue-500'}`} />
+                  <div className="w-2 h-2 rounded-full bg-blue-500" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
-                    {activeMonth} Season
+                    <EditableText id="tournament_season_label" defaultText="Tournament Season" />
                   </span>
                 </div>
               </div>
@@ -3776,37 +2714,37 @@ export default function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {standings.map((team, index) => {
-                    let rowClass = "hover:bg-white/5 transition-colors";
-                    if (index < 4) rowClass += " bg-green-500/5";
-                    if (index >= 12) rowClass += " bg-red-500/5";
-                    
-                    return (
-                      <tr key={team.id} className={`${rowClass} relative group/row`}>
-                        <td className="px-3 md:px-6 py-3 md:py-4 relative">
-                          <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
-                            index < 4 ? 'bg-green-500/20 text-green-400' : 
-                            index >= 12 ? 'bg-red-500/20 text-red-400' : 
-                            'bg-white/10 text-white/70'
-                          }`}>
-                            {index + 1}
-                          </div>
-                        </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4">
-                          <div className="flex items-center min-w-0 gap-2">
-                            <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
-                              {team.fullName}
-                            </span>
-                            {(team.points >= 20 || team.name === 'PRIYAM' || team.name === 'SAMRIDDHA' || team.name === 'PRITAM') && (
-                              <span 
-                                className="inline-flex items-center justify-center w-4 h-4 md:w-5 md:h-5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 text-[9px] md:text-[10px] font-bold"
-                                title="Virtually Qualified for Playoffs"
-                              >
-                                Q
-                              </span>
-                            )}
-                          </div>
-                        </td>
+                    {standings.map((team, index) => {
+                      let rowClass = "hover:bg-white/5 transition-colors";
+                      
+                      return (
+                        <tr key={team.id} className={`${rowClass} relative group/row`}>
+                          <td className="px-3 md:px-6 py-3 md:py-4 relative text-center">
+                            <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
+                              index < 8 ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/30' : 
+                              'bg-white/10 text-white/70'
+                            }`}>
+                              {index + 1}
+                            </div>
+                          </td>
+                          <td className="px-3 md:px-6 py-3 md:py-4">
+                            <div className="flex items-center min-w-0 gap-2">
+                              <div className="flex flex-col">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
+                                    {team.fullName}
+                                  </span>
+                                  {qualificationStatus[team.id] === 'Q' && (
+                                    <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-[8px] font-black uppercase tracking-tighter rounded border border-green-500/30" title="Mathematically Qualified (Top 8 Guaranteed)">Q</span>
+                                  )}
+                                  {qualificationStatus[team.id] === 'E' && (
+                                    <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-tighter rounded border border-red-500/30" title="Mathematically Eliminated">E</span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-widest mt-0.5">{team.fcName}</span>
+                              </div>
+                            </div>
+                          </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-mono text-xs text-white/40">{team.fcName}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                           <button 
@@ -3871,51 +2809,54 @@ export default function App() {
                     <Calendar className="w-6 h-6 text-blue-400" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter">Tournament <span className="text-blue-400">Fixtures</span></h2>
-                    <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">Season April - May</p>
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter">
+                      <EditableText id="fixtures_header" defaultText="Tournament" isAdmin={isAdmin} /> <span className="text-blue-400">
+                        <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
+                      </span>
+                    </h2>
+                    <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
+                      <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
+                    </p>
                   </div>
                 </div>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={handleInterested}
-                  disabled={hasInterested}
-                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all border ${
-                    hasInterested 
-                      ? 'bg-green-500/20 text-green-400 border-green-500/30 opacity-80 cursor-default' 
-                      : 'bg-blue-600 text-white border-blue-400/30 shadow-[0_0_20px_rgba(37,99,235,0.3)] hover:shadow-[0_0_30px_rgba(37,99,235,0.5)]'
-                  }`}
-                >
-                  {hasInterested ? <Check className="w-3 h-3" /> : <Star className="w-3 h-3" />}
-                  {hasInterested ? 'Interested' : 'Interested for May Event'}
-                  <span className="ml-1 px-2 py-0.5 bg-black/20 rounded-md text-[9px]">{interestedCount}</span>
-                </motion.button>
               </div>
 
-              {activeMonth === 'April' ? (
-                <div className="flex flex-col items-center justify-center py-20 bg-white/5 border border-white/10 rounded-3xl backdrop-blur-sm">
-                  <Calendar className="w-16 h-16 text-blue-400/20 mb-6" />
-                  <h2 className="text-3xl md:text-5xl font-display font-black italic uppercase tracking-tighter text-white mb-4 text-center px-4">
-                    See you soon in <span className="text-blue-400">MAY</span>
-                  </h2>
-                  <p className="text-blue-200/50 font-medium text-center px-6 max-w-md">
-                    The April season has concluded. All match records have been archived. Stay tuned for the next chapter of the tournament.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {mayMatches.map((match) => (
-                    <MatchCard 
-                      key={match.id} 
-                      match={match} 
-                      teams={teams}
-                      onClick={() => setSelectedMatch(match)}
-                    />
-                  ))}
-                </div>
+                    {Object.keys(matchesByDay).length === 0 ? (
+                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6">
+                        <div className="w-20 h-20 bg-blue-600/10 rounded-full flex items-center justify-center border border-blue-500/20">
+                          <Calendar className="w-10 h-10 text-blue-400" />
+                        </div>
+                        <div>
+                          <EditableText id="loading_fixtures_title" defaultText="Fixtures Loading" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
+                          <p className="text-white/40 text-sm font-bold uppercase tracking-widest">
+                            <EditableText id="loading_fixtures_sub" defaultText="Mark will update soon" isAdmin={isAdmin} />
+                          </p>
+                        </div>
+                      </div>
+                    ) : (
+                      Object.keys(matchesByDay).map(day => (
+                        <div key={day} className="space-y-6">
+                          <div className="flex items-center gap-4">
+                            <div className="px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-xl">
+                              <span className="text-xs font-black text-blue-400 uppercase tracking-widest">{day}</span>
+                            </div>
+                            <div className="h-[1px] flex-1 bg-white/10" />
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {matchesByDay[day].map((match) => (
+                              <MatchCard 
+                                key={match.id} 
+                                match={match} 
+                                teams={teams}
+                                onClick={() => setSelectedMatch(match)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                </motion.div>
               )}
-            </motion.div>
-          )}
 
           {activeTab === 'bracket' && (
             <motion.div
@@ -3925,36 +2866,15 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full overflow-x-auto pb-8"
             >
-              <div className="flex justify-center mb-8 gap-4">
-                <button
-                  onClick={() => setBracketMonth('April')}
-                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                    bracketMonth === 'April' 
-                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
-                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  April Bracket
-                </button>
-                <button
-                  onClick={() => setBracketMonth('May')}
-                  className={`px-6 py-2 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${
-                    bracketMonth === 'May' 
-                      ? 'bg-blue-600 text-white shadow-[0_0_20px_rgba(37,99,235,0.4)]' 
-                      : 'bg-white/5 text-white/40 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  May Bracket
-                </button>
-              </div>
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
                   <h3 className="text-cyan-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-cyan-400/10 py-1 rounded border border-cyan-400/20">Qualifier Round</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
-                    const match = getBracketMatch(`qual-${i}`);
+                    const matchId = `qual-${i}`;
+                    const match = getBracketMatch(matchId);
                     return (
-                      <div key={`qual-${i}`} className="relative">
+                      <div key={`hub-qual-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
                           <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10 gap-6`}>
                             <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
@@ -3976,10 +2896,11 @@ export default function App() {
                 <div className="flex flex-col justify-center gap-16">
                   <h3 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-indigo-400/10 py-1 rounded border border-indigo-400/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
-                    const match = getBracketMatch(`qf-${i}`);
+                    const matchId = `qf-${i}`;
+                    const match = getBracketMatch(matchId);
                     const isDashed = i === 1 || i === 3;
                     return (
-                      <div key={`qf-${i}`} className="relative">
+                      <div key={`hub-qf-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
                             <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
@@ -4010,10 +2931,11 @@ export default function App() {
                 <div className="flex flex-col justify-center gap-32">
                   <h3 className="text-purple-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-purple-400/10 py-1 rounded border border-purple-400/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => {
-                    const match = getBracketMatch(`sf-${i}`);
+                    const matchId = `sf-${i}`;
+                    const match = getBracketMatch(matchId);
                     const isDashed = i === 1;
                     return (
-                      <div key={`sf-${i}`} className="relative">
+                      <div key={`hub-sf-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
                             <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
@@ -4106,49 +3028,104 @@ export default function App() {
               </div>
             </motion.div>
           )}
-        </AnimatePresence>
-      </main>
+          {activeTab === 'registration' && config.registrationEnabled && (
+            <motion.div
+              key="registration"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-8"
+            >
+              <div className="relative h-80 rounded-[2.5rem] overflow-hidden group shadow-2xl">
+                <img 
+                  src="https://picsum.photos/seed/tournament/1920/1080" 
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                  alt="Tournament Registration" 
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#000020] via-[#000020]/40 to-transparent" />
+                <div className="absolute inset-x-8 bottom-8">
+                  <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest mb-3 inline-block">
+                    <EditableText id="apps_live_status" defaultText="Applications Live" isAdmin={isAdmin} />
+                  </span>
+                  <EditableText id="join_season_title" defaultText="Join Season 2026" isAdmin={isAdmin} as="h2" className="text-4xl md:text-5xl font-display font-black italic uppercase text-white tracking-tight leading-none mb-4" />
+                  <p className="text-white/60 text-sm max-w-xl font-medium">
+                    <EditableText id="ready_to_prove_sub" defaultText="Ready to prove your skills? Register now for the upcoming tournament season. Entry is limited to 16 teams." isAdmin={isAdmin} />
+                  </p>
+                </div>
+              </div>
 
-      {/* Floating Vote Button / Winner Reveal */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                 <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
+                   <div className="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/30">
+                     <Users className="w-6 h-6 text-blue-400" />
+                   </div>
+                   <EditableText id="player_reg_title" defaultText="Player Registration" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
+                   <p className="text-white/40 text-sm mb-8">
+                     <EditableText id="click_below_sub" defaultText="Click below to fill out your details and secure your spot in the bracket." isAdmin={isAdmin} />
+                   </p>
+                   
+                   {hasRegistered ? (
+                     <div className="p-6 bg-green-600/10 border border-green-500/20 rounded-2xl flex items-center gap-3">
+                       <Check className="w-5 h-5 text-green-400" />
+                       <span className="text-sm font-bold text-green-400">Successfully Registered</span>
+                     </div>
+                   ) : (
+                     <button
+                       onClick={() => setIsRegistrationModalOpen(true)}
+                       className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-blue-600/20"
+                     >
+                       Register Now
+                     </button>
+                   )}
+                 </div>
+
+                 <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
+                   <div className="w-12 h-12 bg-yellow-500/20 rounded-2xl flex items-center justify-center mb-6 border border-yellow-500/30">
+                     <Shield className="w-6 h-6 text-yellow-400" />
+                   </div>
+                   <EditableText id="requirements_title" defaultText="Requirements" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
+                   <ul className="space-y-3">
+                     {[
+                       { id: 'req_1', text: "FC Mobile Active UID" },
+                       { id: 'req_2', text: "Team OVR 110+" },
+                       { id: 'req_3', text: "Stable Internet Connection" },
+                       { id: 'req_4', text: "Fair Play Commitment" }
+                     ].map(req => (
+                       <li key={req.id} className="flex items-center gap-3 text-xs font-bold text-white/60">
+                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                         <EditableText id={req.id} defaultText={req.text} isAdmin={isAdmin} />
+                       </li>
+                     ))}
+                   </ul>
+                 </div>
+              </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </main>
+
+      {/* Floating Action Button */}
       <AnimatePresence>
-        {activeSession && (
+        {config.registrationEnabled && !hasRegistered && activeTab !== 'registration' && (
           <motion.div
             initial={{ scale: 0, opacity: 0, y: 20 }}
             animate={{ scale: 1, opacity: 1, y: 0 }}
             exit={{ scale: 0, opacity: 0, y: 20 }}
             className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3"
           >
-            {activeSession.isActive ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsVotingModalOpen(true)}
-                className="flex items-center gap-3 px-6 py-4 bg-blue-600 rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-blue-400/30 group relative overflow-hidden"
-              >
-                <div className="relative z-10 flex items-center gap-3">
-                  <div className="relative">
-                    <VoteIcon className="w-5 h-5 text-white" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-ping" />
-                    <span className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full" />
-                  </div>
-                  <span className="font-display font-black uppercase italic text-sm tracking-widest text-white">Vote Now</span>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </motion.button>
-            ) : (activeSession.showResults ?? true) ? (
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setIsVotingModalOpen(true)}
-                className="flex items-center gap-3 px-6 py-4 bg-yellow-500 rounded-2xl shadow-[0_10px_30px_rgba(234,179,8,0.4)] border border-yellow-400/30 group relative overflow-hidden"
-              >
-                <div className="relative z-10 flex items-center gap-3">
-                  <Trophy className="w-5 h-5 text-black" />
-                  <span className="font-display font-black uppercase italic text-sm tracking-widest text-black">Show Result</span>
-                </div>
-                <div className="absolute inset-0 bg-gradient-to-tr from-black/0 via-black/10 to-black/0 opacity-0 group-hover:opacity-100 transition-opacity" />
-              </motion.button>
-            ) : null}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setIsRegistrationModalOpen(true)}
+              className="flex items-center gap-3 px-6 py-4 bg-blue-600 rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-blue-400/30 group relative overflow-hidden"
+            >
+              <div className="relative z-10 flex items-center gap-3">
+                <Layout className="w-5 h-5 text-white" />
+                <span className="font-display font-black uppercase italic text-sm tracking-widest text-white">Join Tournament</span>
+              </div>
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+            </motion.button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -4162,54 +3139,43 @@ export default function App() {
             teams={teams}
             copiedId={copiedId}
             copyToClipboard={copyToClipboard}
+            updateMatch={handleUpdateMatch}
+            deleteMatch={handleDeleteMatch}
+            isEditingMode={isEditingMode}
           />
         )}
-        {isVotingModalOpen && activeSession && (
-          <VotingModal 
-            session={activeSession} 
-            onClose={() => setIsVotingModalOpen(false)} 
+        {isRegistrationModalOpen && (
+          <RegistrationModal 
+            onClose={() => setIsRegistrationModalOpen(false)} 
+            handleRegister={handleRegister}
+            isSubmitting={isSubmittingRegistration}
+            hasRegistered={hasRegistered}
             user={user}
-            isVoting={isVoting}
-            hasVoted={hasVoted}
-            handleVote={handleVote}
-            sessionVotes={sessionVotes}
-            totalVotes={totalVotes}
-            votedCandidateId={votedCandidateId}
-            isAdmin={isAdmin}
           />
         )}
         {isAdminModalOpen && (
           <AdminModal 
             isAdmin={isAdmin}
+            user={user}
             onClose={() => setIsAdminModalOpen(false)} 
-            adminMatchday={adminMatchday}
-            setAdminMatchday={setAdminMatchday}
-            adminCandidates={adminCandidates}
-            setAdminCandidates={setAdminCandidates}
-            adminHours={adminHours}
-            setAdminHours={setAdminHours}
-            activeSession={activeSession}
+            registrations={registrations}
+            config={config}
+            handleToggleRegistration={handleToggleRegistration}
             isSavingAdmin={isSavingAdmin}
-            handleSaveAdmin={handleSaveAdmin}
-            handleToggleResults={handleToggleResults}
-            handleEndVote={handleEndVote}
-            sessionVotes={sessionVotes}
-            totalVotes={totalVotes}
-            newsCategory={newsCategory}
-            setNewsCategory={setNewsCategory}
-            newsDate={newsDate}
-            setNewsDate={setNewsDate}
-            newsTitle={newsTitle}
-            setNewsTitle={setNewsTitle}
-            newsExcerpt={newsExcerpt}
-            setNewsExcerpt={setNewsExcerpt}
-            isPostingNews={isPostingNews}
-            handlePostNews={handlePostNews}
             bracket={bracket}
             isSavingBracket={isSavingBracket}
             handleSaveBracket={handleSaveBracket}
-            standings={standings}
-            matches={matches}
+            handleAdminAiCommand={handleAdminAiCommand}
+            handleAdminReset={handleAdminReset}
+            handleApproveRegistration={handleApproveRegistration}
+            handleRejectRegistration={handleRejectRegistration}
+            handleDeleteRegistration={handleDeleteRegistration}
+            isEditingMode={isEditingMode}
+            setIsEditingMode={setIsEditingMode}
+            matchLabels={matchLabels}
+            updateMatchLabel={updateMatchLabel}
+            matchesByDay={matchesByDay}
+            handleAnalyzeQualification={handleAnalyzeQualification}
           />
         )}
       </AnimatePresence>
@@ -4219,19 +3185,27 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 text-center">
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Matches</p>
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                    <EditableText id="footer_matches_label" defaultText="Total Matches" isAdmin={isAdmin} />
+                  </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{matches.filter(m => m.status === 'finished').length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Teams</p>
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                    <EditableText id="footer_teams_label" defaultText="Teams" isAdmin={isAdmin} />
+                  </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">16</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Matchdays</p>
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                    <EditableText id="footer_matchdays_label" defaultText="Matchdays" isAdmin={isAdmin} />
+                  </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">5</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">Total Visits</p>
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                    <EditableText id="footer_visits_label" defaultText="Total Visits" isAdmin={isAdmin} />
+                  </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{visitCount}</p>
                 </div>
           </div>
