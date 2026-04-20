@@ -1373,6 +1373,7 @@ export default function App() {
   const [dbTeams, setDbTeams] = useState<Team[]>([]);
   const [dbMatches, setDbMatches] = useState<Match[]>([]);
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
+  const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
@@ -1856,41 +1857,18 @@ export default function App() {
 
   const handleAdminAiCommand = async (command: string) => {
     try {
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction: `You are a Tournament Manager AI. 
-          Current Teams: ${JSON.stringify(teams.map(t => ({id: t.id, name: t.name})))}
-          Available Commands:
-          - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
-          - RESET: { type: 'matches' | 'bracket' | 'all' }
-          - UPDATE_CONTENT: { elementId, text, isImage: boolean }
-          - APPROVE_REGISTRATION: { registrationId }
-          - REJECT_REGISTRATION: { registrationId }
-          
-          Respond only with a JSON array of commands. Example: [{"type": "UPDATE_MATCH", "data": {...}}]`,
-          responseMimeType: "application/json"
-        },
-        contents: command
+      const response = await fetch('/api/admin-ai-command', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ command })
       });
-
-      const result = JSON.parse(response.text);
-      for (const cmd of result) {
-        if (cmd.type === 'UPDATE_MATCH') {
-          // Identify existing match by ID provided, or fallback
-          if (cmd.data.matchId) {
-            await updateDoc(doc(db, 'matches', cmd.data.matchId), cmd.data);
-          }
-        } else if (cmd.type === 'RESET') {
-          await handleAdminReset(cmd.data.type);
-        } else if (cmd.type === 'UPDATE_CONTENT') {
-          await updateSiteContent(cmd.data.elementId, cmd.data.text, cmd.data.isImage);
-        } else if (cmd.type === 'APPROVE_REGISTRATION') {
-          await handleApproveRegistration(cmd.data.registrationId);
-        } else if (cmd.type === 'REJECT_REGISTRATION') {
-          await handleRejectRegistration(cmd.data.registrationId);
-        }
+      
+      const result = await response.json();
+      
+      if (!result.success) {
+        throw new Error(result.message);
       }
+
       alert("AI Assistant successfully processed your request.");
     } catch (error) {
       console.error("AI Error:", error);
@@ -1908,34 +1886,24 @@ export default function App() {
         reader.readAsDataURL(file);
       });
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        config: {
-          systemInstruction: `Analyze the FC Mobile match result screenshot. 
-          The uploader FC Name is "${playerRegistration.fcName}".
-          Extract: 
-          - homeTeam (FC name)
-          - awayTeam (FC name)
-          - homeScore
-          - awayScore
-          - scorers (list of {name, goals, team})
-          - homeStats (object {shots, shotsOnTarget, possession, passAccuracy, fouls, offsides})
-          - awayStats (object {shots, shotsOnTarget, possession, passAccuracy, fouls, offsides})
-          - manOfTheMatch (string)
-          
-          If the uploader's FC name is not visible in the photo as one of the players, reject the scan.
-          Return JSON.`,
-          responseMimeType: "application/json"
-        },
-        contents: {
-          parts: [
-            { text: "Verify this match result and extract data." },
-            { inlineData: { data: base64, mimeType: file.type } }
-          ]
-        }
+      const response = await fetch('/api/analyze-match', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          base64,
+          mimeType: file.type,
+          fcName: playerRegistration.fcName
+        })
       });
+      
+      const resData = await response.json();
+      
+      if (!resData.success) {
+        setAiAnalysisResult(`REJECTED: ${resData.message || 'Failed to analyze'}`);
+        return;
+      }
 
-      const data = JSON.parse(response.text);
+      const data = resData.matchData;
       if (data.homeTeam !== playerRegistration.fcName && data.awayTeam !== playerRegistration.fcName) {
         setAiAnalysisResult("REJECTED: Your FC Name was not detected as a participant in this match screenshot.");
         return;
@@ -2152,8 +2120,10 @@ export default function App() {
       const unsubscribe = onSnapshot(doc(db, 'registrations', user.uid), (doc) => {
         if (doc.exists()) {
           setHasRegistered(true);
+          setMyRegistrationData({ ...doc.data(), id: doc.id } as Registration);
         } else {
           setHasRegistered(false);
+          setMyRegistrationData(null);
         }
       });
       return () => unsubscribe();
@@ -2449,7 +2419,7 @@ export default function App() {
                 </div>
               ) : (
                 (() => {
-                  const myRegistration = registrations.find(r => r.userId === user.uid);
+                  const myRegistration = myRegistrationData;
                   if (!myRegistration) {
                      return (
                         <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
