@@ -2070,7 +2070,7 @@ export default function App() {
   const [isSavingAdmin, setIsSavingAdmin] = useState(false);
   const [visitCount, setVisitCount] = useState<number>(0);
   const [isSavingBracket, setIsSavingBracket] = useState(false);
-  const [siteContent, setSiteContent] = useState<Record<string, string>>({});
+  const [siteContent, setSiteContent] = useState<Record<string, any>>({});
 
   useEffect(() => {
     const q = query(collection(db, 'site_content'));
@@ -3156,6 +3156,10 @@ export default function App() {
                                 onChange={(e) => {
                                   const file = e.target.files?.[0];
                                   if (file) {
+                                    if (!myRegistration) {
+                                      alert("Please register a team first to submit match results.");
+                                      return;
+                                    }
                                     if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
                                     processMatchResultImage(file, myRegistration);
                                   }
