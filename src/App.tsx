@@ -1871,6 +1871,8 @@ export default function App() {
 
       // Process the commands returned by the backend
       const commands = result.commands;
+      console.log("AI Commands received:", commands);
+      alert("DEBUG AI JSON: " + JSON.stringify(commands));
       for (const cmd of commands) {
         if (cmd.type === 'UPDATE_MATCH' || cmd.type === 'ADD_MATCH' || cmd.type === 'CREATE_MATCH') {
           const matchId = cmd.data.matchId || `m-${Date.now()}`;
