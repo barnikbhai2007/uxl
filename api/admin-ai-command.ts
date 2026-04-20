@@ -1,5 +1,13 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { VercelRequest, VercelResponse } from '@vercel/node';
+import { initializeApp, getApps } from "firebase-admin/app";
+import { getFirestore } from "firebase-admin/firestore";
+import firebaseConfig from "../firebase-applet-config.json" with { type: "json" };
+
+if (!getApps().length) {
+  initializeApp({ projectId: firebaseConfig.projectId });
+}
+const db = getFirestore();
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
@@ -36,6 +44,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const text = result.response.text();
     const commands = JSON.parse(text);
+
+    // Save commands to Firestore
+    for (const cmd of commands) {
+      if (cmd.type === "UPDATE_MATCH" && cmd.data?.matchId) {
+        await db.collection("matches").doc(cmd.data.matchId).set(cmd.data, { merge: true });
+      }
+    }
+
     res.json({ success: true, commands });
   } catch (error: any) {
     console.error("AI Admin Error:", error);
