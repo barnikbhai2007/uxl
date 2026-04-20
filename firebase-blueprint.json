@@ -21,7 +21,9 @@
       "description": "System configuration.",
       "type": "object",
       "properties": {
-        "registrationEnabled": { "type": "boolean" }
+        "registrationEnabled": { "type": "boolean" },
+        "geminiApiKey": { "type": "string" },
+        "geminiModel": { "type": "string" }
       },
       "required": ["registrationEnabled"]
     },

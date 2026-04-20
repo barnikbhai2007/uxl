@@ -1846,11 +1846,10 @@ const NEWS_POSTS: any[] = [];
                         onChange={(e) => setLocalModel(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer font-sans"
                       >
-                        <option value="gemini-3-flash-preview">gemini-3-flash-preview (Current Stable)</option>
-                        <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
-                        <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
-                        <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
-                        <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Best / Smartest)</option>
+                        <option value="gemini-3-flash-preview">gemini-3-flash-preview (Balanced / Default)</option>
+                        <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview (Fastest / Lightweight)</option>
+                        <option value="gemini-flash-latest">gemini-flash-latest (Stable Flash)</option>
                       </select>
                       <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
                          ▼

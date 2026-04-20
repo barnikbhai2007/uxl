@@ -4,10 +4,8 @@ import { fileURLToPath } from "url";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
-
-const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +33,19 @@ const db = getFirestore(
 
 console.log(`Firestore initialized for project: ${firebaseConfig.projectId}, database: ${firebaseConfig.firestoreDatabaseId || '(default)'}`);
 
+async function getAiConfig() {
+  try {
+    const configSnap = await db.collection('config').doc('system').get();
+    const configData = configSnap.data();
+    const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
+    const model = configData?.geminiModel || "gemini-3.1-pro-preview";
+    const source = configData?.geminiModel ? "Firestore" : "Environment Default";
+    return { key, model, source };
+  } catch (error) {
+    console.error("Error fetching AI config from Firestore:", error);
+    return { key: process.env.GEMINI_API_KEY, model: "gemini-3.1-pro-preview", source: "Fallback" };
+  }
+}
 
 async function startServer() {
   const app = express();
@@ -49,70 +60,65 @@ async function startServer() {
   app.post("/api/analyze-match", async (req, res) => {
     try {
       const { base64, mimeType, fcName } = req.body;
+      const { key, model, source } = await getAiConfig();
       
-      const configSnap = await db.collection('config').doc('system').get();
-      const configData = configSnap.data();
-      const geminiKey = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-      const geminiModelName = configData?.geminiModel || "gemini-3-flash-preview";
+      console.log(`[AI] Analysis Request | Model: ${model} | Source: ${source}`);
       
-      console.log(`[AI] Using Model: ${geminiModelName} for Match Analysis`);
-      
-      const aiInstance = new GoogleGenerativeAI(geminiKey || "");
-      const modelInstance = aiInstance.getGenerativeModel({ model: geminiModelName });
+      if (!key) throw new Error("GEMINI_API_KEY is not configured.");
 
-      const result = await modelInstance.generateContent({
-        contents: [{
-          role: "user",
-          parts: [
-            {
-              inlineData: {
-                data: base64,
-                mimeType: mimeType
+      const ai = new GoogleGenAI({ apiKey: key });
+
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: [
+          {
+            parts: [
+              {
+                inlineData: {
+                  data: base64,
+                  mimeType: mimeType
+                }
+              },
+              {
+                text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
+                
+                INSTRUCTIONS:
+                1. Identify the Home Team and Away Team names.
+                2. Identify the Final Score (Home vs Away).
+                3. Identify Goal Scorers (name, goals, and which team they played for).
+                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides) for both teams.
+                5. Identify the Man of the Match.
+                
+                CRITICAL: One of the teams MUST reasonably match "${fcName}" (could be a partial match or slightly different spelling due to OCR).
+                If neither team matches "${fcName}", return { "error": "Reporting player name was not found as a participant in this screenshot." }.
+                
+                Return STRICT JSON: 
+                { 
+                  "homeTeam": "...", 
+                  "awayTeam": "...", 
+                  "homeScore": 0, 
+                  "awayScore": 0, 
+                  "scorers": [{"name": "...", "goals": 1, "team": "..."}], 
+                  "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
+                  "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
+                  "manOfTheMatch": "..." 
+                }`
               }
-            },
-            {
-              text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
-              
-              INSTRUCTIONS:
-              1. Identify the Home Team and Away Team names.
-              2. Identify the Final Score (Home vs Away).
-              3. Identify Goal Scorers (name, goals, and which team they played for).
-              4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides) for both teams.
-              5. Identify the Man of the Match.
-              
-              CRITICAL: One of the teams MUST reasonably match "${fcName}" (could be a partial match or slightly different spelling due to OCR).
-              If neither team matches "${fcName}", return { "error": "Reporting player name was not found as a participant in this screenshot." }.
-              
-              Return STRICT JSON: 
-              { 
-                "homeTeam": "...", 
-                "awayTeam": "...", 
-                "homeScore": 0, 
-                "awayScore": 0, 
-                "scorers": [{"name": "...", "goals": 1, "team": "..."}], 
-                "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
-                "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
-                "manOfTheMatch": "..." 
-              }`
-            }
-          ]
-        }],
-        generationConfig: {
+            ]
+          }
+        ],
+        config: {
           responseMimeType: "application/json"
         }
       });
 
-      const text = result.response.text();
+      const text = response.text || "{}";
       const matchData = JSON.parse(text);
       
       if (matchData.error) {
           throw new Error(matchData.error);
       }
       
-      if (matchData.homeTeam === undefined || matchData.awayTeam === undefined) {
-          throw new Error("Could not parse match data correctly.");
-      }
-
       res.json({ success: true, matchData });
     } catch (error: any) {
       console.error("AI Error:", error);
@@ -124,48 +130,46 @@ async function startServer() {
   app.post("/api/admin-ai-command", async (req, res) => {
     try {
       const { command, teams } = req.body;
+      const { key, model, source } = await getAiConfig();
 
-      const configSnap = await db.collection('config').doc('system').get();
-      const configData = configSnap.data();
-      const geminiKey = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-      const geminiModelName = configData?.geminiModel || "gemini-3-flash-preview";
+      console.log(`[AI] Admin Command | Model: ${model} | Source: ${source}`);
       
-      console.log(`[AI] Using Model: ${geminiModelName} for Admin Commands`);
-      
-      const aiInstance = new GoogleGenerativeAI(geminiKey || "");
-      const modelInstance = aiInstance.getGenerativeModel({ model: geminiModelName });
+      if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+
+      const ai = new GoogleGenAI({ apiKey: key });
       
       const teamsStr = teams && Array.isArray(teams) 
           ? teams.map((t: any) => `ID: "${t.id}", Names: ["${t.name}", "${t.fcName}"]`).join(' | ')
           : 'No teams available';
 
-      const result = await modelInstance.generateContent({
-        contents: [{
-          role: "user",
-          parts: [{
-            text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
-            Today's date is ${new Date().toDateString()}.
+      const response = await ai.models.generateContent({
+        model: model,
+        contents: [
+          {
+            parts: [{
+              text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
+              Today's date is ${new Date().toDateString()}.
 
-            Registered Teams Reference:
-            ${teamsStr}
+              Registered Teams Reference:
+              ${teamsStr}
 
-            Each item MUST follow this EXACT structure:
-            { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
-            
-            "matchId" must be spelled exactly as "matchId" not "matchld".
-            CRITICAL: For homeTeamId and awayTeamId, you MUST use the EXACT 'ID' string from the "Registered Teams Reference" list above by semantically matching the team names the user asked for.
-            For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
-            NEVER use "command" as a key. ALWAYS use "type" and "data".
-            
-            Command: ${command}`
-          }]
-        }],
-        generationConfig: {
+              Each item MUST follow this EXACT structure:
+              { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
+              
+              "matchId" must be spelled exactly as "matchId".
+              CRITICAL: For homeTeamId and awayTeamId, you MUST use the EXACT 'ID' string from the "Registered Teams Reference" list above by semantically matching the team names the user asked for.
+              For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
+              
+              Command: ${command}`
+            }]
+          }
+        ],
+        config: {
           responseMimeType: "application/json"
         }
       });
 
-      const text = result.response.text();
+      const text = response.text || "[]";
       console.log("AI Raw Response:", text);
       
       const commands = JSON.parse(text);
