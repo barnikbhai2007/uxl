@@ -1857,7 +1857,7 @@ export default function App() {
 
   const handleAdminAiCommand = async (command: string) => {
     try {
-      const response = await fetch(`${(import.meta as any).env.VITE_API_URL || ''}/api/admin-ai-command`, {
+      const response = await fetch('/api/admin-ai-command', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command })
@@ -1904,7 +1904,7 @@ export default function App() {
         reader.readAsDataURL(file);
       });
 
-      const response = await fetch(`${(import.meta as any).env.VITE_API_URL || ''}/api/analyze-match`, {
+      const response = await fetch('/api/analyze-match', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
