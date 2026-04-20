@@ -222,9 +222,11 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
 
 const NEWS_POSTS: any[] = [];
 
-  const MatchCard = ({ match, teams, onClick }: { match: Match, teams: Team[], onClick: () => void, key?: any }) => {
+  const MatchCard = ({ match, teams, overrideStatus, onClick }: { match: Match, teams: Team[], overrideStatus?: string, onClick: () => void, key?: any }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
+
+    const displayStatus = overrideStatus || match.status;
 
     const TeamLogo = ({ team }: { team: Team | undefined }) => (
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
@@ -257,23 +259,23 @@ const NEWS_POSTS: any[] = [];
 
           <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
             <div className="flex items-center gap-4">
-              <span className={`text-3xl font-black tabular-nums ${match.status === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
                 {match.awayScore ?? '-'}
               </span>
               <div className="flex flex-col items-center">
                  <span className="text-[10px] font-black text-white/20">VS</span>
                  <div className="h-4 w-[1px] bg-white/10 my-1" />
               </div>
-              <span className={`text-3xl font-black tabular-nums ${match.status === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
                 {match.homeScore ?? '-'}
               </span>
             </div>
             <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
-              match.status === 'finished' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-              match.status === 'live' ? 'bg-red-500/10 text-red-100 animate-pulse border border-red-500/20' :
+              displayStatus === 'finished' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
+              displayStatus === 'ongoing' || displayStatus === 'live' ? 'bg-red-500/10 text-red-100 animate-pulse border border-red-500/20' :
               'bg-blue-500/10 text-blue-100 border border-blue-500/20'
             }`}>
-              {match.status === 'finished' ? 'Final' : match.status === 'live' ? 'Live' : 'Upcoming'}
+              {displayStatus === 'finished' ? 'Final' : displayStatus === 'ongoing' || displayStatus === 'live' ? 'Live' : 'Upcoming'}
             </div>
           </div>
 
@@ -290,7 +292,7 @@ const NEWS_POSTS: any[] = [];
   };
 
   const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode }: { 
-    match: Match, 
+    match: Match & { _overrideStatus?: string }, 
     onClose: () => void,
     teams: Team[],
     copiedId: string | null,
@@ -301,6 +303,8 @@ const NEWS_POSTS: any[] = [];
   }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
+
+    const displayStatus = match._overrideStatus || match.status;
 
     const StatRow = ({ home, away, label, suffix = '', homeVal, awayVal }: { home: number | string, away: number | string, label: string, suffix?: string, homeVal?: number, awayVal?: number }) => {
       const h = homeVal ?? (typeof home === 'number' ? home : parseFloat(home as string));
@@ -452,25 +456,25 @@ const NEWS_POSTS: any[] = [];
                     </>
                   )}
                 </div>
-                {match.rescheduled && match.status !== 'rescheduled' && (
+                {match.rescheduled && displayStatus !== 'rescheduled' && (
                   <div className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-orange-400 mb-2">
                     Rescheduled Match
                   </div>
                 )}
                 <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                  match.status === 'finished' ? 'bg-green-500/20 text-green-400' : 
-                  match.status === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                  match.status === 'live' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400'
+                  displayStatus === 'finished' ? 'bg-green-500/20 text-green-400' : 
+                  displayStatus === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
+                  displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400'
                 }`}>
-                  {match.status === 'live' && (
+                  {(displayStatus === 'live' || displayStatus === 'ongoing') && (
                     <span className="relative flex h-2 w-2">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                     </span>
                   )}
-                  {match.status === 'finished' ? 'Final Result' : 
-                   match.status === 'rescheduled' ? 'Rescheduled' :
-                   match.status === 'live' ? 'Ongoing' : 'Match Scheduled'}
+                  {displayStatus === 'finished' ? 'Final Result' : 
+                   displayStatus === 'rescheduled' ? 'Rescheduled' :
+                   (displayStatus === 'live' || displayStatus === 'ongoing') ? 'Ongoing' : 'Match Scheduled'}
                 </div>
               </div>
 
@@ -530,11 +534,18 @@ const NEWS_POSTS: any[] = [];
               </div>
             </div>
 
-            {match.status === 'finished' && match.homeStats && match.awayStats && (
+            {displayStatus === 'finished' && match.homeStats && match.awayStats && (
               <div className="mt-6 md:mt-8 space-y-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
                 <div className="text-center mb-1 md:mb-2">
                   <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
                 </div>
+                {match.manOfTheMatch && (
+                  <div className="flex items-center justify-center gap-2 mb-4 bg-yellow-500/10 py-2 rounded-xl border border-yellow-500/20">
+                    <Trophy className="w-4 h-4 text-yellow-500" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500/80">MOTM: </span>
+                    <span className="text-xs font-display font-black italic uppercase text-yellow-400">{match.manOfTheMatch}</span>
+                  </div>
+                )}
                 <div className="grid gap-3 md:gap-4">
                   <StatRow 
                     home={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
@@ -3004,7 +3015,8 @@ export default function App() {
                                 key={match.id} 
                                 match={match} 
                                 teams={teams}
-                                onClick={() => setSelectedMatch(match)}
+                                overrideStatus={matchLabels[day]}
+                                onClick={() => setSelectedMatch({ ...match, _overrideStatus: matchLabels[day] } as any)}
                               />
                             ))}
                           </div>

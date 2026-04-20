@@ -44,6 +44,7 @@ export interface Match {
   awayScorers?: Scorer[];
   homeStats?: MatchStats;
   awayStats?: MatchStats;
+  manOfTheMatch?: string;
   date: string;
   status: 'scheduled' | 'live' | 'finished' | 'rescheduled';
   type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
