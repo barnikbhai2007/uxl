@@ -94,4 +94,6 @@ export interface Config {
   registrationEnabled: boolean;
   tabVisibility?: Record<string, boolean>;
   dateOrder?: string[];
+  geminiApiKey?: string;
+  geminiModel?: string;
 }

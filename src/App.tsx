@@ -1414,6 +1414,12 @@ const NEWS_POSTS: any[] = [];
             >
               Visibility
             </button>
+            <button 
+              onClick={() => setActiveTab('ai')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              AI Settings
+            </button>
           </div>
         </div>
 
@@ -1426,7 +1432,9 @@ const NEWS_POSTS: any[] = [];
                 </div>
                 <div className="text-left">
                   <h3 className="text-lg font-display font-black italic uppercase text-white">AI Tournament Assistant</h3>
-                  <p className="text-blue-400/40 text-[9px] uppercase tracking-widest">Natural Language Processing</p>
+                  <p className="text-blue-400/40 text-[9px] uppercase tracking-widest">
+                    Model: {config.geminiModel || 'gemini-3-flash-preview'}
+                  </p>
                 </div>
               </div>
               <form onSubmit={handleAiSubmit} className="flex gap-4">
@@ -1781,6 +1789,58 @@ const NEWS_POSTS: any[] = [];
                       ))}
                     </SortableContext>
                   </DndContext>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'ai' && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">AI Settings</h3>
+                <div className="space-y-6">
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini API Key</label>
+                    <div className="relative">
+                      <input 
+                        type="password"
+                        value={config.geminiApiKey || ''}
+                        onChange={(e) => handleUpdateConfig({ ...config, geminiApiKey: e.target.value })}
+                        placeholder="Paste your Gemini API Key here..."
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all font-mono"
+                      />
+                      <Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
+                    </div>
+                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20 px-1">If blank, the system default key will be used.</p>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini Model</label>
+                    <div className="relative">
+                      <select 
+                        value={config.geminiModel || 'gemini-3-flash-preview'}
+                        onChange={(e) => handleUpdateConfig({ ...config, geminiModel: e.target.value })}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="gemini-3-flash-preview">gemini-3-flash-preview (Current Stable)</option>
+                        <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
+                        <option value="gemini-2.5-pro-preview-03-25">gemini-2.5-pro-preview-03-25</option>
+                        <option value="gemini-1.5-flash-latest">gemini-1.5-flash-latest</option>
+                        <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest</option>
+                      </select>
+                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
+                         ▼
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-6 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-start gap-4">
+                    <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Configuration Status</h4>
+                      <p className="text-[10px] font-black uppercase text-white/40 leading-relaxed">
+                        Changes are saved to Firestore and take effect immediately for all subsequent AI requests (Match Analysis & Admin Commands).
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}

@@ -8,7 +8,6 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import cors from "cors";
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,7 +40,17 @@ async function startServer() {
     try {
       const { base64, mimeType, fcName } = req.body;
       
-      const result = await model.generateContent({
+      const configSnap = await db.collection('config').doc('system').get();
+      const configData = configSnap.data();
+      const geminiKey = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
+      const geminiModelName = configData?.geminiModel || "gemini-3-flash-preview";
+      
+      console.log(`[AI] Using Model: ${geminiModelName} for Match Analysis`);
+      
+      const aiInstance = new GoogleGenerativeAI(geminiKey || "");
+      const modelInstance = aiInstance.getGenerativeModel({ model: geminiModelName });
+
+      const result = await modelInstance.generateContent({
         contents: [{
           role: "user",
           parts: [
@@ -105,12 +114,22 @@ async function startServer() {
   app.post("/api/admin-ai-command", async (req, res) => {
     try {
       const { command, teams } = req.body;
+
+      const configSnap = await db.collection('config').doc('system').get();
+      const configData = configSnap.data();
+      const geminiKey = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
+      const geminiModelName = configData?.geminiModel || "gemini-3-flash-preview";
+      
+      console.log(`[AI] Using Model: ${geminiModelName} for Admin Commands`);
+      
+      const aiInstance = new GoogleGenerativeAI(geminiKey || "");
+      const modelInstance = aiInstance.getGenerativeModel({ model: geminiModelName });
       
       const teamsStr = teams && Array.isArray(teams) 
           ? teams.map((t: any) => `ID: "${t.id}", Names: ["${t.name}", "${t.fcName}"]`).join(' | ')
           : 'No teams available';
 
-      const result = await model.generateContent({
+      const result = await modelInstance.generateContent({
         contents: [{
           role: "user",
           parts: [{
