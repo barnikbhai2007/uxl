@@ -89,7 +89,19 @@ async function startServer() {
       ]);
 
       const text = result.response.text();
-      const commands = JSON.parse(text.replace(/```json\n?|\n?```/g, ""));
+      // More aggressive extraction: look for the first [ and last ]
+      const jsonStart = text.indexOf('[');
+      const jsonEnd = text.lastIndexOf(']');
+      
+      let jsonString = text;
+      if (jsonStart !== -1 && jsonEnd !== -1) {
+        jsonString = text.substring(jsonStart, jsonEnd + 1);
+      } else {
+        // Fallback to removing markdown
+        jsonString = text.replace(/```json\n?|\n?```/g, "").trim();
+      }
+      
+      const commands = JSON.parse(jsonString);
       res.json({ success: true, commands });
     } catch (error: any) {
       console.error("AI Admin Error:", error);
