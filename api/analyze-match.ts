@@ -12,25 +12,37 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     const { base64, mimeType, fcName } = req.body;
     
-    const result = await model.generateContent([
-      {
-        inlineData: {
-          data: base64,
-          mimeType: mimeType
-        }
-      },
-      {
-        text: `Analyze this FC Mobile match result screenshot for player "${fcName}". 
-        Extract and return JSON: { homeTeam, awayTeam, homeScore, awayScore }.
-        If "${fcName}" is not listed as a participant, return error.`
+    const result = await model.generateContent({
+      contents: [{
+        role: "user",
+        parts: [
+          {
+            inlineData: {
+              data: base64,
+              mimeType: mimeType
+            }
+          },
+          {
+            text: `Analyze this FC Mobile match result screenshot for player "${fcName}". 
+            Extract and return STRICT JSON: { "homeTeam": "...", "awayTeam": "...", "homeScore": 0, "awayScore": 0 }.
+            If "${fcName}" is not listed as a participant, return { "error": "Player not found" }.`
+          }
+        ]
+      }],
+      generationConfig: {
+        responseMimeType: "application/json"
       }
-    ]);
+    });
 
     const text = result.response.text();
-    const matchData = JSON.parse(text.replace(/```json\n?|\n?```/g, ""));
+    const matchData = JSON.parse(text);
     
-    if (!matchData.homeTeam || !matchData.awayTeam) {
-        throw new Error("Could not parse match data");
+    if (matchData.error) {
+        throw new Error(matchData.error);
+    }
+    
+    if (matchData.homeTeam === undefined || matchData.awayTeam === undefined) {
+        throw new Error("Could not parse match data correctly.");
     }
 
     res.json({ success: true, matchData });
