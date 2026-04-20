@@ -8,7 +8,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import cors from "cors";
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
+const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -78,14 +78,12 @@ async function startServer() {
         contents: [{
           role: "user",
           parts: [{
-            text: `You are a Tournament Manager AI. 
-            Return ONLY a raw JSON array.
-            Available Commands:
-            - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
-            - RESET: { type: 'matches' | 'bracket' | 'all' }
-            - UPDATE_CONTENT: { elementId, text, isImage: boolean }
-            - APPROVE_REGISTRATION: { registrationId }
-            - REJECT_REGISTRATION: { registrationId }
+            text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
+            Each item MUST follow this EXACT structure:
+            { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
+            
+            For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
+            NEVER use "command" as a key. ALWAYS use "type" and "data".
             
             Command: ${command}`
           }]

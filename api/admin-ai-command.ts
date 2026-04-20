@@ -16,15 +16,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         contents: [{
           role: "user",
           parts: [{
-            text: `You are a Tournament Manager AI. 
-            Return ONLY a raw JSON array.
-            Available Commands:
-            - ADD_MATCH: { matchId: optional, homeTeamId, awayTeamId, date, matchNumber, status }
-            - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
-            - RESET: { type: 'matches' | 'bracket' | 'all' }
-            - UPDATE_CONTENT: { elementId, text, isImage: boolean }
-            - APPROVE_REGISTRATION: { registrationId }
-            - REJECT_REGISTRATION: { registrationId }
+            text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
+            Each item MUST follow this EXACT structure:
+            { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
+            
+            For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
+            NEVER use "command" as a key. ALWAYS use "type" and "data".
             
             Command: ${command}`
           }]
