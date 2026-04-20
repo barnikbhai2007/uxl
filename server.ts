@@ -5,6 +5,7 @@ import { initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import cors from "cors";
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
@@ -17,9 +18,6 @@ initializeApp({
   projectId: firebaseConfig.projectId
 });
 
-// Firestore initialization (Admin SDK)
-// Note: Server-side writes are disabled due to IAM cross-project issues.
-// We keep the initialization for potential future use or reading if permissions allow.
 const db = getFirestore(
   firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
     ? firebaseConfig.firestoreDatabaseId 
@@ -31,8 +29,11 @@ console.log(`Firestore initialized for project: ${firebaseConfig.projectId}, dat
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  const PORT = process.env.PORT || 3000;
 
+  // IMPORTANT: Configure CORS to allow your Vercel frontend URL
+  app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+  
   app.use(express.json({ limit: '10mb' }));
 
   // AI Endpoint for match analysis
@@ -140,7 +141,7 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
+  app.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
 }
