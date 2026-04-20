@@ -1258,7 +1258,23 @@ const NEWS_POSTS: any[] = [];
     handleAnalyzeQualification: () => Promise<void>,
     handleUpdateConfig: (config: Config) => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai'>('bracket');
+    const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
+    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-3-flash-preview');
+
+    useEffect(() => {
+      setLocalApiKey(config.geminiApiKey || '');
+      setLocalModel(config.geminiModel || 'gemini-3-flash-preview');
+    }, [config.geminiApiKey, config.geminiModel]);
+
+    const handleSaveAiSettings = async () => {
+      await handleUpdateConfig({
+        ...config,
+        geminiApiKey: localApiKey,
+        geminiModel: localModel
+      });
+      alert("AI Settings saved successfully!");
+    };
     const [confirmReset, setConfirmReset] = useState<string | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isResetting, setIsResetting] = useState(false);
@@ -1795,15 +1811,25 @@ const NEWS_POSTS: any[] = [];
 
             {activeTab === 'ai' && (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
-                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">AI Settings</h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-display font-black italic uppercase text-white">AI Settings</h3>
+                  <button 
+                    onClick={handleSaveAiSettings}
+                    disabled={isSavingAdmin}
+                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all font-sans"
+                  >
+                    {isSavingAdmin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    Save Changes
+                  </button>
+                </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini API Key</label>
                     <div className="relative">
                       <input 
                         type="password"
-                        value={config.geminiApiKey || ''}
-                        onChange={(e) => handleUpdateConfig({ ...config, geminiApiKey: e.target.value })}
+                        value={localApiKey}
+                        onChange={(e) => setLocalApiKey(e.target.value)}
                         placeholder="Paste your Gemini API Key here..."
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all font-mono"
                       />
@@ -1816,9 +1842,9 @@ const NEWS_POSTS: any[] = [];
                     <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini Model</label>
                     <div className="relative">
                       <select 
-                        value={config.geminiModel || 'gemini-3-flash-preview'}
-                        onChange={(e) => handleUpdateConfig({ ...config, geminiModel: e.target.value })}
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
+                        value={localModel}
+                        onChange={(e) => setLocalModel(e.target.value)}
+                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer font-sans"
                       >
                         <option value="gemini-3-flash-preview">gemini-3-flash-preview (Current Stable)</option>
                         <option value="gemini-2.5-flash-preview-04-17">gemini-2.5-flash-preview-04-17</option>
@@ -1836,7 +1862,7 @@ const NEWS_POSTS: any[] = [];
                     <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
                     <div>
                       <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Configuration Status</h4>
-                      <p className="text-[10px] font-black uppercase text-white/40 leading-relaxed">
+                      <p className="text-[10px] font-black uppercase text-white/40 leading-relaxed font-sans">
                         Changes are saved to Firestore and take effect immediately for all subsequent AI requests (Match Analysis & Admin Commands).
                       </p>
                     </div>
