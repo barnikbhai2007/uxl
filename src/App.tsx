@@ -1872,13 +1872,12 @@ export default function App() {
       // Process the commands returned by the backend
       const commands = result.commands;
       for (const cmd of commands) {
-        if (cmd.type === 'UPDATE_MATCH') {
-          if (cmd.data.matchId) {
-            await updateDoc(doc(db, 'matches', cmd.data.matchId), cmd.data);
-          }
-        } else if (cmd.type === 'CREATE_MATCH') {
-          const matchId = uuidv4();
-          await setDoc(doc(db, 'matches', matchId), { ...cmd.data, id: matchId, status: 'scheduled' });
+        if (cmd.type === 'UPDATE_MATCH' || cmd.type === 'ADD_MATCH' || cmd.type === 'CREATE_MATCH') {
+          const matchId = cmd.data.matchId || `m-${Date.now()}`;
+          await setDoc(doc(db, 'matches', matchId), {
+            ...cmd.data,
+            id: matchId,
+          }, { merge: true });
         } else if (cmd.type === 'RESET') {
           await handleAdminReset(cmd.data.type);
         } else if (cmd.type === 'UPDATE_CONTENT') {

@@ -1,13 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { initializeApp, getApps } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
-import firebaseConfig from "../firebase-applet-config.json" with { type: "json" };
-
-if (!getApps().length) {
-  initializeApp({ projectId: firebaseConfig.projectId });
-}
-const db = getFirestore();
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
 const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
@@ -27,7 +19,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             text: `You are a Tournament Manager AI. 
             Return ONLY a raw JSON array.
             Available Commands:
-            - CREATE_MATCH: { homeTeamId, awayTeamId, date, matchNumber, type }
+            - ADD_MATCH: { matchId: optional, homeTeamId, awayTeamId, date, matchNumber, status }
             - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
             - RESET: { type: 'matches' | 'bracket' | 'all' }
             - UPDATE_CONTENT: { elementId, text, isImage: boolean }
@@ -44,13 +36,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     const text = result.response.text();
     const commands = JSON.parse(text);
-
-    // Save commands to Firestore
-    for (const cmd of commands) {
-      if (cmd.type === "UPDATE_MATCH" && cmd.data?.matchId) {
-        await db.collection("matches").doc(cmd.data.matchId).set(cmd.data, { merge: true });
-      }
-    }
 
     res.json({ success: true, commands });
   } catch (error: any) {
