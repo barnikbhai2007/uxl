@@ -1,7 +1,7 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { initializeApp } from "firebase-admin/app";
+import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
 import { GoogleGenerativeAI } from "@google/generative-ai";
@@ -13,9 +13,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 // Initialize Firebase Admin
-initializeApp({
-  projectId: firebaseConfig.projectId
-});
+if (!getApps().length) {
+  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
+  if (serviceAccount) {
+    initializeApp({
+      credential: cert(JSON.parse(serviceAccount)),
+      projectId: firebaseConfig.projectId
+    });
+  } else {
+    initializeApp({
+      projectId: firebaseConfig.projectId
+    });
+  }
+}
 
 const db = getFirestore(
   firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
