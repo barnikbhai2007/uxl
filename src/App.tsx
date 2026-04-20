@@ -1875,10 +1875,30 @@ export default function App() {
       alert("DEBUG AI JSON: " + JSON.stringify(commands));
       for (const cmd of commands) {
         if (cmd.type === 'UPDATE_MATCH' || cmd.type === 'ADD_MATCH' || cmd.type === 'CREATE_MATCH') {
+          const homeTeam = teams.find(t => 
+            t.name.toLowerCase() === cmd.data.homeTeamId?.toLowerCase() || 
+            t.fcName.toLowerCase() === cmd.data.homeTeamId?.toLowerCase()
+          );
+          const awayTeam = teams.find(t => 
+            t.name.toLowerCase() === cmd.data.awayTeamId?.toLowerCase() || 
+            t.fcName.toLowerCase() === cmd.data.awayTeamId?.toLowerCase()
+          );
+          
+          cmd.data.homeTeamId = homeTeam?.id || cmd.data.homeTeamId;
+          cmd.data.awayTeamId = awayTeam?.id || cmd.data.awayTeamId;
+
           const matchId = cmd.data.matchId || `m-${Date.now()}`;
           await setDoc(doc(db, 'matches', matchId), {
-            ...cmd.data,
-            id: matchId,
+            homeTeamId: cmd.data.homeTeamId,
+            awayTeamId: cmd.data.awayTeamId,
+            homeScore: cmd.data.homeScore || 0,
+            awayScore: cmd.data.awayScore || 0,
+            status: cmd.data.status || 'scheduled',
+            date: cmd.data.date,
+            matchNumber: cmd.data.matchNumber || 1,
+            matchday: cmd.data.matchday || 1,
+            ...cmd.data, // allow overriding other fields like homeScorers
+            id: matchId, // Ensure id is always matchId even if cmd.data overrides
           }, { merge: true });
         } else if (cmd.type === 'RESET') {
           await handleAdminReset(cmd.data.type);

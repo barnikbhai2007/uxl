@@ -17,9 +17,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           role: "user",
           parts: [{
             text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
+            Today's date is ${new Date().toDateString()}.
             Each item MUST follow this EXACT structure:
             { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
             
+            "matchId" must be spelled exactly as "matchId" not "matchld".
+            For homeTeamId and awayTeamId use the team name as-is, the frontend will match it.
             For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
             NEVER use "command" as a key. ALWAYS use "type" and "data".
             
