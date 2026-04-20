@@ -73,35 +73,31 @@ async function startServer() {
     try {
       const { command } = req.body;
       
-      const result = await model.generateContent([
-        {
-          text: `You are a Tournament Manager AI. 
-          Available Commands:
-          - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
-          - RESET: { type: 'matches' | 'bracket' | 'all' }
-          - UPDATE_CONTENT: { elementId, text, isImage: boolean }
-          - APPROVE_REGISTRATION: { registrationId }
-          - REJECT_REGISTRATION: { registrationId }
-          
-          Respond only with a JSON array of commands. Example: [{"type": "UPDATE_MATCH", "data": {...}}]
-          Command: ${command}`
+      const result = await model.generateContent({
+        contents: [{
+          role: "user",
+          parts: [{
+            text: `You are a Tournament Manager AI. 
+            Return ONLY a raw JSON array.
+            Available Commands:
+            - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
+            - RESET: { type: 'matches' | 'bracket' | 'all' }
+            - UPDATE_CONTENT: { elementId, text, isImage: boolean }
+            - APPROVE_REGISTRATION: { registrationId }
+            - REJECT_REGISTRATION: { registrationId }
+            
+            Command: ${command}`
+          }]
+        }],
+        generationConfig: {
+          responseMimeType: "application/json"
         }
-      ]);
+      });
 
       const text = result.response.text();
-      // More aggressive extraction: look for the first [ and last ]
-      const jsonStart = text.indexOf('[');
-      const jsonEnd = text.lastIndexOf(']');
+      console.log("AI Raw Response:", text);
       
-      let jsonString = text;
-      if (jsonStart !== -1 && jsonEnd !== -1) {
-        jsonString = text.substring(jsonStart, jsonEnd + 1);
-      } else {
-        // Fallback to removing markdown
-        jsonString = text.replace(/```json\n?|\n?```/g, "").trim();
-      }
-      
-      const commands = JSON.parse(jsonString);
+      const commands = JSON.parse(text);
       res.json({ success: true, commands });
     } catch (error: any) {
       console.error("AI Admin Error:", error);
