@@ -1373,6 +1373,7 @@ export default function App() {
   const [dbTeams, setDbTeams] = useState<Team[]>([]);
   const [dbMatches, setDbMatches] = useState<Match[]>([]);
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
@@ -1943,6 +1944,8 @@ export default function App() {
       
       const resData = await response.json();
       
+      alert("DEBUG AI JSON: " + JSON.stringify(resData));
+      
       if (!resData.success) {
         setAiAnalysisResult(`REJECTED: ${resData.message || 'Failed to analyze'}`);
         return;
@@ -1967,20 +1970,23 @@ export default function App() {
 
         if (existingMatch) {
           const matchRef = doc(db, 'matches', existingMatch.id);
+          
+          const safeScorers = data.scorers || [];
+          
           await updateDoc(matchRef, {
             homeScore: data.homeScore,
             awayScore: data.awayScore,
             status: 'finished',
             // Need to handle scorers based on who is home/away
             homeScorers: existingMatch.homeTeamId === homeTeam.id 
-              ? data.scorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
-              : data.scorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
+              ? safeScorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
+              : safeScorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
             awayScorers: existingMatch.awayTeamId === awayTeam.id 
-              ? data.scorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
-              : data.scorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
-            homeStats: data.homeStats,
-            awayStats: data.awayStats,
-            manOfTheMatch: data.manOfTheMatch
+              ? safeScorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
+              : safeScorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
+            homeStats: data.homeStats || null,
+            awayStats: data.awayStats || null,
+            manOfTheMatch: data.manOfTheMatch || null
           });
           setAiAnalysisResult("SUCCESS: Match result verified and updated!");
         } else {
@@ -1992,6 +1998,7 @@ export default function App() {
 
     } catch (error) {
       console.error("Vision AI Error:", error);
+      alert("DEBUG AI ERROR: " + (error instanceof Error ? error.message : JSON.stringify(error)));
       setAiAnalysisResult("AI failed to analyze the image. Please try again or update manually via admin.");
     } finally {
       setIsSubmittingImg(false);
@@ -2040,7 +2047,15 @@ export default function App() {
   };
 
   useEffect(() => {
+    let teamsLoaded = false;
+    let matchesLoaded = false;
 
+    const checkLoaded = () => {
+      // Small timeout to prevent aggressive flashing and let UI settle
+      if (teamsLoaded && matchesLoaded) {
+        setTimeout(() => setIsDataLoading(false), 800);
+      }
+    };
 
     // Teams listener (approved registrations)
     const unsubscribeTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
@@ -2059,12 +2074,16 @@ export default function App() {
         };
       });
       setDbTeams(teamsList);
+      teamsLoaded = true;
+      checkLoaded();
     });
 
     // Matches listener
     const unsubscribeMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
       const matchesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
       setDbMatches(matchesList);
+      matchesLoaded = true;
+      checkLoaded();
     });
 
     return () => {
@@ -2324,7 +2343,23 @@ export default function App() {
   const bracketMatches: BracketMatch[] = [];
 
   return (
-    <div className="min-h-screen bg-[#000030] text-white font-sans selection:bg-blue-500/30 relative overflow-hidden">
+    <>
+      <AnimatePresence>
+        {isDataLoading && (
+          <motion.div 
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-[#000030] flex flex-col items-center justify-center pointer-events-none"
+          >
+            <Trophy className="w-16 h-16 text-blue-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.6)] mb-8 animate-pulse" />
+            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-6" />
+            <h2 className="text-3xl font-black uppercase tracking-tighter text-white italic">Arena Server</h2>
+            <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold mt-2 animate-pulse">Syncing matches & teams...</p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="min-h-screen bg-[#000030] text-white font-sans selection:bg-blue-500/30 relative overflow-hidden">
       {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
@@ -3336,5 +3371,6 @@ export default function App() {
         </div>
       </footer>
     </div>
+    </>
   );
 }

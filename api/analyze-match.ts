@@ -24,7 +24,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           },
           {
             text: `Analyze this FC Mobile match result screenshot for player "${fcName}". 
-            Extract and return STRICT JSON: { "homeTeam": "...", "awayTeam": "...", "homeScore": 0, "awayScore": 0 }.
+            Extract and return STRICT JSON: { "homeTeam": "...", "awayTeam": "...", "homeScore": 0, "awayScore": 0, "scorers": [{"name": "...", "goals": 1, "team": "..."}] }.
             If "${fcName}" is not listed as a participant, return { "error": "Player not found" }.`
           }
         ]
