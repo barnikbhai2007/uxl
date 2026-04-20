@@ -35,7 +35,7 @@ async function startServer() {
 
   app.use(express.json({ limit: '10mb' }));
 
-  // AI Endpoint
+  // AI Endpoint for match analysis
   app.post("/api/analyze-match", async (req, res) => {
     try {
       const { base64, mimeType, fcName } = req.body;
@@ -64,6 +64,35 @@ async function startServer() {
       res.json({ success: true, matchData });
     } catch (error: any) {
       console.error("AI Error:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // AI Endpoint for Admin Commands
+  app.post("/api/admin-ai-command", async (req, res) => {
+    try {
+      const { command } = req.body;
+      
+      const result = await model.generateContent([
+        {
+          text: `You are a Tournament Manager AI. 
+          Available Commands:
+          - UPDATE_MATCH: { matchId, homeScore, awayScore, status, homeScorers, awayScorers, homeStats, awayStats, manOfTheMatch }
+          - RESET: { type: 'matches' | 'bracket' | 'all' }
+          - UPDATE_CONTENT: { elementId, text, isImage: boolean }
+          - APPROVE_REGISTRATION: { registrationId }
+          - REJECT_REGISTRATION: { registrationId }
+          
+          Respond only with a JSON array of commands. Example: [{"type": "UPDATE_MATCH", "data": {...}}]
+          Command: ${command}`
+        }
+      ]);
+
+      const text = result.response.text();
+      const commands = JSON.parse(text.replace(/```json\n?|\n?```/g, ""));
+      res.json({ success: true, commands });
+    } catch (error: any) {
+      console.error("AI Admin Error:", error);
       res.status(500).json({ success: false, message: error.message });
     }
   });

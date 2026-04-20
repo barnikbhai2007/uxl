@@ -1866,13 +1866,31 @@ export default function App() {
       const result = await response.json();
       
       if (!result.success) {
-        throw new Error(result.message);
+        throw new Error(result.message || 'AI failed to process command.');
+      }
+
+      // Process the commands returned by the backend
+      const commands = result.commands;
+      for (const cmd of commands) {
+        if (cmd.type === 'UPDATE_MATCH') {
+          if (cmd.data.matchId) {
+            await updateDoc(doc(db, 'matches', cmd.data.matchId), cmd.data);
+          }
+        } else if (cmd.type === 'RESET') {
+          await handleAdminReset(cmd.data.type);
+        } else if (cmd.type === 'UPDATE_CONTENT') {
+          await updateSiteContent(cmd.data.elementId, cmd.data.text, cmd.data.isImage);
+        } else if (cmd.type === 'APPROVE_REGISTRATION') {
+          await handleApproveRegistration(cmd.data.registrationId);
+        } else if (cmd.type === 'REJECT_REGISTRATION') {
+          await handleRejectRegistration(cmd.data.registrationId);
+        }
       }
 
       alert("AI Assistant successfully processed your request.");
     } catch (error) {
       console.error("AI Error:", error);
-      alert("AI Assistant failed to process command.");
+      alert(`AI Assistant failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
