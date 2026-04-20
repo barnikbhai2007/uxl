@@ -150,7 +150,10 @@ service cloud.firestore {
     match /matches/{matchId} {
       allow read: if true;
       allow create: if isAdmin() && isValidMatchCreate(request.resource.data);
-      allow update: if isAdmin() && isValidMatch(request.resource.data);
+      allow update: if (
+        isAdmin() || 
+        (isAuthenticated() && (request.auth.uid == resource.data.homeTeamId || request.auth.uid == resource.data.awayTeamId))
+      ) && isValidMatch(request.resource.data);
       allow delete: if isAdmin();
     }
 

@@ -8,7 +8,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import cors from "cors";
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
+const model = ai.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -52,9 +52,29 @@ async function startServer() {
               }
             },
             {
-              text: `Analyze this FC Mobile match result screenshot for player "${fcName}". 
-              Extract and return STRICT JSON: { "homeTeam": "...", "awayTeam": "...", "homeScore": 0, "awayScore": 0, "scorers": [{"name": "...", "goals": 1, "team": "..."}], "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, "manOfTheMatch": "..." }.
-              If "${fcName}" is not listed as a participant, return { "error": "Player not found" }.`
+              text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
+              
+              INSTRUCTIONS:
+              1. Identify the Home Team and Away Team names.
+              2. Identify the Final Score (Home vs Away).
+              3. Identify Goal Scorers (name, goals, and which team they played for).
+              4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides) for both teams.
+              5. Identify the Man of the Match.
+              
+              CRITICAL: One of the teams MUST reasonably match "${fcName}" (could be a partial match or slightly different spelling due to OCR).
+              If neither team matches "${fcName}", return { "error": "Reporting player name was not found as a participant in this screenshot." }.
+              
+              Return STRICT JSON: 
+              { 
+                "homeTeam": "...", 
+                "awayTeam": "...", 
+                "homeScore": 0, 
+                "awayScore": 0, 
+                "scorers": [{"name": "...", "goals": 1, "team": "..."}], 
+                "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
+                "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
+                "manOfTheMatch": "..." 
+              }`
             }
           ]
         }],

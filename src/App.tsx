@@ -451,15 +451,16 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
-  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode }: { 
+  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent }: { 
     match: Match & { _overrideStatus?: string }, 
     onClose: () => void,
     teams: Team[],
     copiedId: string | null,
     copyToClipboard: (id: string) => void,
-    updateMatch?: (match: Match) => void,
-    deleteMatch?: (matchId: string) => void,
-    isEditingMode?: boolean
+    updateMatch?: (match: Match) => Promise<void> | void,
+    deleteMatch?: (matchId: string) => Promise<void> | void,
+    isEditingMode?: boolean,
+    siteContent?: any
   }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
@@ -2231,7 +2232,11 @@ export default function App() {
   };
 
   const handleUpdateMatch = async (match: Match) => {
-    if (!isAdmin) return;
+    const isParticipant = user && (match.homeTeamId === user.uid || match.awayTeamId === user.uid);
+    if (!isAdmin && !isParticipant) {
+       alert("Permission denied. Only admins or match participants can update results.");
+       return;
+    }
     try {
       await updateDoc(doc(db, 'matches', match.id), { ...match });
     } catch (error) {
@@ -2453,14 +2458,36 @@ export default function App() {
       }
 
       const data = resData.matchData;
-      if (data.homeTeam !== playerRegistration.fcName && data.awayTeam !== playerRegistration.fcName) {
-        setAiAnalysisResult("REJECTED: Your FC Name was not detected as a participant in this match screenshot.");
+      
+      const normalize = (nm: string) => (nm || '').toLowerCase().trim();
+      const userFcName = normalize(playerRegistration.fcName);
+      const aiHome = normalize(data.homeTeam);
+      const aiAway = normalize(data.awayTeam);
+
+      // Flexible participant check
+      const isParticipant = aiHome.includes(userFcName) || userFcName.includes(aiHome) || 
+                          aiAway.includes(userFcName) || userFcName.includes(aiAway);
+
+      if (!isParticipant) {
+        setAiAnalysisResult(`REJECTED: Your FC Name "${playerRegistration.fcName}" was not clearly detected in the screenshot (AI saw: "${data.homeTeam}" vs "${data.awayTeam}").`);
         return;
       }
 
-      // Auto-update match
-      const homeTeam = teams.find(t => t.name.toLowerCase() === data.homeTeam.toLowerCase());
-      const awayTeam = teams.find(t => t.name.toLowerCase() === data.awayTeam.toLowerCase());
+      // Auto-update match with flexible team finding
+      const findTeamFlexible = (aiName: string) => {
+        const normAi = normalize(aiName);
+        // Priority 1: Exact Match
+        let match = teams.find(t => normalize(t.name) === normAi || normalize(t.fcName) === normAi);
+        if (match) return match;
+        
+        // Priority 2: Partial Match
+        match = teams.find(t => normAi.includes(normalize(t.name)) || normalize(t.name).includes(normAi) || 
+                            normAi.includes(normalize(t.fcName)) || normalize(t.fcName).includes(normAi));
+        return match;
+      };
+
+      const homeTeam = findTeamFlexible(data.homeTeam);
+      const awayTeam = findTeamFlexible(data.awayTeam);
 
       if (homeTeam && awayTeam) {
         // Find existing match
@@ -2499,7 +2526,7 @@ export default function App() {
 
     } catch (error) {
       console.error("Vision AI Error:", error);
-      setAiAnalysisResult("AI failed to analyze the image. Please try again or update manually via admin.");
+      setAiAnalysisResult(`AI failed to analyze the image (${error instanceof Error ? error.message : 'Unknown Error'}). Please try a clearer screenshot or update manually below if you are a participant.`);
     } finally {
       setIsSubmittingImg(false);
     }
@@ -3865,7 +3892,8 @@ export default function App() {
             copyToClipboard={copyToClipboard}
             updateMatch={handleUpdateMatch}
             deleteMatch={handleDeleteMatch}
-            isEditingMode={isEditingMode}
+            isEditingMode={isEditingMode || (user && (selectedMatch.homeTeamId === user.uid || selectedMatch.awayTeamId === user.uid))}
+            siteContent={siteContent}
           />
         )}
         {isRegistrationModalOpen && (
