@@ -2395,7 +2395,8 @@ export default function App() {
        return;
     }
     try {
-      await updateDoc(doc(db, 'matches', match.id), { ...match });
+      const { _overrideStatus, ...matchData } = match as any;
+      await updateDoc(doc(db, 'matches', match.id), matchData);
     } catch (error) {
       console.error("Error updating match:", error);
       alert("Failed to update match.");
@@ -2687,21 +2688,40 @@ export default function App() {
           
           const safeScorers = data.scorers || [];
           
-          await updateDoc(matchRef, {
-            homeScore: data.homeScore,
-            awayScore: data.awayScore,
+          const updatePayload = {
+            homeScore: data.homeScore ?? 0,
+            awayScore: data.awayScore ?? 0,
             status: 'finished',
             // Need to handle scorers based on who is home/away
             homeScorers: existingMatch.homeTeamId === homeTeam.id 
-              ? safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time}))
-              : safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time})),
+              ? safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
+              : safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
             awayScorers: existingMatch.awayTeamId === awayTeam.id 
-              ? safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time}))
-              : safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time})),
-            homeStats: data.homeStats || null,
-            awayStats: data.awayStats || null,
+              ? safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
+              : safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
+            homeStats: data.homeStats ? {
+              possession: data.homeStats.possession ?? 50,
+              shots: data.homeStats.shots ?? 0,
+              shotsOnTarget: data.homeStats.shotsOnTarget ?? 0,
+              passAccuracy: data.homeStats.passAccuracy ?? 0,
+              fouls: data.homeStats.fouls ?? 0,
+              offsides: data.homeStats.offsides ?? 0,
+            } : null,
+            awayStats: data.awayStats ? {
+              possession: data.awayStats.possession ?? 50,
+              shots: data.awayStats.shots ?? 0,
+              shotsOnTarget: data.awayStats.shotsOnTarget ?? 0,
+              passAccuracy: data.awayStats.passAccuracy ?? 0,
+              fouls: data.awayStats.fouls ?? 0,
+              offsides: data.awayStats.offsides ?? 0,
+            } : null,
             manOfTheMatch: data.manOfTheMatch || null
-          });
+          };
+
+          // Deep clean payload to guarantee no undefined values throw a Firestore error
+          const cleanPayload = JSON.parse(JSON.stringify(updatePayload));
+          await updateDoc(matchRef, cleanPayload);
+
           setAiAnalysisResult("SUCCESS: Match result verified and updated!");
         } else {
           setAiAnalysisResult("ERROR: No scheduled match found between these teams.");
