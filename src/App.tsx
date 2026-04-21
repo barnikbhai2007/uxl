@@ -2150,7 +2150,40 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
-  const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true, copiedId, copyToClipboard }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean, showCopy?: boolean, copiedId: string | null, copyToClipboard: (uid: string) => void }) => {
+  const AchievementNotification = ({ achievements, onClose }: { achievements: string[], onClose: () => void }) => {
+  useEffect(() => {
+    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
+    audio.volume = 0.5;
+    audio.play().catch(e => console.log("Audio play blocked", e));
+  }, []);
+
+  return (
+    <div className="achievement-popup fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+      <motion.div 
+        initial={{ scale: 0.8, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-[#0a0a2a] border border-blue-500/50 p-8 rounded-3xl text-center shadow-[0_0_50px_rgba(59,130,246,0.3)] max-w-sm w-full relative overflow-hidden"
+      >
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/10 pointer-events-none" />
+        
+        <h2 className="text-3xl font-black mb-6 text-white tracking-tighter uppercase italic">🏆 Achievement Unlocked!</h2>
+        {achievements.map(id => (
+          <div key={id} className="mb-4 p-4 bg-blue-900/30 rounded-2xl border border-blue-500/20">
+            <div className="text-sm font-bold text-blue-200">{ACHIEVEMENTS.find(a => a.id === id)?.title}</div>
+          </div>
+        ))}
+        <button 
+          onClick={onClose} 
+          className="mt-6 w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-sm hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg shadow-blue-500/20"
+        >
+          Claim Glory 🎉
+        </button>
+      </motion.div>
+    </div>
+  );
+};
+
+const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true, copiedId, copyToClipboard }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean, showCopy?: boolean, copiedId: string | null, copyToClipboard: (uid: string) => void }) => {
     if (!team) return (
       <div className={`flex items-center ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
         <div className={`${size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'} rounded bg-white/10 flex items-center justify-center text-[10px] font-black uppercase text-white/40 shrink-0 ${reverse ? 'ml-2' : 'mr-2'}`}>
@@ -3333,18 +3366,20 @@ export default function App() {
       if (!myTeam) return;
 
       const earnedIds = evaluateAchievements(myTeam, matches, myRegistrationData);
-      const existingIds = new Set((userProfile.achievements || []).map(a => a.achievementId));
+      const existingIds = new Set(Object.keys(userProfile.achievements || {}));
       
       const missingIds = earnedIds.filter(id => !existingIds.has(id));
       
       if (missingIds.length > 0) {
-        const newAchievements = missingIds.map(id => ({
-          achievementId: id,
-          unlockedAt: serverTimestamp(),
-          seen: false
-        }));
+        const newAchievements: any = {};
+        missingIds.forEach(id => {
+          newAchievements[id] = {
+            unlockedAt: serverTimestamp(),
+            seen: false
+          };
+        });
         
-        const updatedAchievements = [...(userProfile.achievements || []), ...newAchievements];
+        const updatedAchievements = { ...userProfile.achievements, ...newAchievements };
         
         // Update user profile in firestore to grant the achievement
         setDoc(doc(db, 'users', user.uid), { achievements: updatedAchievements }, { merge: true }).catch(err => {
@@ -3357,21 +3392,24 @@ export default function App() {
   }, [user, userProfile, myRegistrationData, teams, matches]);
 
   const handleCloseAchievement = async () => {
-    if (!newAchievement || !userProfile) return;
+    if (newAchievements.length === 0 || !userProfile) return;
     
     try {
-      const updatedAchievements = (userProfile.achievements || []).map(ua => 
-        ua.achievementId === newAchievement.id ? { ...ua, seen: true } : ua
-      );
+      const updatedAchievements = { ...userProfile.achievements };
+      newAchievements.forEach(id => {
+        if (updatedAchievements[id]) {
+          updatedAchievements[id].seen = true;
+        }
+      });
       
       const userRef = doc(db, 'users', userProfile.uid);
       await updateDoc(userRef, { achievements: updatedAchievements });
       
       setUserProfile(prev => prev ? { ...prev, achievements: updatedAchievements } : null);
-      setNewAchievement(null);
+      setNewAchievements([]);
     } catch (e) {
       console.error("Failed to mark achievement as seen:", e);
-      setNewAchievement(null);
+      setNewAchievements([]);
     }
   };
   useEffect(() => {
@@ -3778,7 +3816,7 @@ export default function App() {
                                <h2 className="text-4xl md:text-5xl font-display font-black uppercase italic text-white tracking-tighter">My Trophy Room</h2>
                                <p className="text-white/40 text-xs font-black uppercase tracking-[0.3em]">Showcasing your tournament exploits</p>
                              </div>
-                             <AchievementsList userAchievements={userProfile?.achievements || []} />
+                             <AchievementsList userAchievements={userProfile?.achievements || {}} />
                           </div>
                         </motion.div>
                       ) : campaignTab === 'edit' ? (
@@ -4690,13 +4728,7 @@ export default function App() {
           />
         )}
         {newAchievements.length > 0 && (
-          <div className="achievement-popup fixed top-20 right-4 z-50 bg-blue-900 border border-blue-500 p-6 rounded-lg text-white shadow-xl">
-            <h2 className="text-xl font-black mb-4">🏆 New Achievement Unlocked!</h2>
-            {newAchievements.map(id => (
-              <div key={id} className="mb-2 font-bold">{ACHIEVEMENTS.find(a => a.id === id)?.title}</div>
-            ))}
-            <button onClick={() => setNewAchievements([])} className="mt-4 bg-yellow-500 text-black px-4 py-2 rounded font-bold">Awesome! 🎉</button>
-          </div>
+          <AchievementNotification achievements={newAchievements} onClose={() => setNewAchievements([])} />
         )}
       </AnimatePresence>
 

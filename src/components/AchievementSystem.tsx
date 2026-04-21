@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Star, Shield, Award, X, Sparkles, Target, Zap, Heart, Ghost, Skull, Smile } from 'lucide-react';
-import { Achievement, UserAchievement } from '../types';
+import { Achievement, UserAchievementMap } from '../types';
 import { ACHIEVEMENTS } from '../achievements';
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -81,7 +81,7 @@ export const AchievementBadge: React.FC<{ achievement: Achievement, unlockedAt?:
         {unlockedAt && (
           <div className="pt-4 mt-auto border-t border-white/5 w-full">
             <span className="text-[9px] font-black text-blue-400/60 uppercase tracking-widest">
-              Unlocked {new Date(unlockedAt).toLocaleDateString()}
+              Unlocked {new Date(typeof unlockedAt.toDate === 'function' ? unlockedAt.toDate() : unlockedAt).toLocaleDateString()}
             </span>
           </div>
         )}
@@ -157,14 +157,14 @@ export const AchievementPopup = ({ achievement, onClose }: { achievement: Achiev
   );
 };
 
-export const AchievementsList = ({ userAchievements }: { userAchievements: UserAchievement[] }) => {
+export const AchievementsList = ({ userAchievements }: { userAchievements?: UserAchievementMap }) => {
   const categories = Array.from(new Set(ACHIEVEMENTS.map(a => a.category)));
 
   return (
     <div className="space-y-16">
       {categories.map(category => {
         const categoryAchievements = ACHIEVEMENTS.filter(a => a.category === category);
-        const unlockedCount = categoryAchievements.filter(a => userAchievements.some(ua => ua.achievementId === a.id)).length;
+        const unlockedCount = categoryAchievements.filter(a => userAchievements?.[a.id]).length;
 
         return (
           <div key={category} className="space-y-8">
@@ -182,7 +182,7 @@ export const AchievementsList = ({ userAchievements }: { userAchievements: UserA
             
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
               {categoryAchievements.map(achievement => {
-                const unlocked = userAchievements.find(ua => ua.achievementId === achievement.id);
+                const unlocked = userAchievements?.[achievement.id];
                 return (
                   <AchievementBadge 
                     key={achievement.id}
