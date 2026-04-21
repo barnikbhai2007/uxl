@@ -22,6 +22,7 @@ export interface Team {
 export interface Scorer {
   playerName: string;
   goals: number;
+  time?: string;
 }
 
 export interface MatchStats {

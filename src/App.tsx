@@ -210,7 +210,7 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
       const homeTeam = teams.find(t => t.id === m.homeTeamId);
       const awayTeam = teams.find(t => t.id === m.awayTeamId);
 
-      if (homeTeam && m.awayScore === 0) {
+      if (homeTeam && (m.awayScore ?? -1) === 0) {
         const key = homeTeam.id;
         if (!statsMap[key]) {
           statsMap[key] = {
@@ -224,7 +224,7 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
         statsMap[key].cleanSheets += 1;
       }
 
-      if (awayTeam && m.homeScore === 0) {
+      if (awayTeam && (m.homeScore ?? -1) === 0) {
         const key = awayTeam.id;
         if (!statsMap[key]) {
           statsMap[key] = {
@@ -451,7 +451,7 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
-  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent }: { 
+  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent, isAdmin, resetMatch }: { 
     match: Match & { _overrideStatus?: string }, 
     onClose: () => void,
     teams: Team[],
@@ -460,7 +460,9 @@ const NEWS_POSTS: any[] = [];
     updateMatch?: (match: Match) => Promise<void> | void,
     deleteMatch?: (matchId: string) => Promise<void> | void,
     isEditingMode?: boolean,
-    siteContent?: any
+    siteContent?: any,
+    isAdmin?: boolean,
+    resetMatch?: (id: string) => Promise<void> | void
   }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
@@ -508,7 +510,7 @@ const NEWS_POSTS: any[] = [];
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
           
           <div className="p-8 relative z-10">
-            {isEditingMode && (
+            {isEditingMode && isAdmin && (
               <div className="flex justify-end gap-2 mb-4">
                 <button 
                   onClick={() => { if(deleteMatch) deleteMatch(match.id); onClose(); }}
@@ -576,19 +578,8 @@ const NEWS_POSTS: any[] = [];
                     {match.awayScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-white/40 italic">
-                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
+                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)} {s.time && `(${s.time})`}
                         </span>
-                        {isEditingMode && (
-                          <input 
-                            type="number" 
-                            defaultValue={s.goals} 
-                            onChange={(e) => {
-                              match.awayScorers![i].goals = parseInt(e.target.value);
-                              if (updateMatch) updateMatch(match);
-                            }}
-                            className="w-8 h-6 bg-white/10 rounded text-center text-xs font-black text-white"
-                          />
-                        )}
                       </div>
                     ))}
                   </div>
@@ -600,7 +591,7 @@ const NEWS_POSTS: any[] = [];
                 <div className="flex items-center gap-4 md:gap-6">
                   {match.isDNF ? (
                     <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
-                  ) : isEditingMode ? (
+                  ) : isEditingMode && isAdmin ? (
                     <div className="flex items-center gap-2">
                       <input type="number" defaultValue={match.awayScore ?? 0} onChange={(e) => {
                           match.awayScore = parseInt(e.target.value);
@@ -641,7 +632,7 @@ const NEWS_POSTS: any[] = [];
                    (displayStatus === 'live' || displayStatus === 'ongoing') ? 'Ongoing' : 'Match Scheduled'}
                 </div>
 
-                {isEditingMode && (
+                {isEditingMode && isAdmin && (
                   <div className="mt-4 flex flex-col items-center gap-2">
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Edit Status</p>
                     <select 
@@ -700,19 +691,8 @@ const NEWS_POSTS: any[] = [];
                     {match.homeScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-white/40 italic">
-                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)}
+                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)} {s.time && `(${s.time})`}
                         </span>
-                        {isEditingMode && (
-                          <input 
-                            type="number" 
-                            defaultValue={s.goals} 
-                            onChange={(e) => {
-                              match.homeScorers![i].goals = parseInt(e.target.value);
-                              if (updateMatch) updateMatch(match);
-                            }}
-                            className="w-8 h-6 bg-white/10 rounded text-center text-xs font-black text-white"
-                          />
-                        )}
                       </div>
                     ))}
                   </div>
@@ -759,13 +739,28 @@ const NEWS_POSTS: any[] = [];
               </div>
             </div>
 
-            <div className="mt-8 flex justify-center">
+            <div className="mt-8 flex flex-col items-center gap-4">
               <button 
                 onClick={onClose}
                 className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl transition-all shadow-lg shadow-blue-600/20"
               >
                 Close Details
               </button>
+              
+              {isAdmin && (
+                <button 
+                  onClick={() => {
+                    if (window.confirm("Are you sure you want to reset this match result? This action cannot be undone.")) {
+                      if (resetMatch) resetMatch(match.id);
+                      onClose();
+                    }
+                  }}
+                  className="px-6 py-2 bg-red-600/10 hover:bg-red-600 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-xl transition-all flex items-center gap-2"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  Admin: Reset Match Result
+                </button>
+              )}
             </div>
           </div>
         </motion.div>
@@ -801,7 +796,10 @@ const NEWS_POSTS: any[] = [];
       const file = e.target.files?.[0];
       if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) return;
+      if (file.size > 10 * 1024 * 1024) {
+        alert("File is too large. Please select an image under 10MB.");
+        return;
+      }
 
       setIsCompressing(true);
       try {
@@ -815,6 +813,7 @@ const NEWS_POSTS: any[] = [];
         setFormData({ ...formData, logoUrl: base64 });
       } catch (error) {
         console.error("Compression error:", error);
+        alert("Failed to process image. Please try another one.");
       } finally {
         setIsCompressing(false);
       }
@@ -1246,7 +1245,7 @@ const NEWS_POSTS: any[] = [];
     handleToggleRegistration: () => void,
     isSavingAdmin: boolean,
     handleAdminAiCommand: (command: string) => Promise<void>,
-    handleAdminReset: (type: 'matches' | 'bracket' | 'table' | 'registrations' | 'all') => Promise<void>,
+    handleAdminReset: (type: 'matches' | 'bracket' | 'table' | 'registrations' | 'stats' | 'all') => Promise<void>,
     handleApproveRegistration: (id: string) => Promise<void>,
     handleRejectRegistration: (id: string) => Promise<void>,
     handleDeleteRegistration: (id: string) => Promise<void>,
@@ -1275,7 +1274,7 @@ const NEWS_POSTS: any[] = [];
       });
       alert("AI Settings saved successfully!");
     };
-    const [confirmReset, setConfirmReset] = useState<string | null>(null);
+    const [confirmReset, setConfirmReset] = useState<'matches' | 'bracket' | 'table' | 'registrations' | 'stats' | 'all' | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isResetting, setIsResetting] = useState(false);
 
@@ -1624,6 +1623,36 @@ const NEWS_POSTS: any[] = [];
                         <button 
                           disabled={isResetting}
                           onClick={() => {
+                            if (confirmReset === 'table') {
+                              setIsResetting(true);
+                              handleAdminReset('table').finally(() => setIsResetting(false));
+                              setConfirmReset(null);
+                            } else {
+                              setConfirmReset('table');
+                            }
+                          }} 
+                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'table' ? 'bg-orange-600 border-orange-600 text-white animate-pulse' : 'bg-orange-600/10 border-orange-500/20 text-orange-500 hover:bg-orange-600 hover:text-white'}`}
+                        >
+                          {isResetting && confirmReset === 'table' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'table' ? 'Confirm Reset Table (Scores)' : 'Reset Table (Scores)')}
+                        </button>
+                        <button 
+                          disabled={isResetting}
+                          onClick={() => {
+                            if (confirmReset === 'stats') {
+                              setIsResetting(true);
+                              handleAdminReset('stats').finally(() => setIsResetting(false));
+                              setConfirmReset(null);
+                            } else {
+                              setConfirmReset('stats');
+                            }
+                          }} 
+                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'stats' ? 'bg-blue-600 border-blue-600 text-white animate-pulse' : 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white'}`}
+                        >
+                          {isResetting && confirmReset === 'stats' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'stats' ? 'Confirm Reset Stats Tab' : 'Reset Stats Tab')}
+                        </button>
+                        <button 
+                          disabled={isResetting}
+                          onClick={() => {
                             if (confirmReset === 'all') {
                               setIsResetting(true);
                               handleAdminReset('all').finally(() => setIsResetting(false));
@@ -1632,9 +1661,9 @@ const NEWS_POSTS: any[] = [];
                               setConfirmReset('all');
                             }
                           }} 
-                          className={`relative px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-800 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
+                          className={`relative px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-900 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
                         >
-                          {isResetting && confirmReset === 'all' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'all' ? 'Confirm PURGE ALL' : 'Purge All Data')}
+                          {isResetting && confirmReset === 'all' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'all' ? 'Confirm TOTAL PURGE' : 'Purge All Data')}
                         </button>
                       </div>
                       {confirmReset && (
@@ -1929,6 +1958,28 @@ const NEWS_POSTS: any[] = [];
   // Main app component follows...
 
 export default function App() {
+  const handleResetSingleMatch = async (matchId: string) => {
+    if (!isAdmin) return;
+    try {
+      const matchRef = doc(db, 'matches', matchId);
+      await updateDoc(matchRef, {
+        homeScore: 0,
+        awayScore: 0,
+        status: 'scheduled',
+        homeScorers: [],
+        awayScorers: [],
+        homeStats: null,
+        awayStats: null,
+        manOfTheMatch: null,
+        isDNF: false
+      });
+      alert("Match reset back to scheduled status.");
+    } catch (e) {
+      console.error("Failed to reset match:", e);
+      alert("Failed to reset match.");
+    }
+  };
+
   const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'registration' | 'stats' | 'campaign'>('fixtures');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
@@ -1977,7 +2028,9 @@ export default function App() {
       offsides: number, 
       shots: number, 
       shotsOnTarget: number,
-      matches: number
+      matches: number,
+      earlyGoals: number,
+      lateGoals: number
     } } = {};
 
     monthMatches.forEach(m => {
@@ -1985,8 +2038,8 @@ export default function App() {
         const hId = m.homeTeamId;
         const aId = m.awayTeamId;
         
-        if (!teamStats[hId]) teamStats[hId] = { goalsScored: 0, goalsConceded: 0, possession: 0, fouls: 0, offsides: 0, shots: 0, shotsOnTarget: 0, matches: 0 };
-        if (!teamStats[aId]) teamStats[aId] = { goalsScored: 0, goalsConceded: 0, possession: 0, fouls: 0, offsides: 0, shots: 0, shotsOnTarget: 0, matches: 0 };
+        if (!teamStats[hId]) teamStats[hId] = { goalsScored: 0, goalsConceded: 0, possession: 0, fouls: 0, offsides: 0, shots: 0, shotsOnTarget: 0, matches: 0, earlyGoals: 0, lateGoals: 0 };
+        if (!teamStats[aId]) teamStats[aId] = { goalsScored: 0, goalsConceded: 0, possession: 0, fouls: 0, offsides: 0, shots: 0, shotsOnTarget: 0, matches: 0, earlyGoals: 0, lateGoals: 0 };
         
         teamStats[hId].goalsScored += (m.homeScore || 0);
         teamStats[hId].goalsConceded += (m.awayScore || 0);
@@ -1997,6 +2050,13 @@ export default function App() {
         teamStats[hId].shotsOnTarget += (m.homeStats?.shotsOnTarget || 0);
         teamStats[hId].matches += 1;
 
+        // Early/Late tracking
+        (m.homeScorers || []).forEach(s => {
+          const t = parseInt(s.time || "0");
+          if (t > 0 && t <= 30) teamStats[hId].earlyGoals += s.goals;
+          if (t >= 60) teamStats[hId].lateGoals += s.goals;
+        });
+
         teamStats[aId].goalsScored += (m.awayScore || 0);
         teamStats[aId].goalsConceded += (m.homeScore || 0);
         teamStats[aId].possession += (m.awayStats?.possession || 50);
@@ -2005,11 +2065,21 @@ export default function App() {
         teamStats[aId].shots += (m.awayStats?.shots || 0);
         teamStats[aId].shotsOnTarget += (m.awayStats?.shotsOnTarget || 0);
         teamStats[aId].matches += 1;
+
+        // Early/Late tracking
+        (m.awayScorers || []).forEach(s => {
+          const t = parseInt(s.time || "0");
+          if (t > 0 && t <= 30) teamStats[aId].earlyGoals += s.goals;
+          if (t >= 60) teamStats[aId].lateGoals += s.goals;
+        });
       }
     });
 
     const getTopTeam = (key: keyof typeof teamStats[string], mode: 'max' | 'min' = 'max') => {
-      return Object.entries(teamStats)
+      const filteredTeams = Object.entries(teamStats).filter(([_, s]) => s.matches > 0);
+      if (filteredTeams.length === 0) return { name: '---', value: 0 };
+
+      return filteredTeams
         .map(([id, stats]) => {
           const team = teams.find(t => t.id === id);
           let value = stats[key] as number;
@@ -2030,7 +2100,9 @@ export default function App() {
       mostFouls: getTopTeam('fouls'),
       mostOffsides: getTopTeam('offsides'),
       mostShots: getTopTeam('shots'),
-      mostShotsOnTarget: getTopTeam('shotsOnTarget')
+      mostShotsOnTarget: getTopTeam('shotsOnTarget'),
+      mostEarlyGoals: getTopTeam('earlyGoals'),
+      mostLateGoals: getTopTeam('lateGoals')
     };
   }, [matches, teams]);
   
@@ -2148,7 +2220,7 @@ export default function App() {
   // For debugging, only shown in development console
   useEffect(() => {
     if (user) {
-      console.log("Admin Status Check:", { email: user.email, isAdmin });
+      // Logic for admin check
     }
   }, [user, isAdmin]);
 
@@ -2377,7 +2449,6 @@ export default function App() {
 
   const seedBracket = async () => {
     if (!isAdmin) return;
-    console.log("Seeding bracket with initial data...");
     try {
       const batch = writeBatch(db);
       for (const match of INITIAL_BRACKET) {
@@ -2385,62 +2456,73 @@ export default function App() {
         batch.set(docRef, match);
       }
       await batch.commit();
-      console.log("Bracket seeded successfully via batch.");
     } catch (error) {
       console.error("Bracket seeding failed:", error);
       throw error;
     }
   };
 
-  const handleAdminReset = async (type: 'matches' | 'bracket' | 'table' | 'registrations' | 'all') => {
+  const handleAdminReset = async (type: 'matches' | 'bracket' | 'table' | 'registrations' | 'stats' | 'all') => {
     if (!isAdmin) {
       alert("Admin access required.");
       return;
     }
-    console.log(`Starting admin reset: ${type}`);
     
-    // Bypass window.confirm for now due to iframe issues
     try {
       const batch = writeBatch(db);
       
-      if (type === 'matches' || type === 'all') {
-        console.log("Deleting matches...");
+      if (type === 'matches') {
         const mSnap = await getDocs(collection(db, 'matches'));
         mSnap.docs.forEach(d => batch.delete(d.ref));
-      }
-      
-      if (type === 'bracket' || type === 'all') {
-        console.log("Resetting bracket collection...");
+      } else if (type === 'bracket') {
         const bSnap = await getDocs(collection(db, 'bracket'));
         bSnap.docs.forEach(d => batch.delete(d.ref));
-      }
-      
-      if (type === 'registrations' || type === 'all') {
-        console.log("Deleting registrations...");
+      } else if (type === 'registrations') {
         const rSnap = await getDocs(collection(db, 'registrations'));
         rSnap.docs.forEach(d => batch.delete(d.ref));
-      }
-      
-      if (type === 'all') {
-        console.log("Purging users and stats...");
+      } else if (type === 'stats') {
+        batch.set(doc(db, 'stats', 'global'), { visitCount: 0 });
+      } else if (type === 'table') {
+        const mSnap = await getDocs(collection(db, 'matches'));
+        mSnap.docs.forEach(d => {
+          batch.update(d.ref, {
+            homeScore: 0,
+            awayScore: 0,
+            status: 'scheduled',
+            homeScorers: [],
+            awayScorers: [],
+            homeStats: null,
+            awayStats: null,
+            manOfTheMatch: null,
+            isDNF: false
+          });
+        });
+      } else if (type === 'all') {
+        const mSnap = await getDocs(collection(db, 'matches'));
+        mSnap.docs.forEach(d => batch.delete(d.ref));
+        
+        const bSnap = await getDocs(collection(db, 'bracket'));
+        bSnap.docs.forEach(d => batch.delete(d.ref));
+        
+        const rSnap = await getDocs(collection(db, 'registrations'));
+        rSnap.docs.forEach(d => batch.delete(d.ref));
+        
         const uSnap = await getDocs(collection(db, 'users'));
         uSnap.docs.forEach(d => {
           if (d.id !== user?.uid) batch.delete(d.ref);
         });
+        
         batch.set(doc(db, 'stats', 'global'), { visitCount: 0 });
       }
       
       await batch.commit();
-      console.log("Batch commit successful for reset:", type);
 
       if (type === 'bracket' || type === 'all') {
-        // Wait a small moment for consistency
-        await new Promise(resolve => setTimeout(resolve, 500));
-        // Re-seed bracket after clear
+        await new Promise(resolve => setTimeout(resolve, 300));
         await seedBracket();
       }
       
-      alert(`${type} reset successful!`);
+      alert(`${type.charAt(0).toUpperCase() + type.slice(1)} reset successful!`);
     } catch (error) {
       console.error("Reset failed:", error);
       alert(`Reset failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -2466,8 +2548,6 @@ export default function App() {
 
       // Process the commands returned by the backend
       const commands = result.commands;
-      console.log("AI Commands received:", commands);
-      alert("DEBUG AI JSON: " + JSON.stringify(commands));
       for (const cmd of commands) {
         if (cmd.type === 'UPDATE_MATCH' || cmd.type === 'ADD_MATCH' || cmd.type === 'CREATE_MATCH') {
           const homeTeam = teams.find(t => 
@@ -2542,13 +2622,14 @@ export default function App() {
         body: JSON.stringify({
           base64,
           mimeType: file.type,
-          fcName: playerRegistration.fcName
+          fcName: playerRegistration.fcName,
+          // Provide goalkeeper context if available for better MOTM analysis
+          homeGoalkeeper: teams.find(t => t.fcName === playerRegistration.fcName)?.goalkeeper,
+          awayGoalkeeper: teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper // Over-simplified but helps
         })
       });
       
       const resData = await response.json();
-      
-      alert("DEBUG AI JSON: " + JSON.stringify(resData));
       
       if (!resData.success) {
         setAiAnalysisResult(`REJECTED: ${resData.message || 'Failed to analyze'}`);
@@ -2595,6 +2676,13 @@ export default function App() {
         );
 
         if (existingMatch) {
+          // Task 7: Validation logic - Match must be ongoing/scheduled for normal users
+          // Non-admins cannot overwrite a 'finished' match result
+          if (!isAdmin && existingMatch.status === 'finished') {
+            setAiAnalysisResult("REJECTED: This match is already finalized. Only an administrator can update finished results.");
+            return;
+          }
+
           const matchRef = doc(db, 'matches', existingMatch.id);
           
           const safeScorers = data.scorers || [];
@@ -2605,11 +2693,11 @@ export default function App() {
             status: 'finished',
             // Need to handle scorers based on who is home/away
             homeScorers: existingMatch.homeTeamId === homeTeam.id 
-              ? safeScorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
-              : safeScorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
+              ? safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time}))
+              : safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time})),
             awayScorers: existingMatch.awayTeamId === awayTeam.id 
-              ? safeScorers.filter((s:any) => s.team === data.awayTeam).map((s:any) => ({playerName: s.name, goals: s.goals}))
-              : safeScorers.filter((s:any) => s.team === data.homeTeam).map((s:any) => ({playerName: s.name, goals: s.goals})),
+              ? safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time}))
+              : safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name, goals: s.goals, time: s.time})),
             homeStats: data.homeStats || null,
             awayStats: data.awayStats || null,
             manOfTheMatch: data.manOfTheMatch || null
@@ -3469,7 +3557,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-24">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
                 <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
                   <span className="text-[10px] font-black uppercase text-blue-400/60 tracking-widest mb-1">Highest Average Possession</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
@@ -3496,6 +3584,20 @@ export default function App() {
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
                   <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400 font-bold text-sm">
                     {hofStats.mostShots?.value || 0} Shots
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
+                  <span className="text-[10px] font-black uppercase text-yellow-400/60 tracking-widest mb-1">Most Early Goals (1-30')</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostEarlyGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-400 font-bold text-sm">
+                    {hofStats.mostEarlyGoals?.value || 0} Early Goals
+                  </div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center border-red-500/30">
+                  <span className="text-[10px] font-black uppercase text-red-400/60 tracking-widest mb-1">Most Late Goals (60-90+')</span>
+                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostLateGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 font-bold text-sm">
+                    {hofStats.mostLateGoals?.value || 0} Late Goals
                   </div>
                 </div>
               </div>
@@ -3996,6 +4098,8 @@ export default function App() {
             deleteMatch={handleDeleteMatch}
             isEditingMode={isEditingMode || (user && (selectedMatch.homeTeamId === user.uid || selectedMatch.awayTeamId === user.uid))}
             siteContent={siteContent}
+            isAdmin={isAdmin}
+            resetMatch={handleResetSingleMatch}
           />
         )}
         {isRegistrationModalOpen && (

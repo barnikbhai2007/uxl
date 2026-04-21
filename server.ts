@@ -59,7 +59,7 @@ async function startServer() {
   // AI Endpoint for match analysis
   app.post("/api/analyze-match", async (req, res) => {
     try {
-      const { base64, mimeType, fcName } = req.body;
+      const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper } = req.body;
       const { key, model, source } = await getAiConfig();
       
       console.log(`[AI] Analysis Request | Model: ${model} | Source: ${source}`);
@@ -82,14 +82,22 @@ async function startServer() {
               {
                 text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
                 
+                CONTEXT:
+                - Home Team Goalkeeper: ${homeGoalkeeper || "Not specified"}
+                - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
+
                 INSTRUCTIONS:
                 1. Identify the Home Team and Away Team names.
                 2. Identify the Final Score (Home vs Away).
-                3. Identify Goal Scorers (name, goals, and which team they played for).
-                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides) for both teams.
-                5. Identify the Man of the Match.
+                3. Identify Goal Scorers (name, goals, time of goal if visible, and which team they played for).
+                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES) for both teams.
+                5. MAN OF THE MATCH SELECTION LOGIC:
+                   - Select the MOTM based on the highest impact.
+                   - If a Goalkeeper has high saves (e.g. 5+ saves) and conceded low goals (especially in a 0-0 or 1-0 result), they are a strong MOTM candidate.
+                   - If a player scored a hat-trick or a match-winning late goal, they are a strong candidate.
+                   - Check the "Match Rating" or player performance bars if visible.
                 
-                CRITICAL: One of the teams MUST reasonably match "${fcName}" (could be a partial match or slightly different spelling due to OCR).
+                CRITICAL: One of the teams MUST reasonably match "${fcName}".
                 If neither team matches "${fcName}", return { "error": "Reporting player name was not found as a participant in this screenshot." }.
                 
                 Return STRICT JSON: 
@@ -98,9 +106,9 @@ async function startServer() {
                   "awayTeam": "...", 
                   "homeScore": 0, 
                   "awayScore": 0, 
-                  "scorers": [{"name": "...", "goals": 1, "team": "..."}], 
-                  "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
-                  "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0 }, 
+                  "scorers": [{"name": "...", "goals": 1, "team": "Home/Away", "time": "15'"}], 
+                  "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
+                  "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
                   "manOfTheMatch": "..." 
                 }`
               }
