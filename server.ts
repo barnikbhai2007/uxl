@@ -117,10 +117,109 @@ async function startServer() {
       });
 
       const text = response.text || "{}";
-      const matchData = JSON.parse(text);
+      const resultParsed = JSON.parse(text);
+      if (resultParsed.error) {
+          throw new Error(resultParsed.error);
+      }
       
-      if (matchData.error) {
-          throw new Error(matchData.error);
+      const matchData = resultParsed.matchData || resultParsed;
+
+      // Achievement Logic
+      const checkAndAwardAchievements = async (playerFcName: string, data: any) => {
+        try {
+          // Find the player's userId from registration
+          const regSnapshot = await db.collection('registrations')
+            .where('fcName', '==', playerFcName)
+            .limit(1)
+            .get();
+          
+          if (regSnapshot.empty) return null;
+          const regDoc = regSnapshot.docs[0];
+          const userId = regDoc.data().userId;
+          const userRef = db.collection('users').doc(userId);
+          const userDoc = await userRef.get();
+          const userData = userDoc.data() || { achievements: [] };
+          const unlockedIds = new Set((userData.achievements || []).map((a: any) => a.achievementId));
+          
+          const newAchievements: string[] = [];
+          const award = (id: string) => {
+            if (!unlockedIds.has(id)) {
+              newAchievements.push(id);
+              unlockedIds.add(id);
+            }
+          };
+
+          const isHome = data.homeTeam?.toLowerCase().includes(playerFcName.toLowerCase()) || playerFcName?.toLowerCase().includes(data.homeTeam?.toLowerCase());
+          const playerStats = isHome ? data.homeStats : data.awayStats;
+          const oppStats = isHome ? data.awayStats : data.homeStats;
+          const playerScore = isHome ? data.homeScore : data.awayScore;
+          const oppScore = isHome ? data.awayScore : data.homeScore;
+          const allScorers = data.scorers || [];
+          const playerScorers = allScorers.filter((s:any) => (isHome && (s.team === 'Home' || s.team === data.homeTeam)) || (!isHome && (s.team === 'Away' || s.team === data.awayTeam)));
+          const oppScorers = allScorers.filter((s:any) => (!isHome && (s.team === 'Home' || s.team === data.homeTeam)) || (isHome && (s.team === 'Away' || s.team === data.awayTeam)));
+
+          // Logic
+          if (playerScore > oppScore) {
+             award('first_blood');
+             if (oppScore === 0) award('clean_sheet_king');
+             if (playerScore >= 3 && oppScore >= 3) award('thriller');
+          } else if (playerScore === oppScore) {
+             if (playerScore >= 3) award('thriller');
+          }
+
+          if (oppScore >= 5) award('goalkeeper_nightmare');
+
+          playerScorers.forEach((s: any) => {
+            if (s.goals >= 3) award('hat_trick_hero');
+            if (s.goals >= 5) award('sniper');
+            if (s.name && s.name.includes('(OG)')) award('uno_reversed');
+            
+            const times = String(s.time || '').split(',').map((t:string) => parseInt(t.trim().replace("'", ""))).filter(t => !isNaN(t));
+            times.forEach((t:number) => {
+              if (t >= 90) award('last_minute_hero');
+              if (t === 67) award('lover_67');
+              if (t === 69) award('lover_69');
+            });
+          });
+
+          oppScorers.forEach((s: any) => {
+            const times = String(s.time || '').split(',').map((t:string) => parseInt(t.trim().replace("'", ""))).filter(t => !isNaN(t));
+            times.forEach((t:number) => {
+              if (t >= 90) award('heartbreak_90');
+            });
+          });
+
+          if (playerStats && playerStats.saves >= 10) award('spider_man');
+          if (oppStats && oppStats.shotsOnTarget === 0) award('fort_knox');
+
+          if (newAchievements.length > 0) {
+            const updatedAchievements = [
+              ...(userData.achievements || []),
+              ...newAchievements.map(id => ({
+                achievementId: id,
+                unlockedAt: FieldValue.serverTimestamp(),
+                seen: false
+              }))
+            ];
+            await userRef.set({ ...userData, uid: userId, achievements: updatedAchievements }, { merge: true });
+            return newAchievements;
+          }
+          return [];
+        } catch (e) {
+          console.error("Error in checkAndAwardAchievements:", e);
+          return [];
+        }
+      };
+
+      // Process for both participants
+      await checkAndAwardAchievements(fcName, matchData);
+      
+      const opponentName = (matchData.homeTeam?.toLowerCase().includes(fcName.toLowerCase()) || fcName.toLowerCase().includes(matchData.homeTeam?.toLowerCase()))
+        ? matchData.awayTeam
+        : matchData.homeTeam;
+      
+      if (opponentName) {
+        await checkAndAwardAchievements(opponentName, matchData);
       }
 
       // Save report for admin review

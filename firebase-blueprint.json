@@ -34,7 +34,18 @@
       "properties": {
         "uid": { "type": "string" },
         "email": { "type": "string" },
-        "role": { "type": "string", "enum": ["admin", "user"] }
+        "role": { "type": "string", "enum": ["admin", "user"] },
+        "achievements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "achievementId": { "type": "string" },
+              "unlockedAt": { "type": "string", "format": "date-time" },
+              "seen": { "type": "boolean" }
+            }
+          }
+        }
       },
       "required": ["uid", "email", "role"]
     },

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
-import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport } from './types';
+import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -25,7 +25,9 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from 'firebase/firestore';
+import { ACHIEVEMENTS } from './achievements';
+import { AchievementsList, AchievementPopup } from './components/AchievementSystem';
 
 const INITIAL_BRACKET: BracketMatch[] = [
   { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
@@ -1287,7 +1289,7 @@ const NEWS_POSTS: any[] = [];
     handleAnalyzeQualification: () => Promise<void>,
     handleUpdateConfig: (config: Config) => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements'>('bracket');
     const [reports, setReports] = useState<MatchReport[]>([]);
     const [isReportsLoading, setIsReportsLoading] = useState(false);
 
@@ -1325,6 +1327,37 @@ const NEWS_POSTS: any[] = [];
     const [confirmReset, setConfirmReset] = useState<'matches' | 'bracket' | 'table' | 'registrations' | 'stats' | 'all' | null>(null);
     const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
     const [isResetting, setIsResetting] = useState(false);
+
+    const [awardUserId, setAwardUserId] = useState('');
+    const [awardAchvId, setAwardAchvId] = useState('');
+    const [isAwarding, setIsAwarding] = useState(false);
+
+    const handleAwardSubmit = async () => {
+      if (!awardUserId || !awardAchvId) return alert('Select both user and achievement');
+      setIsAwarding(true);
+      try {
+        const userRef = doc(db, 'users', awardUserId);
+        const userDoc = await getDoc(userRef);
+        const userData = userDoc.data() || { achievements: [] };
+        const unlockedIds = new Set((userData.achievements || []).map((a: any) => a.achievementId));
+        if (!unlockedIds.has(awardAchvId)) {
+          const updatedAchievements = [
+            ...(userData.achievements || []),
+            { achievementId: awardAchvId, unlockedAt: serverTimestamp(), seen: false }
+          ];
+          await setDoc(userRef, { achievements: updatedAchievements }, { merge: true });
+          alert('Achievement successfully awarded!');
+          setAwardUserId('');
+          setAwardAchvId('');
+        } else {
+          alert('User already has this achievement');
+        }
+      } catch (e) {
+        console.error(e);
+        alert('Error awarding achievement');
+      }
+      setIsAwarding(false);
+    };
 
     const sensors = useSensors(
       useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -1445,7 +1478,7 @@ const NEWS_POSTS: any[] = [];
             </div>
           </div>
 
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto no-scrollbar">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto hide-scrollbar">
             <button 
               onClick={() => setIsEditingMode(!isEditingMode)}
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
@@ -1482,6 +1515,12 @@ const NEWS_POSTS: any[] = [];
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Evidence
+            </button>
+            <button 
+              onClick={() => setActiveTab('achievements')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Trophies
             </button>
             <button 
               onClick={() => setActiveTab('ai')}
@@ -1994,6 +2033,56 @@ const NEWS_POSTS: any[] = [];
               </div>
             )}
 
+            {activeTab === 'achievements' && (
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                 <div className="text-left w-full mb-8">
+                   <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Manual Achievement Award</h3>
+                   <p className="text-blue-400/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
+                 </div>
+                 
+                 <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 space-y-6">
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60 mb-2 block">Select Registered Player</label>
+                        <select 
+                          value={awardUserId}
+                          onChange={e => setAwardUserId(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 font-sans outline-none disabled:opacity-50"
+                        >
+                          <option value="">-- Choose User --</option>
+                          {registrations.filter(r => r.status === 'approved' && r.userId).map(r => (
+                             <option key={r.userId} value={r.userId}>{r.fcName} ({r.name})</option>
+                          ))}
+                        </select>
+                      </div>
+                      
+                      <div>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60 mb-2 block">Select Trophy / Achievement</label>
+                        <select 
+                          value={awardAchvId}
+                          onChange={e => setAwardAchvId(e.target.value)}
+                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 font-sans outline-none disabled:opacity-50"
+                        >
+                          <option value="">-- Choose Achievement --</option>
+                          {ACHIEVEMENTS.map(a => (
+                             <option key={a.id} value={a.id}>{a.icon} {a.title} ({a.category})</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <button 
+                        onClick={handleAwardSubmit}
+                        disabled={isAwarding || !awardAchvId || !awardUserId}
+                        className="w-full py-4 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-yellow-600/30 transition-all shadow-xl shadow-yellow-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                      >
+                         {isAwarding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
+                         Award Achievement
+                      </button>
+                    </div>
+                 </div>
+              </div>
+            )}
+
             {activeTab === 'ai' && (
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
                 <div className="flex items-center justify-between mb-6">
@@ -2150,6 +2239,9 @@ export default function App() {
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
+  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
+  const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const teams = useMemo(() => dbTeams, [dbTeams]);
   const matches = useMemo(() => dbMatches, [dbMatches]);
@@ -3143,11 +3235,54 @@ export default function App() {
           setMyRegistrationData(null);
         }
       });
-      return () => unsubscribe();
+      
+      const unsubscribeProfile = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+        if (docSnap.exists()) {
+          setUserProfile(docSnap.data() as UserProfile);
+        }
+      });
+
+      return () => {
+        unsubscribe();
+        unsubscribeProfile();
+      };
     } else {
       setHasRegistered(false);
+      setUserProfile(null);
     }
   }, [user]);
+
+  // Achievement Notification Logic
+  useEffect(() => {
+    if (userProfile?.achievements) {
+      const unseen = userProfile.achievements.find(ua => !ua.seen);
+      if (unseen) {
+        const achievement = ACHIEVEMENTS.find(a => a.id === unseen.achievementId);
+        if (achievement) {
+          setNewAchievement(achievement);
+        }
+      }
+    }
+  }, [userProfile]);
+
+  const handleCloseAchievement = async () => {
+    if (!newAchievement || !userProfile) return;
+    
+    try {
+      const updatedAchievements = (userProfile.achievements || []).map(ua => 
+        ua.achievementId === newAchievement.id ? { ...ua, seen: true } : ua
+      );
+      
+      const userRef = doc(db, 'users', userProfile.uid);
+      await updateDoc(userRef, { achievements: updatedAchievements });
+      
+      setUserProfile(prev => prev ? { ...prev, achievements: updatedAchievements } : null);
+      setNewAchievement(null);
+    } catch (e) {
+      console.error("Failed to mark achievement as seen:", e);
+      setNewAchievement(null);
+    }
+  };
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -3436,23 +3571,53 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-12"
             >
-              <div className="flex items-center gap-4 mb-4">
-                <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
-                  <UserIcon className="w-6 h-6 text-blue-400" />
+              <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
+                <div className="flex items-center gap-4 flex-1">
+                  <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30 shrink-0">
+                    <UserIcon className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none truncate" />
+                    <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1 truncate">
+                      <EditableText id="campaign_sub" defaultText="Player Portal & Performance" />
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none" />
-                  <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">
-                    <EditableText id="campaign_sub" defaultText="Player Portal & Performance" />
-                  </p>
+                <div className="flex flex-row md:flex-row items-center gap-2 w-full md:w-auto">
+                  <button 
+                    onClick={() => setIsEditingProfile(true)}
+                    className="flex justify-center items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group shrink-0 h-full"
+                  >
+                    <Edit3 className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-white hidden md:inline">Edit</span>
+                  </button>
+                  <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl md:ml-auto overflow-x-auto hide-scrollbar w-full">
+                    <button 
+                      onClick={() => setCampaignTab('stats')}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                    >
+                      Stats
+                    </button>
+                    <button 
+                      onClick={() => setCampaignTab('history')}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                    >
+                      Results
+                    </button>
+                    <button 
+                      onClick={() => setCampaignTab('achievements')}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                    >
+                      Achievements
+                    </button>
+                    <button 
+                      onClick={() => setCampaignTab('edit')}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                    >
+                      Edit
+                    </button>
+                  </div>
                 </div>
-                <button 
-                  onClick={() => setIsEditingProfile(true)}
-                  className="flex items-center gap-2 px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group"
-                >
-                  <Edit3 className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white">Edit Info</span>
-                </button>
               </div>
 
               {!user ? (
@@ -3510,7 +3675,44 @@ export default function App() {
                   const myStats = calculateStats(teams, matches).filter(s => s.gamerName === myRegistration.fcName);
 
                   return (
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="space-y-8">
+                      {campaignTab === 'achievements' ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:p-12"
+                        >
+                          <div className="max-w-4xl mx-auto space-y-12">
+                             <div className="text-center space-y-4">
+                               <h2 className="text-4xl md:text-5xl font-display font-black uppercase italic text-white tracking-tighter">My Trophy Room</h2>
+                               <p className="text-white/40 text-xs font-black uppercase tracking-[0.3em]">Showcasing your tournament exploits</p>
+                             </div>
+                             <AchievementsList userAchievements={userProfile?.achievements || []} />
+                          </div>
+                        </motion.div>
+                      ) : campaignTab === 'edit' ? (
+                         <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 text-center">
+                            <Shield className="w-16 h-16 text-blue-400/20 mx-auto mb-6" />
+                            <h3 className="text-xl font-display font-black text-white uppercase italic">Security Shield Active</h3>
+                            <p className="text-white/40 text-sm max-w-sm mx-auto mt-2">Use the "Edit Info" button in the header to modify your tournament registration details.</p>
+                            <button 
+                              onClick={() => setIsEditingProfile(true)}
+                              className="mt-8 px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase text-xs tracking-widest text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20"
+                            >
+                              Launch Editor
+                            </button>
+                         </div>
+                      ) : campaignTab === 'history' ? (
+                        <div className="space-y-6">
+                           <h3 className="text-lg font-display font-black uppercase italic text-white px-4">All Match Results</h3>
+                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                             {myMatches.map(m => (
+                               <MatchCard key={m.id} match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
+                             ))}
+                           </div>
+                        </div>
+                      ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                       <div className="lg:col-span-2 space-y-8">
                         {/* Performance Snapshot */}
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -3614,6 +3816,8 @@ export default function App() {
                           </div>
                         </div>
                       </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })()
@@ -4392,6 +4596,12 @@ export default function App() {
             teams={teams}
             matches={matches}
             onClose={() => setSelectedTeam(null)}
+          />
+        )}
+        {newAchievement && (
+          <AchievementPopup 
+            achievement={newAchievement} 
+            onClose={handleCloseAchievement} 
           />
         )}
       </AnimatePresence>

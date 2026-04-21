@@ -111,3 +111,24 @@ export interface MatchReport {
   imageUrl: string;
   mimeType: string;
 }
+
+export interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  category: 'Match' | 'Goal' | 'Tournament' | 'Cursed' | 'Tragic' | 'Unhinged' | 'Glove Story';
+  icon: string;
+}
+
+export interface UserAchievement {
+  achievementId: string;
+  unlockedAt: any;
+  seen: boolean; // For the popup notification
+}
+
+export interface UserProfile {
+  uid: string;
+  email: string;
+  role: 'admin' | 'user';
+  achievements?: UserAchievement[];
+}
