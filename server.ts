@@ -127,10 +127,12 @@ async function startServer() {
       try {
         await db.collection('reports').add({
           matchData,
-          reporterName: fcName,
-          timestamp: new Date(),
-          imageUrl: base64, // Base64 image
-          mimeType: mimeType
+          reporterName: fcName || 'Unknown Player',
+          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          imageUrl: base64,
+          mimeType: mimeType || 'image/jpeg',
+          matchId: matchData.matchId || null,
+          analysisSummary: `Verified match between ${matchData.homeTeam} and ${matchData.awayTeam}`
         });
       } catch (saveError) {
         console.error("Failed to save report to database:", saveError);

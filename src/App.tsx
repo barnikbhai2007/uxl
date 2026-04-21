@@ -1903,15 +1903,19 @@ const NEWS_POSTS: any[] = [];
                           <div className="flex-1 p-6 md:p-8 space-y-6">
                             <div className="flex items-start justify-between gap-4">
                               <div>
-                                <div className="flex items-center gap-2 mb-1">
-                                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Reporter:</span>
-                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{report.reporterName}</span>
+                                <div className="flex flex-wrap items-center gap-2 mb-2">
+                                  <div className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[8px] font-black text-blue-400 uppercase tracking-tighter">Reporter</div>
+                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{report.reporterName || (report.matchData && report.matchData.reporterName) || 'Unknown Source'}</span>
                                 </div>
                                 <h4 className="text-lg font-display font-black italic uppercase text-white tracking-tight">
                                   {report.matchData.homeTeam} {report.matchData.homeScore} - {report.matchData.awayScore} {report.matchData.awayTeam}
                                 </h4>
                                 <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">
-                                  {report.timestamp?.toDate ? report.timestamp.toDate().toLocaleString() : new Date(report.timestamp).toLocaleString()}
+                                  {report.timestamp ? (
+                                    report.timestamp.seconds 
+                                      ? new Date(report.timestamp.seconds * 1000).toLocaleString() 
+                                      : (report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : new Date(report.timestamp).toLocaleString())
+                                  ) : 'Time Pending...'}
                                 </div>
                               </div>
                               <button 
