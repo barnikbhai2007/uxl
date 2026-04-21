@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
@@ -128,7 +128,7 @@ async function startServer() {
         await db.collection('reports').add({
           matchData,
           reporterName: fcName || 'Unknown Player',
-          timestamp: admin.firestore.FieldValue.serverTimestamp(),
+          timestamp: FieldValue.serverTimestamp(),
           imageUrl: base64,
           mimeType: mimeType || 'image/jpeg',
           matchId: matchData.matchId || null,

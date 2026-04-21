@@ -2836,10 +2836,28 @@ export default function App() {
              return;
           }
 
-          // 2. Non-admins cannot overwrite a 'finished' match result
-          if (!isAdmin && existingMatch.status === 'finished') {
-            setAiAnalysisResult("REJECTED: The match isn't ongoing - it has already been finalized.");
+          // 2. Status check - Match must be ongoing/live for non-admins to upload results
+          const reportableStatuses = ['live', 'ongoing'];
+          const isOngoing = reportableStatuses.includes(existingMatch.status);
+          
+          if (!isOngoing && !isAdmin) {
+             let statusLabel = existingMatch.status;
+             if (statusLabel === 'scheduled') statusLabel = 'Upcoming';
+             if (statusLabel === 'rescheduled') statusLabel = 'Rescheduled';
+             
+             setAiAnalysisResult(`REJECTED: Submissions are restricted to live matches. This match is currently labeled as "${statusLabel}". Please wait until an admin sets the match to "Ongoing" to report your results.`);
+             return;
+          }
+
+          // 3. Prevent overwriting finished results unless admin
+          if (existingMatch.status === 'finished' && !isAdmin) {
+            setAiAnalysisResult("REJECTED: Match finalized. This result is already officially recorded. If there is an error, please contact a tournament administrator.");
             return;
+          }
+
+          // Admin check (just for verification/logging)
+          if (isAdmin && !isOngoing) {
+             console.log("Admin bypassing status restriction for upload...");
           }
 
           // 3. Winner check
