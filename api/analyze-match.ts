@@ -48,7 +48,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     res.json({ success: true, matchData });
   } catch (error: any) {
-    console.error("AI Error:", error);
+    console.error("AI Error Detailed:", {
+      message: error.message,
+      stack: error.stack,
+      response: error.response ? JSON.stringify(error.response) : 'No response'
+    });
     res.status(500).json({ success: false, message: error.message });
   }
 }
