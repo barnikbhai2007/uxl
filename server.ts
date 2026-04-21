@@ -89,13 +89,9 @@ async function startServer() {
                 INSTRUCTIONS:
                 1. Identify the Home Team and Away Team names.
                 2. Identify the Final Score (Home vs Away).
-                3. Identify Goal Scorers (name, goals, time of goal if visible, and which team they played for).
+                3. Identify Goal Scorers (name, goals, time of goal, team). CRITICAL: Look for soccer ball icons ⚽ followed by numbers like 45', 90+2'. You MUST extract this exact minute into the "time" field for each scorer. If a player scores multiple goals, try to list them separately or combine their times like "45', 80'".
                 4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES) for both teams.
-                5. MAN OF THE MATCH SELECTION LOGIC:
-                   - Select the MOTM based on the highest impact.
-                   - If a Goalkeeper has high saves (e.g. 5+ saves) and conceded low goals (especially in a 0-0 or 1-0 result), they are a strong MOTM candidate.
-                   - If a player scored a hat-trick or a match-winning late goal, they are a strong candidate.
-                   - Check the "Match Rating" or player performance bars if visible.
+                5. MAN OF THE MATCH: Select based on highest impact. Goalkeepers with many saves and low goals conceded are strong candidates.
                 
                 CRITICAL: One of the teams MUST reasonably match "${fcName}".
                 If neither team matches "${fcName}", return { "error": "Reporting player name was not found as a participant in this screenshot." }.
@@ -106,7 +102,7 @@ async function startServer() {
                   "awayTeam": "...", 
                   "homeScore": 0, 
                   "awayScore": 0, 
-                  "scorers": [{"name": "...", "goals": 1, "team": "Home/Away", "time": "15'"}], 
+                  "scorers": [{"name": "...", "goals": 1, "team": "Home", "time": "45'"}], 
                   "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
                   "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
                   "manOfTheMatch": "..." 
@@ -125,6 +121,20 @@ async function startServer() {
       
       if (matchData.error) {
           throw new Error(matchData.error);
+      }
+
+      // Save report for admin review
+      try {
+        await db.collection('reports').add({
+          matchData,
+          reporterName: fcName,
+          timestamp: new Date(),
+          imageUrl: base64, // Base64 image
+          mimeType: mimeType
+        });
+      } catch (saveError) {
+        console.error("Failed to save report to database:", saveError);
+        // Don't fail the whole request just because report saving failed
       }
       
       res.json({ success: true, matchData });

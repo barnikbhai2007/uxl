@@ -32,6 +32,7 @@ export interface MatchStats {
   passAccuracy: number;
   fouls: number;
   offsides: number;
+  saves: number;
 }
 
 export interface Match {
@@ -97,4 +98,13 @@ export interface Config {
   dateOrder?: string[];
   geminiApiKey?: string;
   geminiModel?: string;
+}
+
+export interface MatchReport {
+  id: string;
+  matchData: any;
+  reporterName: string;
+  timestamp: any;
+  imageUrl: string;
+  mimeType: string;
 }

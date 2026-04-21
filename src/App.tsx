@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
-import { Team, Match, BracketMatch, Scorer, Registration, Config } from './types';
+import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport } from './types';
 import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -25,7 +25,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy } from 'firebase/firestore';
 
 const INITIAL_BRACKET: BracketMatch[] = [
   { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
@@ -722,6 +722,7 @@ const NEWS_POSTS: any[] = [];
                   />
                   <StatRow home={match.awayStats.possession} away={match.homeStats.possession} label="Possession" suffix="%" />
                   <StatRow home={match.awayStats.passAccuracy} away={match.homeStats.passAccuracy} label="Pass Accuracy" suffix="%" />
+                  <StatRow home={match.awayStats.saves} away={match.homeStats.saves} label="Saves" />
                   <StatRow home={match.awayStats.fouls} away={match.homeStats.fouls} label="Fouls" />
                   <StatRow home={match.awayStats.offsides} away={match.homeStats.offsides} label="Offsides" />
                 </div>
@@ -1257,7 +1258,25 @@ const NEWS_POSTS: any[] = [];
     handleAnalyzeQualification: () => Promise<void>,
     handleUpdateConfig: (config: Config) => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports'>('bracket');
+    const [reports, setReports] = useState<MatchReport[]>([]);
+    const [isReportsLoading, setIsReportsLoading] = useState(false);
+
+    useEffect(() => {
+      if (activeTab === 'reports') {
+        setIsReportsLoading(true);
+        const q = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const reportsList = snapshot.docs.map(doc => ({ 
+            id: doc.id, 
+            ...doc.data() 
+          } as MatchReport));
+          setReports(reportsList);
+          setIsReportsLoading(false);
+        });
+        return () => unsubscribe();
+      }
+    }, [activeTab]);
     const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
     const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-3.1-pro-preview');
 
@@ -1428,6 +1447,12 @@ const NEWS_POSTS: any[] = [];
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Visibility
+            </button>
+            <button 
+              onClick={() => setActiveTab('reports')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Evidence
             </button>
             <button 
               onClick={() => setActiveTab('ai')}
@@ -1835,6 +1860,108 @@ const NEWS_POSTS: any[] = [];
                     </SortableContext>
                   </DndContext>
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'reports' && (
+              <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
+                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+                  <div className="text-left w-full">
+                    <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Evidence Dashboard</h3>
+                    <p className="text-blue-400/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review AI analysis and match verification screenshots</p>
+                  </div>
+                </div>
+
+                {isReportsLoading ? (
+                  <div className="flex flex-col items-center justify-center py-20 gap-4">
+                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Loading reports from cloud...</p>
+                  </div>
+                ) : reports.length === 0 ? (
+                  <div className="bg-white/5 border border-white/5 rounded-3xl p-12 text-center">
+                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                      <BarChart2 className="w-8 h-8 text-white/20" />
+                    </div>
+                    <h4 className="text-lg font-display font-black italic uppercase text-white mb-2">No Reports Found</h4>
+                    <p className="text-xs text-white/40 font-bold uppercase tracking-widest max-w-[240px] mx-auto leading-relaxed">Evidence will appear here when users submit match results via AI analysis.</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-6">
+                    {reports.map((report) => (
+                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group hover:border-blue-500/30 transition-all">
+                        <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
+                          <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-black relative flex items-center justify-center overflow-hidden">
+                            {report.imageUrl ? (
+                              <img src={`data:${report.mimeType || 'image/png'};base64,${report.imageUrl}`} alt="Evidence" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                            ) : (
+                              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">No Image Available</span>
+                            )}
+                            <div className="absolute top-4 left-4">
+                              <span className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl shadow-blue-900/40 border border-blue-400/20">Screenshot</span>
+                            </div>
+                          </div>
+                          <div className="flex-1 p-6 md:p-8 space-y-6">
+                            <div className="flex items-start justify-between gap-4">
+                              <div>
+                                <div className="flex items-center gap-2 mb-1">
+                                  <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Reporter:</span>
+                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{report.reporterName}</span>
+                                </div>
+                                <h4 className="text-lg font-display font-black italic uppercase text-white tracking-tight">
+                                  {report.matchData.homeTeam} {report.matchData.homeScore} - {report.matchData.awayScore} {report.matchData.awayTeam}
+                                </h4>
+                                <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">
+                                  {report.timestamp?.toDate ? report.timestamp.toDate().toLocaleString() : new Date(report.timestamp).toLocaleString()}
+                                </div>
+                              </div>
+                              <button 
+                                onClick={async () => {
+                                  if (window.confirm("Are you sure you want to delete this report?")) {
+                                    await deleteDoc(doc(db, 'reports', report.id));
+                                  }
+                                }}
+                                className="p-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20"
+                                title="Delete Report"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                                <span className="block text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">MOTM</span>
+                                <span className="text-[10px] font-black text-yellow-400 uppercase truncate block font-sans">{report.matchData.manOfTheMatch || 'N/A'}</span>
+                              </div>
+                              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                                <span className="block text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Status</span>
+                                <span className="text-[10px] font-black text-green-400 uppercase block tracking-widest">Analyzed</span>
+                              </div>
+                            </div>
+
+                            <div className="space-y-3">
+                              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block font-sans">Goal Scorers (Extracted)</span>
+                              <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-2">
+                                {report.matchData.scorers && report.matchData.scorers.length > 0 ? (
+                                  report.matchData.scorers.map((s: any, idx: number) => (
+                                    <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
+                                      <span className="text-white/80 shrink-0">{s.name}</span>
+                                      <div className="flex-1 border-b border-white/5 mx-2 border-dotted" />
+                                      <span className="text-blue-400">
+                                        {s.goals} G {s.time && `(${s.time})`}
+                                      </span>
+                                    </div>
+                                  ))
+                                ) : (
+                                  <span className="text-[9px] font-black text-white/20 uppercase tracking-widest block text-center italic">No scorers detected</span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
 
@@ -2388,6 +2515,20 @@ export default function App() {
     }
   };
 
+  const cleanDocData = (data: any) => {
+    const result: any = {};
+    Object.keys(data).forEach(key => {
+      if (key.startsWith('_')) return;
+      if (data[key] === undefined) return;
+      if (data[key] && typeof data[key] === 'object' && !Array.isArray(data[key])) {
+        result[key] = cleanDocData(data[key]);
+      } else {
+        result[key] = data[key];
+      }
+    });
+    return result;
+  };
+
   const handleUpdateMatch = async (match: Match) => {
     const isParticipant = user && (match.homeTeamId === user.uid || match.awayTeamId === user.uid);
     if (!isAdmin && !isParticipant) {
@@ -2395,8 +2536,8 @@ export default function App() {
        return;
     }
     try {
-      const { _overrideStatus, ...matchData } = match as any;
-      await updateDoc(doc(db, 'matches', match.id), matchData);
+      const cleanedData = cleanDocData(match);
+      await updateDoc(doc(db, 'matches', match.id), cleanedData);
     } catch (error) {
       console.error("Error updating match:", error);
       alert("Failed to update match.");
@@ -2564,7 +2705,7 @@ export default function App() {
           cmd.data.awayTeamId = awayTeam?.id || cmd.data.awayTeamId;
 
           const matchId = cmd.data.matchId || `m-${Date.now()}`;
-          await setDoc(doc(db, 'matches', matchId), {
+          const cleanedData = cleanDocData({
             homeTeamId: cmd.data.homeTeamId,
             awayTeamId: cmd.data.awayTeamId,
             homeScore: cmd.data.homeScore || 0,
@@ -2573,9 +2714,10 @@ export default function App() {
             date: cmd.data.date,
             matchNumber: cmd.data.matchNumber || 1,
             matchday: cmd.data.matchday || 1,
-            ...cmd.data, // allow overriding other fields like homeScorers
-            id: matchId, // Ensure id is always matchId even if cmd.data overrides
-          }, { merge: true });
+            ...cmd.data,
+            id: matchId,
+          });
+          await setDoc(doc(db, 'matches', matchId), cleanedData, { merge: true });
         } else if (cmd.type === 'RESET') {
           await handleAdminReset(cmd.data.type);
         } else if (cmd.type === 'UPDATE_CONTENT') {
@@ -2706,6 +2848,7 @@ export default function App() {
               passAccuracy: data.homeStats.passAccuracy ?? 0,
               fouls: data.homeStats.fouls ?? 0,
               offsides: data.homeStats.offsides ?? 0,
+              saves: data.homeStats.saves ?? 0,
             } : null,
             awayStats: data.awayStats ? {
               possession: data.awayStats.possession ?? 50,
@@ -2714,13 +2857,20 @@ export default function App() {
               passAccuracy: data.awayStats.passAccuracy ?? 0,
               fouls: data.awayStats.fouls ?? 0,
               offsides: data.awayStats.offsides ?? 0,
+              saves: data.awayStats.saves ?? 0,
             } : null,
             manOfTheMatch: data.manOfTheMatch || null
           };
 
-          // Deep clean payload to guarantee no undefined values throw a Firestore error
-          const cleanPayload = JSON.parse(JSON.stringify(updatePayload));
-          await updateDoc(matchRef, cleanPayload);
+          // Deep clean payload to guarantee no undefined values or internal fields throw a Firestore error
+          const cleanedPayload = cleanDocData(updatePayload);
+          
+          // Save the compressed base64 image as evidence for admins to verify
+          cleanedPayload.evidenceImage = `data:image/jpeg;base64,${base64}`;
+          cleanedPayload.evidenceUploadedBy = userFcName;
+          cleanedPayload.evidenceTimestamp = new Date().toISOString();
+
+          await updateDoc(matchRef, cleanedPayload);
 
           setAiAnalysisResult("SUCCESS: Match result verified and updated!");
         } else {
