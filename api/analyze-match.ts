@@ -2,7 +2,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 import { VercelRequest, VercelResponse } from '@vercel/node';
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || "");
-const model = ai.getGenerativeModel({ model: "gemini-3.1-pro-preview" });
+const model = ai.getGenerativeModel({ model: "gemini-3-flash-preview" });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== 'POST') {
