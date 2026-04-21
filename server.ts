@@ -125,15 +125,19 @@ async function startServer() {
 
       // Save report for admin review
       try {
-        await db.collection('reports').add({
-          matchData,
+        const reportData = {
+          matchData: {
+            ...matchData,
+            reporterName: fcName || 'Unknown Player'
+          },
           reporterName: fcName || 'Unknown Player',
           timestamp: FieldValue.serverTimestamp(),
           imageUrl: base64,
           mimeType: mimeType || 'image/jpeg',
           matchId: matchData.matchId || null,
-          analysisSummary: `Verified match between ${matchData.homeTeam} and ${matchData.awayTeam}`
-        });
+          analysisSummary: `Verified match between ${matchData.homeTeam} and ${matchData.awayTeam} (Reported by ${fcName || 'Unknown'})`
+        };
+        await db.collection('reports').add(reportData);
       } catch (saveError) {
         console.error("Failed to save report to database:", saveError);
         // Don't fail the whole request just because report saving failed

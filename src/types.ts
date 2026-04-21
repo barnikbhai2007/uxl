@@ -54,6 +54,9 @@ export interface Match {
   isDNF?: boolean;
   matchday?: number;
   leg?: 'Leg 1' | 'Leg 2';
+  evidenceUploadedBy?: string;
+  evidenceTimestamp?: any;
+  evidenceImage?: string;
 }
 
 export interface BracketMatch {

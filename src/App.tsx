@@ -142,6 +142,18 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
   return standings.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
 };
 
+const formatTimestamp = (ts: any) => {
+  if (!ts) return '';
+  try {
+    if (ts && typeof ts === 'object' && 'seconds' in ts) return new Date(ts.seconds * 1000).toLocaleString();
+    if (ts.toDate && typeof ts.toDate === 'function') return ts.toDate().toLocaleString();
+    const d = new Date(ts);
+    return isNaN(d.getTime()) ? '' : d.toLocaleString();
+  } catch (e) {
+    return '';
+  }
+};
+
 interface PlayerGoalStats {
   playerName: string;
   gamerName: string;
@@ -739,6 +751,21 @@ const NEWS_POSTS: any[] = [];
                 <div className="text-xs md:text-sm font-bold text-blue-400">#{match.matchNumber}</div>
               </div>
             </div>
+
+            {match.evidenceUploadedBy && (
+              <div className="mt-4 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex flex-col items-center gap-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Result Verified by AI</span>
+                </div>
+                <div className="text-center">
+                  <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Reporter: <span className="text-white">{match.evidenceUploadedBy}</span></p>
+                  {match.evidenceTimestamp && (
+                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-tighter mt-0.5">Time: {formatTimestamp(match.evidenceTimestamp)}</p>
+                  )}
+                </div>
+              </div>
+            )}
 
             <div className="mt-8 flex flex-col items-center gap-4">
               <button 
@@ -1911,11 +1938,7 @@ const NEWS_POSTS: any[] = [];
                                   {report.matchData.homeTeam} {report.matchData.homeScore} - {report.matchData.awayScore} {report.matchData.awayTeam}
                                 </h4>
                                 <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">
-                                  {report.timestamp ? (
-                                    report.timestamp.seconds 
-                                      ? new Date(report.timestamp.seconds * 1000).toLocaleString() 
-                                      : (report.timestamp.toDate ? report.timestamp.toDate().toLocaleString() : new Date(report.timestamp).toLocaleString())
-                                  ) : 'Time Pending...'}
+                                  {report.timestamp ? formatTimestamp(report.timestamp) : 'Time Pending...'}
                                 </div>
                               </div>
                               <button 
@@ -2913,8 +2936,8 @@ export default function App() {
           
           // Save the compressed base64 image as evidence for admins to verify
           cleanedPayload.evidenceImage = `data:image/jpeg;base64,${base64}`;
-          cleanedPayload.evidenceUploadedBy = userFcName;
-          cleanedPayload.evidenceTimestamp = new Date().toISOString();
+          cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
+          cleanedPayload.evidenceTimestamp = serverTimestamp();
 
           await updateDoc(matchRef, cleanedPayload);
 
