@@ -190,7 +190,7 @@ async function startServer() {
           });
 
           if (playerStats && playerStats.saves >= 10) award('spider_man');
-          if (oppStats && oppStats.shotsOnTarget === 0) award('fort_knox');
+          if (oppStats && oppStats.shotsOnTarget !== undefined && oppStats.shotsOnTarget === 0) award('fort_knox');
 
           if (newAchievements.length > 0) {
             const updates: any = {};

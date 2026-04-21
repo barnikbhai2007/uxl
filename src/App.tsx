@@ -2155,30 +2155,33 @@ const NEWS_POSTS: any[] = [];
     const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
     audio.volume = 0.5;
     audio.play().catch(e => console.log("Audio play blocked", e));
-  }, []);
+    
+    // Auto-dismiss after 5 seconds
+    const timer = setTimeout(onClose, 5000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
 
   return (
-    <div className="achievement-popup fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <motion.div 
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-[#0a0a2a] border border-blue-500/50 p-8 rounded-3xl text-center shadow-[0_0_50px_rgba(59,130,246,0.3)] max-w-sm w-full relative overflow-hidden"
-      >
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-purple-500/10 pointer-events-none" />
-        
-        <h2 className="text-3xl font-black mb-6 text-white tracking-tighter uppercase italic">🏆 Achievement Unlocked!</h2>
-        {achievements.map(id => (
-          <div key={id} className="mb-4 p-4 bg-blue-900/30 rounded-2xl border border-blue-500/20">
-            <div className="text-sm font-bold text-blue-200">{ACHIEVEMENTS.find(a => a.id === id)?.title}</div>
-          </div>
-        ))}
-        <button 
-          onClick={onClose} 
-          className="mt-6 w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 rounded-xl font-black uppercase tracking-widest text-sm hover:from-blue-500 hover:to-purple-500 transition-all shadow-lg shadow-blue-500/20"
+    <div className="fixed top-20 right-4 z-[100] flex flex-col gap-3">
+      {achievements.map((id, index) => (
+        <motion.div
+          key={`${id}-${index}`}
+          initial={{ x: "100%", opacity: 0 }}
+          animate={{ x: 0, opacity: 1 }}
+          exit={{ x: "100%", opacity: 0 }}
+          className="w-80 bg-[#0a0a2a] border-2 border-yellow-500/50 p-4 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.2)] flex items-center gap-4 relative overflow-hidden"
         >
-          Claim Glory 🎉
-        </button>
-      </motion.div>
+          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none" />
+          <div className="text-3xl">🏆</div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Unlocked</div>
+            <div className="text-sm font-bold text-white truncate">{ACHIEVEMENTS.find(a => a.id === id)?.title}</div>
+          </div>
+          <button onClick={onClose} className="text-white/50 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </motion.div>
+      ))}
     </div>
   );
 };
