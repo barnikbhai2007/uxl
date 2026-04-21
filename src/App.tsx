@@ -1314,7 +1314,7 @@ const NEWS_POSTS: any[] = [];
 
     useEffect(() => {
       setLocalApiKey(config.geminiApiKey || '');
-      setLocalModel(config.geminiModel || 'gemini-3-flash-preview');
+      setLocalModel(config.geminiModel || 'gemini-3.1-pro-preview');
     }, [config.geminiApiKey, config.geminiModel]);
 
     const handleSaveAiSettings = async () => {
