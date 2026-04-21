@@ -2537,6 +2537,53 @@ export default function App() {
     }
   };
 
+  const EditableImage = ({ id, defaultSrc, alt, className = "", isAdmin }: any) => {
+    const [src, setSrc] = useState(defaultSrc);
+
+    useEffect(() => {
+      const unsub = onSnapshot(doc(db, 'site_content', id), (doc) => {
+        if (doc.exists() && doc.data().content) {
+          setSrc(doc.data().content);
+        }
+      });
+      return () => unsub();
+    }, [id]);
+
+    const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+      if (file.size > 2 * 1024 * 1024) return alert("Image must be under 2MB");
+      
+      const reader = new FileReader();
+      reader.onloadend = async () => {
+        const base64 = reader.result;
+        try {
+          await setDoc(doc(db, 'site_content', id), { content: base64 }, { merge: true });
+        } catch (err) {
+          console.error("Failed to upload image:", err);
+          alert("Failed to update image");
+        }
+      };
+      reader.readAsDataURL(file);
+    };
+
+    if (isAdmin && isEditingMode) {
+      return (
+        <div className={`relative group ${className}`}>
+          <img src={src} alt={alt} referrerPolicy="no-referrer" className={`w-full h-full object-cover`} />
+          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+             <label className="bg-blue-600 px-4 py-2 rounded-xl text-white text-xs font-black uppercase cursor-pointer hover:bg-blue-500 transition-colors">
+               Change Image
+               <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+             </label>
+          </div>
+        </div>
+      );
+    }
+    
+    return <img src={src} alt={alt} referrerPolicy="no-referrer" className={className} />;
+  };
+
   const EditableText = ({ 
     id, 
     defaultText, 
@@ -4582,19 +4629,22 @@ export default function App() {
               className="space-y-8"
             >
               <div className="relative h-80 rounded-[2.5rem] overflow-hidden group shadow-2xl">
-                <img 
-                  src="https://picsum.photos/seed/tournament/1920/1080" 
-                  referrerPolicy="no-referrer"
-                  className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                <EditableImage 
+                  id="reg_hero_image" 
+                  defaultSrc="https://picsum.photos/seed/tournament/1920/1080" 
                   alt="Tournament Registration" 
+                  className="w-full h-full text-[0] leading-[0] transition-transform duration-700 group-hover:scale-110" 
+                  isAdmin={isAdmin} 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#000020] via-[#000020]/40 to-transparent" />
-                <div className="absolute inset-x-8 bottom-8">
-                  <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest mb-3 inline-block">
+                <div className="absolute inset-0 bg-gradient-to-t from-[#000020] via-[#000020]/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-x-8 bottom-8 pointer-events-none">
+                  <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest mb-3 inline-block pointer-events-auto">
                     <EditableText id="apps_live_status" defaultText="Applications Live" isAdmin={isAdmin} />
                   </span>
-                  <EditableText id="join_season_title" defaultText="Join Season 2026" isAdmin={isAdmin} as="h2" className="text-4xl md:text-5xl font-display font-black italic uppercase text-white tracking-tight leading-none mb-4" />
-                  <p className="text-white/60 text-sm max-w-xl font-medium">
+                  <div className="pointer-events-auto inline-block relative">
+                    <EditableText id="join_season_title" defaultText="Join Season 2026" isAdmin={isAdmin} as="h2" className="text-4xl md:text-5xl font-display font-black italic uppercase text-white tracking-tight leading-none mb-4" />
+                  </div>
+                  <p className="text-white/60 text-sm max-w-xl font-medium pointer-events-auto relative">
                     <EditableText id="ready_to_prove_sub" defaultText="Ready to prove your skills? Register now for the upcoming tournament season. Entry is limited to 16 teams." isAdmin={isAdmin} />
                   </p>
                 </div>
@@ -4662,7 +4712,7 @@ export default function App() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => setIsRegistrationModalOpen(true)}
+              onClick={() => { setActiveTab('registration'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
               className="flex items-center gap-3 px-6 py-4 bg-blue-600 rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-blue-400/30 group relative overflow-hidden"
             >
               <div className="relative z-10 flex items-center gap-3">
