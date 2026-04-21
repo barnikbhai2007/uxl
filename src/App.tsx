@@ -2946,11 +2946,17 @@ export default function App() {
 
     const updateAchievements = async (userId: string, achievements: string[]) => {
       if (!userId) return;
-      const updates: any = {};
-      achievements.forEach(id => {
-        updates[`achievements.${id}`] = { unlockedAt: serverTimestamp(), seen: false };
-      });
-      await updateDoc(doc(db, 'users', userId), updates);
+      if (!isAdmin && userId !== currentUserId) return; // Non-admins cannot update other users
+      
+      try {
+        const updates: any = {};
+        achievements.forEach(id => {
+          updates[`achievements.${id}`] = { unlockedAt: serverTimestamp(), seen: false };
+        });
+        await updateDoc(doc(db, 'users', userId), updates);
+      } catch (e) {
+        console.warn("Could not update achievements:", e);
+      }
     };
 
     await updateAchievements(currentUserId, currentUserAchievements);
@@ -2999,7 +3005,14 @@ export default function App() {
 
       // Achievement processing
       const opponentFcName = aiHome.includes(userFcName) || userFcName.includes(aiHome) ? data.awayTeam : data.homeTeam;
-      const opponentReg = await getDocs(query(collection(db, 'registrations'), where('fcName', '==', opponentFcName))).then(s => s.docs[0]?.data() as Registration);
+      let opponentReg: Registration | undefined;
+      
+      try {
+        const opponentSnap = await getDocs(query(collection(db, 'registrations'), where('fcName', '==', opponentFcName), where('status', '==', 'approved')));
+        opponentReg = opponentSnap.docs[0]?.data() as Registration;
+      } catch (e) {
+        console.warn("Could not fetch opponent registration:", e);
+      }
       
       await checkAndAwardAchievements(data, user!.uid, opponentReg?.userId);
 
