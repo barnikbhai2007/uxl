@@ -177,5 +177,10 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow create: if false; // Server-side only via firebase-admin
     }
+    match /reports/{reportId} {
+      allow read: if true;
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
   }
 }

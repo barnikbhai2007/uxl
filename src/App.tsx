@@ -2791,7 +2791,7 @@ export default function App() {
                           aiAway.includes(userFcName) || userFcName.includes(aiAway);
 
       if (!isParticipant) {
-        setAiAnalysisResult(`REJECTED: Your FC Name "${playerRegistration.fcName}" was not clearly detected in the screenshot (AI saw: "${data.homeTeam}" vs "${data.awayTeam}").`);
+        setAiAnalysisResult(`REJECTED: User not matched. Your FC Name "${playerRegistration.fcName}" was not clearly detected in the screenshot (AI saw: "${data.homeTeam}" vs "${data.awayTeam}").`);
         return;
       }
 
@@ -2819,11 +2819,35 @@ export default function App() {
         );
 
         if (existingMatch) {
-          // Task 7: Validation logic - Match must be ongoing/scheduled for normal users
-          // Non-admins cannot overwrite a 'finished' match result
+          // Validation logic - Match must be ongoing/scheduled for normal users
+          
+          // 1. Check if match is in the future
+          const today = new Date();
+          today.setHours(0, 0, 0, 0); 
+          const matchDateParsed = new Date(existingMatch.date.replace(/(\d+)(st|nd|rd|th)/, '$1'));
+          matchDateParsed.setHours(0, 0, 0, 0);
+          
+          if (!isAdmin && matchDateParsed > today) {
+             setAiAnalysisResult(`REJECTED: Match in tomorrow. The match is scheduled for ${existingMatch.date}. You cannot upload results before the match date.`);
+             return;
+          }
+
+          // 2. Non-admins cannot overwrite a 'finished' match result
           if (!isAdmin && existingMatch.status === 'finished') {
-            setAiAnalysisResult("REJECTED: This match is already finalized. Only an administrator can update finished results.");
+            setAiAnalysisResult("REJECTED: The match isn't ongoing - it has already been finalized.");
             return;
+          }
+
+          // 3. Winner check
+          const winnerTeam = data.homeScore > data.awayScore ? homeTeam : (data.homeScore < data.awayScore ? awayTeam : null);
+          if (winnerTeam && !isAdmin) {
+             const isWinnerReporter = normalize(winnerTeam.fcName) === userFcName || 
+                                     normalize(winnerTeam.name) === userFcName ||
+                                     normalize(winnerTeam.fullName).includes(userFcName);
+             if (!isWinnerReporter) {
+                setAiAnalysisResult(`REJECTED: Your are not the match winner. Only the winning team (${winnerTeam.name}) is allowed to upload the final results.`);
+                return;
+             }
           }
 
           const matchRef = doc(db, 'matches', existingMatch.id);
