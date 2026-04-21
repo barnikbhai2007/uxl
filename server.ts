@@ -138,8 +138,8 @@ async function startServer() {
           const userId = regDoc.data().userId;
           const userRef = db.collection('users').doc(userId);
           const userDoc = await userRef.get();
-          const userData = userDoc.data() || { achievements: [] };
-          const unlockedIds = new Set((userData.achievements || []).map((a: any) => a.achievementId));
+          const userData = userDoc.data() || { achievements: {} };
+          const unlockedIds = new Set(Object.keys(userData.achievements || {}));
           
           const newAchievements: string[] = [];
           const award = (id: string) => {
@@ -193,15 +193,14 @@ async function startServer() {
           if (oppStats && oppStats.shotsOnTarget === 0) award('fort_knox');
 
           if (newAchievements.length > 0) {
-            const updatedAchievements = [
-              ...(userData.achievements || []),
-              ...newAchievements.map(id => ({
-                achievementId: id,
-                unlockedAt: FieldValue.serverTimestamp(),
-                seen: false
-              }))
-            ];
-            await userRef.set({ ...userData, uid: userId, achievements: updatedAchievements }, { merge: true });
+            const updates: any = {};
+            newAchievements.forEach(id => {
+               updates[`achievements.${id}`] = {
+                 unlockedAt: FieldValue.serverTimestamp(),
+                 seen: false
+               };
+            });
+            await userRef.update(updates);
             return newAchievements;
           }
           return [];

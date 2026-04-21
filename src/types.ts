@@ -121,14 +121,17 @@ export interface Achievement {
 }
 
 export interface UserAchievement {
-  achievementId: string;
   unlockedAt: any;
-  seen: boolean; // For the popup notification
+  seen: boolean;
+}
+
+export interface UserAchievementMap {
+  [achievementId: string]: UserAchievement;
 }
 
 export interface UserProfile {
   uid: string;
   email: string;
   role: 'admin' | 'user';
-  achievements?: UserAchievement[];
+  achievements?: UserAchievementMap;
 }

@@ -2241,7 +2241,7 @@ export default function App() {
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
-  const [newAchievement, setNewAchievement] = useState<Achievement | null>(null);
+  const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const teams = useMemo(() => dbTeams, [dbTeams]);
@@ -2875,6 +2875,52 @@ export default function App() {
     });
   };
 
+  const checkAndAwardAchievements = async (matchData: any, currentUserId: string, opponentUserId: string) => {
+    const { homeScore, awayScore, homeScorers, awayScorers, homeTeam, awayTeam } = matchData;
+    const currentUserAchievements: string[] = [];
+    const opponentAchievements: string[] = [];
+    
+    // Helper to get minutes
+    const getMinutes = (scorers: any[]) => scorers?.flatMap(s => String(s.time || '').split(',').map(t => parseInt(t.trim().replace("'", ""))).filter(t => !isNaN(t))) || [];
+    const homeMinutes = getMinutes(homeScorers);
+    const awayMinutes = getMinutes(awayScorers);
+    
+    // Determine who is who
+    const isCurrentUserHome = homeTeam?.toLowerCase().includes(myRegistrationData?.fcName.toLowerCase() || '');
+    const myScore = isCurrentUserHome ? homeScore : awayScore;
+    const oppScore = isCurrentUserHome ? awayScore : homeScore;
+    const myMinutes = isCurrentUserHome ? homeMinutes : awayMinutes;
+    const oppMinutes = isCurrentUserHome ? awayMinutes : homeMinutes;
+
+    if (myScore > oppScore) currentUserAchievements.push('first_blood');
+    if (oppScore === 0) currentUserAchievements.push('clean_sheet_king');
+    if (myScore === 0) opponentAchievements.push('clean_sheet_king');
+    if (myScore >= 5) opponentAchievements.push('goalkeepers_nightmare');
+    if (oppScore >= 5) currentUserAchievements.push('goalkeepers_nightmare');
+    if (myScore >= 3 && oppScore >= 3) {
+      currentUserAchievements.push('thriller');
+      opponentAchievements.push('thriller');
+    }
+    if (oppMinutes?.some((m: number) => m > 90)) currentUserAchievements.push('heartbreak_90');
+    if (myMinutes?.some((m: number) => m > 90)) opponentAchievements.push('heartbreak_90');
+    if (myMinutes?.includes(67)) currentUserAchievements.push('lover_67');
+    if (myMinutes?.includes(69)) currentUserAchievements.push('lover_69');
+    if (oppMinutes?.includes(67)) opponentAchievements.push('lover_67');
+    if (oppMinutes?.includes(69)) opponentAchievements.push('lover_69');
+
+    const updateAchievements = async (userId: string, achievements: string[]) => {
+      if (!userId) return;
+      const updates: any = {};
+      achievements.forEach(id => {
+        updates[`achievements.${id}`] = { unlockedAt: serverTimestamp(), seen: false };
+      });
+      await updateDoc(doc(db, 'users', userId), updates);
+    };
+
+    await updateAchievements(currentUserId, currentUserAchievements);
+    if (opponentUserId) await updateAchievements(opponentUserId, opponentAchievements);
+  };
+
   const processMatchResultImage = async (file: File, playerRegistration: Registration) => {
     setIsSubmittingImg(true);
     setAiAnalysisResult(null);
@@ -2888,9 +2934,8 @@ export default function App() {
           base64,
           mimeType: file.type,
           fcName: playerRegistration.fcName,
-          // Provide goalkeeper context if available for better MOTM analysis
           homeGoalkeeper: teams.find(t => t.fcName === playerRegistration.fcName)?.goalkeeper,
-          awayGoalkeeper: teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper // Over-simplified but helps
+          awayGoalkeeper: teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper
         })
       });
       
@@ -2908,7 +2953,6 @@ export default function App() {
       const aiHome = normalize(data.homeTeam);
       const aiAway = normalize(data.awayTeam);
 
-      // Flexible participant check
       const isParticipant = aiHome.includes(userFcName) || userFcName.includes(aiHome) || 
                           aiAway.includes(userFcName) || userFcName.includes(aiAway);
 
@@ -2916,6 +2960,12 @@ export default function App() {
         setAiAnalysisResult(`REJECTED: User not matched. Your FC Name "${playerRegistration.fcName}" was not clearly detected in the screenshot (AI saw: "${data.homeTeam}" vs "${data.awayTeam}").`);
         return;
       }
+
+      // Achievement processing
+      const opponentFcName = aiHome.includes(userFcName) || userFcName.includes(aiHome) ? data.awayTeam : data.homeTeam;
+      const opponentReg = await getDocs(query(collection(db, 'registrations'), where('fcName', '==', opponentFcName))).then(s => s.docs[0]?.data() as Registration);
+      
+      await checkAndAwardAchievements(data, user!.uid, opponentReg?.userId);
 
       // Auto-update match with flexible team finding
       const findTeamFlexible = (aiName: string) => {
@@ -3255,16 +3305,23 @@ export default function App() {
 
   // Achievement Notification Logic
   useEffect(() => {
-    if (userProfile?.achievements) {
-      const unseen = userProfile.achievements.find(ua => !ua.seen);
-      if (unseen) {
-        const achievement = ACHIEVEMENTS.find(a => a.id === unseen.achievementId);
-        if (achievement) {
-          setNewAchievement(achievement);
-        }
+    if (!user) return;
+    const userRef = doc(db, 'users', user.uid);
+    const unsub = onSnapshot(userRef, (snap) => {
+      const data = snap.data();
+      const achievements = data?.achievements || {};
+      const unseen = Object.entries(achievements)
+        .filter(([_, val]: any) => val.seen === false)
+        .map(([id]: any) => id);
+      if (unseen.length > 0) {
+        setNewAchievements(unseen);
+        const updates: any = {};
+        unseen.forEach(id => { updates[`achievements.${id}.seen`] = true; });
+        updateDoc(userRef, updates);
       }
-    }
-  }, [userProfile]);
+    });
+    return () => unsub();
+  }, [user]);
 
   // Auto-sync local user achievements based on match data
   useEffect(() => {
@@ -4632,11 +4689,14 @@ export default function App() {
             onClose={() => setSelectedTeam(null)}
           />
         )}
-        {newAchievement && (
-          <AchievementPopup 
-            achievement={newAchievement} 
-            onClose={handleCloseAchievement} 
-          />
+        {newAchievements.length > 0 && (
+          <div className="achievement-popup fixed top-20 right-4 z-50 bg-blue-900 border border-blue-500 p-6 rounded-lg text-white shadow-xl">
+            <h2 className="text-xl font-black mb-4">🏆 New Achievement Unlocked!</h2>
+            {newAchievements.map(id => (
+              <div key={id} className="mb-2 font-bold">{ACHIEVEMENTS.find(a => a.id === id)?.title}</div>
+            ))}
+            <button onClick={() => setNewAchievements([])} className="mt-4 bg-yellow-500 text-black px-4 py-2 rounded font-bold">Awesome! 🎉</button>
+          </div>
         )}
       </AnimatePresence>
 
