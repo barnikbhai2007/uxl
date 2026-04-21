@@ -1260,7 +1260,7 @@ const NEWS_POSTS: any[] = [];
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai'>('bracket');
     const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
-    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-3-flash-preview');
+    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-3.1-pro-preview');
 
     useEffect(() => {
       setLocalApiKey(config.geminiApiKey || '');
@@ -2513,15 +2513,28 @@ export default function App() {
     }
   };
 
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 585;
+        canvas.height = Math.round(585 * (img.height / img.width));
+        const ctx = canvas.getContext('2d')!;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL('image/jpeg', 0.6);
+        resolve(compressed.split(',')[1]);
+        URL.revokeObjectURL(img.src);
+      };
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
   const processMatchResultImage = async (file: File, playerRegistration: Registration) => {
     setIsSubmittingImg(true);
     setAiAnalysisResult(null);
     try {
-      const base64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result?.toString().split(',')[1] || '');
-        reader.readAsDataURL(file);
-      });
+      const base64 = await compressImage(file);
 
       const response = await fetch('/api/analyze-match', {
         method: 'POST',
