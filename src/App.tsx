@@ -416,8 +416,10 @@ const NEWS_POSTS: any[] = [];
         onClick={onClick}
         className="bg-white/5 border border-white/10 rounded-3xl p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-hidden backdrop-blur-sm"
       >
-        <div className="absolute top-0 right-0 p-2 opacity-5">
-           <Trophy className="w-12 h-12" />
+        <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none select-none">
+           <span className="text-6xl font-black italic text-white tracking-tighter">
+             {match.matchNumber}
+           </span>
         </div>
         
         <div className="flex items-center justify-between gap-4 relative z-10">
