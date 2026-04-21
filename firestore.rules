@@ -116,7 +116,8 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if true;
       allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update, delete: if isAdmin();
+      allow update: if isAdmin() || (isOwner(userId) && (!('role' in request.resource.data) || request.resource.data.role == resource.data.role));
+      allow delete: if isAdmin();
     }
 
     match /registrations/{registrationId} {

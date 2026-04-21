@@ -27,6 +27,7 @@ import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAn
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from 'firebase/firestore';
 import { ACHIEVEMENTS } from './achievements';
+import { evaluateAchievements } from './utils/achievementEngine';
 import { AchievementsList, AchievementPopup } from './components/AchievementSystem';
 
 const INITIAL_BRACKET: BracketMatch[] = [
@@ -3264,6 +3265,39 @@ export default function App() {
       }
     }
   }, [userProfile]);
+
+  // Auto-sync local user achievements based on match data
+  useEffect(() => {
+    if (!user || !userProfile || !myRegistrationData || !teams.length || !matches.length) return;
+    
+    // Use setTimeout so we don't blast firestore repeatedly on fast state changes
+    const timer = setTimeout(() => {
+      const myTeam = teams.find(t => t.fcName === myRegistrationData.fcName);
+      if (!myTeam) return;
+
+      const earnedIds = evaluateAchievements(myTeam, matches, myRegistrationData);
+      const existingIds = new Set((userProfile.achievements || []).map(a => a.achievementId));
+      
+      const missingIds = earnedIds.filter(id => !existingIds.has(id));
+      
+      if (missingIds.length > 0) {
+        const newAchievements = missingIds.map(id => ({
+          achievementId: id,
+          unlockedAt: serverTimestamp(),
+          seen: false
+        }));
+        
+        const updatedAchievements = [...(userProfile.achievements || []), ...newAchievements];
+        
+        // Update user profile in firestore to grant the achievement
+        setDoc(doc(db, 'users', user.uid), { achievements: updatedAchievements }, { merge: true }).catch(err => {
+          console.error("Failed to auto-grant achievement:", err);
+        });
+      }
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [user, userProfile, myRegistrationData, teams, matches]);
 
   const handleCloseAchievement = async () => {
     if (!newAchievement || !userProfile) return;
