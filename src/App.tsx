@@ -3271,7 +3271,7 @@ export default function App() {
       const teamsList: Team[] = snapshot.docs.map(doc => {
         const data = doc.data() as Registration;
         return {
-          id: data.id,
+          id: doc.id,
           name: data.fcName,
           shortName: data.fcName.substring(0, 3).toUpperCase(),
           fullName: data.name,
