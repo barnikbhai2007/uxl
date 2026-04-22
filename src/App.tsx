@@ -1265,7 +1265,8 @@ const NEWS_POSTS: any[] = [];
     updateMatchLabel,
     matchesByDay,
     handleAnalyzeQualification,
-    handleUpdateConfig
+    handleUpdateConfig,
+    setAdminEditingRegistration
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -1288,7 +1289,8 @@ const NEWS_POSTS: any[] = [];
     updateMatchLabel: (date: string, status: string) => Promise<void>,
     matchesByDay: Record<string, Match[]>,
     handleAnalyzeQualification: () => Promise<void>,
-    handleUpdateConfig: (config: Config) => Promise<void>
+    handleUpdateConfig: (config: Config) => Promise<void>,
+    setAdminEditingRegistration: (reg: Registration | null) => void
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements'>('bracket');
     const [reports, setReports] = useState<MatchReport[]>([]);
@@ -4807,6 +4809,7 @@ export default function App() {
             matchesByDay={matchesByDay}
             handleAnalyzeQualification={handleAnalyzeQualification}
             handleUpdateConfig={handleUpdateConfig}
+            setAdminEditingRegistration={setAdminEditingRegistration}
           />
         )}
         {selectedTeam && (
