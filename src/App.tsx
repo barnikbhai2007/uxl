@@ -1845,6 +1845,13 @@ const NEWS_POSTS: any[] = [];
                                >
                                  <Trash2 className="w-4 h-4" />
                                </button>
+                               <button 
+                                 onClick={() => setAdminEditingRegistration(reg)}
+                                 className="p-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all rounded-xl"
+                                 title="Edit Registration"
+                               >
+                                 <Edit3 className="w-4 h-4" />
+                               </button>
                              </div>
                           </div>
                           <div className="flex justify-center lg:justify-start">
@@ -2494,6 +2501,20 @@ export default function App() {
   };
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [adminEditingRegistration, setAdminEditingRegistration] = useState<Registration | null>(null);
+
+  const handleAdminUpdateUserRegistration = async (reg: Registration) => {
+    if (!isAdmin) return;
+    setIsSubmittingRegistration(true);
+    try {
+      await setDoc(doc(db, 'registrations', reg.userId), reg, { merge: true });
+    } catch (error) {
+      console.error("Error updating user registration by admin:", error);
+    } finally {
+      setIsSubmittingRegistration(false);
+      setAdminEditingRegistration(null);
+    }
+  };
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const isAdmin = useMemo(() => {
@@ -2538,16 +2559,9 @@ export default function App() {
   };
 
   const EditableImage = ({ id, defaultSrc, alt, className = "", isAdmin }: any) => {
-    const [src, setSrc] = useState(defaultSrc);
-
-    useEffect(() => {
-      const unsub = onSnapshot(doc(db, 'site_content', id), (doc) => {
-        if (doc.exists() && doc.data().content) {
-          setSrc(doc.data().content);
-        }
-      });
-      return () => unsub();
-    }, [id]);
+    const data = siteContent[id] || {};
+    // Fallback carefully: if it has imageUrl, use it. If it has content, use it. Else default.
+    const src = data.imageUrl || data.content || defaultSrc;
 
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
@@ -2556,9 +2570,9 @@ export default function App() {
       
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64 = reader.result;
+        const base64 = reader.result as string;
         try {
-          await setDoc(doc(db, 'site_content', id), { content: base64 }, { merge: true });
+          await updateSiteContent(id, base64, true);
         } catch (err) {
           console.error("Failed to upload image:", err);
           alert("Failed to update image");
@@ -2797,6 +2811,9 @@ export default function App() {
   const seedBracket = async () => {
     if (!isAdmin) return;
     try {
+      const bSnap = await getDocs(collection(db, 'bracket'));
+      if (!bSnap.empty) return; // Bracket already seeded! Do not overwrite.
+      
       const batch = writeBatch(db);
       for (const match of INITIAL_BRACKET) {
         const docRef = doc(db, 'bracket', match.id);
@@ -2805,7 +2822,6 @@ export default function App() {
       await batch.commit();
     } catch (error) {
       console.error("Bracket seeding failed:", error);
-      throw error;
     }
   };
 
@@ -4756,6 +4772,14 @@ export default function App() {
             registration={myRegistrationData}
             onClose={() => setIsEditingProfile(false)}
             handleUpdateRegistration={handleUpdateRegistration}
+            isSubmitting={isSubmittingRegistration}
+          />
+        )}
+        {adminEditingRegistration && (
+          <EditProfileModal
+            registration={adminEditingRegistration}
+            onClose={() => setAdminEditingRegistration(null)}
+            handleUpdateRegistration={handleAdminUpdateUserRegistration}
             isSubmitting={isSubmittingRegistration}
           />
         )}
