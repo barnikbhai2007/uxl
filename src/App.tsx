@@ -1296,7 +1296,7 @@ const NEWS_POSTS: any[] = [];
 
     const handleExportBackup = async () => {
       try {
-        const collections = ['config', 'registrations', 'bracket', 'matches', 'match_labels', 'reports', 'users']; // Core data
+        const collections = ['config', 'registrations', 'bracket', 'matches', 'match_labels', 'reports', 'users', 'site_content', 'stats']; // Core data
         const backupData: Record<string, any> = {};
 
         for (const colName of collections) {
@@ -1311,9 +1311,9 @@ const NEWS_POSTS: any[] = [];
         document.body.appendChild(downloadAnchorNode); 
         downloadAnchorNode.click();
         downloadAnchorNode.remove();
-      } catch (err) {
-        console.error("Backup failed", err);
-        alert("Failed to create backup.");
+      } catch (err: any) {
+        console.error("Backup failed:", err);
+        alert(`Failed to create backup. Error: ${err.message || 'Unknown error'}`);
       }
     };
 
