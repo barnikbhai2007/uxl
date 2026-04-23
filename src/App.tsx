@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import imageCompression from 'browser-image-compression';
@@ -864,7 +864,7 @@ const NEWS_POSTS: any[] = [];
     };
 
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-[300] flex items-center justify-center p-4">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -1292,7 +1292,68 @@ const NEWS_POSTS: any[] = [];
     handleUpdateConfig: (config: Config) => Promise<void>,
     setAdminEditingRegistration: (reg: Registration | null) => void
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup'>('bracket');
+
+    const handleExportBackup = async () => {
+      try {
+        const collections = ['config', 'registrations', 'bracket', 'matches', 'match_labels', 'reports', 'users']; // Core data
+        const backupData: Record<string, any> = {};
+
+        for (const colName of collections) {
+          const snapshot = await getDocs(collection(db, colName));
+          backupData[colName] = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        }
+
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backupData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `uxit_backup_${new Date().toISOString().slice(0,10)}.json`);
+        document.body.appendChild(downloadAnchorNode); 
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+      } catch (err) {
+        console.error("Backup failed", err);
+        alert("Failed to create backup.");
+      }
+    };
+
+    const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      if (!window.confirm("WARNING: This will overwrite your existing database with the backup data. Are you absolutely sure?")) {
+        event.target.value = '';
+        return;
+      }
+
+      setIsResetting(true);
+      try {
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+          try {
+            const data = JSON.parse(e.target?.result as string);
+            for (const colName of Object.keys(data)) {
+              for (const docData of data[colName]) {
+                const { id, ...originalData } = docData;
+                const docRef = doc(db, colName, id);
+                await setDoc(docRef, originalData, { merge: true });
+              }
+            }
+            alert("Backup restored successfully. Data is populating live.");
+            setIsResetting(false);
+          } catch (err) {
+            console.error("Parse or restore error", err);
+            alert("Failed to restore backup format.");
+            setIsResetting(false);
+          }
+        };
+        reader.readAsText(file);
+      } catch (err) {
+        console.error("File upload failed", err);
+        setIsResetting(false);
+      }
+    };
+
     const [reports, setReports] = useState<MatchReport[]>([]);
     const [isReportsLoading, setIsReportsLoading] = useState(false);
 
@@ -1530,6 +1591,12 @@ const NEWS_POSTS: any[] = [];
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               AI Settings
+            </button>
+            <button 
+              onClick={() => setActiveTab('backup')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Backup
             </button>
           </div>
         </div>
@@ -2061,7 +2128,7 @@ const NEWS_POSTS: any[] = [];
                         >
                           <option value="">-- Choose User --</option>
                           {registrations.filter(r => r.status === 'approved' && r.userId).map(r => (
-                             <option key={r.userId} value={r.userId}>{r.fcName} ({r.name})</option>
+                             <option key={r.id} value={r.userId}>{r.fcName} ({r.name})</option>
                           ))}
                         </select>
                       </div>
@@ -2153,6 +2220,58 @@ const NEWS_POSTS: any[] = [];
                 </div>
               </div>
             )}
+            
+            {activeTab === 'backup' && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-display font-black italic uppercase text-white">Database Backup & Recovery</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  {/* Export */}
+                  <div className="bg-black/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-blue-600/10 rounded-bl-full -z-10 group-hover:bg-blue-600/20 transition-all" />
+                    <Download className="w-8 h-8 text-blue-400 mb-4" />
+                    <h4 className="font-black text-white uppercase text-sm mb-2">Export Data Backup</h4>
+                    <p className="text-white/40 text-xs leading-relaxed mb-6">
+                      Download a JSON backup of everything: registrations, bracket matches, historical matches, match labels, stats, users, and reports. Do this regularly.
+                    </p>
+                    <button 
+                      onClick={handleExportBackup}
+                      className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all text-white flex items-center justify-center gap-2"
+                    >
+                      <Download className="w-4 h-4" />
+                      Save Complete Backup
+                    </button>
+                  </div>
+
+                  {/* Import */}
+                  <div className="bg-black/20 border border-red-500/20 rounded-2xl p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-red-600/5 rounded-bl-full -z-10 group-hover:bg-red-600/10 transition-all" />
+                    <Upload className="w-8 h-8 text-red-400 mb-4" />
+                    <h4 className="font-black text-white uppercase text-sm mb-2">Restore Backup</h4>
+                    <p className="text-red-400/60 text-xs leading-relaxed mb-6 font-bold">
+                      DANGER: Restoring a backup will overwrite your current live database with the data contained in the file.
+                    </p>
+                    
+                    <div className="relative">
+                      <input 
+                        type="file" 
+                        accept=".json"
+                        onChange={handleImportBackup}
+                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                        title="Upload JSON Backup"
+                      />
+                      <div className="w-full py-4 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all text-red-100 flex items-center justify-center gap-2">
+                        {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                        Restore JSON Backup
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
           </div>
         </div>
       </motion.div>
@@ -2509,7 +2628,7 @@ export default function App() {
     if (!isAdmin) return;
     setIsSubmittingRegistration(true);
     try {
-      await setDoc(doc(db, 'registrations', reg.userId), reg, { merge: true });
+      await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
     } catch (error) {
       console.error("Error updating user registration by admin:", error);
     } finally {
@@ -2802,7 +2921,7 @@ export default function App() {
     if (!user || user.uid !== reg.userId) return;
     setIsSubmittingRegistration(true);
     try {
-      await setDoc(doc(db, 'registrations', reg.userId), reg, { merge: true });
+      await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
     } catch (error) {
       console.error("Error updating registration:", error);
     } finally {
