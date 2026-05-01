@@ -4,7 +4,7 @@ import { fileURLToPath } from "url";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
 import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 import cors from "cors";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -268,42 +268,51 @@ async function startServer() {
         model: model,
         contents: [
           {
+            role: "user",
             parts: [{
-              text: `You are a Tournament Data Extractor AI. You must return ONLY a JSON array of commands.
-              Each command must be an object with "type" and "data" keys.
-              
-              Today's date is ${new Date().toDateString()}.
+              text: `Today's date is ${new Date().toDateString()}.
 
               Registered Teams Reference (Find the Team ID by looking at the name or fcName):
               ${teamsStr}
 
-              IF THE USER ASKS TO CREATE/SET MATCHES, FOR EVERY MATCH MENTIONED, OUTPUT:
-              { 
-                "type": "UPDATE_MATCH", 
-                "data": { 
-                  "matchId": "generate_unique_string_like_match-12345", 
-                  "homeTeamId": "EXACT TEAM ID FROM REFERENCE LIST", 
-                  "awayTeamId": "EXACT TEAM ID FROM REFERENCE LIST", 
-                  "homeScore": 0, 
-                  "awayScore": 0, 
-                  "status": "scheduled", 
-                  "date": "Parsed Date String, e.g. May 4", 
-                  "matchNumber": 1, 
-                  "matchday": 1 
-                } 
-              }
-              
-              CRITICAL RULES:
-              1. If the user gives you N matches, your array MUST contain exactly N "UPDATE_MATCH" objects. Do NOT stop, do NOT summarize.
-              2. DO NOT HALUCINATE TEAM IDs. You MUST use the 'ID' corresponding to the "Names" given in the reference. If SOUVIK isn't perfectly matching, use the closest logical match from the Reference List. If you cannot find a team, use the name the user provided as the ID.
-              3. DO NOT truncate.
+              IF THE USER ASKS TO CREATE/SET MATCHES, output an UPDATE_MATCH command for EVERY single match they specified.
+              - homeScore and awayScore must be 0 for scheduled matches.
+              - status should be "scheduled"
+              - matchId should be a unique random string (e.g. match-12345)
               
               User Command: ${command}`
             }]
           }
         ],
         config: {
-          responseMimeType: "application/json"
+          systemInstruction: "You are a Tournament Data Extractor AI. You must perfectly extract ALL matches provided by the user. If the user provides 16 matches, you MUST return exactly 16 objects. DO NOT stop early or summarize. Never hallucinate Team IDs, use the IDs from the reference list.",
+          responseMimeType: "application/json",
+          temperature: 0.1,
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                type: { type: Type.STRING },
+                data: {
+                  type: Type.OBJECT,
+                  properties: {
+                    matchId: { type: Type.STRING },
+                    homeTeamId: { type: Type.STRING },
+                    awayTeamId: { type: Type.STRING },
+                    homeScore: { type: Type.INTEGER },
+                    awayScore: { type: Type.INTEGER },
+                    status: { type: Type.STRING },
+                    date: { type: Type.STRING },
+                    matchNumber: { type: Type.INTEGER },
+                    matchday: { type: Type.INTEGER }
+                  },
+                  required: ["matchId", "homeTeamId", "awayTeamId", "homeScore", "awayScore", "status", "date", "matchNumber", "matchday"]
+                }
+              },
+              required: ["type", "data"]
+            }
+          }
         }
       });
 
