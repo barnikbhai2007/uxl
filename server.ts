@@ -38,12 +38,12 @@ async function getAiConfig() {
     const configSnap = await db.collection('config').doc('system').get();
     const configData = configSnap.data();
     const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-    const model = configData?.geminiModel || "gemini-1.5-flash";
+    const model = configData?.geminiModel || "gemini-flash-latest";
     const source = configData?.geminiModel ? "Firestore" : "Environment Default";
     return { key, model, source };
   } catch (error) {
     console.error("Error fetching AI config from Firestore:", error);
-    return { key: process.env.GEMINI_API_KEY, model: "gemini-1.5-flash", source: "Fallback" };
+    return { key: process.env.GEMINI_API_KEY, model: "gemini-flash-latest", source: "Fallback" };
   }
 }
 

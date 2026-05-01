@@ -1422,11 +1422,11 @@ const NEWS_POSTS: any[] = [];
       }
     }, [activeTab]);
     const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
-    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-1.5-flash');
+    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-flash-latest');
 
     useEffect(() => {
       setLocalApiKey(config.geminiApiKey || '');
-      setLocalModel(config.geminiModel || 'gemini-1.5-flash');
+      setLocalModel(config.geminiModel || 'gemini-flash-latest');
     }, [config.geminiApiKey, config.geminiModel]);
 
     const handleSaveAiSettings = async () => {
