@@ -2512,7 +2512,7 @@ export default function App() {
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
-  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
+  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements' | 'upcoming'>('stats');
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
@@ -4038,6 +4038,12 @@ export default function App() {
                       Stats
                     </button>
                     <button 
+                      onClick={() => setCampaignTab('upcoming')}
+                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'upcoming' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                    >
+                      Upcoming
+                    </button>
+                    <button 
                       onClick={() => setCampaignTab('history')}
                       className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
                     >
@@ -4145,9 +4151,61 @@ export default function App() {
                         <div className="space-y-6">
                            <h3 className="text-lg font-display font-black uppercase italic text-white px-4">All Match Results</h3>
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             {myMatches.map(m => (
+                             {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').map(m => (
                                <MatchCard key={m.id} match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
                              ))}
+                           </div>
+                           {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').length === 0 && (
+                               <div className="p-8 text-center text-white/40 bg-white/5 rounded-2xl border border-white/10 mt-4">
+                                  No previous results yet.
+                               </div>
+                           )}
+                        </div>
+                      ) : campaignTab === 'upcoming' ? (
+                        <div className="space-y-6">
+                           <h3 className="text-lg font-display font-black uppercase italic text-white px-4">Upcoming Fixtures</h3>
+                           <div className="space-y-4">
+                             {myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').length === 0 ? (
+                                <div className="p-8 text-center bg-white/5 rounded-[2rem] border border-white/10">
+                                   <Calendar className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                                   <p className="text-white/40">No upcoming matches at the moment.</p>
+                                </div>
+                             ) : (
+                               myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').sort((a, b) => (a.matchday || 0) - (b.matchday || 0)).map(m => {
+                                 const isHome = m.homeTeamId === myRegistration.id;
+                                 const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
+                                 const opponent = teams.find(t => t.id === opponentId);
+                                 return (
+                                   <div key={m.id} className="group relative bg-white/5 border border-white/10 p-4 md:p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-white/10 overflow-hidden">
+                                     {/* Background glow based on Home/Away */}
+                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
+                                     
+                                     <div className="flex items-center gap-4 relative z-10 w-full">
+                                       <div className={`w-14 items-center justify-center flex py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
+                                         {isHome ? 'Home' : 'Away'}
+                                       </div>
+                                       <div className="flex-1">
+                                         <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
+                                         <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
+                                           <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                             <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                             <span className="text-blue-300">{m.date || 'TBD'}</span>
+                                           </div>
+                                         </div>
+                                       </div>
+                                     </div>
+                                     <div className="relative z-10 md:w-auto w-full">
+                                        <button 
+                                          onClick={() => setSelectedMatch(m)} 
+                                          className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
+                                        >
+                                          View Details
+                                        </button>
+                                     </div>
+                                   </div>
+                                 );
+                               })
+                             )}
                            </div>
                         </div>
                       ) : (
