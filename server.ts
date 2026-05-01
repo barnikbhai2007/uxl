@@ -38,12 +38,12 @@ async function getAiConfig() {
     const configSnap = await db.collection('config').doc('system').get();
     const configData = configSnap.data();
     const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-    const model = configData?.geminiModel || "gemini-3.1-pro-preview";
+    const model = configData?.geminiModel || "gemini-pro-latest";
     const source = configData?.geminiModel ? "Firestore" : "Environment Default";
     return { key, model, source };
   } catch (error) {
     console.error("Error fetching AI config from Firestore:", error);
-    return { key: process.env.GEMINI_API_KEY, model: "gemini-3.1-pro-preview", source: "Fallback" };
+    return { key: process.env.GEMINI_API_KEY, model: "gemini-pro-latest", source: "Fallback" };
   }
 }
 
@@ -278,9 +278,15 @@ async function startServer() {
               Each item MUST follow this EXACT structure:
               { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
               
-              "matchId" must be spelled exactly as "matchId".
+              "matchId" must be spelled exactly as "matchId". Please generate a random unique string or use a format like "match-X".
               CRITICAL: For homeTeamId and awayTeamId, you MUST use the EXACT 'ID' string from the "Registered Teams Reference" list above by semantically matching the team names the user asked for.
               For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
+              
+              EXTREMELY IMPORTANT:
+              - If the user provides a complete list of matches/fixtures (e.g. 136 matches), you MUST output an item for EVERY SINGLE match they provided in the list. Do NOT skip any matches!
+              - Do NOT invent or hallucinate new matches not present in the user's data. 
+              - If the user asks you to GENERATE fixtures for the teams, create a complete and fair schedule exactly as requested (e.g., Round Robin) ensuring no team plays themselves.
+              - Output ALL items requested, no matter how long the list is. Do not truncate the output!
               
               Command: ${command}`
             }]

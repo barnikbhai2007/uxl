@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import imageCompression from 'browser-image-compression';
@@ -1294,6 +1294,55 @@ const NEWS_POSTS: any[] = [];
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup'>('bracket');
 
+    const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+      if (downloadingRegistration && cardRef.current) {
+        const download = async () => {
+          try {
+            await new Promise(r => setTimeout(r, 150)); // let images load in portal
+            const { toPng } = await import('html-to-image');
+            const dataUrl = await toPng(cardRef.current!, { quality: 1, pixelRatio: 2 });
+            const link = document.createElement('a');
+            link.download = `player_card_${downloadingRegistration.name.replace(/\s+/g, '_')}.png`;
+            link.href = dataUrl;
+            link.click();
+          } catch (e) {
+            console.error('Failed to generate card', e);
+            alert('Failed to generate card overlay');
+          } finally {
+            setDownloadingRegistration(null);
+          }
+        };
+        download();
+      }
+    }, [downloadingRegistration]);
+
+    const DummyQRCode = () => (
+      <svg viewBox="0 0 100 100" width="100%" height="100%" className="bg-white p-2 rounded-xl text-black shadow-lg">
+         <rect x="10" y="10" width="20" height="20" fill="currentColor" />
+         <rect x="15" y="15" width="10" height="10" fill="white" />
+         <rect x="70" y="10" width="20" height="20" fill="currentColor" />
+         <rect x="75" y="15" width="10" height="10" fill="white" />
+         <rect x="10" y="70" width="20" height="20" fill="currentColor" />
+         <rect x="15" y="75" width="10" height="10" fill="white" />
+         <rect x="40" y="40" width="20" height="20" fill="currentColor" />
+         <rect x="10" y="40" width="10" height="10" fill="currentColor" />
+         <rect x="25" y="50" width="10" height="10" fill="currentColor" />
+         <rect x="40" y="10" width="10" height="10" fill="currentColor" />
+         <rect x="55" y="25" width="10" height="10" fill="currentColor" />
+         <rect x="70" y="40" width="10" height="10" fill="currentColor" />
+         <rect x="85" y="55" width="10" height="10" fill="currentColor" />
+         <rect x="70" y="70" width="10" height="10" fill="currentColor" />
+         <rect x="40" y="80" width="10" height="10" fill="currentColor" />
+         <rect x="55" y="70" width="10" height="10" fill="currentColor" />
+         <rect x="85" y="20" width="10" height="10" fill="currentColor" />
+         <rect x="40" y="55" width="10" height="10" fill="currentColor" />
+         <rect x="20" y="35" width="10" height="10" fill="currentColor" />
+      </svg>
+    );
+
     const handleExportBackup = async () => {
       try {
         const collections = ['config', 'registrations', 'bracket', 'matches', 'match_labels', 'reports', 'users', 'site_content', 'stats']; // Core data
@@ -1373,11 +1422,11 @@ const NEWS_POSTS: any[] = [];
       }
     }, [activeTab]);
     const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
-    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-3.1-pro-preview');
+    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-pro-latest');
 
     useEffect(() => {
       setLocalApiKey(config.geminiApiKey || '');
-      setLocalModel(config.geminiModel || 'gemini-3.1-pro-preview');
+      setLocalModel(config.geminiModel || 'gemini-pro-latest');
     }, [config.geminiApiKey, config.geminiModel]);
 
     const handleSaveAiSettings = async () => {
@@ -1921,6 +1970,13 @@ const NEWS_POSTS: any[] = [];
                                >
                                  <Edit3 className="w-4 h-4" />
                                </button>
+                               <button 
+                                 onClick={() => setDownloadingRegistration(reg)}
+                                 className="p-2 bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white transition-all rounded-xl"
+                                 title="Download ID Card"
+                               >
+                                 <IdCard className="w-4 h-4" />
+                               </button>
                              </div>
                           </div>
                           <div className="flex justify-center lg:justify-start">
@@ -2197,7 +2253,8 @@ const NEWS_POSTS: any[] = [];
                         onChange={(e) => setLocalModel(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer font-sans"
                       >
-                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (Best / Smartest)</option>
+                        <option value="gemini-pro-latest">gemini-pro-latest (Best / Smartest)</option>
+                        <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest (Pro)</option>
                         <option value="gemini-3-flash-preview">gemini-3-flash-preview (Balanced / Default)</option>
                         <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview (Fastest / Lightweight)</option>
                         <option value="gemini-flash-latest">gemini-flash-latest (Stable Flash)</option>
@@ -2274,6 +2331,57 @@ const NEWS_POSTS: any[] = [];
             
           </div>
         </div>
+        {downloadingRegistration && (
+          <div className="fixed top-0 left-[-9999px] pointer-events-none z-[-1] opacity-0 overflow-hidden">
+            <div 
+              ref={cardRef}
+              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-blue-500 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
+              style={{ fontFamily: "'Inter', sans-serif" }}
+            >
+              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-blue-600/30 rounded-full blur-[100px] -z-10" />
+              <div className="absolute bottom-0 left-0 p-32 w-[600px] h-[600px] bg-purple-600/30 rounded-full blur-[100px] -z-10" />
+              
+              <div className="flex justify-between items-start mb-12">
+                 <div>
+                   <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter shadow-sm w-[400px]">UXIT TOURNAMENT</h1>
+                   <p className="text-2xl font-bold uppercase text-blue-400 tracking-widest mt-2">{downloadingRegistration.fcName}</p>
+                 </div>
+                 <div className="w-24 h-24 bg-white p-2 rounded-2xl text-black relative flex-shrink-0 shadow-lg">
+                   <div className="absolute inset-0 p-2">
+                      <DummyQRCode />
+                   </div>
+                 </div>
+              </div>
+
+              <div className="flex-1 flex flex-col items-center justify-center -mt-8">
+                 <div className="w-64 h-64 rounded-full border-[10px] border-white/20 overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.4)] mb-8 flex items-center justify-center bg-[#0a0a1a]">
+                   {downloadingRegistration.logoUrl ? (
+                      <img src={downloadingRegistration.logoUrl} alt="Logo" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+                   ) : (
+                      <span className="text-8xl font-black text-white/20">{downloadingRegistration.name[0]}</span>
+                   )}
+                 </div>
+                 <h2 className="text-5xl font-black text-white uppercase text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-tight">{downloadingRegistration.name}</h2>
+                 <p className="text-2xl text-white/60 font-black uppercase tracking-widest mt-4">FC UID: {downloadingRegistration.fcUid}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 bg-black/40 backdrop-blur-2xl rounded-[2.5rem] p-8 border-2 border-white/10 relative z-10 shadow-2xl mt-8">
+                 <div className="text-center">
+                   <p className="text-sm font-black text-blue-400 uppercase tracking-widest mb-1">Team OVR</p>
+                   <p className="text-5xl font-black text-white drop-shadow-md">{downloadingRegistration.teamOvr}</p>
+                 </div>
+                 <div className="text-center border-l-2 border-white/10">
+                   <p className="text-sm font-black text-blue-400 uppercase tracking-widest mb-1">Age</p>
+                   <p className="text-5xl font-black text-white drop-shadow-md">{downloadingRegistration.age}</p>
+                 </div>
+                 <div className="text-center md:col-span-2 border-t-2 border-white/10 pt-6 mt-2">
+                   <p className="text-sm font-black text-blue-400 uppercase tracking-widest mb-1">Goalkeeper</p>
+                   <p className="text-2xl font-bold text-white capitalize drop-shadow-md">{downloadingRegistration.goalkeeper || 'N/A'}</p>
+                 </div>
+              </div>
+            </div>
+          </div>
+        )}
       </motion.div>
     );
   };
@@ -3035,10 +3143,12 @@ export default function App() {
       for (const cmd of commands) {
         if (cmd.type === 'UPDATE_MATCH' || cmd.type === 'ADD_MATCH' || cmd.type === 'CREATE_MATCH') {
           const homeTeam = teams.find(t => 
+            t.id === cmd.data.homeTeamId ||
             t.name.toLowerCase() === cmd.data.homeTeamId?.toLowerCase() || 
             t.fcName.toLowerCase() === cmd.data.homeTeamId?.toLowerCase()
           );
           const awayTeam = teams.find(t => 
+            t.id === cmd.data.awayTeamId ||
             t.name.toLowerCase() === cmd.data.awayTeamId?.toLowerCase() || 
             t.fcName.toLowerCase() === cmd.data.awayTeamId?.toLowerCase()
           );
