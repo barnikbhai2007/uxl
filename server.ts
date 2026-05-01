@@ -269,26 +269,36 @@ async function startServer() {
         contents: [
           {
             parts: [{
-              text: `You are a Tournament Manager AI. Return ONLY a valid JSON array.
+              text: `You are a Tournament Data Extractor AI. You must return ONLY a JSON array of commands.
+              Each command must be an object with "type" and "data" keys.
+              
               Today's date is ${new Date().toDateString()}.
 
-              Registered Teams Reference:
+              Registered Teams Reference (Find the Team ID by looking at the name or fcName):
               ${teamsStr}
 
-              Each item MUST follow this EXACT structure:
-              { "type": "UPDATE_MATCH", "data": { "matchId": "...", "homeTeamId": "...", "awayTeamId": "...", "homeScore": 0, "awayScore": 0, "status": "scheduled", "date": "...", "matchNumber": 1, "matchday": 1 } }
+              IF THE USER ASKS TO CREATE/SET MATCHES, FOR EVERY MATCH MENTIONED, OUTPUT:
+              { 
+                "type": "UPDATE_MATCH", 
+                "data": { 
+                  "matchId": "generate_unique_string_like_match-12345", 
+                  "homeTeamId": "EXACT TEAM ID FROM REFERENCE LIST", 
+                  "awayTeamId": "EXACT TEAM ID FROM REFERENCE LIST", 
+                  "homeScore": 0, 
+                  "awayScore": 0, 
+                  "status": "scheduled", 
+                  "date": "Parsed Date String, e.g. May 4", 
+                  "matchNumber": 1, 
+                  "matchday": 1 
+                } 
+              }
               
-              "matchId" must be spelled exactly as "matchId". Please generate a random unique string or use a format like "match-X".
-              CRITICAL: For homeTeamId and awayTeamId, you MUST use the EXACT 'ID' string from the "Registered Teams Reference" list above by semantically matching the team names the user asked for.
-              For adding new matches use type "UPDATE_MATCH" with a new unique matchId.
+              CRITICAL RULES:
+              1. If the user gives you N matches, your array MUST contain exactly N "UPDATE_MATCH" objects. Do NOT stop, do NOT summarize.
+              2. DO NOT HALUCINATE TEAM IDs. You MUST use the 'ID' corresponding to the "Names" given in the reference. If SOUVIK isn't perfectly matching, use the closest logical match from the Reference List. If you cannot find a team, use the name the user provided as the ID.
+              3. DO NOT truncate.
               
-              EXTREMELY IMPORTANT:
-              - If the user provides a complete list of matches/fixtures (e.g. 136 matches), you MUST output an item for EVERY SINGLE match they provided in the list. Do NOT skip any matches!
-              - Do NOT invent or hallucinate new matches not present in the user's data. 
-              - If the user asks you to GENERATE fixtures for the teams, create a complete and fair schedule exactly as requested (e.g., Round Robin) ensuring no team plays themselves.
-              - Output ALL items requested, no matter how long the list is. Do not truncate the output!
-              
-              Command: ${command}`
+              User Command: ${command}`
             }]
           }
         ],
