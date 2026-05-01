@@ -1422,11 +1422,11 @@ const NEWS_POSTS: any[] = [];
       }
     }, [activeTab]);
     const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
-    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-pro-latest');
+    const [localModel, setLocalModel] = useState(config.geminiModel || 'gemini-1.5-flash');
 
     useEffect(() => {
       setLocalApiKey(config.geminiApiKey || '');
-      setLocalModel(config.geminiModel || 'gemini-pro-latest');
+      setLocalModel(config.geminiModel || 'gemini-1.5-flash');
     }, [config.geminiApiKey, config.geminiModel]);
 
     const handleSaveAiSettings = async () => {
@@ -2253,7 +2253,8 @@ const NEWS_POSTS: any[] = [];
                         onChange={(e) => setLocalModel(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer font-sans"
                       >
-                        <option value="gemini-pro-latest">gemini-pro-latest (Best / Smartest)</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Balanced)</option>
+                        <option value="gemini-pro-latest">gemini-pro-latest (Smartest)</option>
                         <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest (Pro)</option>
                         <option value="gemini-3-flash-preview">gemini-3-flash-preview (Balanced / Default)</option>
                         <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview (Fastest / Lightweight)</option>
