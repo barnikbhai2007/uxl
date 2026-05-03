@@ -3023,6 +3023,29 @@ export default function App() {
     return result;
   };
 
+  const handleAddNewFixture = async (day: string) => {
+    if (!isAdmin) return;
+    try {
+      const matchId = `match-${Math.random().toString(36).substring(7)}`;
+      const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
+      const newMatchNumber = maxMatchNum + 1;
+      
+      const newMatch: Match = {
+        id: matchId,
+        matchNumber: newMatchNumber,
+        date: day,
+        status: (matchLabels[day] as 'scheduled' | 'live' | 'finished' | 'rescheduled') || 'scheduled',
+        homeTeamId: '',
+        awayTeamId: '',
+      };
+      
+      await setDoc(doc(db, 'matches', matchId), newMatch);
+    } catch(err) {
+      console.error("Error adding match:", err);
+      alert('Error adding new fixture.');
+    }
+  };
+
   const handleUpdateMatch = async (match: Match) => {
     const isParticipant = user && (match.homeTeamId === user.uid || match.awayTeamId === user.uid);
     if (!isAdmin && !isParticipant) {
@@ -4778,6 +4801,14 @@ export default function App() {
                                 onClick={() => setSelectedMatch({ ...match, _overrideStatus: matchLabels[day] } as any)}
                               />
                             ))}
+                            {isAdmin && isEditingMode && (
+                              <button
+                                onClick={() => handleAddNewFixture(day)}
+                                className="flex items-center justify-center gap-2 p-6 bg-blue-500/10 border border-dashed border-blue-500/30 rounded-3xl text-blue-400 hover:bg-blue-500/20 hover:border-blue-500 transition-all font-black uppercase text-xs tracking-widest"
+                              >
+                                <Plus className="w-5 h-5" /> Add Fixture
+                              </button>
+                            )}
                           </div>
                         </div>
                       ));
