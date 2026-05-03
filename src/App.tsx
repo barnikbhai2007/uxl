@@ -4274,13 +4274,13 @@ export default function App() {
                         <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
                           <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Upcoming Fixtures</h3>
                           <div className="space-y-4">
-                             {myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').length === 0 ? (
+                             {myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).length === 0 ? (
                                 <div className="p-8 text-center bg-white/5 rounded-[2rem] border border-white/10">
                                    <Calendar className="w-12 h-12 text-white/20 mx-auto mb-4" />
                                    <p className="text-white/40">No upcoming matches at the moment.</p>
                                 </div>
                              ) : (
-                               myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').sort((a, b) => (a.matchday || 0) - (b.matchday || 0)).slice(0, 5).map(m => {
+                               myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).sort((a, b) => (a.matchday || 0) - (b.matchday || 0)).slice(0, 5).map(m => {
                                  const isHome = m.homeTeamId === myRegistration.id;
                                  const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
                                  const opponent = teams.find(t => t.id === opponentId);
