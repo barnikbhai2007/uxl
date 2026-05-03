@@ -98,6 +98,7 @@ export interface AppContent {
 export interface Config {
   registrationEnabled: boolean;
   tabVisibility?: Record<string, boolean>;
+  hiddenDates?: string[];
   dateOrder?: string[];
   geminiApiKey?: string;
   geminiModel?: string;

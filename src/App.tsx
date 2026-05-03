@@ -1534,12 +1534,24 @@ const NEWS_POSTS: any[] = [];
       await handleUpdateConfig({ ...config, dateOrder: newOrder });
     };
 
-    const SortableDateItem = ({ date, index, total, matchLabels, updateMatchLabel }: { date: string, index: number, total: number, matchLabels: Record<string, string>, updateMatchLabel: (date: string, status: string) => Promise<void>, key?: any }) => {
+    const toggleDateVisibility = async (date: string) => {
+      const currentHidden = config.hiddenDates || [];
+      const isHidden = currentHidden.includes(date);
+      let newHidden = [...currentHidden];
+      if (isHidden) {
+        newHidden = newHidden.filter(d => d !== date);
+      } else {
+        newHidden.push(date);
+      }
+      await handleUpdateConfig({ ...config, hiddenDates: newHidden });
+    };
+
+    const SortableDateItem = ({ date, index, total, matchLabels, updateMatchLabel, isHidden }: { date: string, index: number, total: number, matchLabels: Record<string, string>, updateMatchLabel: (date: string, status: string) => Promise<void>, isHidden: boolean, key?: any }) => {
       const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: date });
       const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
 
       return (
-        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10 ${isDragging ? 'shadow-2xl bg-blue-600/20 border-blue-500/50' : ''}`}>
+        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-xl border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-blue-600/20 border-blue-500/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
           <div className="flex items-center gap-4">
             <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-lg transition-colors">
               <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
@@ -1552,17 +1564,25 @@ const NEWS_POSTS: any[] = [];
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
             </div>
-            <span className="text-sm font-bold text-white uppercase italic">{date}</span>
+            <span className="text-sm font-bold text-white uppercase italic">{date} {isHidden && '(Hidden)'}</span>
           </div>
-          <select 
-            value={matchLabels[date] || 'scheduled'}
-            onChange={(e) => updateMatchLabel(date, e.target.value)}
-            className="bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-blue-500"
-          >
-            <option value="scheduled">Scheduled</option>
-            <option value="ongoing">Ongoing</option>
-            <option value="finished">Final Result</option>
-          </select>
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => toggleDateVisibility(date)}
+              className={`p-2 rounded-lg font-black text-xs uppercase transition-colors ${isHidden ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'}`}
+            >
+              {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+            <select 
+              value={matchLabels[date] || 'scheduled'}
+              onChange={(e) => updateMatchLabel(date, e.target.value)}
+              className="bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-blue-500"
+            >
+              <option value="scheduled">Scheduled</option>
+              <option value="ongoing">Ongoing</option>
+              <option value="finished">Final Result</option>
+            </select>
+          </div>
         </div>
       );
     };
@@ -2099,6 +2119,7 @@ const NEWS_POSTS: any[] = [];
                           date={date} 
                           index={index}
                           total={sortedDates.length}
+                          isHidden={config.hiddenDates?.includes(date) || false}
                           matchLabels={matchLabels} 
                           updateMatchLabel={updateMatchLabel} 
                         />
@@ -4762,6 +4783,10 @@ export default function App() {
                         orderedDays = [...new Set([...existingInConfig, ...missingInConfig])];
                       } else {
                         orderedDays = allDays.sort();
+                      }
+
+                      if (!isAdmin || !isEditingMode) {
+                        orderedDays = orderedDays.filter(day => !config.hiddenDates?.includes(day));
                       }
 
                       if (orderedDays.length === 0) {
