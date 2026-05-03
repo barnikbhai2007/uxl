@@ -47,8 +47,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             
             CRITICAL RULES:
             1. If the user gives you N matches, your array MUST contain exactly N "UPDATE_MATCH" objects. Do NOT stop, do NOT summarize.
-            2. DO NOT HALUCINATE TEAM IDs. You MUST use the 'ID' corresponding to the "Names" given in the reference. If SOUVIK isn't perfectly matching, use the closest logical match from the Reference List. If you cannot find a team, use the name the user provided as the ID.
-            3. DO NOT truncate.
+            2. DO NOT HALUCINATE TEAM IDs. You MUST use the 'ID' corresponding to the "Names" given in the reference. If you cannot find a team, use the name the user provided as the ID.
+            3. Respect Home and Away perfectly. The first team mentioned usually is home if it says "at home". Read carefully!
+            4. If the user provides a specific date (like "May 4"), apply that EXPLICIT EXACT date string to the \`date\` field of EVERY match scheduled for that day.
+            5. DO NOT truncate.
             
             User Command: ${command}`
           }]

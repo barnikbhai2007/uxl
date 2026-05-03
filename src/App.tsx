@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import imageCompression from 'browser-image-compression';
@@ -397,14 +397,14 @@ const TeamProfileModal = ({ team, matches, teams, onClose }: { team: Team, match
 
 const NEWS_POSTS: any[] = [];
 
-  const MatchCard = ({ match, teams, overrideStatus, onClick }: { match: Match, teams: Team[], overrideStatus?: string, onClick: () => void, key?: any }) => {
+  const MatchCard = ({ match, teams, overrideStatus, onClick, isEditingMode, isAdmin, onUpdateMatch }: { match: Match, teams: Team[], overrideStatus?: string, onClick: () => void, isEditingMode?: boolean, isAdmin?: boolean, onUpdateMatch?: (updatedMatch: Match) => void, key?: any }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
     const displayStatus = match.status === 'finished' ? 'finished' : (overrideStatus || match.status);
 
     const TeamLogo = ({ team }: { team: Team | undefined }) => (
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden">
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10">
         {team?.logoUrl ? (
           <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
@@ -413,11 +413,41 @@ const NEWS_POSTS: any[] = [];
       </div>
     );
 
+    const renderTeamName = (teamType: 'away' | 'home', team: Team | undefined) => {
+      if (isAdmin && isEditingMode && onUpdateMatch) {
+        return (
+          <select
+            className="mt-2 bg-black/80 border border-blue-500/50 rounded-lg text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
+            value={team?.id || ''}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              const newId = e.target.value === '' ? null : e.target.value;
+              const updated = { ...match };
+              if (teamType === 'home') updated.homeTeamId = newId;
+              else updated.awayTeamId = newId;
+              onUpdateMatch(updated);
+            }}
+          >
+            <option value="">TBD</option>
+            {teams.map(t => (
+              <option key={t.id} value={t.id}>{t.name}</option>
+            ))}
+          </select>
+        );
+      }
+      return (
+        <div className="text-center">
+          <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{team?.name || 'TBD'}</div>
+          <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{team?.fullName || 'TBD'}</div>
+        </div>
+      );
+    }
+
     return (
       <motion.div
         whileHover={{ scale: 1.01, y: -2 }}
         onClick={onClick}
-        className="bg-white/5 border border-white/10 rounded-3xl p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-hidden backdrop-blur-sm"
+        className="bg-white/5 border border-white/10 rounded-3xl p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-visible backdrop-blur-sm"
       >
         <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none select-none">
            <span className="text-6xl font-black italic text-white tracking-tighter">
@@ -426,12 +456,9 @@ const NEWS_POSTS: any[] = [];
         </div>
         
         <div className="flex items-center justify-between gap-4 relative z-10">
-          <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
+          <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
             <TeamLogo team={awayTeam} />
-            <div className="text-center">
-              <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{awayTeam?.name || 'TBD'}</div>
-              <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{awayTeam?.fullName || 'TBD'}</div>
-            </div>
+            {renderTeamName('away', awayTeam)}
           </div>
 
           <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
@@ -456,12 +483,9 @@ const NEWS_POSTS: any[] = [];
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center gap-3 min-w-0">
+          <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
             <TeamLogo team={homeTeam} />
-            <div className="text-center">
-              <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{homeTeam?.name || 'TBD'}</div>
-              <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{homeTeam?.fullName || 'TBD'}</div>
-            </div>
+            {renderTeamName('home', homeTeam)}
           </div>
         </div>
       </motion.div>
@@ -1499,7 +1523,18 @@ const NEWS_POSTS: any[] = [];
       return allDates.sort();
     }, [matchesByDay, config.dateOrder]);
 
-    const SortableDateItem = ({ date, matchLabels, updateMatchLabel }: { date: string, matchLabels: Record<string, string>, updateMatchLabel: (date: string, status: string) => Promise<void>, key?: any }) => {
+    const moveDateLabel = async (date: string, direction: 'up' | 'down') => {
+      const allDates = sortedDates;
+      const index = allDates.indexOf(date);
+      if (index < 0) return;
+      if (direction === 'up' && index === 0) return;
+      if (direction === 'down' && index === allDates.length - 1) return;
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      const newOrder = arrayMove(allDates, index, newIndex) as string[];
+      await handleUpdateConfig({ ...config, dateOrder: newOrder });
+    };
+
+    const SortableDateItem = ({ date, index, total, matchLabels, updateMatchLabel }: { date: string, index: number, total: number, matchLabels: Record<string, string>, updateMatchLabel: (date: string, status: string) => Promise<void>, key?: any }) => {
       const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: date });
       const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
 
@@ -1508,6 +1543,14 @@ const NEWS_POSTS: any[] = [];
           <div className="flex items-center gap-4">
             <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-lg transition-colors">
               <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
+            </div>
+            <div className="flex flex-col gap-1">
+              <button disabled={index === 0} onClick={() => moveDateLabel(date, 'up')} className={`p-1 rounded bg-white/5 hover:bg-white/10 transition-colors ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                <ChevronUp className="w-3 h-3 text-white/60" />
+              </button>
+              <button disabled={index === total - 1} onClick={() => moveDateLabel(date, 'down')} className={`p-1 rounded bg-white/5 hover:bg-white/10 transition-colors ${index === total - 1 ? 'opacity-30 cursor-not-allowed' : ''}`}>
+                <ChevronDown className="w-3 h-3 text-white/60" />
+              </button>
             </div>
             <span className="text-sm font-bold text-white uppercase italic">{date}</span>
           </div>
@@ -2050,10 +2093,12 @@ const NEWS_POSTS: any[] = [];
                       items={sortedDates}
                       strategy={verticalListSortingStrategy}
                     >
-                      {sortedDates.map(date => (
+                      {sortedDates.map((date, index) => (
                         <SortableDateItem 
                           key={date} 
                           date={date} 
+                          index={index}
+                          total={sortedDates.length}
                           matchLabels={matchLabels} 
                           updateMatchLabel={updateMatchLabel} 
                         />
@@ -2513,7 +2558,7 @@ export default function App() {
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
-  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements' | 'upcoming'>('stats');
+  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
@@ -4039,12 +4084,6 @@ export default function App() {
                       Stats
                     </button>
                     <button 
-                      onClick={() => setCampaignTab('upcoming')}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'upcoming' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
-                    >
-                      Upcoming
-                    </button>
-                    <button 
                       onClick={() => setCampaignTab('history')}
                       className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
                     >
@@ -4162,17 +4201,42 @@ export default function App() {
                                </div>
                            )}
                         </div>
-                      ) : campaignTab === 'upcoming' ? (
-                        <div className="space-y-6">
-                           <h3 className="text-lg font-display font-black uppercase italic text-white px-4">Upcoming Fixtures</h3>
-                           <div className="space-y-4">
+                      ) : (
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                      <div className="lg:col-span-2 space-y-8">
+                        {/* Performance Snapshot */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                              <EditableText id="stats_status_label" defaultText="Status" />
+                            </p>
+                            <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
+                          </div>
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">OVR</p>
+                            <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
+                          </div>
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Goals</p>
+                            <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
+                          </div>
+                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Played</p>
+                            <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
+                          </div>
+                        </div>
+
+                        {/* Upcoming Matches */}
+                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                          <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Upcoming Fixtures</h3>
+                          <div className="space-y-4">
                              {myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').length === 0 ? (
                                 <div className="p-8 text-center bg-white/5 rounded-[2rem] border border-white/10">
                                    <Calendar className="w-12 h-12 text-white/20 mx-auto mb-4" />
                                    <p className="text-white/40">No upcoming matches at the moment.</p>
                                 </div>
                              ) : (
-                               myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').sort((a, b) => (a.matchday || 0) - (b.matchday || 0)).map(m => {
+                               myMatches.filter(m => m.status === 'scheduled' || m.status === 'rescheduled').sort((a, b) => (a.matchday || 0) - (b.matchday || 0)).slice(0, 5).map(m => {
                                  const isHome = m.homeTeamId === myRegistration.id;
                                  const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
                                  const opponent = teams.find(t => t.id === opponentId);
@@ -4207,44 +4271,6 @@ export default function App() {
                                  );
                                })
                              )}
-                           </div>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="lg:col-span-2 space-y-8">
-                        {/* Performance Snapshot */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
-                              <EditableText id="stats_status_label" defaultText="Status" />
-                            </p>
-                            <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
-                          </div>
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">OVR</p>
-                            <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
-                          </div>
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Goals</p>
-                            <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
-                          </div>
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Played</p>
-                            <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
-                          </div>
-                        </div>
-
-                        {/* Last 5 Games */}
-                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                          <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Recent Form</h3>
-                          <div className="space-y-4">
-                            {myMatches.length === 0 ? (
-                               <p className="text-white/20 text-center py-8 font-bold italic">Waiting for fixture update...</p>
-                            ) : (
-                              myMatches.slice(0, 5).map(m => (
-                                <MatchCard key={m.id} match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
-                              ))
-                            )}
                           </div>
                         </div>
 
@@ -4745,6 +4771,9 @@ export default function App() {
                                 key={match.id} 
                                 match={match} 
                                 teams={teams}
+                                isAdmin={isAdmin}
+                                isEditingMode={isEditingMode}
+                                onUpdateMatch={handleUpdateMatch}
                                 overrideStatus={matchLabels[day]}
                                 onClick={() => setSelectedMatch({ ...match, _overrideStatus: matchLabels[day] } as any)}
                               />
