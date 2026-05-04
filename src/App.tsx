@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import imageCompression from 'browser-image-compression';
@@ -431,7 +431,7 @@ const NEWS_POSTS: any[] = [];
             <option value="">TBD</option>
             {teams.map(t => (
               <option key={t.id} value={t.id}>
-                {t.fcName || t.name} {t.fullName ? `→ ${t.fullName}` : ''}
+                {t.fullName || t.fcName || t.name}
               </option>
             ))}
           </select>
@@ -440,13 +440,8 @@ const NEWS_POSTS: any[] = [];
       return (
         <div className="text-center max-w-[140px]">
           <div className="text-[10px] font-black text-white uppercase tracking-tight truncate">
-            {team?.fcName || team?.name || 'TBD'}
+            {team?.fullName || team?.fcName || team?.name || 'TBD'}
           </div>
-          {team?.fullName && team?.fullName !== team?.name && (
-            <div className="text-[8px] font-bold text-blue-400 uppercase tracking-widest truncate opacity-80">
-              → {team.fullName}
-            </div>
-          )}
         </div>
       );
     }
@@ -1031,8 +1026,7 @@ const NEWS_POSTS: any[] = [];
     useEffect(() => {
       const team = teams.find(t => t.id === value);
       if (team) {
-        const displayValue = team.fullName ? `${team.fcName || team.name} → ${team.fullName}` : (team.fcName || team.name);
-        setSearch(displayValue);
+        setSearch(team.fullName || team.fcName || team.name || '');
       } else {
         setSearch(value);
       }
@@ -1049,13 +1043,19 @@ const NEWS_POSTS: any[] = [];
     }, []);
 
     const filteredTeams = useMemo(() => {
-      if (!search) return teams;
       const lowerSearch = search.toLowerCase();
-      return teams.filter(t => 
+      const filtered = search ? teams.filter(t => 
         (t.fcName?.toLowerCase() || '').includes(lowerSearch) || 
         (t.name?.toLowerCase() || '').includes(lowerSearch) ||
         (t.fullName?.toLowerCase() || '').includes(lowerSearch)
-      );
+      ) : teams;
+
+      // Sort alphabetically by full name
+      return [...filtered].sort((a, b) => {
+        const nameA = a.fullName || a.fcName || a.name || '';
+        const nameB = b.fullName || b.fcName || b.name || '';
+        return nameA.localeCompare(nameB);
+      });
     }, [search, teams]);
 
     return (
@@ -1090,7 +1090,7 @@ const NEWS_POSTS: any[] = [];
                   <button
                     key={team.id}
                     onClick={() => {
-                      const displayValue = team.fullName ? `${team.fcName || team.name} → ${team.fullName}` : (team.fcName || team.name);
+                      const displayValue = team.fullName || team.fcName || team.name;
                       onChange(displayValue);
                       setSearch(displayValue);
                       setIsOpen(false);
@@ -1105,10 +1105,8 @@ const NEWS_POSTS: any[] = [];
                       )}
                     </div>
                     <div className="flex-1 truncate">
-                      <p className="text-xs font-bold text-white truncate flex items-center gap-2">
-                        <span>{team.fcName || team.name}</span>
-                        <span className="text-blue-500">→</span>
-                        <span className="text-white/60 font-medium">{team.fullName || 'TBD'}</span>
+                      <p className="text-xs font-bold text-white truncate">
+                        {team.fullName || team.fcName || team.name}
                       </p>
                     </div>
                   </button>
@@ -1125,7 +1123,7 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
-  const AddMatchModal = ({ onClose, onSave, initialDate = '2026-05-TBD', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, initialDate?: string, initialHome?: string, initialAway?: string }) => {
+  const AddMatchModal = ({ onClose, onSave, teams, initialDate = '2026-05-TBD', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, teams: Team[], initialDate?: string, initialHome?: string, initialAway?: string }) => {
     const [date, setDate] = useState(initialDate);
     const [home, setHome] = useState(initialHome);
     const [away, setAway] = useState(initialAway);
@@ -1156,7 +1154,7 @@ const NEWS_POSTS: any[] = [];
               label="Home Team / Player" 
               value={home} 
               onChange={setHome} 
-              teams={dbTeams} 
+              teams={teams} 
               placeholder="Search home player..."
             />
 
@@ -1164,7 +1162,7 @@ const NEWS_POSTS: any[] = [];
               label="Away Team / Player" 
               value={away} 
               onChange={setAway} 
-              teams={dbTeams} 
+              teams={teams} 
               placeholder="Search away player..."
             />
           </div>
@@ -1467,7 +1465,8 @@ const NEWS_POSTS: any[] = [];
     matchesByDay,
     handleAnalyzeQualification,
     handleUpdateConfig,
-    setAdminEditingRegistration
+    setAdminEditingRegistration,
+    teams
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -1491,7 +1490,8 @@ const NEWS_POSTS: any[] = [];
     matchesByDay: Record<string, Match[]>,
     handleAnalyzeQualification: () => Promise<void>,
     handleUpdateConfig: (config: Config) => Promise<void>,
-    setAdminEditingRegistration: (reg: Registration | null) => void
+    setAdminEditingRegistration: (reg: Registration | null) => void,
+    teams: Team[]
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup'>('bracket');
 
@@ -1964,13 +1964,13 @@ const NEWS_POSTS: any[] = [];
                                           label="Home Team" 
                                           value={editHomeName} 
                                           onChange={setEditHomeName} 
-                                          teams={dbTeams} 
+                                          teams={teams} 
                                         />
                                         <TeamSearchableSelect 
                                           label="Away Team" 
                                           value={editAwayName} 
                                           onChange={setEditAwayName} 
-                                          teams={dbTeams} 
+                                          teams={teams} 
                                         />
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -3416,21 +3416,19 @@ export default function App() {
       let awayId = '';
       
       if (homePlayer && homePlayer !== 'TBD') {
-        const searchName = homePlayer.includes(' → ') ? homePlayer.split(' → ')[0] : homePlayer;
         const team = dbTeams.find(t => 
-          t.name?.toLowerCase() === searchName.toLowerCase() || 
-          t.fullName?.toLowerCase() === searchName.toLowerCase() ||
-          t.fcName?.toLowerCase() === searchName.toLowerCase()
+          t.name?.toLowerCase() === homePlayer.toLowerCase() || 
+          t.fullName?.toLowerCase() === homePlayer.toLowerCase() ||
+          t.fcName?.toLowerCase() === homePlayer.toLowerCase()
         );
         homeId = team ? team.id : homePlayer;
       }
       
       if (awayPlayer && awayPlayer !== 'TBD') {
-        const searchName = awayPlayer.includes(' → ') ? awayPlayer.split(' → ')[0] : awayPlayer;
         const team = dbTeams.find(t => 
-          t.name?.toLowerCase() === searchName.toLowerCase() || 
-          t.fullName?.toLowerCase() === searchName.toLowerCase() ||
-          t.fcName?.toLowerCase() === searchName.toLowerCase()
+          t.name?.toLowerCase() === awayPlayer.toLowerCase() || 
+          t.fullName?.toLowerCase() === awayPlayer.toLowerCase() ||
+          t.fcName?.toLowerCase() === awayPlayer.toLowerCase()
         );
         awayId = team ? team.id : awayPlayer;
       }
@@ -5681,6 +5679,7 @@ export default function App() {
           <AddMatchModal 
             onClose={() => setIsAddMatchModalOpen(false)}
             onSave={handleAddNewFixture}
+            teams={dbTeams}
             initialDate={addMatchInitialData.date}
             initialHome={addMatchInitialData.home}
             initialAway={addMatchInitialData.away}
@@ -5727,6 +5726,7 @@ export default function App() {
             handleAnalyzeQualification={handleAnalyzeQualification}
             handleUpdateConfig={handleUpdateConfig}
             setAdminEditingRegistration={setAdminEditingRegistration}
+            teams={dbTeams}
           />
         )}
         {selectedTeam && (

@@ -43,10 +43,12 @@ async function startServer() {
       if (!key) throw new Error("GEMINI_API_KEY is not configured.");
 
       const ai = new GoogleGenAI({ apiKey: key });
-      const generativeModel = ai.getGenerativeModel({ model });
       
-      const result = await generativeModel.generateContent("Respond with only the word 'OK' if you can read this.");
-      const text = result.response.text();
+      const result = await ai.models.generateContent({
+        model: model,
+        contents: [{ role: 'user', parts: [{ text: "Respond with only the word 'OK' if you can read this." }] }]
+      });
+      const text = result.text;
       
       res.json({ success: true, message: `Connected to ${model} successfully! AI response: ${text}`, source });
     } catch (error: any) {
