@@ -1014,10 +1014,10 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
-  const AddMatchModal = ({ onClose, onSave }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void }) => {
-    const [date, setDate] = useState('2026-05-TBD');
-    const [home, setHome] = useState('');
-    const [away, setAway] = useState('');
+  const AddMatchModal = ({ onClose, onSave, initialDate = '2026-05-TBD', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, initialDate?: string, initialHome?: string, initialAway?: string }) => {
+    const [date, setDate] = useState(initialDate);
+    const [home, setHome] = useState(initialHome);
+    const [away, setAway] = useState(initialAway);
 
     return (
       <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
@@ -2695,7 +2695,7 @@ export default function App() {
   const [dbTeams, setDbTeams] = useState<Team[]>([]);
   const [dbMatches, setDbMatches] = useState<Match[]>([]);
   const [isAddMatchModalOpen, setIsAddMatchModalOpen] = useState(false);
-  const [addMatchDate, setAddMatchDate] = useState('2026-05-TBD');
+  const [addMatchInitialData, setAddMatchInitialData] = useState<{ date: string, home: string, away: string }>({ date: '2026-05-TBD', home: '', away: '' });
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
@@ -3233,26 +3233,45 @@ export default function App() {
     let awayPlayer = '';
 
     if (typeof fixtureDataOrDay === 'string') {
-      // Cloning logic: use the day as the date, teams stay empty/TBD
-      date = fixtureDataOrDay;
-      homePlayer = 'TBD';
-      awayPlayer = 'TBD';
-    } else if (fixtureDataOrDay) {
+      // Open modal with pre-filled date
+      setAddMatchInitialData({ date: fixtureDataOrDay, home: '', away: '' });
+      setIsAddMatchModalOpen(true);
+      return;
+    } else if (fixtureDataOrDay && typeof fixtureDataOrDay === 'object') {
       // Modal save logic
-      date = fixtureDataOrDay.date;
-      homePlayer = fixtureDataOrDay.home;
-      awayPlayer = fixtureDataOrDay.away;
+      date = fixtureDataOrDay.date || 'TBD';
+      homePlayer = fixtureDataOrDay.home || 'TBD';
+      awayPlayer = fixtureDataOrDay.away || 'TBD';
       setIsAddMatchModalOpen(false);
     } else {
-      // Global add button logic: open the modal
+      // Global add button logic: open the modal with default
+      setAddMatchInitialData({ date: '2026-05-TBD', home: '', away: '' });
       setIsAddMatchModalOpen(true);
       return;
     }
 
     try {
       const matchId = `match-${Math.random().toString(36).substring(7)}`;
-      const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
-      const newMatchNumber = maxMatchNum + 1;
+      
+      // Calculate where to insert and shift match numbers
+      // We sort matches globally: by date, then matchNumber
+      const sortedMatches = [...matches].sort((a, b) => {
+        if (a.date !== b.date) return (a.date || '').localeCompare(b.date || '');
+        return (a.matchNumber || 0) - (b.matchNumber || 0);
+      });
+
+      // Find the first match that should come AFTER this one
+      // We'll put it at the end of the matches for that specific date
+      let insertIndex = sortedMatches.length;
+      for (let i = 0; i < sortedMatches.length; i++) {
+        // If we found a date that is strictly GREATER than our new date, we insert BEFORE it
+        if ((sortedMatches[i].date || '').localeCompare(date) > 0) {
+          insertIndex = i;
+          break;
+        }
+      }
+      
+      const newMatchNumber = insertIndex + 1;
       
       let homeId = '';
       let awayId = '';
@@ -3284,13 +3303,32 @@ export default function App() {
         awayTeamId: awayId,
       };
       
-      // Update state immediately for ultra-fast UI feedback (optimistic update)
-      setDbMatches(prev => [...prev, newMatch]);
+      // Prepare batch update to shift other matches
+      const batch = writeBatch(db);
+      batch.set(doc(db, 'matches', matchId), newMatch);
+
+      const shiftedMatches = sortedMatches.slice(insertIndex).map((m, idx) => ({
+        ...m,
+        matchNumber: newMatchNumber + idx + 1
+      }));
+
+      shiftedMatches.forEach(m => {
+        batch.update(doc(db, 'matches', m.id), { matchNumber: m.matchNumber });
+      });
+
+      // Optimistic state update
+      setDbMatches(prev => {
+        const updated = prev.map(m => {
+          const shifted = shiftedMatches.find(sm => sm.id === m.id);
+          return shifted ? { ...m, matchNumber: shifted.matchNumber } : m;
+        });
+        return [...updated, newMatch];
+      });
       
-      await setDoc(doc(db, 'matches', matchId), newMatch);
+      await batch.commit();
+      await refreshCache('matches');
     } catch(err) {
       console.error("Error adding match:", err);
-      // Revert state on error if needed, but for simplicity just alert
       alert('Error adding new fixture.');
     }
   };
@@ -4196,8 +4234,9 @@ export default function App() {
       : matches;
 
     filtered.forEach(m => {
-      if (!grouped[m.date]) grouped[m.date] = [];
-      grouped[m.date].push(m);
+      const dateKey = m.date || 'TBD';
+      if (!grouped[dateKey]) grouped[dateKey] = [];
+      grouped[dateKey].push(m);
     });
     
     // Sort matches within each day by matchNumber
@@ -5091,20 +5130,22 @@ export default function App() {
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
-                    {isAdmin && isEditingMode && (
-                      <button 
-                        onClick={() => handleAddNewFixture()}
-                        className="ml-4 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-full transition-all shadow-lg shadow-blue-600/20"
-                      >
-                        <Plus className="w-3 h-3" />
-                        Add Fixture
-                      </button>
-                    )}
                     <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
                     </p>
                   </div>
                 </div>
+                {isAdmin && isEditingMode && (
+                  <motion.button 
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => handleAddNewFixture()}
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full transition-all shadow-xl shadow-blue-600/30 border border-white/20 whitespace-nowrap"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Add Fixture
+                  </motion.button>
+                )}
               </div>
 
                     {(() => {
@@ -5499,6 +5540,9 @@ export default function App() {
           <AddMatchModal 
             onClose={() => setIsAddMatchModalOpen(false)}
             onSave={handleAddNewFixture}
+            initialDate={addMatchInitialData.date}
+            initialHome={addMatchInitialData.home}
+            initialAway={addMatchInitialData.away}
           />
         )}
         {isEditingProfile && myRegistrationData && (
