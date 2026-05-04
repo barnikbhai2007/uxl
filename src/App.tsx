@@ -430,7 +430,7 @@ const NEWS_POSTS: any[] = [];
           >
             <option value="">TBD</option>
             {teams.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
+              <option key={t.id} value={t.id}>{t.fcName || t.fullName || t.name}</option>
             ))}
           </select>
         );
@@ -1014,6 +1014,104 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
+  const TeamSearchableSelect = ({ label, value, onChange, teams, placeholder = "Search teammate..." }: { label: string, value: string, onChange: (val: string) => void, teams: Team[], placeholder?: string }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Initial search should be based on the current value if it's already a team name
+    useEffect(() => {
+      const team = teams.find(t => t.id === value);
+      if (team) {
+        setSearch(team.fcName || team.name || '');
+      } else {
+        setSearch(value);
+      }
+    }, [value, teams]);
+
+    useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener('mousedown', handleClickOutside);
+      return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredTeams = useMemo(() => {
+      if (!search) return teams;
+      const lowerSearch = search.toLowerCase();
+      return teams.filter(t => 
+        (t.fcName?.toLowerCase() || '').includes(lowerSearch) || 
+        (t.name?.toLowerCase() || '').includes(lowerSearch) ||
+        (t.fullName?.toLowerCase() || '').includes(lowerSearch)
+      );
+    }, [search, teams]);
+
+    return (
+      <div className="space-y-2 relative" ref={dropdownRef}>
+        <label className="text-[10px] font-black uppercase text-white/40 tracking-widest">{label}</label>
+        <div className="relative">
+          <input 
+            type="text" 
+            value={search}
+            onFocus={() => setIsOpen(true)}
+            onChange={e => {
+              setSearch(e.target.value);
+              onChange(e.target.value);
+              setIsOpen(true);
+            }} 
+            placeholder={placeholder}
+            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none transition-all" 
+          />
+          <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
+        </div>
+
+        <AnimatePresence>
+          {isOpen && (filteredTeams.length > 0 || search) && (
+            <motion.div 
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
+            >
+              {filteredTeams.length > 0 ? (
+                filteredTeams.map(team => (
+                  <button
+                    key={team.id}
+                    onClick={() => {
+                      onChange(team.fcName || team.name);
+                      setSearch(team.fcName || team.name);
+                      setIsOpen(false);
+                    }}
+                    className="w-full px-4 py-3 text-left hover:bg-blue-600/20 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                      {team.logoUrl ? (
+                        <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-lg" referrerPolicy="no-referrer" />
+                      ) : (
+                        <Star className="w-4 h-4 text-blue-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 truncate">
+                      <p className="text-xs font-bold text-white truncate">{team.fcName || team.name}</p>
+                      <p className="text-[8px] font-black uppercase tracking-widest text-white/40 truncate">{team.fullName || 'Official Player'}</p>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-4 text-center">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-white/20 italic">No matching players</p>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  };
+
   const AddMatchModal = ({ onClose, onSave, initialDate = '2026-05-TBD', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, initialDate?: string, initialHome?: string, initialAway?: string }) => {
     const [date, setDate] = useState(initialDate);
     const [home, setHome] = useState(initialHome);
@@ -1041,25 +1139,21 @@ const NEWS_POSTS: any[] = [];
               />
             </div>
 
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 block">Home Team / Player</label>
-              <input 
-                value={home}
-                onChange={e => setHome(e.target.value)}
-                placeholder="Name or TBD"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
+            <TeamSearchableSelect 
+              label="Home Team / Player" 
+              value={home} 
+              onChange={setHome} 
+              teams={dbTeams} 
+              placeholder="Search home player..."
+            />
 
-            <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 block">Away Team / Player</label>
-              <input 
-                value={away}
-                onChange={e => setAway(e.target.value)}
-                placeholder="Name or TBD"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
-              />
-            </div>
+            <TeamSearchableSelect 
+              label="Away Team / Player" 
+              value={away} 
+              onChange={setAway} 
+              teams={dbTeams} 
+              placeholder="Search away player..."
+            />
           </div>
 
           <div className="flex gap-4 mt-8">
@@ -1835,14 +1929,18 @@ const NEWS_POSTS: any[] = [];
                                   {editingMatchId === match.id ? (
                                     <div className="space-y-4">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                          <label className="text-[9px] font-black uppercase text-white/40">Home Team</label>
-                                          <input ref={firstInputRef} type="text" value={editHomeName} onChange={e => setEditHomeName(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
-                                        </div>
-                                        <div className="space-y-2">
-                                          <label className="text-[9px] font-black uppercase text-white/40">Away Team</label>
-                                          <input type="text" value={editAwayName} onChange={e => setEditAwayName(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
-                                        </div>
+                                        <TeamSearchableSelect 
+                                          label="Home Team" 
+                                          value={editHomeName} 
+                                          onChange={setEditHomeName} 
+                                          teams={dbTeams} 
+                                        />
+                                        <TeamSearchableSelect 
+                                          label="Away Team" 
+                                          value={editAwayName} 
+                                          onChange={setEditAwayName} 
+                                          teams={dbTeams} 
+                                        />
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
