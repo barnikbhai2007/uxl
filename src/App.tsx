@@ -3155,22 +3155,46 @@ export default function App() {
 
   const handleAddNewFixture = async (day?: string) => {
     if (!isAdmin) return;
-    const date = prompt("Enter match date (YYYY-MM-DD or TBD):", day || "TBD");
+    const date = prompt("Enter match date (YYYY-MM-DD or TBD):", day || "2026-05-TBD");
     if (date === null) return;
+    
+    const homePlayer = prompt("Enter Home Team/Player name (optional):", "TBD");
+    const awayPlayer = prompt("Enter Away Team/Player name (optional):", "TBD");
     
     try {
       const matchId = `match-${Math.random().toString(36).substring(7)}`;
       const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
       const newMatchNumber = maxMatchNum + 1;
       
+      let homeId = '';
+      let awayId = '';
+      
+      if (homePlayer && homePlayer !== 'TBD') {
+        const team = dbTeams.find(t => 
+          t.name?.toLowerCase() === homePlayer.toLowerCase() || 
+          t.fullName?.toLowerCase() === homePlayer.toLowerCase() ||
+          t.fcName?.toLowerCase() === homePlayer.toLowerCase()
+        );
+        homeId = team ? team.id : homePlayer;
+      }
+      
+      if (awayPlayer && awayPlayer !== 'TBD') {
+        const team = dbTeams.find(t => 
+          t.name?.toLowerCase() === awayPlayer.toLowerCase() || 
+          t.fullName?.toLowerCase() === awayPlayer.toLowerCase() ||
+          t.fcName?.toLowerCase() === awayPlayer.toLowerCase()
+        );
+        awayId = team ? team.id : awayPlayer;
+      }
+
       const dayKey = day || date;
       const newMatch: Match = {
         id: matchId,
         matchNumber: newMatchNumber,
         date: date,
         status: (matchLabels[dayKey] as 'scheduled' | 'live' | 'finished' | 'rescheduled') || 'scheduled',
-        homeTeamId: '',
-        awayTeamId: '',
+        homeTeamId: homeId,
+        awayTeamId: awayId,
       };
       
       await setDoc(doc(db, 'matches', matchId), newMatch);
@@ -4978,9 +5002,6 @@ export default function App() {
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
-                    {isAdmin && isEditingMode && (
-                      <button onClick={() => handleAddNewFixture()} className="ml-4 text-sm bg-blue-600 text-white px-3 py-1 rounded-full uppercase hover:bg-blue-700 transition-all">Add New Match</button>
-                    )}
                     <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
                     </p>
