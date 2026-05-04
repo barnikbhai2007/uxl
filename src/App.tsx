@@ -429,7 +429,11 @@ const NEWS_POSTS: any[] = [];
             }}
           >
             <option value="">TBD</option>
-            {teams.map(t => (
+            {teams.sort((a, b) => {
+              const nameA = a.fullName || a.fcName || a.name || '';
+              const nameB = b.fullName || b.fcName || b.name || '';
+              return nameA.localeCompare(nameB);
+            }).map(t => (
               <option key={t.id} value={t.id}>
                 {t.fullName || t.fcName || t.name}
               </option>
@@ -1024,11 +1028,12 @@ const NEWS_POSTS: any[] = [];
 
     // Initial search should be based on the current value if it's already a team name
     useEffect(() => {
-      const team = teams.find(t => t.id === value);
+      const safeTeams = teams || [];
+      const team = safeTeams.find(t => t.id === value);
       if (team) {
         setSearch(team.fullName || team.fcName || team.name || '');
       } else {
-        setSearch(value);
+        setSearch(value || '');
       }
     }, [value, teams]);
 
@@ -1043,12 +1048,13 @@ const NEWS_POSTS: any[] = [];
     }, []);
 
     const filteredTeams = useMemo(() => {
-      const lowerSearch = search.toLowerCase();
-      const filtered = search ? teams.filter(t => 
+      const safeTeams = teams || [];
+      const lowerSearch = (search || '').toLowerCase();
+      const filtered = search ? safeTeams.filter(t => 
         (t.fcName?.toLowerCase() || '').includes(lowerSearch) || 
         (t.name?.toLowerCase() || '').includes(lowerSearch) ||
         (t.fullName?.toLowerCase() || '').includes(lowerSearch)
-      ) : teams;
+      ) : safeTeams;
 
       // Sort alphabetically by full name
       return [...filtered].sort((a, b) => {
@@ -2462,8 +2468,8 @@ const NEWS_POSTS: any[] = [];
                           className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose Achievement --</option>
-                          {ACHIEVEMENTS.map(a => (
-                             <option key={a.id} value={a.id}>{a.icon} {a.title} ({a.category})</option>
+                          {(ACHIEVEMENTS || []).map(a => (
+                             <option key={a.id} value={a.id}>{a.icon || '🏆'} {a.title} ({a.category})</option>
                           ))}
                         </select>
                       </div>
@@ -2524,7 +2530,7 @@ const NEWS_POSTS: any[] = [];
                     <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini Model</label>
                     <div className="relative">
                       <select 
-                        value={localModel}
+                        value={localModel || 'gemini-3-flash-preview'}
                         onChange={(e) => setLocalModel(e.target.value)}
                         className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer font-sans"
                       >
@@ -2846,7 +2852,13 @@ export default function App() {
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
-  const teams = useMemo(() => dbTeams, [dbTeams]);
+  const teams = useMemo(() => {
+    return [...dbTeams].sort((a, b) => {
+      const nameA = a.fullName || a.fcName || a.name || '';
+      const nameB = b.fullName || b.fcName || b.name || '';
+      return nameA.localeCompare(nameB);
+    });
+  }, [dbTeams]);
   const matches = useMemo(() => dbMatches, [dbMatches]);
   const hofStats = useMemo(() => {
     const monthMatches = matches;
