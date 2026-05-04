@@ -3536,7 +3536,7 @@ export default function App() {
 
       const data = resData.matchData;
       
-      const normalize = (nm: string) => (nm || '').toLowerCase().trim();
+      const normalize = (nm: string) => (nm || '').toLowerCase().replace(/[^a-z0-9]/g, '');
       const userFcName = normalize(playerRegistration.fcName);
       const aiTeam1 = normalize(data.team1);
       const aiTeam2 = normalize(data.team2);
@@ -3643,8 +3643,8 @@ export default function App() {
           const t2Score = Number(data.team2Score ?? data.awayScore ?? 0);
           const safeScorers = data.scorers || [];
           
-          const isT1 = (t: string) => t && (normalize(t) === normalize(data.team1) || normalize(t) === 'team 1' || normalize(t) === 'team1');
-          const isT2 = (t: string) => t && (normalize(t) === normalize(data.team2) || normalize(t) === 'team 2' || normalize(t) === 'team2');
+          const isT1 = (t: string) => t && (normalize(t) === normalize(data.team1) || normalize(t) === 'team1');
+          const isT2 = (t: string) => t && (normalize(t) === normalize(data.team2) || normalize(t) === 'team2');
           
           const parseScorers = (filterFn: (t: string) => boolean) => 
             safeScorers
