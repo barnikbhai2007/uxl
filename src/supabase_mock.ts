@@ -233,8 +233,27 @@ export async function getDocs(ref: CollRef | Query) {
   };
 }
 
+async function handleSpecialOps(target: any, incoming: any) {
+  const result = { ...target };
+  for (const key in incoming) {
+    const val = incoming[key];
+    if (val && typeof val === "object" && val.__op === "increment") {
+      result[key] = (Number(target[key]) || 0) + val.val;
+    } else if (val && typeof val === "object" && val.__op === "arrayUnion") {
+      const existing = Array.isArray(target[key]) ? target[key] : [];
+      result[key] = [...existing, ...val.vals];
+    } else {
+      result[key] = val;
+    }
+  }
+  return result;
+}
+
 export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   const finalData = JSON.parse(JSON.stringify(data)); // strip undefined
+  
+  let dataToSave = finalData;
+
   if (options && options.merge) {
     const { data: existing, error: fetchErr } = await supabase
       .from("documents")
@@ -242,10 +261,12 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       .eq("collection", ref.collectionName)
       .eq("id", ref.id)
       .single();
+    
     if (existing) {
+      dataToSave = await handleSpecialOps(existing.data, finalData);
       const { error } = await supabase
         .from("documents")
-        .update({ data: { ...existing.data, ...finalData } })
+        .update({ data: dataToSave })
         .eq("collection", ref.collectionName)
         .eq("id", ref.id);
       if (error) {
@@ -253,32 +274,25 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       } else {
         localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
       }
-    } else {
-      const { error } = await supabase
-        .from("documents")
-        .insert({
-          id: ref.id,
-          collection: ref.collectionName,
-          data: finalData,
-        });
-      if (error) {
-        console.error("setDoc merge insert error:", error);
-      } else {
-        localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-      }
+      return;
     }
+  }
+
+  // If not merge, or doc doesn't exist, we still check for ops (e.g. increment starts from 0)
+  if (Object.values(dataToSave).some((v: any) => v && v.__op)) {
+    dataToSave = await handleSpecialOps({}, dataToSave);
+  }
+
+  const { error } = await supabase
+    .from("documents")
+    .upsert(
+      { id: ref.id, collection: ref.collectionName, data: dataToSave },
+      { onConflict: "collection,id" },
+    );
+  if (error) {
+    console.error("setDoc upsert error:", error);
   } else {
-    const { error } = await supabase
-      .from("documents")
-      .upsert(
-        { id: ref.id, collection: ref.collectionName, data: finalData },
-        { onConflict: "collection,id" },
-      );
-    if (error) {
-      console.error("setDoc upsert error:", error);
-    } else {
-      localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-    }
+    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   }
 }
 
@@ -290,12 +304,13 @@ export async function updateDoc(ref: DocRef, data: any) {
     .eq("collection", ref.collectionName)
     .eq("id", ref.id)
     .single();
-  if (fetchErr && fetchErr.code !== 'PGRST116') {
-     console.error("updateDoc fetch error:", fetchErr);
-  }
+  
   if (existing) {
     const nextData = { ...existing.data };
+    
+    // First handle dot notation keys to find the target object
     for (const key in finalData) {
+      const val = finalData[key];
       if (key.includes(".")) {
         const parts = key.split(".");
         let cur = nextData;
@@ -303,11 +318,27 @@ export async function updateDoc(ref: DocRef, data: any) {
           cur[parts[i]] = cur[parts[i]] || {};
           cur = cur[parts[i]];
         }
-        cur[parts[parts.length - 1]] = finalData[key];
+        const lastPart = parts[parts.length - 1];
+        if (val && val.__op === "increment") {
+          cur[lastPart] = (Number(cur[lastPart]) || 0) + val.val;
+        } else if (val && val.__op === "arrayUnion") {
+          const arr = Array.isArray(cur[lastPart]) ? cur[lastPart] : [];
+          cur[lastPart] = [...arr, ...val.vals];
+        } else {
+          cur[lastPart] = val;
+        }
       } else {
-        nextData[key] = finalData[key];
+        if (val && val.__op === "increment") {
+          nextData[key] = (Number(nextData[key]) || 0) + val.val;
+        } else if (val && val.__op === "arrayUnion") {
+          const arr = Array.isArray(nextData[key]) ? nextData[key] : [];
+          nextData[key] = [...arr, ...val.vals];
+        } else {
+          nextData[key] = val;
+        }
       }
     }
+    
     const { error: updateErr } = await supabase
       .from("documents")
       .update({ data: nextData })
@@ -405,23 +436,24 @@ export class Timestamp {
   }
 }
 export function increment(val: number) {
-  return val;
+  return { __op: "increment", val };
 }
+
 export function arrayUnion(...vals: any[]) {
-  return vals;
+  return { __op: "arrayUnion", vals };
 }
 
 export function writeBatch(db: any) {
   const operations: any[] = [];
   return {
-    set: (ref: DocRef, data: any) =>
-      operations.push({ type: "set", ref, data }),
+    set: (ref: DocRef, data: any, options: any = {}) =>
+      operations.push({ type: "set", ref, data, options }),
     update: (ref: DocRef, data: any) =>
       operations.push({ type: "update", ref, data }),
     delete: (ref: DocRef) => operations.push({ type: "delete", ref }),
     commit: async () => {
       for (const op of operations) {
-        if (op.type === "set") await setDoc(op.ref, op.data);
+        if (op.type === "set") await setDoc(op.ref, op.data, op.options);
         if (op.type === "update") await updateDoc(op.ref, op.data);
         if (op.type === "delete") await deleteDoc(op.ref);
       }
