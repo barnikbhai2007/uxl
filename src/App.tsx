@@ -1014,6 +1014,76 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
+  const AddMatchModal = ({ onClose, onSave }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void }) => {
+    const [date, setDate] = useState('2026-05-TBD');
+    const [home, setHome] = useState('');
+    const [away, setAway] = useState('');
+
+    return (
+      <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          className="bg-zinc-900 border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden"
+        >
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
+          
+          <h2 className="text-2xl font-display font-black uppercase italic text-white mb-6">Add New Fixture</h2>
+          
+          <div className="space-y-4">
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 block">Match Date</label>
+              <input 
+                value={date}
+                onChange={e => setDate(e.target.value)}
+                placeholder="YYYY-MM-DD or TBD"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 block">Home Team / Player</label>
+              <input 
+                value={home}
+                onChange={e => setHome(e.target.value)}
+                placeholder="Name or TBD"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div>
+              <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 block">Away Team / Player</label>
+              <input 
+                value={away}
+                onChange={e => setAway(e.target.value)}
+                placeholder="Name or TBD"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-4 mt-8">
+            <button 
+              onClick={onClose}
+              className="flex-1 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-white/40 hover:text-white transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={() => onSave({ date, home, away })}
+              className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/20"
+            >
+              Add Match
+            </button>
+          </div>
+
+          <button onClick={onClose} className="absolute top-6 right-6 text-white/20 hover:text-white transition-colors">
+            <X className="w-5 h-5" />
+          </button>
+        </motion.div>
+      </div>
+    );
+  };
   const RegistrationModal = ({ 
     onClose, 
     handleRegister, 
@@ -2624,6 +2694,8 @@ export default function App() {
 
   const [dbTeams, setDbTeams] = useState<Team[]>([]);
   const [dbMatches, setDbMatches] = useState<Match[]>([]);
+  const [isAddMatchModalOpen, setIsAddMatchModalOpen] = useState(false);
+  const [addMatchDate, setAddMatchDate] = useState('2026-05-TBD');
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
@@ -3153,13 +3225,17 @@ export default function App() {
   };
 
 
-  const handleAddNewFixture = async (day?: string) => {
+  const handleAddNewFixture = async (fixtureData?: { date: string, home: string, away: string }) => {
     if (!isAdmin) return;
-    const date = prompt("Enter match date (YYYY-MM-DD or TBD):", day || "2026-05-TBD");
-    if (date === null) return;
     
-    const homePlayer = prompt("Enter Home Team/Player name (optional):", "TBD");
-    const awayPlayer = prompt("Enter Away Team/Player name (optional):", "TBD");
+    // If called without data, open the modal
+    if (!fixtureData) {
+      setIsAddMatchModalOpen(true);
+      return;
+    }
+
+    const { date, home: homePlayer, away: awayPlayer } = fixtureData;
+    setIsAddMatchModalOpen(false);
     
     try {
       const matchId = `match-${Math.random().toString(36).substring(7)}`;
@@ -3187,12 +3263,11 @@ export default function App() {
         awayId = team ? team.id : awayPlayer;
       }
 
-      const dayKey = day || date;
       const newMatch: Match = {
         id: matchId,
         matchNumber: newMatchNumber,
         date: date,
-        status: (matchLabels[dayKey] as 'scheduled' | 'live' | 'finished' | 'rescheduled') || 'scheduled',
+        status: 'scheduled',
         homeTeamId: homeId,
         awayTeamId: awayId,
       };
@@ -5002,6 +5077,15 @@ export default function App() {
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
+                    {isAdmin && isEditingMode && (
+                      <button 
+                        onClick={() => handleAddNewFixture()}
+                        className="ml-4 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-widest rounded-full transition-all shadow-lg shadow-blue-600/20"
+                      >
+                        <Plus className="w-3 h-3" />
+                        Add Fixture
+                      </button>
+                    )}
                     <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
                     </p>
@@ -5385,6 +5469,13 @@ export default function App() {
             isSubmitting={isSubmittingRegistration}
             hasRegistered={hasRegistered}
             user={user}
+          />
+        )}
+
+        {isAddMatchModalOpen && (
+          <AddMatchModal 
+            onClose={() => setIsAddMatchModalOpen(false)}
+            onSave={handleAddNewFixture}
           />
         )}
         {isEditingProfile && myRegistrationData && (
