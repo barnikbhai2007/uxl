@@ -18,12 +18,12 @@ async function getAiConfig() {
     const { data: configSnap } = await supabase.from('documents').select('data').eq('collection', 'config').eq('id', 'system').single();
     const configData = configSnap?.data || null;
     const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-    const model = configData?.geminiModel === "gemini-flash-latest" ? "gemini-2.5-pro" : (configData?.geminiModel || "gemini-2.5-pro");
+    const model = (configData?.geminiModel && configData.geminiModel !== "gemini-flash-latest") ? configData.geminiModel : "gemini-pro-latest";
     const source = configData?.geminiModel ? "Supabase" : "Environment Default";
     return { key, model, source };
   } catch (error) {
     console.error("Error fetching AI config from Supabase:", error);
-    return { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-pro", source: "Fallback" };
+    return { key: process.env.GEMINI_API_KEY, model: "gemini-pro-latest", source: "Fallback" };
   }
 }
 

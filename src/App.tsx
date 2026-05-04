@@ -101,7 +101,7 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
     // Determine if this is a league match based on matchday (e.g. 1-10 are league, 11+ are knockout)
     const isLeagueMatch = (m.matchday || 0) <= 20; 
 
-    if (m.status === 'finished' && isLeagueMatch && m.homeScore !== undefined && m.awayScore !== undefined) {
+    if (m.status === 'finished' && isLeagueMatch && m.homeScore !== undefined && m.homeScore !== null && m.awayScore !== undefined && m.awayScore !== null) {
       const home = standings.find(t => t.id === m.homeTeamId);
       const away = standings.find(t => t.id === m.awayTeamId);
       
@@ -260,7 +260,8 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
   return Object.values(statsMap).sort((a, b) => b.cleanSheets - a.cleanSheets);
 };
 
-const TeamProfileModal = ({ team, matches, teams, onClose }: { team: Team, matches: Match[], teams: Team[], onClose: () => void }) => {
+const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer }: { team: Team, matches: Match[], teams: Team[], onClose: () => void, isAdmin?: boolean, resetPlayer?: (id: string) => void }) => {
+  const [confirmReset, setConfirmReset] = useState(false);
   const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id);
   const finishedMatches = teamMatches.filter(m => m.status === 'finished').sort((a, b) => b.matchNumber - a.matchNumber);
   const upcomingMatches = teamMatches.filter(m => m.status !== 'finished').sort((a, b) => a.matchNumber - b.matchNumber);
@@ -306,11 +307,28 @@ const TeamProfileModal = ({ team, matches, teams, onClose }: { team: Team, match
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
         className="relative w-full max-w-4xl bg-gradient-to-b from-[#000030] to-blue-900/20 border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
       >
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors z-20">
-          <X className="w-5 h-5 text-white/60" />
-        </button>
+        <div className="absolute top-6 right-6 flex gap-2 z-20">
+          {isAdmin && resetPlayer && (
+            <button 
+              onClick={() => {
+                if (confirmReset) {
+                  resetPlayer(team.id);
+                } else {
+                  setConfirmReset(true);
+                }
+              }} 
+              className={`p-2 rounded-full transition-colors flex items-center gap-2 px-4 text-xs font-black uppercase tracking-widest ${confirmReset ? 'bg-red-600 text-white animate-pulse' : 'bg-red-600/20 text-red-400 hover:bg-red-600/40'}`}
+            >
+              <RotateCcw className="w-4 h-4" />
+              {confirmReset ? 'Confirm Reset' : 'Reset Player Data'}
+            </button>
+          )}
+          <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+            <X className="w-5 h-5 text-white/60" />
+          </button>
+        </div>
 
-        <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10">
+        <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10 mt-8 md:mt-0">
           <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
             {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : team.name[0]}
           </div>
@@ -517,6 +535,7 @@ const NEWS_POSTS: any[] = [];
     isAdmin?: boolean,
     resetMatch?: (id: string) => Promise<void> | void
   }) => {
+    const [confirmDelete, setConfirmDelete] = useState(false);
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
@@ -566,10 +585,17 @@ const NEWS_POSTS: any[] = [];
             {isEditingMode && isAdmin && (
               <div className="flex justify-end gap-2 mb-4">
                 <button 
-                  onClick={() => { if(deleteMatch) deleteMatch(match.id); onClose(); }}
-                  className="px-4 py-2 bg-red-600/20 hover:bg-red-600/40 border border-red-500/50 rounded-lg text-red-400 text-xs font-black uppercase"
+                  onClick={() => {
+                    if (confirmDelete) {
+                      if(deleteMatch) deleteMatch(match.id);
+                      onClose();
+                    } else {
+                      setConfirmDelete(true);
+                    }
+                  }}
+                  className={`px-4 py-2 border rounded-lg text-xs font-black uppercase transition-all ${confirmDelete ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/20 hover:bg-red-600/40 border-red-500/50 text-red-400'}`}
                 >
-                  Delete Match
+                  {confirmDelete ? 'Click to Confirm Delete' : 'Delete Match'}
                 </button>
               </div>
             )}
@@ -3630,6 +3656,35 @@ export default function App() {
     }
   };
 
+  const handleResetPlayerMatches = async (teamId: string) => {
+    if (!isAdmin) return;
+    try {
+      const batch = writeBatch(db);
+      const teamMatches = matches.filter(m => m.homeTeamId === teamId || m.awayTeamId === teamId);
+      
+      for (const m of teamMatches) {
+        batch.update(doc(db, 'matches', m.id), {
+          homeScore: null,
+          awayScore: null,
+          status: 'scheduled',
+          homeScorers: [],
+          awayScorers: [],
+          homeStats: null,
+          awayStats: null,
+          manOfTheMatch: null,
+          isDNF: false
+        });
+      }
+      
+      await batch.commit();
+      alert("Player stats reset successfully.");
+      setSelectedTeam(null);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to reset player matches.");
+    }
+  };
+
   const seedBracket = async () => {
     if (!isAdmin) return;
     try {
@@ -3644,6 +3699,34 @@ export default function App() {
       await batch.commit();
     } catch (error) {
       console.error("Bracket seeding failed:", error);
+    }
+  };
+
+  const handleResetPlayer = async (teamId: string) => {
+    if (!isAdmin) return;
+    try {
+      const batch = writeBatch(db);
+      const mSnap = await getDocs(collection(db, 'matches'));
+      mSnap.docs.forEach(d => {
+        const data = d.data();
+        if (data.homeTeamId === teamId || data.awayTeamId === teamId) {
+          batch.update(d.ref, {
+            homeScore: null,
+            awayScore: null,
+            status: 'scheduled',
+            homeScorers: [],
+            awayScorers: [],
+            homeStats: null,
+            awayStats: null,
+            manOfTheMatch: null,
+            isDNF: false
+          });
+        }
+      });
+      await batch.commit();
+      await refreshCache('matches');
+    } catch(err) {
+      console.error("Error resetting player:", err);
     }
   };
 
@@ -5811,6 +5894,8 @@ export default function App() {
             teams={teams}
             matches={matches}
             onClose={() => setSelectedTeam(null)}
+            isAdmin={isAdmin}
+            resetPlayer={handleResetPlayer}
           />
         )}
         {newAchievements.length > 0 && (
