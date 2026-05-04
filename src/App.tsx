@@ -1630,6 +1630,24 @@ const NEWS_POSTS: any[] = [];
       setLocalModel(config.geminiModel || 'gemini-flash-latest');
     }, [config.geminiApiKey, config.geminiModel]);
 
+    const [isTestingAi, setIsTestingAi] = useState(false);
+    const handleTestAi = async () => {
+      setIsTestingAi(true);
+      try {
+        const response = await fetch('/api/test-ai');
+        const data = await response.json();
+        if (data.success) {
+          alert(data.message);
+        } else {
+          alert(`Test failed: ${data.message}`);
+        }
+      } catch (err: any) {
+        alert(`Test failed: ${err.message}`);
+      } finally {
+        setIsTestingAi(false);
+      }
+    };
+
     const handleSaveAiSettings = async () => {
       await handleUpdateConfig({
         ...config,
@@ -2467,14 +2485,24 @@ const NEWS_POSTS: any[] = [];
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-display font-black italic uppercase text-white">AI Settings</h3>
-                  <button 
-                    onClick={handleSaveAiSettings}
-                    disabled={isSavingAdmin}
-                    className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all font-sans"
-                  >
-                    {isSavingAdmin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                    Save Changes
-                  </button>
+                  <div className="flex items-center gap-3">
+                    <button 
+                      onClick={handleTestAi}
+                      disabled={isTestingAi}
+                      className="flex items-center gap-2 px-6 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all font-sans"
+                    >
+                      {isTestingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      Test
+                    </button>
+                    <button 
+                      onClick={handleSaveAiSettings}
+                      disabled={isSavingAdmin}
+                      className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all font-sans"
+                    >
+                      {isSavingAdmin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                      Save
+                    </button>
+                  </div>
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">

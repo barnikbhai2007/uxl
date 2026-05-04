@@ -36,6 +36,25 @@ async function startServer() {
   
   app.use(express.json({ limit: '10mb' }));
 
+  // AI Endpoint for Testing Connection
+  app.get("/api/test-ai", async (req, res) => {
+    try {
+      const { key, model, source } = await getAiConfig();
+      if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+
+      const ai = new GoogleGenAI({ apiKey: key });
+      const generativeModel = ai.getGenerativeModel({ model });
+      
+      const result = await generativeModel.generateContent("Respond with only the word 'OK' if you can read this.");
+      const text = result.response.text();
+      
+      res.json({ success: true, message: `Connected to ${model} successfully! AI response: ${text}`, source });
+    } catch (error: any) {
+      console.error("AI Test Error:", error);
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   // AI Endpoint for match analysis
   app.post("/api/analyze-match", async (req, res) => {
     try {
