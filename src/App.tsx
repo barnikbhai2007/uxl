@@ -95,11 +95,13 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
   const standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: [] as string[] }));
   
   // Sort matches by matchNumber to ensure form is chronological
-  const sortedMatches = [...matches].sort((a, b) => a.matchNumber - b.matchNumber);
+  const sortedMatches = [...matches].sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
 
   sortedMatches.forEach(m => {
-    // Exclude knockout/qualifier matches (Matchday 5+) from standings
-    if (m.status === 'finished' && m.matchday < 5 && m.homeScore !== undefined && m.awayScore !== undefined) {
+    // Determine if this is a league match based on matchday (e.g. 1-10 are league, 11+ are knockout)
+    const isLeagueMatch = (m.matchday || 0) <= 20; 
+
+    if (m.status === 'finished' && isLeagueMatch && m.homeScore !== undefined && m.awayScore !== undefined) {
       const home = standings.find(t => t.id === m.homeTeamId);
       const away = standings.find(t => t.id === m.awayTeamId);
       
@@ -179,7 +181,7 @@ const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { t
             statsMap[key] = {
               teamId: homeTeam.id,
               playerName: s.playerName,
-              gamerName: homeTeam.name,
+              gamerName: homeTeam.fcName || homeTeam.name,
               gamerFullName: homeTeam.fullName,
               goals: 0
             };
@@ -195,7 +197,7 @@ const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { t
             statsMap[key] = {
               teamId: awayTeam.id,
               playerName: s.playerName,
-              gamerName: awayTeam.name,
+              gamerName: awayTeam.fcName || awayTeam.name,
               gamerFullName: awayTeam.fullName,
               goals: 0
             };
@@ -464,8 +466,8 @@ const NEWS_POSTS: any[] = [];
         
         <div className="flex items-center justify-between gap-4 relative z-10">
           <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
-            <TeamLogo team={awayTeam} />
-            {renderTeamName('away', awayTeam)}
+            <TeamLogo team={homeTeam} />
+            {renderTeamName('home', homeTeam)}
           </div>
 
           <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
@@ -473,15 +475,15 @@ const NEWS_POSTS: any[] = [];
               M# {match.matchNumber}
             </div>
             <div className="flex items-center gap-4">
-              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
-                {match.awayScore ?? '-'}
+              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+                {match.homeScore ?? '-'}
               </span>
               <div className="flex flex-col items-center">
                  <span className="text-[10px] font-black text-white/20">VS</span>
                  <div className="h-4 w-[1px] bg-white/10 my-1" />
               </div>
-              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
-                {match.homeScore ?? '-'}
+              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+                {match.awayScore ?? '-'}
               </span>
             </div>
             <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
@@ -494,8 +496,8 @@ const NEWS_POSTS: any[] = [];
           </div>
 
           <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
-            <TeamLogo team={homeTeam} />
-            {renderTeamName('home', homeTeam)}
+            <TeamLogo team={awayTeam} />
+            {renderTeamName('away', awayTeam)}
           </div>
         </div>
       </motion.div>
@@ -592,29 +594,29 @@ const NEWS_POSTS: any[] = [];
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
               <div 
                 className="flex-1 flex flex-col items-center text-center gap-4 cursor-pointer hover:bg-white/5 p-4 rounded-3xl transition-colors"
-                onClick={() => { if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
+                onClick={() => { if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
               >
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
-                  {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
+                  {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.fullName || 'TBD'}</h2>
-                  {awayTeam && (
+                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.fullName || 'TBD'}</h2>
+                  {homeTeam && (
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
+                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
                       <div className="flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
+                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            copyToClipboard(awayTeam.uid);
+                            copyToClipboard(homeTeam.uid);
                           }}
                           className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
                         >
                           <span className="font-mono font-bold tracking-wider uppercase">
-                            {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
+                            {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
                           </span>
-                          {copiedId === awayTeam.uid ? (
+                          {copiedId === homeTeam.uid ? (
                             <Check className="w-2.5 h-2.5 text-green-400" />
                           ) : (
                             <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
@@ -624,9 +626,9 @@ const NEWS_POSTS: any[] = [];
                     </div>
                   )}
                 </div>
-                {match.awayScorers && match.awayScorers.length > 0 && (
+                {match.homeScorers && match.homeScorers.length > 0 && (
                   <div className="mt-4 flex flex-col items-center gap-1">
-                    {match.awayScorers.map((s, i) => (
+                    {match.homeScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-white/40 italic">
                           {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)} {s.time && `(${s.time})`}
@@ -644,21 +646,21 @@ const NEWS_POSTS: any[] = [];
                     <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
                   ) : isEditingMode && isAdmin ? (
                     <div className="flex items-center gap-2">
-                      <input type="number" defaultValue={match.awayScore ?? 0} onChange={(e) => {
-                          match.awayScore = parseInt(e.target.value);
+                      <input type="number" defaultValue={match.homeScore ?? 0} onChange={(e) => {
+                          match.homeScore = parseInt(e.target.value);
                           if(updateMatch) updateMatch(match);
                       }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
                       <span className="text-2xl text-white/20">VS</span>
-                      <input type="number" defaultValue={match.homeScore ?? 0} onChange={(e) => {
-                          match.homeScore = parseInt(e.target.value);
+                      <input type="number" defaultValue={match.awayScore ?? 0} onChange={(e) => {
+                          match.awayScore = parseInt(e.target.value);
                           if(updateMatch) updateMatch(match);
                       }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
                     </div>
                   ) : (
                     <>
-                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
-                      <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
                       <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
+                      <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
+                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
                     </>
                   )}
                 </div>
@@ -705,29 +707,29 @@ const NEWS_POSTS: any[] = [];
 
               <div 
                 className="flex-1 flex flex-col items-center text-center gap-4 cursor-pointer hover:bg-white/5 p-4 rounded-3xl transition-colors"
-                onClick={() => { if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
+                onClick={() => { if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
               >
                 <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
-                  {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
+                  {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
                 </div>
                 <div className="space-y-1">
-                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.fullName || 'TBD'}</h2>
-                  {homeTeam && (
+                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.fullName || 'TBD'}</h2>
+                  {awayTeam && (
                     <div className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
+                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
                       <div className="flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
+                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
                         <button 
                           onClick={(e) => {
                             e.stopPropagation();
-                            copyToClipboard(homeTeam.uid);
+                            copyToClipboard(awayTeam.uid);
                           }}
                           className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
                         >
                           <span className="font-mono font-bold tracking-wider uppercase">
-                            {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
+                            {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
                           </span>
-                          {copiedId === homeTeam.uid ? (
+                          {copiedId === awayTeam.uid ? (
                             <Check className="w-2.5 h-2.5 text-green-400" />
                           ) : (
                             <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
@@ -737,9 +739,9 @@ const NEWS_POSTS: any[] = [];
                     </div>
                   )}
                 </div>
-                {match.homeScorers && match.homeScorers.length > 0 && (
+                {match.awayScorers && match.awayScorers.length > 0 && (
                   <div className="mt-4 flex flex-col items-center gap-1">
-                    {match.homeScorers.map((s, i) => (
+                    {match.awayScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
                         <span className="text-[10px] font-bold text-white/40 italic">
                           {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)} {s.time && `(${s.time})`}
@@ -2796,6 +2798,13 @@ const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = 
   }
 };
 
+// Helper to parse dates like "4th May 2026"
+const parseTourneyDate = (dStr: string) => {
+  if (!dStr || dStr === 'TBD') return new Date(0);
+  const cleanStr = dStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
+  return new Date(cleanStr);
+};
+
 export default function App() {
   const [hasQuotaError, setHasQuotaError] = useState(false);
 
@@ -3955,16 +3964,25 @@ export default function App() {
           const t2Score = Number(data.team2Score ?? data.awayScore ?? 0);
           const safeScorers = data.scorers || [];
           
-          const isT1 = (t: string) => t && (normalize(t) === normalize(data.team1) || normalize(t) === 'team1');
-          const isT2 = (t: string) => t && (normalize(t) === normalize(data.team2) || normalize(t) === 'team2');
+          const isT1 = (t: string) => {
+            if (!t) return false;
+            const normT = t.toLowerCase();
+            return normT === 'team1' || normT === 'team 1' || normT === normalize(data.team1);
+          };
+          const isT2 = (t: string) => {
+            if (!t) return false;
+            const normT = t.toLowerCase();
+            return normT === 'team2' || normT === 'team 2' || normT === normalize(data.team2);
+          };
           
           const parseScorers = (filterFn: (t: string) => boolean) => 
             safeScorers
-              .filter((s:any) => {
-                 if (!s.team) return false;
-                 return filterFn(s.team);
-              })
-              .map((s:any) => ({ playerName: s.name || 'Unknown', goals: Number(s.goals) || 1, time: s.time || null }));
+              .filter((s:any) => s && s.team && filterFn(s.team))
+              .map((s:any) => ({ 
+                playerName: s.name || 'Unknown', 
+                goals: Number(s.goals) || 1, 
+                time: s.time || null 
+              }));
 
           const buildStats = (s: any) => s ? {
               possession: Number(s.possession ?? 50),
@@ -4420,19 +4438,8 @@ export default function App() {
     const todayIST = getISTDate();
     
     const sortedDays = Object.keys(grouped).sort((a, b) => {
-       if (a === todayIST) return -1;
-       if (b === todayIST) return 1;
-       
-       // Improved date parsing for '4th May 2026' format
-       const parseDate = (dStr: string) => {
-         if (!dStr || dStr === 'TBD') return new Date(0);
-         // Remove st, nd, rd, th suffixes
-         const cleanStr = dStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
-         return new Date(cleanStr);
-       };
-
-       const timeA = parseDate(a).getTime();
-       const timeB = parseDate(b).getTime();
+       const timeA = parseTourneyDate(a).getTime();
+       const timeB = parseTourneyDate(b).getTime();
        
        if (isNaN(timeA) || isNaN(timeB)) {
          return a.localeCompare(b);
@@ -5306,10 +5313,18 @@ export default function App() {
                       let orderedDays = [];
                       if (config.dateOrder && config.dateOrder.length > 0) {
                         const existingInConfig = config.dateOrder.filter(d => allDays.includes(d));
-                        const missingInConfig = allDays.filter(d => !config.dateOrder!.includes(d)).sort();
+                        const missingInConfig = allDays.filter(d => !config.dateOrder!.includes(d)).sort((a, b) => {
+                          const timeA = parseTourneyDate(a).getTime();
+                          const timeB = parseTourneyDate(b).getTime();
+                          return timeA - timeB;
+                        });
                         orderedDays = [...new Set([...existingInConfig, ...missingInConfig])];
                       } else {
-                        orderedDays = allDays.sort();
+                        orderedDays = allDays.sort((a, b) => {
+                          const timeA = parseTourneyDate(a).getTime();
+                          const timeB = parseTourneyDate(b).getTime();
+                          return timeA - timeB;
+                        });
                       }
 
                       if (!isAdmin || !isEditingMode) {

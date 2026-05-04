@@ -88,38 +88,41 @@ async function startServer() {
                 - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
                 INSTRUCTIONS:
-                1. Identify the TWO TEAM NAMES (Left side and Right side). BE CAREFUL NOT TO DETECT THE LEAGUE NAME AS THE TEAM NAME. Look explicitly for the actual player or account names positioned at the very top left and very top right. 
-                   CRITICAL RULE: The team on the LEFT (usually Green color) MUST be assigned as "team1". The team on the RIGHT (usually Blue color) MUST be assigned as "team2".
-                2. Identify the Final Score which is displayed in the middle (Left Score - Right Score).
-                   team1Score is the score on the LEFT. team2Score is the score on the RIGHT.
-                3. Identify Goal Scorers (name, goals, time of goal, team). You MUST include "time" formatted like "45', 60'" and "team" MUST EXACTLY BE EITHER "team1" OR "team2". Double-check the color or side of the goal scorer list to ensure they are assigned to the correct team!
-                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES). Ensure you assign the correct stats to the correct team (Left stats to team1Stats, Right stats to team2Stats).
-                5. MAN OF THE MATCH: You MUST decide the Man of the Match based on stats. Find the player with the most goals. If there's a tie or if the goalkeeper has incredible stats (like 7+ shots on target saved and 0 or 1 goals conceded), award it to the goalkeeper.
+                1. Identify the TWO TEAM NAMES (Left side and Right side). look for account names in the top headers.
+                   - LEFT side team = "team1"
+                   - RIGHT side team = "team2"
+                2. Identify the Final Score (Left Score - Right Score).
+                3. Identify Goal Scorers. For each scorer, extract:
+                   - name: Player Name
+                   - goals: number
+                   - time: exactly like "45'", "60'" or "45', 88'"
+                   - team: strictly "team1" or "team2"
+                4. Extract Match Stats (Possession, Shots, etc.). 
+                   - team1Stats = Left side stats
+                   - team2Stats = Right side stats
+                5. MAN OF THE MATCH: Look for MVP/Star player name.
                 
-                CRITICAL: One of the teams MUST reasonably match "${fcName}". If the player name "${fcName}" is mentioned anywhere in the top area, assign them as one of the teams.
-                If neither team matches "${fcName}" and it is nowhere to be found, return { "error": "Reporting player name was not found as a participant in this screenshot." }.
+                CRITICAL: One team must match or contain "${fcName}".
                 
-                Return STRICT JSON: 
+                Return JSON in this exact structure:
                 { 
-                  "team1": "...", 
-                  "team2": "...", 
-                  "team1Score": 0, 
-                  "team2Score": 0, 
-                  "scorers": [{"name": "Player Name", "goals": 1, "team": "team1", "time": "45'"}], 
-                  "team1Stats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
-                  "team2Stats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
-                  "manOfTheMatch": "Player Name" 
+                  "team1": "string", "team2": "string", 
+                  "team1Score": number, "team2Score": number, 
+                  "scorers": [{ "name": "string", "goals": number, "team": "team1"|"team2", "time": "string" }],
+                  "team1Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
+                  "team2Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
+                  "manOfTheMatch": "string"
                 }`
               }
             ]
           }
         ],
-        config: {
+        generationConfig: {
           responseMimeType: "application/json"
         }
       });
 
-      const text = response.text || "{}";
+      const text = response.text() || "{}";
       const resultParsed = JSON.parse(text);
       if (resultParsed.error) {
           throw new Error(resultParsed.error);
@@ -130,7 +133,6 @@ async function startServer() {
       // Achievement Logic
       const checkAndAwardAchievements = async (playerFcName: string, data: any) => {
         try {
-          // Find the player's userId from registration
           const { data: regSnapshot } = await supabase.from('documents')
             .select('*')
             .eq('collection', 'registrations')
@@ -152,14 +154,18 @@ async function startServer() {
             }
           };
 
-          const isTeam1 = data.team1?.toLowerCase().includes(playerFcName.toLowerCase()) || playerFcName?.toLowerCase().includes(data.team1?.toLowerCase());
+          const isTeam1 = (data.team1?.toLowerCase().includes(playerFcName.toLowerCase()) || playerFcName?.toLowerCase().includes(data.team1?.toLowerCase()));
+          
           const playerStats = isTeam1 ? data.team1Stats : data.team2Stats;
           const oppStats = isTeam1 ? data.team2Stats : data.team1Stats;
-          const playerScore = isTeam1 ? data.team1Score : data.team2Score;
-          const oppScore = isTeam1 ? data.team2Score : data.team1Score;
+          const playerScore = isTeam1 ? (data.team1Score ?? 0) : (data.team2Score ?? 0);
+          const oppScore = isTeam1 ? (data.team2Score ?? 0) : (data.team1Score ?? 0);
+          
           const allScorers = data.scorers || [];
-          const playerScorers = allScorers.filter((s:any) => (isTeam1 && (s.team === 'Team 1' || s.team === data.team1)) || (!isTeam1 && (s.team === 'Team 2' || s.team === data.team2)));
-          const oppScorers = allScorers.filter((s:any) => (!isTeam1 && (s.team === 'Team 1' || s.team === data.team1)) || (isTeam1 && (s.team === 'Team 2' || s.team === data.team2)));
+          const playerTeamKey = isTeam1 ? 'team1' : 'team2';
+          
+          const playerScorers = allScorers.filter((s:any) => s.team?.toLowerCase() === playerTeamKey);
+          const oppScorers = allScorers.filter((s:any) => s.team?.toLowerCase() !== playerTeamKey);
 
           // Logic
           if (playerScore > oppScore) {
