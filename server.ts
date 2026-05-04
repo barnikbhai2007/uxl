@@ -89,17 +89,24 @@ async function startServer() {
 
                 INSTRUCTIONS:
                 1. Identify the TWO TEAM NAMES from the top header or team logos (Left team = "team1", Right team = "team2").
-                2. Identify the Final Score in the middle (Left Score - Right Score). team1Score is Left, team2Score is Right.
-                3. Goal Scorers List: Under the main scores or in the match facts, there are often player names listed with soccer ball icons and minutes (e.g., 45', 90').
-                   - If a player name is on the LEFT half of the screen, they scored for "team1".
-                   - If a player name is on the RIGHT half of the screen, they scored for "team2".
-                   - For each scorer, provide "name", "goals" (count the number of ball icons or goals scored by this player), "time" (the minutes like "45', 50'"), and the "team" ("team1" or "team2").
-                4. Match Stats: Extract Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
-                   - The left-side numeric values belong to "team1Stats".
-                   - The right-side numeric values belong to "team2Stats".
-                5. MAN OF THE MATCH: Look for the player highlighted with a star, MVP badge, or labelled as Man of the Match. Assign their name to "manOfTheMatch". If not explicitly shown, just leave it null or pick the best performing player based on stats/goals.
+                2. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
+                3. Extract GOAL SCORERS:
+                   - Look for the list of player names with goal icons and times (like 45', 90'). Find ALL players listed.
+                   - Determine the team ("team1" or "team2"): Look at the COLOR of the goal icon next to the player's name. If the icon color matches the Left team's color (e.g., Green), assign to "team1". If it matches the Right team's color (e.g., Blue), assign to "team2".
+                   - DEDUCTIVE REASONING: If you are unsure about colors, match the total number of goals listed to the score. If team1 scored 4 goals and team2 scored 0, ALL listed scorers MUST belong to "team1". 
+                   - For EACH scorer, provide:
+                     - "name": Player's name.
+                     - "goals": Number of goals scored by this player (default to 1 if listed once).
+                     - "time": The minute(s) they scored (e.g., "12'", "45', 90'").
+                     - "team": MUST BE STRICTLY "team1" OR "team2". Do not use the actual team name.
+                4. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
+                   - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
+                   - Left-side values = "team1Stats".
+                   - Right-side values = "team2Stats".
+                5. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team.
                 
                 CRITICAL RULES:
+                - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
                 - Ensure "team1Score" matches the total number of goals in the "team1" scorers list if possible.
                 - One team must match or contain "${fcName}".
                 
