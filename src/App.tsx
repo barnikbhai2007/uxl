@@ -430,15 +430,23 @@ const NEWS_POSTS: any[] = [];
           >
             <option value="">TBD</option>
             {teams.map(t => (
-              <option key={t.id} value={t.id}>{t.fcName || t.fullName || t.name}</option>
+              <option key={t.id} value={t.id}>
+                {t.fcName || t.name} {t.fullName ? `→ ${t.fullName}` : ''}
+              </option>
             ))}
           </select>
         );
       }
       return (
-        <div className="text-center">
-          <div className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest truncate max-w-[100px]">{team?.name || 'TBD'}</div>
-          <div className="text-xs font-bold text-white uppercase italic tracking-tighter truncate max-w-[120px]">{team?.fullName || 'TBD'}</div>
+        <div className="text-center max-w-[140px]">
+          <div className="text-[10px] font-black text-white uppercase tracking-tight truncate">
+            {team?.fcName || team?.name || 'TBD'}
+          </div>
+          {team?.fullName && team?.fullName !== team?.name && (
+            <div className="text-[8px] font-bold text-blue-400 uppercase tracking-widest truncate opacity-80">
+              → {team.fullName}
+            </div>
+          )}
         </div>
       );
     }
@@ -1023,7 +1031,8 @@ const NEWS_POSTS: any[] = [];
     useEffect(() => {
       const team = teams.find(t => t.id === value);
       if (team) {
-        setSearch(team.fcName || team.name || '');
+        const displayValue = team.fullName ? `${team.fcName || team.name} → ${team.fullName}` : (team.fcName || team.name);
+        setSearch(displayValue);
       } else {
         setSearch(value);
       }
@@ -1081,8 +1090,9 @@ const NEWS_POSTS: any[] = [];
                   <button
                     key={team.id}
                     onClick={() => {
-                      onChange(team.fcName || team.name);
-                      setSearch(team.fcName || team.name);
+                      const displayValue = team.fullName ? `${team.fcName || team.name} → ${team.fullName}` : (team.fcName || team.name);
+                      onChange(displayValue);
+                      setSearch(displayValue);
                       setIsOpen(false);
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-blue-600/20 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
@@ -1095,8 +1105,11 @@ const NEWS_POSTS: any[] = [];
                       )}
                     </div>
                     <div className="flex-1 truncate">
-                      <p className="text-xs font-bold text-white truncate">{team.fcName || team.name}</p>
-                      <p className="text-[8px] font-black uppercase tracking-widest text-white/40 truncate">{team.fullName || 'Official Player'}</p>
+                      <p className="text-xs font-bold text-white truncate flex items-center gap-2">
+                        <span>{team.fcName || team.name}</span>
+                        <span className="text-blue-500">→</span>
+                        <span className="text-white/60 font-medium">{team.fullName || 'TBD'}</span>
+                      </p>
                     </div>
                   </button>
                 ))
@@ -3375,19 +3388,21 @@ export default function App() {
       let awayId = '';
       
       if (homePlayer && homePlayer !== 'TBD') {
+        const searchName = homePlayer.includes(' → ') ? homePlayer.split(' → ')[0] : homePlayer;
         const team = dbTeams.find(t => 
-          t.name?.toLowerCase() === homePlayer.toLowerCase() || 
-          t.fullName?.toLowerCase() === homePlayer.toLowerCase() ||
-          t.fcName?.toLowerCase() === homePlayer.toLowerCase()
+          t.name?.toLowerCase() === searchName.toLowerCase() || 
+          t.fullName?.toLowerCase() === searchName.toLowerCase() ||
+          t.fcName?.toLowerCase() === searchName.toLowerCase()
         );
         homeId = team ? team.id : homePlayer;
       }
       
       if (awayPlayer && awayPlayer !== 'TBD') {
+        const searchName = awayPlayer.includes(' → ') ? awayPlayer.split(' → ')[0] : awayPlayer;
         const team = dbTeams.find(t => 
-          t.name?.toLowerCase() === awayPlayer.toLowerCase() || 
-          t.fullName?.toLowerCase() === awayPlayer.toLowerCase() ||
-          t.fcName?.toLowerCase() === awayPlayer.toLowerCase()
+          t.name?.toLowerCase() === searchName.toLowerCase() || 
+          t.fullName?.toLowerCase() === searchName.toLowerCase() ||
+          t.fcName?.toLowerCase() === searchName.toLowerCase()
         );
         awayId = team ? team.id : awayPlayer;
       }
