@@ -3152,6 +3152,34 @@ export default function App() {
     return result;
   };
 
+  const handleAddNewMatch = async (defaultDate?: string) => {
+    if (!isAdmin) return;
+    const date = defaultDate ?? prompt("Enter match date (YYYY-MM-DD or TBD):", "TBD");
+    if (date === null) return;
+    
+    try {
+      const matchId = `match-${Math.random().toString(36).substring(7)}`;
+      const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
+      const newMatchNumber = maxMatchNum + 1;
+      
+      const newMatch: Match = {
+        id: matchId,
+        matchNumber: newMatchNumber,
+        date: date,
+        status: 'scheduled',
+        homeTeamId: '',
+        awayTeamId: '',
+      };
+      
+      await setDoc(doc(db, 'matches', matchId), newMatch);
+      // Force refresh if possible or just inform user to refresh
+      window.location.reload(); 
+    } catch(err) {
+      console.error("Error adding match:", err);
+      alert('Error adding new fixture.');
+    }
+  };
+
   const handleAddNewFixture = async (day: string) => {
     if (!isAdmin) return;
     try {
@@ -4971,6 +4999,9 @@ export default function App() {
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
+                    {isAdmin && isEditingMode && (
+                      <button onClick={() => handleAddNewMatch()} className="ml-4 text-sm bg-blue-600 text-white px-3 py-1 rounded-full uppercase hover:bg-blue-700 transition-all">Add New Match</button>
+                    )}
                     <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
                     </p>
