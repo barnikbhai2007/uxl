@@ -4065,102 +4065,92 @@ export default function App() {
       }
     };
 
-    const loadPublicData = async () => {
-      // Teams
-      try {
-        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
-        const teamsList: Team[] = teamsData.map((data: any) => {
-          return {
-            id: data.id,
-            name: data.fcName,
-            shortName: data.fcName.substring(0, 3).toUpperCase(),
-            fullName: data.name,
-            fcName: data.fcName,
-            ovr: data.teamOvr,
-            uid: data.fcUid,
-            logoUrl: data.logoUrl,
-            goalkeeper: data.goalkeeper,
-            played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
-          };
-        });
-        if (_mounted) {
-          setDbTeams(teamsList);
-          teamsLoaded = true;
-          checkLoaded();
-        }
-      } catch (e) {
-        console.error("Teams fetch error:", e);
-        if (_mounted) { teamsLoaded = true; checkLoaded(); }
+    // Teams Sync
+    const unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
+      const teamsList: Team[] = snapshot.docs.map(docSnap => {
+        const data = docSnap.data();
+        return {
+          id: docSnap.id,
+          name: data.fcName,
+          shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
+          fullName: data.name,
+          fcName: data.fcName,
+          ovr: data.teamOvr,
+          uid: data.fcUid,
+          logoUrl: data.logoUrl,
+          goalkeeper: data.goalkeeper,
+          played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+        };
+      });
+      if (_mounted) {
+        setDbTeams(teamsList);
+        teamsLoaded = true;
+        checkLoaded();
       }
+    }, (error) => {
+      console.error("Teams sync error:", error);
+      if (_mounted) { teamsLoaded = true; checkLoaded(); }
+    });
 
-      // Matches
-      try {
-        const matchesData = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 300000);
-        if (_mounted) {
-          setDbMatches(matchesData);
-          matchesLoaded = true;
-          checkLoaded();
-        }
-      } catch (e) {
-        console.error("Matches fetch error:", e);
-        if (_mounted) { matchesLoaded = true; checkLoaded(); }
+    // Matches Sync
+    const unsubMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
+      const matchesData = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id } as Match));
+      if (_mounted) {
+        setDbMatches(matchesData);
+        matchesLoaded = true;
+        checkLoaded();
       }
-    };
-
-    loadPublicData();
-
-    // Re-fetch occasionally or handle refresh differently if required
-    const interval = setInterval(loadPublicData, 300000);
+    }, (error) => {
+      console.error("Matches sync error:", error);
+      if (_mounted) { matchesLoaded = true; checkLoaded(); }
+    });
 
     return () => {
       _mounted = false;
-      clearInterval(interval);
+      unsubTeams();
+      unsubMatches();
     };
   }, []);
 
-  useEffect(() => {
-    const incrementVisitCount = async () => {
+    useEffect(() => {
       const statsRef = doc(db, 'stats', 'global');
-      try {
-        if (!sessionStorage.getItem('hasVisitedTourney')) {
-          await setDoc(statsRef, { visitCount: increment(1) }, { merge: true });
-          sessionStorage.setItem('hasVisitedTourney', 'true');
+      
+      const incrementVisitCount = async () => {
+        try {
+          if (!sessionStorage.getItem('hasVisitedTourney')) {
+            await setDoc(statsRef, { visitCount: increment(1) }, { merge: true });
+            sessionStorage.setItem('hasVisitedTourney', 'true');
+          }
+        } catch (error) {
+          console.error("Error incrementing visit count:", error);
         }
-        const docSnap = await getDoc(statsRef);
+      };
+
+      incrementVisitCount();
+
+      // Real-time sync for visit count
+      const unsubscribe = onSnapshot(statsRef, (docSnap) => {
         if (docSnap.exists()) {
           setVisitCount(docSnap.data().visitCount || 0);
         }
-      } catch (error) {
-        console.error("Error with visit count:", error);
-      }
-    };
+      });
 
-    incrementVisitCount();
-  }, []);
+      return () => unsubscribe();
+    }, []);
 
   useEffect(() => {
-    let _mounted = true;
-    const fetchBracket = async () => {
-      try {
-        const q = query(collection(db, 'bracket'));
-        const bracketDataMap: Record<string, BracketMatch> = {};
-        const snapshot = await fetchWithCache('cache_bracket', q, false, 300000);
-        snapshot.forEach((data: any) => {
-          bracketDataMap[data.id] = data;
-        });
-        if (_mounted) {
-          setBracket(Object.values(bracketDataMap));
-        }
-      } catch (error) {
-        console.error("Bracket fetch error", error);
-      }
-    };
-    fetchBracket();
-    const interval = setInterval(fetchBracket, 300000);
-    return () => {
-      _mounted = false;
-      clearInterval(interval);
-    };
+    const unsubBracket = onSnapshot(collection(db, 'bracket'), (snapshot) => {
+      const bracketDataMap: Record<string, BracketMatch> = {};
+      snapshot.docs.forEach((docSnap) => {
+        const data = docSnap.data();
+        bracketDataMap[docSnap.id] = { ...data, id: docSnap.id } as BracketMatch;
+      });
+      setBracket(Object.values(bracketDataMap));
+    }, (error) => {
+      console.error("Bracket sync error:", error);
+    });
+
+    return () => unsubBracket();
   }, []);
 
   useEffect(() => {
