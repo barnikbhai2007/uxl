@@ -3225,18 +3225,30 @@ export default function App() {
   };
 
 
-  const handleAddNewFixture = async (fixtureData?: { date: string, home: string, away: string }) => {
+  const handleAddNewFixture = async (fixtureDataOrDay?: { date: string, home: string, away: string } | string) => {
     if (!isAdmin) return;
     
-    // If called without data, open the modal
-    if (!fixtureData) {
+    let date = '';
+    let homePlayer = '';
+    let awayPlayer = '';
+
+    if (typeof fixtureDataOrDay === 'string') {
+      // Cloning logic: use the day as the date, teams stay empty/TBD
+      date = fixtureDataOrDay;
+      homePlayer = 'TBD';
+      awayPlayer = 'TBD';
+    } else if (fixtureDataOrDay) {
+      // Modal save logic
+      date = fixtureDataOrDay.date;
+      homePlayer = fixtureDataOrDay.home;
+      awayPlayer = fixtureDataOrDay.away;
+      setIsAddMatchModalOpen(false);
+    } else {
+      // Global add button logic: open the modal
       setIsAddMatchModalOpen(true);
       return;
     }
 
-    const { date, home: homePlayer, away: awayPlayer } = fixtureData;
-    setIsAddMatchModalOpen(false);
-    
     try {
       const matchId = `match-${Math.random().toString(36).substring(7)}`;
       const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
@@ -3272,11 +3284,13 @@ export default function App() {
         awayTeamId: awayId,
       };
       
-      await setDoc(doc(db, 'matches', matchId), newMatch);
-      // Update state immediately for fast UI feedback
+      // Update state immediately for ultra-fast UI feedback (optimistic update)
       setDbMatches(prev => [...prev, newMatch]);
+      
+      await setDoc(doc(db, 'matches', matchId), newMatch);
     } catch(err) {
       console.error("Error adding match:", err);
+      // Revert state on error if needed, but for simplicity just alert
       alert('Error adding new fixture.');
     }
   };
@@ -5120,6 +5134,15 @@ export default function App() {
                                 <EditableText id="loading_fixtures_sub" defaultText="Mark will update soon" isAdmin={isAdmin} />
                               </p>
                             </div>
+                            {isAdmin && isEditingMode && (
+                              <button 
+                                onClick={() => handleAddNewFixture()}
+                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-full transition-all shadow-xl shadow-blue-600/30"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Add First Fixture
+                              </button>
+                            )}
                           </div>
                         );
                       }
