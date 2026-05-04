@@ -4019,6 +4019,15 @@ export default function App() {
 
           const isTeam1ActuallyDbHome = existingMatch.homeTeamId === team1.id;
 
+          let finalMOTM = data.manOfTheMatch;
+          if (!finalMOTM) {
+             const allPlayers = parseScorers(() => true);
+             if (allPlayers.length > 0) {
+                 const bestPlayer = [...allPlayers].sort((a,b) => b.goals - a.goals)[0];
+                 finalMOTM = bestPlayer.playerName;
+             }
+          }
+
           const updatePayload = {
             homeScore: isTeam1ActuallyDbHome ? t1Score : t2Score,
             awayScore: isTeam1ActuallyDbHome ? t2Score : t1Score,
@@ -4027,7 +4036,7 @@ export default function App() {
             awayScorers: isTeam1ActuallyDbHome ? parseScorers(isT2) : parseScorers(isT1),
             homeStats: isTeam1ActuallyDbHome ? t1Stats : t2Stats,
             awayStats: isTeam1ActuallyDbHome ? t2Stats : t1Stats,
-            manOfTheMatch: data.manOfTheMatch || null
+            manOfTheMatch: finalMOTM || null
           };
 
           // Deep clean payload to guarantee no undefined values or internal fields throw a Firestore error

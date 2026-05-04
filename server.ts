@@ -92,13 +92,12 @@ async function startServer() {
                 2. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
                 3. Extract GOAL SCORERS:
                    - Look for the list of player names with goal icons and times (like 45', 90'). Find ALL players listed.
-                   - Determine the team ("team1" or "team2"): Look at the COLOR of the goal icon next to the player's name. If the icon color matches the Left team's color (e.g., Green), assign to "team1". If it matches the Right team's color (e.g., Blue), assign to "team2".
-                   - DEDUCTIVE REASONING: If you are unsure about colors, match the total number of goals listed to the score. If team1 scored 4 goals and team2 scored 0, ALL listed scorers MUST belong to "team1". 
-                   - For EACH scorer, provide:
+                   - VERY IMPORTANT: Left half players belong to "team1". Right half players belong to "team2". Look at the goal icon color. If it matches the Left team's score color, it's team1. If it matches the right team's score color, it's team2.
+                   - For EACH scorer listed, provide:
                      - "name": Player's name.
-                     - "goals": Number of goals scored by this player (default to 1 if listed once).
-                     - "time": The minute(s) they scored (e.g., "12'", "45', 90'").
-                     - "team": MUST BE STRICTLY "team1" OR "team2". Do not use the actual team name.
+                     - "goals": Count how many times this player appears, or count their goal icons. If listed multiple times, combine them or just list them once with multiple times. Default to 1.
+                     - "time": The minute(s) they scored.
+                     - "team": ALWAYS "team1" OR "team2".
                 4. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
                    - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
                    - Left-side values = "team1Stats".
