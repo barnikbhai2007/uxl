@@ -2542,7 +2542,50 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
 
   // Main app component follows...
 
+const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 300000) => {
+  const cached = localStorage.getItem(cacheKey);
+  const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
+  
+  if (cached && cachedTimeStr) {
+    if (Date.now() - Number(cachedTimeStr) < ttlMs) {
+      return JSON.parse(cached);
+    }
+  }
+  
+  try {
+    let data;
+    if (isDoc) {
+      const snap = await getDoc(queryRef);
+      if (snap.exists()) data = { id: snap.id, ...snap.data() };
+      else data = null;
+    } else {
+      const snap = await getDocs(queryRef);
+      data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    }
+    
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify(data));
+      localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+    } catch(e) {}
+    
+    return data;
+  } catch (error: any) {
+    if ((error.code === 'resource-exhausted' || error.message?.includes('Quota') || error.message?.includes('offline'))) {
+      window.dispatchEvent(new Event('quotaExceeded'));
+      if (cached) return JSON.parse(cached);
+    }
+    throw error;
+  }
+};
+
 export default function App() {
+  const [hasQuotaError, setHasQuotaError] = useState(false);
+
+  useEffect(() => {
+    const handleQuotaError = () => setHasQuotaError(true);
+    window.addEventListener('quotaExceeded', handleQuotaError);
+    return () => window.removeEventListener('quotaExceeded', handleQuotaError);
+  }, []);
   const handleResetSingleMatch = async (matchId: string) => {
     if (!isAdmin) return;
     try {
@@ -2711,11 +2754,17 @@ export default function App() {
   const [qualificationStatus, setQualificationStatus] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'match_labels'), (snapshot) => {
-      const labels: Record<string, string> = {};
-      snapshot.forEach(doc => labels[doc.id] = doc.data().status);
-      setMatchLabels(labels);
-    });
+    let _mounted = true;
+    const loadMatchLabels = async () => {
+      try {
+        const data = await fetchWithCache('cache_match_labels', collection(db, 'match_labels'), false, 300000);
+        const labels: Record<string, string> = {};
+        data.forEach((docData: any) => labels[docData.id] = docData.status);
+        if (_mounted) setMatchLabels(labels);
+      } catch (err) {}
+    };
+    loadMatchLabels();
+    const interval = setInterval(loadMatchLabels, 300000);
 
     const handleOpenProfile = (e: Event) => {
       const customEvent = e as CustomEvent;
@@ -2724,18 +2773,26 @@ export default function App() {
     window.addEventListener('openTeamProfile', handleOpenProfile);
 
     return () => {
-      unsub();
+      _mounted = false;
+      clearInterval(interval);
       window.removeEventListener('openTeamProfile', handleOpenProfile);
     };
   }, []);
 
   useEffect(() => {
-    const unsub = onSnapshot(doc(db, 'config', 'qualification'), (docSnap) => {
-      if (docSnap.exists() && docSnap.data().statuses) {
-        setQualificationStatus(docSnap.data().statuses);
-      }
-    });
-    return unsub;
+    let _mounted = true;
+    const loadQual = async () => {
+      try {
+        const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 300000);
+        if (_mounted && docSnap?.statuses) setQualificationStatus(docSnap.statuses);
+      } catch (err) {}
+    };
+    loadQual();
+    const interval = setInterval(loadQual, 300000);
+    return () => {
+      _mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const handleAnalyzeQualification = async () => {
@@ -2786,6 +2843,7 @@ export default function App() {
       });
 
       await setDoc(doc(db, 'config', 'qualification'), { statuses });
+      await refreshCache('cache_qual');
     } catch (error) {
       console.error("Qualification analysis failed:", error);
     }
@@ -2804,6 +2862,20 @@ export default function App() {
     setIsSubmittingRegistration(true);
     try {
       await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
+      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 0);
+      const teamsList: Team[] = teamsData.map((data: any) => ({
+        id: data.id,
+        name: data.fcName,
+        shortName: data.fcName.substring(0, 3).toUpperCase(),
+        fullName: data.name,
+        fcName: data.fcName,
+        ovr: data.teamOvr,
+        uid: data.fcUid,
+        logoUrl: data.logoUrl,
+        goalkeeper: data.goalkeeper,
+        played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+      }));
+      setDbTeams(teamsList);
     } catch (error) {
       console.error("Error updating user registration by admin:", error);
     } finally {
@@ -2832,23 +2904,46 @@ export default function App() {
   const [siteContent, setSiteContent] = useState<Record<string, any>>({});
 
   useEffect(() => {
-    const q = query(collection(db, 'site_content'));
-    return onSnapshot(q, (snapshot) => {
-      const content: Record<string, any> = {};
-      snapshot.forEach(doc => {
-        content[doc.id] = doc.data(); // Store whole object
-      });
-      setSiteContent(content);
-    });
+    let _mounted = true;
+    const loadSiteContent = async () => {
+      try {
+        const q = query(collection(db, 'site_content'));
+        const data = await fetchWithCache('cache_site_content', q, false, 300000);
+        const content: Record<string, any> = {};
+        data.forEach((docData: any) => {
+          content[docData.id] = docData;
+        });
+        if (_mounted) setSiteContent(content);
+      } catch (err) {
+        console.error("Failed to load site content");
+      }
+    };
+    loadSiteContent();
+    const interval = setInterval(loadSiteContent, 300000);
+    return () => {
+      _mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   const updateSiteContent = async (id: string, content: string, isImage: boolean = false) => {
     if (!isAdmin) return;
     try {
+      // Optimistic update
+      setSiteContent(prev => ({
+        ...prev,
+        [id]: {
+          ...prev[id],
+          [isImage ? 'imageUrl' : 'text']: content,
+          updatedAt: new Date()
+        }
+      }));
+
       await setDoc(doc(db, 'site_content', id), { 
         [isImage ? 'imageUrl' : 'text']: content, 
         updatedAt: serverTimestamp() 
       }, { merge: true });
+      await refreshCache('site_content');
     } catch (err) {
       console.error("Failed to update site content:", err);
     }
@@ -2988,6 +3083,7 @@ export default function App() {
       await setDoc(doc(db, 'config', 'system'), {
         registrationEnabled: !config.registrationEnabled
       }, { merge: true });
+      await refreshCache('config');
     } catch (error) {
       console.error("Error toggling registration:", error);
     } finally {
@@ -3000,6 +3096,7 @@ export default function App() {
     setIsSavingAdmin(true);
     try {
       await setDoc(doc(db, 'config', 'system'), newConfig, { merge: true });
+      await refreshCache('config');
     } catch (error) {
       console.error("Error updating config:", error);
     } finally {
@@ -3012,6 +3109,7 @@ export default function App() {
     setIsSavingBracket(true);
     try {
       await setDoc(doc(db, 'bracket', bracketMatch.id), bracketMatch, { merge: true });
+      await refreshCache('bracket');
     } catch (error) {
       console.error("Error saving bracket match:", error);
       alert("Failed to save bracket match.");
@@ -3024,6 +3122,7 @@ export default function App() {
     if (!isAdmin) return;
     try {
       await deleteDoc(doc(db, 'matches', id));
+      await refreshCache('matches');
     } catch (error) {
       console.error("Error deleting match:", error);
       alert("Failed to delete match.");
@@ -3067,6 +3166,43 @@ export default function App() {
     }
   };
 
+  const refreshCache = async (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => {
+    try {
+      if (type === 'matches') {
+        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 0);
+        setDbMatches(data);
+      } else if (type === 'teams') {
+        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 0);
+        const teamsList: Team[] = teamsData.map((data: any) => ({
+          id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
+          fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.fcUid,
+          logoUrl: data.logoUrl, goalkeeper: data.goalkeeper, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+        }));
+        setDbTeams(teamsList);
+      } else if (type === 'bracket') {
+         const q = query(collection(db, 'bracket'));
+         const bracketDataMap: Record<string, BracketMatch> = {};
+         const snapshot = await fetchWithCache('cache_bracket', q, false, 0);
+         snapshot.forEach((data: any) => { bracketDataMap[data.id] = data; });
+         setBracket(Object.values(bracketDataMap));
+      } else if (type === 'config') {
+         const data = await fetchWithCache('cache_config', doc(db, 'config', 'system'), true, 0);
+         if (data) setConfig(data as Config);
+      } else if (type === 'site_content') {
+         const q = query(collection(db, 'site_content'));
+         const data = await fetchWithCache('cache_site_content', q, false, 0);
+         const content: Record<string, any> = {};
+         data.forEach((docData: any) => { content[docData.id] = docData; });
+         setSiteContent(content);
+      } else if (type === 'cache_qual') {
+         const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 0);
+         if (docSnap?.statuses) setQualificationStatus(docSnap.statuses);
+      }
+    } catch (e) {
+      console.error("Error refreshing cache:", e);
+    }
+  };
+
   const handleUpdateMatch = async (match: Match) => {
     const isParticipant = user && (match.homeTeamId === user.uid || match.awayTeamId === user.uid);
     if (!isAdmin && !isParticipant) {
@@ -3075,7 +3211,9 @@ export default function App() {
     }
     try {
       const cleanedData = cleanDocData(match);
+      setDbMatches(prev => prev.map(m => m.id === match.id ? { ...m, ...cleanedData } as Match : m));
       await updateDoc(doc(db, 'matches', match.id), cleanedData);
+      await refreshCache('matches');
     } catch (error) {
       console.error("Error updating match:", error);
       alert("Failed to update match.");
@@ -3089,6 +3227,7 @@ export default function App() {
     }
     try {
       await updateDoc(doc(db, 'registrations', id), { status: 'approved' });
+      await refreshCache('teams');
     } catch (error) {
       console.error("Approval failed:", error);
     }
@@ -3120,6 +3259,20 @@ export default function App() {
     setIsSubmittingRegistration(true);
     try {
       await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
+      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 0);
+      const teamsList: Team[] = teamsData.map((data: any) => ({
+        id: data.id,
+        name: data.fcName,
+        shortName: data.fcName.substring(0, 3).toUpperCase(),
+        fullName: data.name,
+        fcName: data.fcName,
+        ovr: data.teamOvr,
+        uid: data.fcUid,
+        logoUrl: data.logoUrl,
+        goalkeeper: data.goalkeeper,
+        played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+      }));
+      setDbTeams(teamsList);
     } catch (error) {
       console.error("Error updating registration:", error);
     } finally {
@@ -3517,7 +3670,9 @@ export default function App() {
           cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
           cleanedPayload.evidenceTimestamp = serverTimestamp();
 
+          setDbMatches(prev => prev.map(m => m.id === existingMatch.id ? { ...m, ...cleanedPayload } as Match : m));
           await updateDoc(matchRef, cleanedPayload);
+          await refreshCache('matches');
 
           setAiAnalysisResult("SUCCESS: Match result verified and updated!");
         } else {
@@ -3575,49 +3730,69 @@ export default function App() {
   };
 
   useEffect(() => {
+    let _mounted = true;
     let teamsLoaded = false;
     let matchesLoaded = false;
 
     const checkLoaded = () => {
       // Small timeout to prevent aggressive flashing and let UI settle
-      if (teamsLoaded && matchesLoaded) {
-        setTimeout(() => setIsDataLoading(false), 800);
+      if (teamsLoaded && matchesLoaded && _mounted) {
+        setTimeout(() => {
+          if(_mounted) setIsDataLoading(false);
+        }, 800);
       }
     };
 
-    // Teams listener (approved registrations)
-    const unsubscribeTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
-      const teamsList: Team[] = snapshot.docs.map(doc => {
-        const data = doc.data() as Registration;
-        return {
-          id: doc.id,
-          name: data.fcName,
-          shortName: data.fcName.substring(0, 3).toUpperCase(),
-          fullName: data.name,
-          fcName: data.fcName,
-          ovr: data.teamOvr,
-          uid: data.fcUid,
-          logoUrl: data.logoUrl,
-          goalkeeper: data.goalkeeper,
-          played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
-        };
-      });
-      setDbTeams(teamsList);
-      teamsLoaded = true;
-      checkLoaded();
-    });
+    const loadPublicData = async () => {
+      // Teams
+      try {
+        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
+        const teamsList: Team[] = teamsData.map((data: any) => {
+          return {
+            id: data.id,
+            name: data.fcName,
+            shortName: data.fcName.substring(0, 3).toUpperCase(),
+            fullName: data.name,
+            fcName: data.fcName,
+            ovr: data.teamOvr,
+            uid: data.fcUid,
+            logoUrl: data.logoUrl,
+            goalkeeper: data.goalkeeper,
+            played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+          };
+        });
+        if (_mounted) {
+          setDbTeams(teamsList);
+          teamsLoaded = true;
+          checkLoaded();
+        }
+      } catch (e) {
+        console.error("Teams fetch error:", e);
+        if (_mounted) { teamsLoaded = true; checkLoaded(); }
+      }
 
-    // Matches listener
-    const unsubscribeMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
-      const matchesList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Match));
-      setDbMatches(matchesList);
-      matchesLoaded = true;
-      checkLoaded();
-    });
+      // Matches
+      try {
+        const matchesData = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 300000);
+        if (_mounted) {
+          setDbMatches(matchesData);
+          matchesLoaded = true;
+          checkLoaded();
+        }
+      } catch (e) {
+        console.error("Matches fetch error:", e);
+        if (_mounted) { matchesLoaded = true; checkLoaded(); }
+      }
+    };
+
+    loadPublicData();
+
+    // Re-fetch occasionally or handle refresh differently if required
+    const interval = setInterval(loadPublicData, 300000);
 
     return () => {
-      unsubscribeTeams();
-      unsubscribeMatches();
+      _mounted = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -3625,41 +3800,45 @@ export default function App() {
     const incrementVisitCount = async () => {
       const statsRef = doc(db, 'stats', 'global');
       try {
-        await setDoc(statsRef, { visitCount: increment(1) }, { merge: true });
+        if (!sessionStorage.getItem('hasVisitedTourney')) {
+          await setDoc(statsRef, { visitCount: increment(1) }, { merge: true });
+          sessionStorage.setItem('hasVisitedTourney', 'true');
+        }
+        const docSnap = await getDoc(statsRef);
+        if (docSnap.exists()) {
+          setVisitCount(docSnap.data().visitCount || 0);
+        }
       } catch (error) {
-        console.error("Error incrementing visit count:", error);
+        console.error("Error with visit count:", error);
       }
     };
-
-    const unsubscribe = onSnapshot(doc(db, 'stats', 'global'), (doc) => {
-      if (doc.exists()) {
-        setVisitCount(doc.data().visitCount || 0);
-      }
-    });
 
     incrementVisitCount();
-    return () => {
-      unsubscribe();
-    };
   }, []);
 
   useEffect(() => {
-    const q = query(collection(db, 'bracket'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      console.log("Bracket snapshot received:", snapshot.size);
-      const bracketDataMap: Record<string, BracketMatch> = {};
-      snapshot.forEach((doc) => {
-        const data = doc.data() as BracketMatch;
-        // Use a map to ensure unique matches by ID
-        bracketDataMap[data.id] = data;
-      });
-      const uniqueBracketData = Object.values(bracketDataMap);
-      console.log("Unique bracket data:", uniqueBracketData);
-      setBracket(uniqueBracketData);
-    }, (error) => {
-      handleFirestoreError(error, OperationType.LIST, 'bracket');
-    });
-    return () => unsubscribe();
+    let _mounted = true;
+    const fetchBracket = async () => {
+      try {
+        const q = query(collection(db, 'bracket'));
+        const bracketDataMap: Record<string, BracketMatch> = {};
+        const snapshot = await fetchWithCache('cache_bracket', q, false, 300000);
+        snapshot.forEach((data: any) => {
+          bracketDataMap[data.id] = data;
+        });
+        if (_mounted) {
+          setBracket(Object.values(bracketDataMap));
+        }
+      } catch (error) {
+        console.error("Bracket fetch error", error);
+      }
+    };
+    fetchBracket();
+    const interval = setInterval(fetchBracket, 300000);
+    return () => {
+      _mounted = false;
+      clearInterval(interval);
+    };
   }, []);
 
   useEffect(() => {
@@ -3671,40 +3850,44 @@ export default function App() {
         console.error("Firebase Connection Error:", error);
       }
     };
-    testConnection();
+    // Only run testConnection outside cache
+    // testConnection(); 
+    // removing testConnection explicitly querying server to save reads
   }, [isAdmin, user]);
 
   useEffect(() => {
-    seedBracket();
+    if (isAdmin) seedBracket();
   }, [isAdmin]);
 
   useEffect(() => {
-    // Listen for config
-    const unsubscribeConfig = onSnapshot(doc(db, 'config', 'system'), (doc) => {
-      if (doc.exists()) {
-        setConfig(doc.data() as Config);
-      }
-    });
+    let _mounted = true;
+    // Load config
+    const loadConfig = async () => {
+      try {
+        const data = await fetchWithCache('cache_config', doc(db, 'config', 'system'), true, 300000);
+        if (_mounted && data) setConfig(data as Config);
+      } catch (e) {}
+    };
+    loadConfig();
 
-    // Listen for registrations (admin only)
+    let unsubscribeRegs: any;
     if (isAdmin) {
+      // For Admin, we can afford onSnapshot to manage registrations comfortably,
+      // but to save quota we can use getDocs polling. Since admin is a single user, onSnapshot is fine.
       const q = query(collection(db, 'registrations'));
-      const unsubscribeRegs = onSnapshot(q, (snapshot) => {
+      unsubscribeRegs = onSnapshot(q, (snapshot) => {
         const regs: Registration[] = [];
         snapshot.forEach((doc) => {
           regs.push({ ...doc.data(), id: doc.id } as Registration);
         });
-        setRegistrations(regs);
-      }, (error) => {
-        handleFirestoreError(error, OperationType.LIST, 'registrations');
+        if (_mounted) setRegistrations(regs);
       });
-      return () => {
-        unsubscribeConfig();
-        unsubscribeRegs();
-      };
     }
 
-    return () => unsubscribeConfig();
+    return () => {
+      _mounted = false;
+      if (unsubscribeRegs) unsubscribeRegs();
+    };
   }, [isAdmin]);
 
   useEffect(() => {
@@ -3977,6 +4160,14 @@ export default function App() {
       </AnimatePresence>
 
       <div className="min-h-screen bg-[#000030] text-white font-sans selection:bg-blue-500/30 relative overflow-hidden">
+      {hasQuotaError && (
+        <div className="bg-red-500/20 border-b border-red-500/50 p-4 text-center z-50 relative backdrop-blur-sm">
+          <p className="text-red-200 font-bold max-w-4xl mx-auto">
+            <span className="uppercase tracking-widest text-xs block mb-1">Database Error / Quota Exceeded</span>
+            Firestore daily read limit has been reached, or the connection is offline. Latest data will not load properly unless cached. Quota resets at 12:00 AM PT.
+          </p>
+        </div>
+      )}
       {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
@@ -5204,21 +5395,21 @@ export default function App() {
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
-                    <EditableText id="footer_matches_label" defaultText="Total Matches" isAdmin={isAdmin} />
+                    TOTAL MATCHES
                   </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{matches.filter(m => m.status === 'finished').length}</p>
                 </div>
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
-                    <EditableText id="footer_teams_label" defaultText="Teams" isAdmin={isAdmin} />
+                    TEAMS
                   </p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">16</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{teams.length}</p>
                 </div>
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
-                    <EditableText id="footer_matchdays_label" defaultText="Matchdays" isAdmin={isAdmin} />
+                    MATCHDAYS
                   </p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">5</p>
+                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{Object.keys(matchesByDay).length}</p>
                 </div>
                 <div className="text-center md:text-left">
                   <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
