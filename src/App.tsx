@@ -3577,28 +3577,39 @@ export default function App() {
       let bestMatch: Match | null = null;
       let bestOpponentTeam: Team | null = null;
 
-      for (const m of userMatches) {
-        const opponentId = m.homeTeamId === userTeam.id ? m.awayTeamId : m.homeTeamId;
-        const oppTeam = teams.find(t => t.id === opponentId);
-        if (!oppTeam) continue;
+      // 1. Intelligent matching: Prioritize ongoing/live match
+      const ongoingMatches = userMatches.filter(m => m.status === 'ongoing' || m.status === 'live');
+      
+      if (ongoingMatches.length === 1) {
+          bestMatch = ongoingMatches[0];
+          const opponentId = bestMatch.homeTeamId === userTeam.id ? bestMatch.awayTeamId : bestMatch.homeTeamId;
+          bestOpponentTeam = teams.find(t => t.id === opponentId) || null;
+      } else {
+          for (const m of userMatches) {
+            const opponentId = m.homeTeamId === userTeam.id ? m.awayTeamId : m.homeTeamId;
+            const oppTeam = teams.find(t => t.id === opponentId);
+            if (!oppTeam) continue;
 
-        const oppNormName = normalize(oppTeam.name);
-        const oppNormFcName = normalize(oppTeam.fcName);
+            const oppNormName = normalize(oppTeam.name);
+            const oppNormFcName = normalize(oppTeam.fcName);
 
-        // Check if AI opponent name matches oppTeam
-        const isMatch = oppNormName === opponentAiName || oppNormFcName === opponentAiName ||
-                        oppNormName.includes(opponentAiName) || opponentAiName.includes(oppNormName) ||
-                        oppNormFcName.includes(opponentAiName) || opponentAiName.includes(oppNormFcName);
-        if (isMatch) {
-            if (!bestMatch || (bestMatch.status === 'finished' && m.status !== 'finished')) {
-                bestMatch = m;
-                bestOpponentTeam = oppTeam;
+            // Check if AI opponent name matches oppTeam
+            const isMatch = oppNormName === opponentAiName || oppNormFcName === opponentAiName ||
+                            oppNormName.includes(opponentAiName) || opponentAiName.includes(oppNormName) ||
+                            oppNormFcName.includes(opponentAiName) || opponentAiName.includes(oppNormFcName) ||
+                            (opponentAiName.length > 3 && (oppNormName.includes(opponentAiName.substring(0,4)) || opponentAiName.includes(oppNormName.substring(0,4))));
+            
+            if (isMatch) {
+                if (!bestMatch || (bestMatch.status === 'finished' && m.status !== 'finished')) {
+                    bestMatch = m;
+                    bestOpponentTeam = oppTeam;
+                }
             }
-        }
+          }
       }
 
       if (!bestMatch || !bestOpponentTeam) {
-          setAiAnalysisResult(`ERROR: No active match found for you against "${opponentAiNameRaw}". Make sure the match has been assigned.`);
+          setAiAnalysisResult(`ERROR: No active match found for you against "${opponentAiNameRaw}". Make sure the match is scheduled/ongoing.`);
           return;
       }
 
