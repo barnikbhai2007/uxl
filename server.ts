@@ -1,48 +1,28 @@
 import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
-import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import firebaseConfig from "./firebase-applet-config.json" with { type: "json" };
+import { createClient } from "@supabase/supabase-js";
 import { GoogleGenAI } from "@google/genai";
 import cors from "cors";
+import crypto from "crypto";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Initialize Firebase Admin
-if (!getApps().length) {
-  const serviceAccount = process.env.FIREBASE_SERVICE_ACCOUNT;
-  if (serviceAccount) {
-    initializeApp({
-      credential: cert(JSON.parse(serviceAccount)),
-      projectId: firebaseConfig.projectId
-    });
-  } else {
-    initializeApp({
-      projectId: firebaseConfig.projectId
-    });
-  }
-}
-
-const db = getFirestore(
-  firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)' 
-    ? firebaseConfig.firestoreDatabaseId 
-    : undefined
-);
-
-console.log(`Firestore initialized for project: ${firebaseConfig.projectId}, database: ${firebaseConfig.firestoreDatabaseId || '(default)'}`);
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ygrmdlbyfrbqhzvvfmii.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_taKejserySOg3UGPlk0h-w_7tWsZDiN';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function getAiConfig() {
   try {
-    const configSnap = await db.collection('config').doc('system').get();
-    const configData = configSnap.data();
+    const { data: configSnap } = await supabase.from('documents').select('data').eq('collection', 'config').eq('id', 'system').single();
+    const configData = configSnap?.data || null;
     const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
     const model = configData?.geminiModel || "gemini-flash-latest";
-    const source = configData?.geminiModel ? "Firestore" : "Environment Default";
+    const source = configData?.geminiModel ? "Supabase" : "Environment Default";
     return { key, model, source };
   } catch (error) {
-    console.error("Error fetching AI config from Firestore:", error);
+    console.error("Error fetching AI config from Supabase:", error);
     return { key: process.env.GEMINI_API_KEY, model: "gemini-flash-latest", source: "Fallback" };
   }
 }
@@ -130,17 +110,17 @@ async function startServer() {
       const checkAndAwardAchievements = async (playerFcName: string, data: any) => {
         try {
           // Find the player's userId from registration
-          const regSnapshot = await db.collection('registrations')
-            .where('fcName', '==', playerFcName)
-            .limit(1)
-            .get();
+          const { data: regSnapshot } = await supabase.from('documents')
+            .select('*')
+            .eq('collection', 'registrations')
+            .eq('data->>fcName', playerFcName)
+            .limit(1);
           
-          if (regSnapshot.empty) return null;
-          const regDoc = regSnapshot.docs[0];
-          const userId = regDoc.data().userId;
-          const userRef = db.collection('users').doc(userId);
-          const userDoc = await userRef.get();
-          const userData = userDoc.data() || { achievements: {} };
+          if (!regSnapshot || regSnapshot.length === 0) return null;
+          const regDoc = regSnapshot[0].data;
+          const userId = regDoc.userId;
+          const { data: userDoc } = await supabase.from('documents').select('*').eq('collection', 'users').eq('id', userId).single();
+          const userData = userDoc?.data || { achievements: {} };
           const unlockedIds = new Set(Object.keys(userData.achievements || {}));
           
           const newAchievements: string[] = [];
@@ -195,14 +175,15 @@ async function startServer() {
           if (oppStats && oppStats.shotsOnTarget !== undefined && oppStats.shotsOnTarget === 0) award('fort_knox');
 
           if (newAchievements.length > 0) {
-            const updates: any = {};
+            const nextAchievements = { ...(userData.achievements || {}) };
             newAchievements.forEach(id => {
-               updates[`achievements.${id}`] = {
-                 unlockedAt: FieldValue.serverTimestamp(),
+               nextAchievements[id] = {
+                 unlockedAt: new Date().toISOString(),
                  seen: false
                };
             });
-            await userRef.update(updates);
+            await supabase.from('documents').update({ data: { ...userData, achievements: nextAchievements } })
+               .eq('collection', 'users').eq('id', userId);
             return newAchievements;
           }
           return [];
@@ -231,13 +212,13 @@ async function startServer() {
             reporterName: fcName || 'Unknown Player'
           },
           reporterName: fcName || 'Unknown Player',
-          timestamp: FieldValue.serverTimestamp(),
+          timestamp: new Date().toISOString(),
           imageUrl: base64,
           mimeType: mimeType || 'image/jpeg',
           matchId: matchData.matchId || null,
           analysisSummary: `Verified match between ${matchData.team1} and ${matchData.team2} (Reported by ${fcName || 'Unknown'})`
         };
-        await db.collection('reports').add(reportData);
+        await supabase.from('documents').insert({ id: crypto.randomUUID(), collection: 'reports', data: reportData });
       } catch (saveError) {
         console.error("Failed to save report to database:", saveError);
         // Don't fail the whole request just because report saving failed
