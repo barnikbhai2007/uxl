@@ -18,12 +18,12 @@ async function getAiConfig() {
     const { data: configSnap } = await supabase.from('documents').select('data').eq('collection', 'config').eq('id', 'system').single();
     const configData = configSnap?.data || null;
     const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-    const model = configData?.geminiModel || "gemini-flash-latest";
+    const model = configData?.geminiModel === "gemini-flash-latest" ? "gemini-2.5-pro" : (configData?.geminiModel || "gemini-2.5-pro");
     const source = configData?.geminiModel ? "Supabase" : "Environment Default";
     return { key, model, source };
   } catch (error) {
     console.error("Error fetching AI config from Supabase:", error);
-    return { key: process.env.GEMINI_API_KEY, model: "gemini-flash-latest", source: "Fallback" };
+    return { key: process.env.GEMINI_API_KEY, model: "gemini-2.5-pro", source: "Fallback" };
   }
 }
 
@@ -91,8 +91,11 @@ async function startServer() {
                 1. Identify the TWO TEAM NAMES from the top header or team logos (Left team = "team1", Right team = "team2").
                 2. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
                 3. Extract GOAL SCORERS:
-                   - Look for the list of player names with goal icons and times (like 45', 90'). Find ALL players listed.
-                   - VERY IMPORTANT: Left half players belong to "team1". Right half players belong to "team2". Look at the goal icon color. If it matches the Left team's score color, it's team1. If it matches the right team's score color, it's team2.
+                   - Look for the list of player names with goal icons and times (like 45', 90'). The list is usually on the right side of the screen.
+                   - VERY IMPORTANT: Do NOT assume a player is on team2 just because they are listed on the right side of the screen. Both teams' scorers are listed in the same timeline.
+                   - To determine the team ("team1" or "team2") for a scorer, use DEDUCTIVE REASONING:
+                     a) If one team scored 0 goals, then EVERY scorer listed MUST belong to the other team. (e.g. if Left score is 4 and Right score is 0, ALL scorers are "team1").
+                     b) If both teams scored, look at the COLOR of the goal icon next to the player's name. Match the icon color to the team's accent color (Left team usually has one color, Right team another).
                    - For EACH scorer listed, provide:
                      - "name": Player's name.
                      - "goals": Count how many times this player appears, or count their goal icons. If listed multiple times, combine them or just list them once with multiple times. Default to 1.
@@ -102,7 +105,7 @@ async function startServer() {
                    - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
                    - Left-side values = "team1Stats".
                    - Right-side values = "team2Stats".
-                5. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team.
+                5. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
                 
                 CRITICAL RULES:
                 - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
