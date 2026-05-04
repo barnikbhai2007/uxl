@@ -753,33 +753,53 @@ const NEWS_POSTS: any[] = [];
               </div>
             </div>
 
-            {displayStatus === 'finished' && match.homeStats && match.awayStats && (
-              <div className="mt-6 md:mt-8 space-y-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
-                <div className="text-center mb-1 md:mb-2">
-                  <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
-                </div>
-                {match.manOfTheMatch && (
-                  <div className="flex items-center justify-center gap-2 mb-4 bg-yellow-500/10 py-2 rounded-xl border border-yellow-500/20">
-                    <Trophy className="w-4 h-4 text-yellow-500" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500/80">MOTM: </span>
-                    <span className="text-xs font-display font-black italic uppercase text-yellow-400">{match.manOfTheMatch}</span>
+            {displayStatus === 'finished' && (
+              <>
+                {match.manOfTheMatch || (isEditingMode && isAdmin) ? (
+                  <div className="mt-6 flex flex-col items-center gap-2 bg-yellow-500/10 py-3 px-4 rounded-2xl border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)]">
+                    <div className="flex items-center justify-center gap-2">
+                      <Trophy className="w-4 h-4 text-yellow-500" />
+                      <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500/80">Man of the Match: </span>
+                    </div>
+                    {isEditingMode && isAdmin ? (
+                      <input 
+                        type="text" 
+                        value={match.manOfTheMatch || ''} 
+                        placeholder="Player Name"
+                        onChange={(e) => {
+                          match.manOfTheMatch = e.target.value;
+                          if(updateMatch) updateMatch(match);
+                        }}
+                        className="bg-black/40 border border-yellow-500/30 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
+                      />
+                    ) : (
+                      <span className="text-sm font-display font-black italic uppercase text-yellow-400">{match.manOfTheMatch}</span>
+                    )}
+                  </div>
+                ) : null}
+
+                {match.homeStats && match.awayStats && (
+                  <div className="mt-4 md:mt-6 space-y-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
+                    <div className="text-center mb-1 md:mb-2">
+                      <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
+                    </div>
+                    <div className="grid gap-3 md:gap-4">
+                      <StatRow 
+                        home={`${match.homeStats.shotsOnTarget}/${match.homeStats.shots}`} 
+                        away={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
+                        label="Shots (On Target)" 
+                        homeVal={match.homeStats.shots}
+                        awayVal={match.awayStats.shots}
+                      />
+                      <StatRow home={match.homeStats.possession} away={match.awayStats.possession} label="Possession" suffix="%" />
+                      <StatRow home={match.homeStats.passAccuracy} away={match.awayStats.passAccuracy} label="Pass Accuracy" suffix="%" />
+                      <StatRow home={match.homeStats.saves} away={match.awayStats.saves} label="Saves" />
+                      <StatRow home={match.homeStats.fouls} away={match.awayStats.fouls} label="Fouls" />
+                      <StatRow home={match.homeStats.offsides} away={match.awayStats.offsides} label="Offsides" />
+                    </div>
                   </div>
                 )}
-                <div className="grid gap-3 md:gap-4">
-                  <StatRow 
-                    home={`${match.homeStats.shotsOnTarget}/${match.homeStats.shots}`} 
-                    away={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
-                    label="Shots (On Target)" 
-                    homeVal={match.homeStats.shots}
-                    awayVal={match.awayStats.shots}
-                  />
-                  <StatRow home={match.homeStats.possession} away={match.awayStats.possession} label="Possession" suffix="%" />
-                  <StatRow home={match.homeStats.passAccuracy} away={match.awayStats.passAccuracy} label="Pass Accuracy" suffix="%" />
-                  <StatRow home={match.homeStats.saves} away={match.awayStats.saves} label="Saves" />
-                  <StatRow home={match.homeStats.fouls} away={match.awayStats.fouls} label="Fouls" />
-                  <StatRow home={match.homeStats.offsides} away={match.awayStats.offsides} label="Offsides" />
-                </div>
-              </div>
+              </>
             )}
 
             <div className="grid grid-cols-2 gap-3 md:gap-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
@@ -3966,13 +3986,13 @@ export default function App() {
           
           const isT1 = (t: string) => {
             if (!t) return false;
-            const normT = t.toLowerCase();
-            return normT === 'team1' || normT === 'team 1' || normT === normalize(data.team1);
+            const normT = normalize(t);
+            return normT === 'team1' || normT === normalize(data.team1);
           };
           const isT2 = (t: string) => {
             if (!t) return false;
-            const normT = t.toLowerCase();
-            return normT === 'team2' || normT === 'team 2' || normT === normalize(data.team2);
+            const normT = normalize(t);
+            return normT === 'team2' || normT === normalize(data.team2);
           };
           
           const parseScorers = (filterFn: (t: string) => boolean) => 
@@ -4018,7 +4038,11 @@ export default function App() {
           cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
           cleanedPayload.evidenceTimestamp = serverTimestamp();
 
-          setDbMatches(prev => prev.map(m => m.id === existingMatch.id ? { ...m, ...cleanedPayload } as Match : m));
+          const updatedMatch = { ...existingMatch, ...cleanedPayload } as Match;
+          setDbMatches(prev => prev.map(m => m.id === existingMatch.id ? updatedMatch : m));
+          if (selectedMatch?.id === existingMatch.id) {
+            setSelectedMatch(updatedMatch);
+          }
           await updateDoc(matchRef, cleanedPayload);
           await refreshCache('matches');
 

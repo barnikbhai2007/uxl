@@ -88,21 +88,25 @@ async function startServer() {
                 - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
                 INSTRUCTIONS:
-                1. Identify the TWO TEAM NAMES (Left side and Right side). look for account names in the top headers.
+                1. Identify the TWO TEAM NAMES (Left side and Right side). Look for account names in the top headers.
                    - LEFT side team = "team1"
                    - RIGHT side team = "team2"
                 2. Identify the Final Score (Left Score - Right Score).
                 3. Identify Goal Scorers. For each scorer, extract:
-                   - name: Player Name
-                   - goals: number
-                   - time: exactly like "45'", "60'" or "45', 88'"
-                   - team: strictly "team1" or "team2"
-                4. Extract Match Stats (Possession, Shots, etc.). 
-                   - team1Stats = Left side stats
-                   - team2Stats = Right side stats
-                5. MAN OF THE MATCH: Look for MVP/Star player name.
+                   - name: Player Name (look for the list under the scores or in the match details section)
+                   - goals: number of goals scored by this player
+                   - time: exactly like "45'", "60'" or "45', 88'" (if multiple)
+                   - team: strictly "team1" if they are on the left list, "team2" if they are on the right list.
+                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES). 
+                   - team1Stats = All stats from the LEFT column
+                   - team2Stats = All stats from the RIGHT column
+                5. MAN OF THE MATCH: Identify the "Man of the Match" or "MVP". Look for a player name accompanied by a Star icon or labelled as MVP.
                 
-                CRITICAL: One team must match or contain "${fcName}".
+                CRITICAL RULES:
+                - If you see a list of names with goal icons on the left, they belong to "team1".
+                - If you see a list of names with goal icons on the right, they belong to "team2".
+                - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
+                - One team must match or contain "${fcName}".
                 
                 Return JSON in this exact structure:
                 { 
@@ -164,8 +168,9 @@ async function startServer() {
           const allScorers = data.scorers || [];
           const playerTeamKey = isTeam1 ? 'team1' : 'team2';
           
-          const playerScorers = allScorers.filter((s:any) => s.team?.toLowerCase() === playerTeamKey);
-          const oppScorers = allScorers.filter((s:any) => s.team?.toLowerCase() !== playerTeamKey);
+          const normalizeTeam = (t: string) => (t || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+          const playerScorers = allScorers.filter((s:any) => normalizeTeam(s.team) === normalizeTeam(playerTeamKey));
+          const oppScorers = allScorers.filter((s:any) => normalizeTeam(s.team) !== normalizeTeam(playerTeamKey));
 
           // Logic
           if (playerScore > oppScore) {
