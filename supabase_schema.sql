@@ -25,3 +25,16 @@ CREATE POLICY "Allow anonymous delete" ON public.documents
 
 -- Index for collection querying
 CREATE INDEX idx_documents_collection ON public.documents(collection);
+
+-- Enable Realtime for the documents table
+begin;
+  -- remove the supabase_realtime publication
+  drop publication if exists supabase_realtime;
+
+  -- re-create the supabase_realtime publication with no tables
+  create publication supabase_realtime;
+commit;
+
+-- add the documents table to the publication
+alter publication supabase_realtime add table public.documents;
+
