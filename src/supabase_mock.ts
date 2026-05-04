@@ -168,6 +168,8 @@ export function limit(value: number) {
   return { type: "limit", value };
 }
 
+const localEmitter = new EventTarget();
+
 export async function getDoc(ref: DocRef) {
   const { data, error } = await supabase
     .from("documents")
@@ -248,6 +250,8 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
         .eq("id", ref.id);
       if (error) {
         console.error("setDoc merge update error:", error);
+      } else {
+        localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
       }
     } else {
       const { error } = await supabase
@@ -259,6 +263,8 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
         });
       if (error) {
         console.error("setDoc merge insert error:", error);
+      } else {
+        localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
       }
     }
   } else {
@@ -270,6 +276,8 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       );
     if (error) {
       console.error("setDoc upsert error:", error);
+    } else {
+      localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
     }
   }
 }
@@ -307,6 +315,8 @@ export async function updateDoc(ref: DocRef, data: any) {
       .eq("id", ref.id);
     if (updateErr) {
       console.error("updateDoc error:", updateErr);
+    } else {
+        localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
     }
   } else {
     console.warn("updateDoc: doc not found", ref.collectionName, ref.id);
@@ -321,6 +331,8 @@ export async function deleteDoc(ref: DocRef) {
     .eq("id", ref.id);
   if (error) {
     console.error("deleteDoc error:", error);
+  } else {
+    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   }
 }
 
@@ -341,6 +353,17 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   const collectionName = isDoc
     ? ref.collectionName
     : (ref as unknown as CollRef | Query).collectionName;
+
+  const localHandler = (e: any) => {
+    if (e.detail === collectionName) {
+      if (isDoc) {
+        getDoc(ref).then((doc) => callback(doc)).catch(errorCb);
+      } else {
+        getDocs(ref).then((snap) => callback(snap)).catch(errorCb);
+      }
+    }
+  };
+  localEmitter.addEventListener('db_change', localHandler);
 
   const channel = supabase
     .channel(`public:documents:${generateUUID()}`)
@@ -368,6 +391,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     .subscribe();
 
   return () => {
+    localEmitter.removeEventListener('db_change', localHandler);
     supabase.removeChannel(channel);
   };
 }

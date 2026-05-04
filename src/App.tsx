@@ -2542,7 +2542,7 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
 
   // Main app component follows...
 
-const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 300000) => {
+const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 2000) => {
   const cached = localStorage.getItem(cacheKey);
   const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
   
@@ -5262,7 +5262,17 @@ export default function App() {
                      </div>
                    ) : (
                      <button
-                       onClick={() => setIsRegistrationModalOpen(true)}
+                       onClick={async () => {
+                          if (!user || user.isAnonymous) {
+                            try {
+                              await signIn();
+                            } catch (e) {
+                              console.error("Login failed", e);
+                              return;
+                            }
+                          }
+                          setIsRegistrationModalOpen(true);
+                        }}
                        className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-blue-600/20"
                      >
                        Register Now
