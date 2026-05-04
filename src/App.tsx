@@ -46,25 +46,13 @@ const INITIAL_BRACKET: BracketMatch[] = [
 ];
 
 const getMatchdayDate = (matchday: number) => {
-  if (matchday === 1) return "4th May 2026";
-  if (matchday === 2) return "5th May 2026";
-  if (matchday === 3) return "6th May 2026";
-  if (matchday === 4) return "7th May 2026";
-  if (matchday === 5) return "8th May 2026";
-  if (matchday === 6) return "9th May 2026";
-  return `${matchday + 3}th May 2026`;
-};
-
-const parseDateString = (dateStr: string) => {
-  if (!dateStr || dateStr === 'TBD' || dateStr.includes('TBD')) return new Date(2026, 11, 31); // End of year for TBD
-  
-  // Try cleaning suffixes like "4th" to "4"
-  const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
-  const d = new Date(cleaned);
-  if (!isNaN(d.getTime())) return d;
-  
-  // Fallback to alphabetical if parse fails
-  return new Date(2026, 4, 1);
+  if (matchday === 1) return "27th March 2026";
+  if (matchday === 2) return "28th March 2026";
+  if (matchday === 3) return "29th March 2026";
+  if (matchday === 4) return "30th March 2026";
+  if (matchday === 5) return "31st March 2026";
+  if (matchday === 6) return "1st April 2026";
+  return `${26 + matchday}th March 2026`;
 };
 
 const getMatchesFromSchedule = (teams: Team[]): Match[] => {
@@ -81,19 +69,9 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
     let awayStats: Match['awayStats'];
     let isDNF = false;
 
-    const matchNumber = sm.matchNumber || index + 1;
-    
-    // Override date based on match number if user specified (1-18 is May 4, 19-38 is May 5)
-    let date = getMatchdayDate(sm.matchday);
-    if (matchNumber <= 18) date = "4th May 2026";
-    else if (matchNumber <= 38) date = "5th May 2026";
-    else if (matchNumber <= 58) date = "6th May 2026";
-    else if (matchNumber <= 78) date = "7th May 2026";
-    else if (matchNumber <= 98) date = "8th May 2026";
-
     return {
       id: `m-${index + 1}`,
-      matchNumber,
+      matchNumber: sm.matchNumber || index + 1,
       matchday: sm.matchday,
       leg: sm.leg,
       homeTeamId: homeTeam?.id || 'TBD',
@@ -104,7 +82,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
       awayScorers,
       homeStats,
       awayStats,
-      date,
+      date: getMatchdayDate(sm.matchday),
       status: (sm.rescheduled && sm.matchday <= 2) ? 'rescheduled' : status,
       type: sm.type,
       rescheduled: sm.rescheduled,
@@ -1151,7 +1129,7 @@ const NEWS_POSTS: any[] = [];
     );
   };
 
-  const AddMatchModal = ({ onClose, onSave, teams, initialDate = '4th May 2026', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, teams: Team[], initialDate?: string, initialHome?: string, initialAway?: string }) => {
+  const AddMatchModal = ({ onClose, onSave, teams, initialDate = '2026-05-TBD', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, teams: Team[], initialDate?: string, initialHome?: string, initialAway?: string }) => {
     const [date, setDate] = useState(initialDate);
     const [home, setHome] = useState(initialHome);
     const [away, setAway] = useState(initialAway);
@@ -2862,7 +2840,7 @@ export default function App() {
   const [dbTeams, setDbTeams] = useState<Team[]>([]);
   const [dbMatches, setDbMatches] = useState<Match[]>([]);
   const [isAddMatchModalOpen, setIsAddMatchModalOpen] = useState(false);
-  const [addMatchInitialData, setAddMatchInitialData] = useState<{ date: string, home: string, away: string }>({ date: '4th May 2026', home: '', away: '' });
+  const [addMatchInitialData, setAddMatchInitialData] = useState<{ date: string, home: string, away: string }>({ date: '2026-05-TBD', home: '', away: '' });
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
@@ -3418,7 +3396,7 @@ export default function App() {
       setIsAddMatchModalOpen(false);
     } else {
       // Global add button logic: open the modal with default
-      setAddMatchInitialData({ date: '4th May 2026', home: '', away: '' });
+      setAddMatchInitialData({ date: '2026-05-TBD', home: '', away: '' });
       setIsAddMatchModalOpen(true);
       return;
     }
@@ -3429,20 +3407,16 @@ export default function App() {
       // Calculate where to insert and shift match numbers
       // We sort matches globally: by date, then matchNumber
       const sortedMatches = [...matches].sort((a, b) => {
-        const dateA = parseDateString(a.date);
-        const dateB = parseDateString(b.date);
-        if (dateA.getTime() !== dateB.getTime()) return dateA.getTime() - dateB.getTime();
+        if (a.date !== b.date) return (a.date || '').localeCompare(b.date || '');
         return (a.matchNumber || 0) - (b.matchNumber || 0);
       });
 
       // Find the first match that should come AFTER this one
       // We'll put it at the end of the matches for that specific date
       let insertIndex = sortedMatches.length;
-      const newDateParsed = parseDateString(date);
       for (let i = 0; i < sortedMatches.length; i++) {
-        const existingDateParsed = parseDateString(sortedMatches[i].date);
         // If we found a date that is strictly GREATER than our new date, we insert BEFORE it
-        if (existingDateParsed.getTime() > newDateParsed.getTime()) {
+        if ((sortedMatches[i].date || '').localeCompare(date) > 0) {
           insertIndex = i;
           break;
         }
