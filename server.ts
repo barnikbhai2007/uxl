@@ -88,24 +88,19 @@ async function startServer() {
                 - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
                 INSTRUCTIONS:
-                1. Identify the TWO TEAM NAMES (Left side and Right side). Look for account names in the top headers.
-                   - LEFT side team = "team1"
-                   - RIGHT side team = "team2"
-                2. Identify the Final Score (Left Score - Right Score).
-                3. Identify Goal Scorers. For each scorer, extract:
-                   - name: Player Name (look for the list under the scores or in the match details section)
-                   - goals: number of goals scored by this player
-                   - time: exactly like "45'", "60'" or "45', 88'" (if multiple)
-                   - team: strictly "team1" if they are on the left list, "team2" if they are on the right list.
-                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES). 
-                   - team1Stats = All stats from the LEFT column
-                   - team2Stats = All stats from the RIGHT column
-                5. MAN OF THE MATCH: Identify the "Man of the Match" or "MVP". Look for a player name accompanied by a Star icon or labelled as MVP.
+                1. Identify the TWO TEAM NAMES from the top header or team logos (Left team = "team1", Right team = "team2").
+                2. Identify the Final Score in the middle (Left Score - Right Score). team1Score is Left, team2Score is Right.
+                3. Goal Scorers List: Under the main scores or in the match facts, there are often player names listed with soccer ball icons and minutes (e.g., 45', 90').
+                   - If a player name is on the LEFT half of the screen, they scored for "team1".
+                   - If a player name is on the RIGHT half of the screen, they scored for "team2".
+                   - For each scorer, provide "name", "goals" (count the number of ball icons or goals scored by this player), "time" (the minutes like "45', 50'"), and the "team" ("team1" or "team2").
+                4. Match Stats: Extract Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
+                   - The left-side numeric values belong to "team1Stats".
+                   - The right-side numeric values belong to "team2Stats".
+                5. MAN OF THE MATCH: Look for the player highlighted with a star, MVP badge, or labelled as Man of the Match. Assign their name to "manOfTheMatch". If not explicitly shown, just leave it null or pick the best performing player based on stats/goals.
                 
                 CRITICAL RULES:
-                - If you see a list of names with goal icons on the left, they belong to "team1".
-                - If you see a list of names with goal icons on the right, they belong to "team2".
-                - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
+                - Ensure "team1Score" matches the total number of goals in the "team1" scorers list if possible.
                 - One team must match or contain "${fcName}".
                 
                 Return JSON in this exact structure:
