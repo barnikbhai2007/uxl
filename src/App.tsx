@@ -755,17 +755,17 @@ const NEWS_POSTS: any[] = [];
                 )}
                 <div className="grid gap-3 md:gap-4">
                   <StatRow 
-                    home={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
-                    away={`${match.homeStats.shotsOnTarget}/${match.homeStats.shots}`} 
+                    home={`${match.homeStats.shotsOnTarget}/${match.homeStats.shots}`} 
+                    away={`${match.awayStats.shotsOnTarget}/${match.awayStats.shots}`} 
                     label="Shots (On Target)" 
-                    homeVal={match.awayStats.shots}
-                    awayVal={match.homeStats.shots}
+                    homeVal={match.homeStats.shots}
+                    awayVal={match.awayStats.shots}
                   />
-                  <StatRow home={match.awayStats.possession} away={match.homeStats.possession} label="Possession" suffix="%" />
-                  <StatRow home={match.awayStats.passAccuracy} away={match.homeStats.passAccuracy} label="Pass Accuracy" suffix="%" />
-                  <StatRow home={match.awayStats.saves} away={match.homeStats.saves} label="Saves" />
-                  <StatRow home={match.awayStats.fouls} away={match.homeStats.fouls} label="Fouls" />
-                  <StatRow home={match.awayStats.offsides} away={match.homeStats.offsides} label="Offsides" />
+                  <StatRow home={match.homeStats.possession} away={match.awayStats.possession} label="Possession" suffix="%" />
+                  <StatRow home={match.homeStats.passAccuracy} away={match.awayStats.passAccuracy} label="Pass Accuracy" suffix="%" />
+                  <StatRow home={match.homeStats.saves} away={match.awayStats.saves} label="Saves" />
+                  <StatRow home={match.homeStats.fouls} away={match.awayStats.fouls} label="Fouls" />
+                  <StatRow home={match.homeStats.offsides} away={match.awayStats.offsides} label="Offsides" />
                 </div>
               </div>
             )}
@@ -3639,54 +3639,40 @@ export default function App() {
 
           const matchRef = doc(db, 'matches', existingMatch.id);
           
+          const t1Score = Number(data.team1Score ?? data.homeScore ?? 0);
+          const t2Score = Number(data.team2Score ?? data.awayScore ?? 0);
           const safeScorers = data.scorers || [];
           
+          const isT1 = (t: string) => t && (normalize(t) === normalize(data.team1) || normalize(t) === 'team 1' || normalize(t) === 'team1');
+          const isT2 = (t: string) => t && (normalize(t) === normalize(data.team2) || normalize(t) === 'team 2' || normalize(t) === 'team2');
+          const parseScorers = (filterFn: (t: string) => boolean) => 
+            safeScorers
+              .filter((s:any) => filterFn(s.team))
+              .map((s:any) => ({ playerName: s.name || 'Unknown', goals: Number(s.goals) || 1, time: s.time || null }));
+
+          const buildStats = (s: any) => s ? {
+              possession: Number(s.possession ?? 50),
+              shots: Number(s.shots ?? 0),
+              shotsOnTarget: Number(s.shotsOnTarget ?? 0),
+              passAccuracy: Number(s.passAccuracy ?? 0),
+              fouls: Number(s.fouls ?? 0),
+              offsides: Number(s.offsides ?? 0),
+              saves: Number(s.saves ?? 0),
+          } : null;
+
+          const t1Stats = buildStats(data.team1Stats ?? data.homeStats);
+          const t2Stats = buildStats(data.team2Stats ?? data.awayStats);
+
           const isTeam1ActuallyDbHome = existingMatch.homeTeamId === team1.id;
 
           const updatePayload = {
-            homeScore: isTeam1ActuallyDbHome ? data.team1Score ?? 0 : data.team2Score ?? 0,
-            awayScore: isTeam1ActuallyDbHome ? data.team2Score ?? 0 : data.team1Score ?? 0,
+            homeScore: isTeam1ActuallyDbHome ? t1Score : t2Score,
+            awayScore: isTeam1ActuallyDbHome ? t2Score : t1Score,
             status: 'finished',
-            homeScorers: isTeam1ActuallyDbHome 
-               ? safeScorers.filter((s:any) => s.team === data.team1 || s.team === 'Team 1').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
-               : safeScorers.filter((s:any) => s.team === data.team2 || s.team === 'Team 2').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
-            awayScorers: isTeam1ActuallyDbHome
-               ? safeScorers.filter((s:any) => s.team === data.team2 || s.team === 'Team 2').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
-               : safeScorers.filter((s:any) => s.team === data.team1 || s.team === 'Team 1').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
-            homeStats: isTeam1ActuallyDbHome ? (data.team1Stats ? {
-              possession: data.team1Stats.possession ?? 50,
-              shots: data.team1Stats.shots ?? 0,
-              shotsOnTarget: data.team1Stats.shotsOnTarget ?? 0,
-              passAccuracy: data.team1Stats.passAccuracy ?? 0,
-              fouls: data.team1Stats.fouls ?? 0,
-              offsides: data.team1Stats.offsides ?? 0,
-              saves: data.team1Stats.saves ?? 0,
-            } : null) : (data.team2Stats ? {
-              possession: data.team2Stats.possession ?? 50,
-              shots: data.team2Stats.shots ?? 0,
-              shotsOnTarget: data.team2Stats.shotsOnTarget ?? 0,
-              passAccuracy: data.team2Stats.passAccuracy ?? 0,
-              fouls: data.team2Stats.fouls ?? 0,
-              offsides: data.team2Stats.offsides ?? 0,
-              saves: data.team2Stats.saves ?? 0,
-            } : null),
-            awayStats: isTeam1ActuallyDbHome ? (data.team2Stats ? {
-              possession: data.team2Stats.possession ?? 50,
-              shots: data.team2Stats.shots ?? 0,
-              shotsOnTarget: data.team2Stats.shotsOnTarget ?? 0,
-              passAccuracy: data.team2Stats.passAccuracy ?? 0,
-              fouls: data.team2Stats.fouls ?? 0,
-              offsides: data.team2Stats.offsides ?? 0,
-              saves: data.team2Stats.saves ?? 0,
-            } : null) : (data.team1Stats ? {
-              possession: data.team1Stats.possession ?? 50,
-              shots: data.team1Stats.shots ?? 0,
-              shotsOnTarget: data.team1Stats.shotsOnTarget ?? 0,
-              passAccuracy: data.team1Stats.passAccuracy ?? 0,
-              fouls: data.team1Stats.fouls ?? 0,
-              offsides: data.team1Stats.offsides ?? 0,
-              saves: data.team1Stats.saves ?? 0,
-            } : null),
+            homeScorers: isTeam1ActuallyDbHome ? parseScorers(isT1) : parseScorers(isT2),
+            awayScorers: isTeam1ActuallyDbHome ? parseScorers(isT2) : parseScorers(isT1),
+            homeStats: isTeam1ActuallyDbHome ? t1Stats : t2Stats,
+            awayStats: isTeam1ActuallyDbHome ? t2Stats : t1Stats,
             manOfTheMatch: data.manOfTheMatch || null
           };
 

@@ -102,7 +102,7 @@ async function startServer() {
                   "team2": "...", 
                   "team1Score": 0, 
                   "team2Score": 0, 
-                  "scorers": [{"name": "...", "goals": 1, "team": "Team 1 or Team 2 name", "time": "45'"}], 
+                  "scorers": [{"name": "...", "goals": 1, "team": "<MUST be the exact string of team1 or team2>", "time": "45'"}], 
                   "team1Stats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
                   "team2Stats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
                   "manOfTheMatch": "..." 
