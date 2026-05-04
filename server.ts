@@ -2,7 +2,7 @@ import express from "express";
 import path from "path";
 import { fileURLToPath } from "url";
 import { createClient } from "@supabase/supabase-js";
-import { GoogleGenAI } from "@google/genai";
+import Groq from "groq-sdk";
 import cors from "cors";
 import crypto from "crypto";
 
@@ -14,17 +14,11 @@ const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_taKejs
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function getAiConfig() {
-  try {
-    const { data: configSnap } = await supabase.from('documents').select('data').eq('collection', 'config').eq('id', 'system').single();
-    const configData = configSnap?.data || null;
-    const key = configData?.geminiApiKey || process.env.GEMINI_API_KEY;
-    const model = configData?.geminiModel || "gemini-2.0-flash";
-    const source = configData?.geminiModel ? "Supabase" : "Environment Default";
-    return { key, model, source };
-  } catch (error) {
-    console.error("Error fetching AI config from Supabase:", error);
-    return { key: process.env.GEMINI_API_KEY, model: "gemini-2.0-flash", source: "Fallback" };
-  }
+  return { 
+    key: process.env.GROQ_API_KEY, 
+    model: "meta-llama/llama-4-scout-17b-16e-instruct", 
+    source: "Groq" 
+  };
 }
 
 async function startServer() {
@@ -40,15 +34,15 @@ async function startServer() {
   app.get("/api/test-ai", async (req, res) => {
     try {
       const { key, model, source } = await getAiConfig();
-      if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+      if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const ai = new GoogleGenAI({ apiKey: key });
+      const groq = new Groq({ apiKey: key });
       
-      const result = await ai.models.generateContent({
+      const response = await groq.chat.completions.create({
         model: model,
-        contents: [{ role: 'user', parts: [{ text: "Respond with only the word 'OK' if you can read this." }] }]
+        messages: [{ role: 'user', content: "Respond with only the word 'OK' if you can read this." }]
       });
-      const text = result.text;
+      const text = response.choices[0]?.message?.content || "{}";
       
       res.json({ success: true, message: `Connected to ${model} successfully! AI response: ${text}`, source });
     } catch (error: any) {
@@ -65,22 +59,22 @@ async function startServer() {
       
       console.log(`[AI] Analysis Request | Model: ${model} | Source: ${source}`);
       
-      if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+      if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const ai = new GoogleGenAI({ apiKey: key });
+      const groq = new Groq({ apiKey: key });
 
-      const response = await ai.models.generateContent({
+      const response = await groq.chat.completions.create({
         model: model,
-        contents: [
+        messages: [
           {
-            parts: [
+            role: "user",
+            content: [
               {
-                inlineData: {
-                  data: base64,
-                  mimeType: mimeType
-                }
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64}` }
               },
               {
+                type: "text",
                 text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
                 
                 CONTEXT:
@@ -123,12 +117,10 @@ async function startServer() {
             ]
           }
         ],
-        config: {
-          responseMimeType: "application/json"
-        }
+        response_format: { type: "json_object" }
       });
 
-      const text = response.text || "{}";
+      const text = response.choices[0]?.message?.content || "{}";
       const resultParsed = JSON.parse(text);
       console.log("AI Match Analysis Output:", JSON.stringify(resultParsed, null, 2));
       if (resultParsed.error) {
@@ -274,20 +266,20 @@ async function startServer() {
 
       console.log(`[AI] Admin Command | Model: ${model} | Source: ${source}`);
       
-      if (!key) throw new Error("GEMINI_API_KEY is not configured.");
+      if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const ai = new GoogleGenAI({ apiKey: key });
+      const groq = new Groq({ apiKey: key });
       
       const teamsStr = teams && Array.isArray(teams) 
           ? teams.map((t: any) => `ID: "${t.id}", Names: ["${t.name}", "${t.fcName}"]`).join(' | ')
           : 'No teams available';
 
-      const response = await ai.models.generateContent({
+      const response = await groq.chat.completions.create({
         model: model,
-        contents: [
+        messages: [
           {
-            parts: [{
-              text: `You are a Tournament Data Extractor AI. You must return ONLY a JSON array of commands.
+            role: "user",
+            content: `You are a Tournament Data Extractor AI. You must return ONLY a JSON array of commands.
               Each command must be an object with "type" and "data" keys.
               
               Today's date is ${new Date().toDateString()}.
@@ -319,15 +311,11 @@ async function startServer() {
               5. DO NOT truncate.
               
               User Command: ${command}`
-            }]
           }
-        ],
-        config: {
-          responseMimeType: "application/json"
-        }
+        ]
       });
 
-      const text = response.text || "[]";
+      const text = response.choices[0]?.message?.content || "[]";
       console.log("AI Raw Response:", text);
       
       const commands = JSON.parse(text);
