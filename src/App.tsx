@@ -2138,7 +2138,7 @@ const NEWS_POSTS: any[] = [];
                           }} 
                           className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'table' ? 'bg-orange-600 border-orange-600 text-white animate-pulse' : 'bg-orange-600/10 border-orange-500/20 text-orange-500 hover:bg-orange-600 hover:text-white'}`}
                         >
-                          {isResetting && confirmReset === 'table' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'table' ? 'Confirm Reset Table (Scores)' : 'Reset Table (Scores)')}
+                          {isResetting && confirmReset === 'table' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'table' ? 'Confirm Reset All Scores' : 'Reset All Scores')}
                         </button>
                         <button 
                           disabled={isResetting}
@@ -3671,8 +3671,22 @@ export default function App() {
         const mSnap = await getDocs(collection(db, 'matches'));
         mSnap.docs.forEach(d => {
           batch.update(d.ref, {
-            homeScore: 0,
-            awayScore: 0,
+            homeScore: null,
+            awayScore: null,
+            status: 'scheduled',
+            homeScorers: [],
+            awayScorers: [],
+            homeStats: null,
+            awayStats: null,
+            manOfTheMatch: null,
+            isDNF: false
+          });
+        });
+        const bSnap = await getDocs(collection(db, 'bracket'));
+        bSnap.docs.forEach(d => {
+          batch.update(d.ref, {
+            homeScore: null,
+            awayScore: null,
             status: 'scheduled',
             homeScorers: [],
             awayScorers: [],

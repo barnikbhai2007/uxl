@@ -1,48 +1,65 @@
-752:    adminMatchday, 
-753-    setAdminMatchday, 
-754-    adminCandidates, 
-755-    setAdminCandidates, 
-756-    adminHours, 
-757-    setAdminHours, 
---
-765:    adminMatchday: string | number,
-766-    setAdminMatchday: (val: string | number) => void,
-767-    adminCandidates: VotingCandidate[],
-768-    setAdminCandidates: (val: VotingCandidate[]) => void,
-769-    adminHours: number,
-770-    setAdminHours: (val: number) => void,
---
-836:                  value={adminMatchday}
-837-                  onChange={(e) => setAdminMatchday(e.target.value)}
-838-                  placeholder="e.g. Matchday 1, Semi-Finals"
-839-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-white focus:border-blue-500 outline-none transition-all"
-840-                />
-841-              </div>
---
-965:  const [adminMatchday, setAdminMatchday] = useState<string | number>('Matchday 1');
-966-  const [adminCandidates, setAdminCandidates] = useState<VotingCandidate[]>([]);
-967-  const [adminHours, setAdminHours] = useState(12);
-968-  const [adminShowResults, setAdminShowResults] = useState(true);
-969-  const [isSavingAdmin, setIsSavingAdmin] = useState(false);
-970-
---
-986:      const sessionId = `matchday-${adminMatchday}`;
-987-      const newSessionId = uuidv4();
-988-      const startTime = serverTimestamp();
-989-      const endTime = new Date(Date.now() + adminHours * 60 * 60 * 1000);
-990-
-991-      await setDoc(doc(db, 'votingSessions', sessionId), {
---
-994:        matchday: adminMatchday,
-995-        startTime: startTime,
-996-        endTime: endTime,
-997-        candidates: adminCandidates,
-998-        isActive: true,
-999-        showResults: adminShowResults
---
-2132:            adminMatchday={adminMatchday}
-2133-            setAdminMatchday={setAdminMatchday}
-2134-            adminCandidates={adminCandidates}
-2135-            setAdminCandidates={setAdminCandidates}
-2136-            adminHours={adminHours}
-2137-            setAdminHours={setAdminHours}
+34:  { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+35:  { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+36:  { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+37:  { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+38:  { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+39:  { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+40:  { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+41:  { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+42:  { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner QF1', awayTeamName: 'Winner QF2', homeScore: 0, awayScore: 0 },
+43:  { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner QF3', awayTeamName: 'Winner QF4', homeScore: 0, awayScore: 0 },
+44:  { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0 },
+45:  { id: 'third-place', round: '3rd Place Match', homeTeamName: 'Loser SF1', awayTeamName: 'Loser SF2', homeScore: 0, awayScore: 0 },
+63:    let homeScore = 0;
+66:    let homeScorers: Scorer[] = [];
+79:      homeScore,
+81:      homeScorers,
+104:    if (m.status === 'finished' && isLeagueMatch && m.homeScore !== undefined && m.awayScore !== undefined) {
+111:        home.gf += m.homeScore;
+114:        away.ga += m.homeScore;
+116:        if (m.homeScore > m.awayScore) {
+122:        } else if (m.homeScore < m.awayScore) {
+177:      if (homeTeam && m.homeScorers) {
+178:        m.homeScorers.forEach(s => {
+244:      if (awayTeam && (m.homeScore ?? -1) === 0) {
+279:    totalGoalsScored += isHome ? (m.homeScore || 0) : (m.awayScore || 0);
+280:    totalGoalsConceded += isHome ? (m.awayScore || 0) : (m.homeScore || 0);
+289:    const myScorers = isHome ? m.homeScorers : m.awayScorers;
+373:              const myScore = isHome ? m.homeScore! : m.awayScore!;
+374:              const oppScore = isHome ? m.awayScore! : m.homeScore!;
+478:              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+479:                {match.homeScore ?? '-'}
+485:              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+629:                {match.homeScorers && match.homeScorers.length > 0 && (
+631:                    {match.homeScorers.map((s, i) => (
+649:                      <input type="number" defaultValue={match.homeScore ?? 0} onChange={(e) => {
+650:                          match.homeScore = parseInt(e.target.value);
+661:                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
+1828:      setEditHomeScore(match.homeScore || 0);
+1840:        homeScore: editHomeScore,
+2027:                                          <span className="text-lg font-display font-black italic text-blue-400">{match.homeScore}</span>
+2408:                                  {report.matchData.homeTeam} {report.matchData.homeScore} - {report.matchData.awayScore} {report.matchData.awayTeam}
+2841:        homeScore: 0,
+2844:        homeScorers: [],
+2898:    const totalGoals = monthMatches.reduce((acc, m) => acc + (m.homeScore || 0) + (m.awayScore || 0), 0);
+2905:      [...(m.homeScorers || []), ...(m.awayScorers || [])].forEach(s => {
+2907:          const team = teams.find(t => t.id === (m.homeScorers?.includes(s) ? m.homeTeamId : m.awayTeamId));
+2939:        teamStats[hId].goalsScored += (m.homeScore || 0);
+2949:        (m.homeScorers || []).forEach(s => {
+2956:        teamStats[aId].goalsConceded += (m.homeScore || 0);
+3674:            homeScore: 0,
+3677:            homeScorers: [],
+3756:            homeScore: cmd.data.homeScore || 0,
+3802:    const { homeScore, awayScore, homeScorers, awayScorers, homeTeam, awayTeam } = matchData;
+3808:    const homeMinutes = getMinutes(homeScorers);
+3813:    const myScore = isCurrentUserHome ? homeScore : awayScore;
+3814:    const oppScore = isCurrentUserHome ? awayScore : homeScore;
+3983:          const t1Score = Number(data.team1Score ?? data.homeScore ?? 0);
+4032:            homeScore: isTeam1ActuallyDbHome ? t1Score : t2Score,
+4035:            homeScorers: isTeam1ActuallyDbHome ? parseScorers(isT1) : parseScorers(isT2),
+4105:    return { id, round: '', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 };
+5448:                            <span className="font-mono font-bold text-cyan-400">{match.homeScore ?? '-'}</span>
+5476:                            <span className="font-mono font-bold text-indigo-400">{match.homeScore ?? '-'}</span>
+5509:                            <span className="font-mono font-bold text-purple-400">{match.homeScore ?? '-'}</span>
+5542:                              <span className="font-mono font-black text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
+5563:                              <span className="font-mono font-bold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
