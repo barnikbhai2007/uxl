@@ -2590,7 +2590,7 @@ export default function App() {
     if (!isAdmin) return;
     try {
       const matchRef = doc(db, 'matches', matchId);
-      await updateDoc(matchRef, {
+      const resetData = {
         homeScore: 0,
         awayScore: 0,
         status: 'scheduled',
@@ -2600,7 +2600,16 @@ export default function App() {
         awayStats: null,
         manOfTheMatch: null,
         isDNF: false
-      });
+      };
+      await updateDoc(matchRef, resetData);
+      
+      setDbMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...resetData } as Match : m));
+      try {
+        localStorage.removeItem('cache_matches');
+        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 0);
+        setDbMatches(data);
+      } catch(e) {}
+      
       alert("Match reset back to scheduled status.");
     } catch (e) {
       console.error("Failed to reset match:", e);

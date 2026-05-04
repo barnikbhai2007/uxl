@@ -87,14 +87,14 @@ async function startServer() {
                 - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
                 INSTRUCTIONS:
-                1. Identify the Home Team and Away Team names.
-                2. Identify the Final Score (Home vs Away).
+                1. Identify the Home Team (LEFT side) and Away Team (RIGHT side) names. BE CAREFUL NOT TO DETECT THE LEAGUE NAME AS THE TEAM NAME. Look explicitly for the actual player or account names positioned at the very top left and very top right.
+                2. Identify the Final Score (Home vs Away) which is displayed in the middle (Left Score - Right Score).
                 3. Identify Goal Scorers (name, goals, time of goal, team). CRITICAL: Look for soccer ball icons ⚽ followed by numbers like 45', 90+2'. You MUST extract this exact minute into the "time" field for each scorer. If a player scores multiple goals, try to list them separately or combine their times like "45', 80'".
-                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES) for both teams.
+                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES) for both teams. The left column of stats corresponds to the Home team, and the right column corresponds to the Away team. Ensure you do not swap them!
                 5. MAN OF THE MATCH: Select based on highest impact. Goalkeepers with many saves and low goals conceded are strong candidates.
                 
-                CRITICAL: One of the teams MUST reasonably match "${fcName}".
-                If neither team matches "${fcName}", return { "error": "Reporting player name was not found as a participant in this screenshot." }.
+                CRITICAL: One of the teams MUST reasonably match "${fcName}". If the player name "${fcName}" is mentioned anywhere in the top area, assign them as the correct team.
+                If neither team matches "${fcName}" and it is nowhere to be found, return { "error": "Reporting player name was not found as a participant in this screenshot." }.
                 
                 Return STRICT JSON: 
                 { 
