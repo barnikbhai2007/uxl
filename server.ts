@@ -87,24 +87,24 @@ async function startServer() {
                 - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
                 INSTRUCTIONS:
-                1. Identify the Home Team (LEFT side) and Away Team (RIGHT side) names. BE CAREFUL NOT TO DETECT THE LEAGUE NAME AS THE TEAM NAME. Look explicitly for the actual player or account names positioned at the very top left and very top right.
-                2. Identify the Final Score (Home vs Away) which is displayed in the middle (Left Score - Right Score).
+                1. Identify the TWO TEAM NAMES (Left side and Right side). BE CAREFUL NOT TO DETECT THE LEAGUE NAME AS THE TEAM NAME. Look explicitly for the actual player or account names positioned at the very top left and very top right.
+                2. Identify the Final Score which is displayed in the middle (Left Score - Right Score).
                 3. Identify Goal Scorers (name, goals, time of goal, team). CRITICAL: Look for soccer ball icons ⚽ followed by numbers like 45', 90+2'. You MUST extract this exact minute into the "time" field for each scorer. If a player scores multiple goals, try to list them separately or combine their times like "45', 80'".
-                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES) for both teams. The left column of stats corresponds to the Home team, and the right column corresponds to the Away team. Ensure you do not swap them!
+                4. Extract Match Stats (Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, SAVES). Ensure you assign the correct stats to the correct team.
                 5. MAN OF THE MATCH: Select based on highest impact. Goalkeepers with many saves and low goals conceded are strong candidates.
                 
-                CRITICAL: One of the teams MUST reasonably match "${fcName}". If the player name "${fcName}" is mentioned anywhere in the top area, assign them as the correct team.
+                CRITICAL: One of the teams MUST reasonably match "${fcName}". If the player name "${fcName}" is mentioned anywhere in the top area, assign them as one of the teams.
                 If neither team matches "${fcName}" and it is nowhere to be found, return { "error": "Reporting player name was not found as a participant in this screenshot." }.
                 
                 Return STRICT JSON: 
                 { 
-                  "homeTeam": "...", 
-                  "awayTeam": "...", 
-                  "homeScore": 0, 
-                  "awayScore": 0, 
-                  "scorers": [{"name": "...", "goals": 1, "team": "Home", "time": "45'"}], 
-                  "homeStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
-                  "awayStats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
+                  "team1": "...", 
+                  "team2": "...", 
+                  "team1Score": 0, 
+                  "team2Score": 0, 
+                  "scorers": [{"name": "...", "goals": 1, "team": "Team 1 or Team 2 name", "time": "45'"}], 
+                  "team1Stats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
+                  "team2Stats": { "possession": 50, "shots": 0, "shotsOnTarget": 0, "passAccuracy": 0, "fouls": 0, "offsides": 0, "saves": 0 }, 
                   "manOfTheMatch": "..." 
                 }`
               }
@@ -149,14 +149,14 @@ async function startServer() {
             }
           };
 
-          const isHome = data.homeTeam?.toLowerCase().includes(playerFcName.toLowerCase()) || playerFcName?.toLowerCase().includes(data.homeTeam?.toLowerCase());
-          const playerStats = isHome ? data.homeStats : data.awayStats;
-          const oppStats = isHome ? data.awayStats : data.homeStats;
-          const playerScore = isHome ? data.homeScore : data.awayScore;
-          const oppScore = isHome ? data.awayScore : data.homeScore;
+          const isTeam1 = data.team1?.toLowerCase().includes(playerFcName.toLowerCase()) || playerFcName?.toLowerCase().includes(data.team1?.toLowerCase());
+          const playerStats = isTeam1 ? data.team1Stats : data.team2Stats;
+          const oppStats = isTeam1 ? data.team2Stats : data.team1Stats;
+          const playerScore = isTeam1 ? data.team1Score : data.team2Score;
+          const oppScore = isTeam1 ? data.team2Score : data.team1Score;
           const allScorers = data.scorers || [];
-          const playerScorers = allScorers.filter((s:any) => (isHome && (s.team === 'Home' || s.team === data.homeTeam)) || (!isHome && (s.team === 'Away' || s.team === data.awayTeam)));
-          const oppScorers = allScorers.filter((s:any) => (!isHome && (s.team === 'Home' || s.team === data.homeTeam)) || (isHome && (s.team === 'Away' || s.team === data.awayTeam)));
+          const playerScorers = allScorers.filter((s:any) => (isTeam1 && (s.team === 'Team 1' || s.team === data.team1)) || (!isTeam1 && (s.team === 'Team 2' || s.team === data.team2)));
+          const oppScorers = allScorers.filter((s:any) => (!isTeam1 && (s.team === 'Team 1' || s.team === data.team1)) || (isTeam1 && (s.team === 'Team 2' || s.team === data.team2)));
 
           // Logic
           if (playerScore > oppScore) {
@@ -213,9 +213,9 @@ async function startServer() {
       // Process for both participants
       await checkAndAwardAchievements(fcName, matchData);
       
-      const opponentName = (matchData.homeTeam?.toLowerCase().includes(fcName.toLowerCase()) || fcName.toLowerCase().includes(matchData.homeTeam?.toLowerCase()))
-        ? matchData.awayTeam
-        : matchData.homeTeam;
+      const opponentName = (matchData.team1?.toLowerCase().includes(fcName.toLowerCase()) || fcName.toLowerCase().includes(matchData.team1?.toLowerCase()))
+        ? matchData.team2
+        : matchData.team1;
       
       if (opponentName) {
         await checkAndAwardAchievements(opponentName, matchData);
@@ -233,7 +233,7 @@ async function startServer() {
           imageUrl: base64,
           mimeType: mimeType || 'image/jpeg',
           matchId: matchData.matchId || null,
-          analysisSummary: `Verified match between ${matchData.homeTeam} and ${matchData.awayTeam} (Reported by ${fcName || 'Unknown'})`
+          analysisSummary: `Verified match between ${matchData.team1} and ${matchData.team2} (Reported by ${fcName || 'Unknown'})`
         };
         await db.collection('reports').add(reportData);
       } catch (saveError) {

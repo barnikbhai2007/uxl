@@ -3538,19 +3538,19 @@ export default function App() {
       
       const normalize = (nm: string) => (nm || '').toLowerCase().trim();
       const userFcName = normalize(playerRegistration.fcName);
-      const aiHome = normalize(data.homeTeam);
-      const aiAway = normalize(data.awayTeam);
+      const aiTeam1 = normalize(data.team1);
+      const aiTeam2 = normalize(data.team2);
 
-      const isParticipant = aiHome.includes(userFcName) || userFcName.includes(aiHome) || 
-                          aiAway.includes(userFcName) || userFcName.includes(aiAway);
+      const isParticipant = aiTeam1.includes(userFcName) || userFcName.includes(aiTeam1) || 
+                          aiTeam2.includes(userFcName) || userFcName.includes(aiTeam2);
 
       if (!isParticipant) {
-        setAiAnalysisResult(`REJECTED: User not matched. Your FC Name "${playerRegistration.fcName}" was not clearly detected in the screenshot (AI saw: "${data.homeTeam}" vs "${data.awayTeam}").`);
+        setAiAnalysisResult(`REJECTED: User not matched. Your FC Name "${playerRegistration.fcName}" was not clearly detected in the screenshot (AI saw: "${data.team1}" vs "${data.team2}").`);
         return;
       }
 
       // Achievement processing
-      const opponentFcName = aiHome.includes(userFcName) || userFcName.includes(aiHome) ? data.awayTeam : data.homeTeam;
+      const opponentFcName = aiTeam1.includes(userFcName) || userFcName.includes(aiTeam1) ? data.team2 : data.team1;
       let opponentReg: Registration | undefined;
       
       try {
@@ -3575,14 +3575,14 @@ export default function App() {
         return match;
       };
 
-      const homeTeam = findTeamFlexible(data.homeTeam);
-      const awayTeam = findTeamFlexible(data.awayTeam);
+      const team1 = findTeamFlexible(data.team1);
+      const team2 = findTeamFlexible(data.team2);
 
-      if (homeTeam && awayTeam) {
+      if (team1 && team2) {
         // Find existing match
         const existingMatch = matches.find(m => 
-          (m.homeTeamId === homeTeam.id && m.awayTeamId === awayTeam.id) ||
-          (m.homeTeamId === awayTeam.id && m.awayTeamId === homeTeam.id)
+          (m.homeTeamId === team1.id && m.awayTeamId === team2.id) ||
+          (m.homeTeamId === team2.id && m.awayTeamId === team1.id)
         );
 
         if (existingMatch) {
@@ -3624,7 +3624,7 @@ export default function App() {
           }
 
           // 3. Winner check
-          const winnerTeam = data.homeScore > data.awayScore ? homeTeam : (data.homeScore < data.awayScore ? awayTeam : null);
+          const winnerTeam = data.team1Score > data.team2Score ? team1 : (data.team1Score < data.team2Score ? team2 : null);
           if (winnerTeam && !isAdmin) {
              const isWinnerReporter = normalize(winnerTeam.fcName) === userFcName || 
                                      normalize(winnerTeam.name) === userFcName ||
@@ -3639,35 +3639,52 @@ export default function App() {
           
           const safeScorers = data.scorers || [];
           
+          const isTeam1ActuallyDbHome = existingMatch.homeTeamId === team1.id;
+
           const updatePayload = {
-            homeScore: data.homeScore ?? 0,
-            awayScore: data.awayScore ?? 0,
+            homeScore: isTeam1ActuallyDbHome ? data.team1Score ?? 0 : data.team2Score ?? 0,
+            awayScore: isTeam1ActuallyDbHome ? data.team2Score ?? 0 : data.team1Score ?? 0,
             status: 'finished',
-            // Need to handle scorers based on who is home/away
-            homeScorers: existingMatch.homeTeamId === homeTeam.id 
-              ? safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
-              : safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
-            awayScorers: existingMatch.awayTeamId === awayTeam.id 
-              ? safeScorers.filter((s:any) => s.team === data.awayTeam || s.team === 'Away').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
-              : safeScorers.filter((s:any) => s.team === data.homeTeam || s.team === 'Home').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
-            homeStats: data.homeStats ? {
-              possession: data.homeStats.possession ?? 50,
-              shots: data.homeStats.shots ?? 0,
-              shotsOnTarget: data.homeStats.shotsOnTarget ?? 0,
-              passAccuracy: data.homeStats.passAccuracy ?? 0,
-              fouls: data.homeStats.fouls ?? 0,
-              offsides: data.homeStats.offsides ?? 0,
-              saves: data.homeStats.saves ?? 0,
-            } : null,
-            awayStats: data.awayStats ? {
-              possession: data.awayStats.possession ?? 50,
-              shots: data.awayStats.shots ?? 0,
-              shotsOnTarget: data.awayStats.shotsOnTarget ?? 0,
-              passAccuracy: data.awayStats.passAccuracy ?? 0,
-              fouls: data.awayStats.fouls ?? 0,
-              offsides: data.awayStats.offsides ?? 0,
-              saves: data.awayStats.saves ?? 0,
-            } : null,
+            homeScorers: isTeam1ActuallyDbHome 
+               ? safeScorers.filter((s:any) => s.team === data.team1 || s.team === 'Team 1').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
+               : safeScorers.filter((s:any) => s.team === data.team2 || s.team === 'Team 2').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
+            awayScorers: isTeam1ActuallyDbHome
+               ? safeScorers.filter((s:any) => s.team === data.team2 || s.team === 'Team 2').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null}))
+               : safeScorers.filter((s:any) => s.team === data.team1 || s.team === 'Team 1').map((s:any) => ({playerName: s.name || 'Unknown', goals: s.goals ?? 1, time: s.time || null})),
+            homeStats: isTeam1ActuallyDbHome ? (data.team1Stats ? {
+              possession: data.team1Stats.possession ?? 50,
+              shots: data.team1Stats.shots ?? 0,
+              shotsOnTarget: data.team1Stats.shotsOnTarget ?? 0,
+              passAccuracy: data.team1Stats.passAccuracy ?? 0,
+              fouls: data.team1Stats.fouls ?? 0,
+              offsides: data.team1Stats.offsides ?? 0,
+              saves: data.team1Stats.saves ?? 0,
+            } : null) : (data.team2Stats ? {
+              possession: data.team2Stats.possession ?? 50,
+              shots: data.team2Stats.shots ?? 0,
+              shotsOnTarget: data.team2Stats.shotsOnTarget ?? 0,
+              passAccuracy: data.team2Stats.passAccuracy ?? 0,
+              fouls: data.team2Stats.fouls ?? 0,
+              offsides: data.team2Stats.offsides ?? 0,
+              saves: data.team2Stats.saves ?? 0,
+            } : null),
+            awayStats: isTeam1ActuallyDbHome ? (data.team2Stats ? {
+              possession: data.team2Stats.possession ?? 50,
+              shots: data.team2Stats.shots ?? 0,
+              shotsOnTarget: data.team2Stats.shotsOnTarget ?? 0,
+              passAccuracy: data.team2Stats.passAccuracy ?? 0,
+              fouls: data.team2Stats.fouls ?? 0,
+              offsides: data.team2Stats.offsides ?? 0,
+              saves: data.team2Stats.saves ?? 0,
+            } : null) : (data.team1Stats ? {
+              possession: data.team1Stats.possession ?? 50,
+              shots: data.team1Stats.shots ?? 0,
+              shotsOnTarget: data.team1Stats.shotsOnTarget ?? 0,
+              passAccuracy: data.team1Stats.passAccuracy ?? 0,
+              fouls: data.team1Stats.fouls ?? 0,
+              offsides: data.team1Stats.offsides ?? 0,
+              saves: data.team1Stats.saves ?? 0,
+            } : null),
             manOfTheMatch: data.manOfTheMatch || null
           };
 
