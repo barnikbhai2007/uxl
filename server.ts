@@ -91,16 +91,17 @@ async function startServer() {
                 1. Identify the TWO TEAM NAMES from the top header or team logos (Left team = "team1", Right team = "team2").
                 2. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
                 3. Extract GOAL SCORERS:
-                   - Look for the list of player names with goal icons and times (like 45', 90'). The list is usually on the right side of the screen.
-                   - VERY IMPORTANT: Do NOT assume a player is on team2 just because they are listed on the right side of the screen. Both teams' scorers are listed in the same timeline.
+                   - Look for the list of player names with goal icons and times (like 45', 90'). The list is usually on the right side of the screen under the team scores.
+                   - VERY IMPORTANT: Both teams' scorers are listed in the same unified timeline/list. DO NOT assume a player is on team2 just because they are on the right side of the screen.
                    - To determine the team ("team1" or "team2") for a scorer, use DEDUCTIVE REASONING:
-                     a) If one team scored 0 goals, then EVERY scorer listed MUST belong to the other team. (e.g. if Left score is 4 and Right score is 0, ALL scorers are "team1").
-                     b) If both teams scored, look at the COLOR of the goal icon next to the player's name. Match the icon color to the team's accent color (Left team usually has one color, Right team another).
+                     a) Match the color of the goal icon next to the player's name with the team's accent color (Left team usually has one color, Right team another).
+                     b) If one team scored 0 goals, then EVERY scorer listed MUST belong to the other team. (e.g. if Left score is 4 and Right score is 0, ALL scorers are "team1").
+                     c) Look closely at the scorers list: it usually reads like "18' [Icon] Hazard GOAL".
                    - For EACH scorer listed, provide:
-                     - "name": Player's name.
+                     - "name": Player's name (e.g., "Hazard", "Hamsik").
                      - "goals": Count how many times this player appears, or count their goal icons. If listed multiple times, combine them or just list them once with multiple times. Default to 1.
                      - "time": The minute(s) they scored.
-                     - "team": ALWAYS "team1" OR "team2".
+                     - "team": ALWAYS STRICTLY "team1" OR "team2".
                 4. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
                    - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
                    - Left-side values = "team1Stats".
@@ -132,6 +133,7 @@ async function startServer() {
 
       const text = response.text() || "{}";
       const resultParsed = JSON.parse(text);
+      console.log("AI Match Analysis Output:", JSON.stringify(resultParsed, null, 2));
       if (resultParsed.error) {
           throw new Error(resultParsed.error);
       }

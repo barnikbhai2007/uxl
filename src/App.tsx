@@ -3724,9 +3724,10 @@ export default function App() {
         }
       });
       await batch.commit();
-      await refreshCache('matches');
+      setSelectedTeam(null);
     } catch(err) {
       console.error("Error resetting player:", err);
+      alert("Failed to reset player matches.");
     }
   };
 
@@ -4094,7 +4095,14 @@ export default function App() {
           
           const parseScorers = (filterFn: (t: string) => boolean) => 
             safeScorers
-              .filter((s:any) => s && s.team && filterFn(s.team))
+              .filter((s:any) => {
+                 let sTeam = s.team;
+                 if (!sTeam) {
+                    if (t1Score > 0 && t2Score === 0) sTeam = 'team1';
+                    else if (t2Score > 0 && t1Score === 0) sTeam = 'team2';
+                 }
+                 return s && sTeam && filterFn(sTeam);
+              })
               .map((s:any) => ({ 
                 playerName: s.name || 'Unknown', 
                 goals: Number(s.goals) || 1, 
