@@ -3586,33 +3586,7 @@ export default function App() {
         );
 
         if (existingMatch) {
-          // Validation logic - Match must be ongoing/scheduled for normal users
-          
-          // 1. Check if match is in the future
-          const today = new Date();
-          today.setHours(0, 0, 0, 0); 
-          const matchDateParsed = new Date(existingMatch.date.replace(/(\d+)(st|nd|rd|th)/, '$1'));
-          matchDateParsed.setHours(0, 0, 0, 0);
-          
-          if (!isAdmin && matchDateParsed > today) {
-             setAiAnalysisResult(`REJECTED: Match in tomorrow. The match is scheduled for ${existingMatch.date}. You cannot upload results before the match date.`);
-             return;
-          }
-
-          // 2. Status check - Match must be ongoing/live for non-admins to upload results
-          const reportableStatuses = ['live', 'ongoing'];
-          const isOngoing = reportableStatuses.includes(existingMatch.status);
-          
-          if (!isOngoing && !isAdmin) {
-             let statusLabel = existingMatch.status;
-             if (statusLabel === 'scheduled') statusLabel = 'Upcoming';
-             if (statusLabel === 'rescheduled') statusLabel = 'Rescheduled';
-             
-             setAiAnalysisResult(`REJECTED: Submissions are restricted to live matches. This match is currently labeled as "${statusLabel}". Please wait until an admin sets the match to "Ongoing" to report your results.`);
-             return;
-          }
-
-          // 3. Prevent overwriting finished results unless admin
+          // Prevent overwriting finished results unless admin
           if (existingMatch.status === 'finished' && !isAdmin) {
             setAiAnalysisResult("REJECTED: Match finalized. This result is already officially recorded. If there is an error, please contact a tournament administrator.");
             return;
