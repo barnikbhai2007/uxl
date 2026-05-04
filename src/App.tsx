@@ -2556,11 +2556,11 @@ const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = 
     let data;
     if (isDoc) {
       const snap = await getDoc(queryRef);
-      if (snap.exists()) data = { id: snap.id, ...snap.data() };
+      if (snap.exists()) data = { id: snap.id, ...(snap.data() as any) };
       else data = null;
     } else {
       const snap = await getDocs(queryRef);
-      data = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      data = snap.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
     }
     
     try {
@@ -3550,51 +3550,68 @@ export default function App() {
       }
 
       // Achievement processing
-      const opponentFcName = aiTeam1.includes(userFcName) || userFcName.includes(aiTeam1) ? data.team2 : data.team1;
-      let opponentReg: Registration | undefined;
+      const opponentAiNameRaw = aiTeam1.includes(userFcName) || userFcName.includes(aiTeam1) ? data.team2 : data.team1;
+      const opponentAiName = normalize(opponentAiNameRaw);
       
+      let opponentReg: Registration | undefined;
       try {
-        const opponentSnap = await getDocs(query(collection(db, 'registrations'), where('fcName', '==', opponentFcName), where('status', '==', 'approved')));
-        opponentReg = opponentSnap.docs[0]?.data() as Registration;
+        const opponentSnap = await getDocs(query(collection(db, 'registrations'), where('fcName', '==', opponentAiNameRaw), where('status', '==', 'approved')));
+        if (!opponentSnap.empty) {
+            opponentReg = opponentSnap.docs[0]?.data() as Registration;
+        }
       } catch (e) {
         console.warn("Could not fetch opponent registration:", e);
       }
-      
-      await checkAndAwardAchievements(data, user!.uid, opponentReg?.userId);
 
-      // Auto-update match with flexible team finding
-      const findTeamFlexible = (aiName: string) => {
-        const normAi = normalize(aiName);
-        // Priority 1: Exact Match
-        let match = teams.find(t => normalize(t.name) === normAi || normalize(t.fcName) === normAi);
-        if (match) return match;
-        
-        // Priority 2: Partial Match
-        match = teams.find(t => normAi.includes(normalize(t.name)) || normalize(t.name).includes(normAi) || 
-                            normAi.includes(normalize(t.fcName)) || normalize(t.fcName).includes(normAi));
-        return match;
-      };
+      // Find user's team
+      const userTeam = teams.find(t => t.id === user!.uid || normalize(t.fcName) === userFcName || normalize(t.name) === userFcName);
+      if (!userTeam) {
+        setAiAnalysisResult(`ERROR: Could not find your team in the active tournament.`);
+        return;
+      }
 
-      const team1 = findTeamFlexible(data.team1);
-      const team2 = findTeamFlexible(data.team2);
+      // Find all matches where userTeam is a participant
+      const userMatches = matches.filter(m => m.homeTeamId === userTeam.id || m.awayTeamId === userTeam.id);
 
-      if (team1 && team2) {
-        // Find existing match
-        const existingMatch = matches.find(m => 
-          (m.homeTeamId === team1.id && m.awayTeamId === team2.id) ||
-          (m.homeTeamId === team2.id && m.awayTeamId === team1.id)
-        );
+      // Rank matching matches
+      let bestMatch: Match | null = null;
+      let bestOpponentTeam: Team | null = null;
 
-        if (existingMatch) {
+      for (const m of userMatches) {
+        const opponentId = m.homeTeamId === userTeam.id ? m.awayTeamId : m.homeTeamId;
+        const oppTeam = teams.find(t => t.id === opponentId);
+        if (!oppTeam) continue;
+
+        const oppNormName = normalize(oppTeam.name);
+        const oppNormFcName = normalize(oppTeam.fcName);
+
+        // Check if AI opponent name matches oppTeam
+        const isMatch = oppNormName === opponentAiName || oppNormFcName === opponentAiName ||
+                        oppNormName.includes(opponentAiName) || opponentAiName.includes(oppNormName) ||
+                        oppNormFcName.includes(opponentAiName) || opponentAiName.includes(oppNormFcName);
+        if (isMatch) {
+            if (!bestMatch || (bestMatch.status === 'finished' && m.status !== 'finished')) {
+                bestMatch = m;
+                bestOpponentTeam = oppTeam;
+            }
+        }
+      }
+
+      if (!bestMatch || !bestOpponentTeam) {
+          setAiAnalysisResult(`ERROR: No active match found for you against "${opponentAiNameRaw}". Make sure the match has been assigned.`);
+          return;
+      }
+
+      const team1 = aiTeam1.includes(userFcName) || userFcName.includes(aiTeam1) ? userTeam : bestOpponentTeam;
+      const team2 = aiTeam1.includes(userFcName) || userFcName.includes(aiTeam1) ? bestOpponentTeam : userTeam;
+
+      const existingMatch = bestMatch;
+
+      if (existingMatch) {
           // Prevent overwriting finished results unless admin
           if (existingMatch.status === 'finished' && !isAdmin) {
             setAiAnalysisResult("REJECTED: Match finalized. This result is already officially recorded. If there is an error, please contact a tournament administrator.");
             return;
-          }
-
-          // Admin check (just for verification/logging)
-          if (isAdmin && !isOngoing) {
-             console.log("Admin bypassing status restriction for upload...");
           }
 
           // 3. Winner check
@@ -3675,12 +3692,7 @@ export default function App() {
           await refreshCache('matches');
 
           setAiAnalysisResult("SUCCESS: Match result verified and updated!");
-        } else {
-          setAiAnalysisResult("ERROR: No scheduled match found between these teams.");
         }
-      } else {
-        setAiAnalysisResult("ERROR: Could not identify one or both teams from the database.");
-      }
 
     } catch (error) {
       console.error("Vision AI Error:", error);
