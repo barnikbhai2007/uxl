@@ -672,13 +672,15 @@ const NEWS_POSTS: any[] = [];
                     <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
                   ) : isEditingMode && isAdmin ? (
                     <div className="flex items-center gap-2">
-                      <input type="number" defaultValue={match.homeScore ?? 0} onChange={(e) => {
-                          match.homeScore = parseInt(e.target.value);
+                      <input type="number" min="0" defaultValue={match.homeScore ?? 0} onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          match.homeScore = isNaN(val) ? 0 : val;
                           if(updateMatch) updateMatch(match);
                       }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
                       <span className="text-2xl text-white/20">VS</span>
-                      <input type="number" defaultValue={match.awayScore ?? 0} onChange={(e) => {
-                          match.awayScore = parseInt(e.target.value);
+                      <input type="number" min="0" defaultValue={match.awayScore ?? 0} onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          match.awayScore = isNaN(val) ? 0 : val;
                           if(updateMatch) updateMatch(match);
                       }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
                     </div>
@@ -3724,6 +3726,8 @@ export default function App() {
         }
       });
       await batch.commit();
+      localStorage.removeItem('cache_matches');
+      await refreshCache('matches');
       setSelectedTeam(null);
     } catch(err) {
       console.error("Error resetting player:", err);
@@ -3800,9 +3804,21 @@ export default function App() {
       
       await batch.commit();
 
+      if (['matches', 'table', 'all'].includes(type)) {
+        localStorage.removeItem('cache_matches');
+        await refreshCache('matches');
+      }
+
       if (type === 'bracket' || type === 'all') {
+        localStorage.removeItem('cache_bracket');
         await new Promise(resolve => setTimeout(resolve, 300));
         await seedBracket();
+        await refreshCache('bracket');
+      }
+      
+      if (['registrations', 'all'].includes(type)) {
+        localStorage.removeItem('cache_teams');
+        await refreshCache('teams');
       }
       
       alert(`${type.charAt(0).toUpperCase() + type.slice(1)} reset successful!`);
@@ -4080,20 +4096,20 @@ export default function App() {
           
           const t1Score = Number(data.team1Score ?? data.homeScore ?? 0);
           const t2Score = Number(data.team2Score ?? data.awayScore ?? 0);
-          const safeScorers = data.scorers || [];
+          const safeScorers = data.scorers || data.goalScorers || data.goal_scorers || data.goalScorer || [];
           
-          const isT1 = (t: string) => {
+          const isT1 = (t?: string) => {
             if (!t) return false;
             const normT = normalize(t);
             return normT === 'team1' || normT === normalize(data.team1);
           };
-          const isT2 = (t: string) => {
+          const isT2 = (t?: string) => {
             if (!t) return false;
             const normT = normalize(t);
             return normT === 'team2' || normT === normalize(data.team2);
           };
           
-          const parseScorers = (filterFn: (t: string) => boolean) => 
+          const parseScorers = (filterFn: (t?: string) => boolean) => 
             safeScorers
               .filter((s:any) => {
                  let sTeam = s.team;
@@ -4101,10 +4117,10 @@ export default function App() {
                     if (t1Score > 0 && t2Score === 0) sTeam = 'team1';
                     else if (t2Score > 0 && t1Score === 0) sTeam = 'team2';
                  }
-                 return s && sTeam && filterFn(sTeam);
+                 return s && (filterFn(sTeam) || filterFn === undefined);
               })
               .map((s:any) => ({ 
-                playerName: s.name || 'Unknown', 
+                playerName: s.name || s.playerName || 'Unknown', 
                 goals: Number(s.goals) || 1, 
                 time: s.time || null 
               }));
