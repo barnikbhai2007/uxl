@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
-import imageCompression from 'browser-image-compression';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   DndContext, 
@@ -837,7 +836,23 @@ const NEWS_POSTS: any[] = [];
               </div>
               <div className="text-center space-y-1 border-l border-white/5">
                 <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
-                <div className="text-xs md:text-sm font-bold text-blue-400">#{match.matchNumber}</div>
+                <div className="flex items-center justify-center gap-2">
+                  {isEditingMode && isAdmin ? (
+                    <input 
+                      type="number" 
+                      min="1" 
+                      defaultValue={match.matchNumber} 
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        match.matchNumber = isNaN(val) ? 1 : val;
+                        if (updateMatch) updateMatch(match);
+                      }}
+                      className="w-16 bg-black/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-blue-400 outline-none focus:border-blue-500 font-bold"
+                    />
+                  ) : (
+                    <span className="text-xs md:text-sm font-bold text-blue-400">#{match.matchNumber}</span>
+                  )}
+                </div>
               </div>
             </div>
 
@@ -920,18 +935,15 @@ const NEWS_POSTS: any[] = [];
 
       setIsCompressing(true);
       try {
-        const options = {
-          maxSizeMB: 0.1,
-          maxWidthOrHeight: 400,
-          useWebWorker: true,
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData({ ...formData, logoUrl: reader.result as string });
+          setIsCompressing(false);
         };
-        const compressedFile = await imageCompression(file, options);
-        const base64 = await imageCompression.getDataUrlFromFile(compressedFile);
-        setFormData({ ...formData, logoUrl: base64 });
+        reader.readAsDataURL(file);
       } catch (error) {
-        console.error("Compression error:", error);
+        console.error("File read error:", error);
         alert("Failed to process image. Please try another one.");
-      } finally {
         setIsCompressing(false);
       }
     };
@@ -1283,17 +1295,14 @@ const NEWS_POSTS: any[] = [];
 
       setIsCompressing(true);
       try {
-        const options = {
-          maxSizeMB: 0.1, // Target 100KB to fit comfortably in Firestore
-          maxWidthOrHeight: 400,
-          useWebWorker: true,
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setFormData({ ...formData, logoUrl: reader.result as string });
+          setIsCompressing(false);
         };
-        const compressedFile = await imageCompression(file, options);
-        const base64 = await imageCompression.getDataUrlFromFile(compressedFile);
-        setFormData({ ...formData, logoUrl: base64 });
+        reader.readAsDataURL(file);
       } catch (error) {
-        console.error("Compression error:", error);
-      } finally {
+        console.error("File read error:", error);
         setIsCompressing(false);
       }
     };
@@ -3897,18 +3906,12 @@ export default function App() {
 
   const compressImage = (file: File): Promise<string> => {
     return new Promise((resolve) => {
-      const img = new Image();
-      img.onload = () => {
-        const canvas = document.createElement('canvas');
-        canvas.width = 585;
-        canvas.height = Math.round(585 * (img.height / img.width));
-        const ctx = canvas.getContext('2d')!;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const compressed = canvas.toDataURL('image/jpeg', 0.6);
-        resolve(compressed.split(',')[1]);
-        URL.revokeObjectURL(img.src);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = (reader.result as string).split(',')[1];
+        resolve(base64String);
       };
-      img.src = URL.createObjectURL(file);
+      reader.readAsDataURL(file);
     });
   };
 
