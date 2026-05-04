@@ -9,8 +9,8 @@ import crypto from "crypto";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://ygrmdlbyfrbqhzvvfmii.supabase.co';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_taKejserySOg3UGPlk0h-w_7tWsZDiN';
+const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY as string;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function getAiConfig() {
@@ -344,6 +344,102 @@ async function startServer() {
       res.status(200).json({ success: false, error: "Internal server error", details: error.message });
     }
   });
+
+  app.post("/api/generate-news", async (req, res) => {
+    try {
+      const { matchData, leagueTable, trigger } = req.body;
+      const { key, model } = await getAiConfig();
+      if (!key) throw new Error("GROQ_API_KEY is not configured.");
+
+      const groq = new Groq({ apiKey: key });
+
+      const response = await groq.chat.completions.create({
+        model: model,
+        messages: [{
+          role: "user",
+          content: `You are a spicy, funny, dramatic football journalist for a FC Mobile tournament called UXL.
+          Write a short news article (max 150 words).
+          
+          Match Data: ${JSON.stringify(matchData)}
+          League Table: ${JSON.stringify(leagueTable)}
+          Trigger: ${trigger}
+          
+          Randomly vary your style each time — choose ONE of these angles:
+          - 🔥 Spicy/dramatic match reaction
+          - 😂 Funny trolling of the losing team
+          - 📊 Serious league table analysis
+          - 🏆 Bold prediction for upcoming matches
+          - 📅 Matchday history/recap
+          - 📈 Form guide and momentum discussion
+          
+          Use football journalism language. Add emojis. Be creative and unpredictable.
+          
+          Return JSON only: { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }`
+        }],
+        response_format: { type: "json_object" }
+      });
+
+      const article = JSON.parse(response.choices[0]?.message?.content || "{}");
+      
+      await supabase.from('news').insert({
+        title: article.title,
+        content: article.content,
+        category: article.category,
+        triggered_by: trigger,
+        matchday: matchData?.matchday || null
+      });
+
+      res.json({ success: true, article });
+    } catch (e: any) {
+      console.error("[News] Generation Error:", e);
+      res.status(500).json({ success: false, message: e.message });
+    }
+  });
+
+  function scheduleNewsGeneration() {
+    setInterval(async () => {
+      try {
+        // Get current IST hour
+        const istHour = new Date(
+          new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+        ).getHours();
+
+        // OFF during 2am to 1pm IST
+        if (istHour >= 2 && istHour < 13) {
+          console.log(`[News] Sleeping — IST hour ${istHour}, skipping`);
+          return;
+        }
+
+        // ACTIVE 1pm to 2am IST
+        const { data: recentMatches } = await supabase
+          .from('documents')
+          .select('data')
+          .eq('collection', 'matches')
+          .eq('data->>status', 'finished')
+          .order('id', { ascending: false }) // Fallback since created_at is not natively mapped here, though matches usually IDs generated sequentially won't work well without a real timestamp, we'll order by data->>timestamp if possible, but let's stick to supabase order or fetch all. Wait, just ID assuming monotonic or random uuid. We could use data->>matchNumber.
+          .limit(5);
+
+        // A quick hack since documents might not sort nicely:
+        const { data: allMatches } = await supabase.from('documents').select('data').eq('collection', 'matches').eq('data->>status', 'finished');
+        let latestMatches = (allMatches || []).map((row: any) => row.data).sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0)).slice(0, 5);
+
+        await fetch(`http://localhost:${PORT}/api/generate-news`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchData: latestMatches?.[0] || null,
+            leagueTable: null,
+            trigger: 'auto-timer'
+          })
+        });
+        console.log(`[News] Auto article generated at IST hour ${istHour}`);
+      } catch (e) {
+        console.error('[News] Auto generation failed:', e);
+      }
+    }, 2 * 60 * 60 * 1000); // every 2 hours
+  }
+
+  scheduleNewsGeneration();
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {

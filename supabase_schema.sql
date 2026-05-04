@@ -8,22 +8,30 @@ CREATE TABLE public.documents (
   PRIMARY KEY (collection, id)
 );
 
--- Enable RLS and allow all (like Firestore free tier during testing)
+-- Enable RLS to prevent abuse
 ALTER TABLE public.documents ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Allow anonymous read" ON public.documents
   FOR SELECT USING (true);
 
-CREATE POLICY "Allow anonymous insert" ON public.documents
-  FOR INSERT WITH CHECK (true);
+CREATE POLICY "Allow authenticated insert" ON public.documents
+  FOR INSERT TO authenticated WITH CHECK (true);
 
-CREATE POLICY "Allow anonymous update" ON public.documents
-  FOR UPDATE USING (true);
+CREATE POLICY "Allow authenticated update" ON public.documents
+  FOR UPDATE TO authenticated USING (true);
 
-CREATE POLICY "Allow anonymous delete" ON public.documents
-  FOR DELETE USING (true);
+CREATE POLICY "Allow authenticated delete" ON public.documents
+  FOR DELETE TO authenticated USING (true);
 
--- Index for collection querying
+CREATE TABLE news (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  title TEXT,
+  content TEXT,
+  category TEXT,
+  matchday INT,
+  created_at TIMESTAMP DEFAULT now(),
+  triggered_by TEXT
+);
 CREATE INDEX idx_documents_collection ON public.documents(collection);
 
 -- Enable Realtime for the documents table

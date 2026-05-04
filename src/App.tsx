@@ -22,8 +22,8 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './firebase';
-import { onAuthStateChanged, User } from './supabase_mock';
+import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './supabase_mock';
+import { onAuthStateChanged, User, supabase } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ACHIEVEMENTS } from './achievements';
 import { evaluateAchievements } from './utils/achievementEngine';
@@ -259,6 +259,23 @@ const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[
   return Object.values(statsMap).sort((a, b) => b.cleanSheets - a.cleanSheets);
 };
 
+interface MotmStats {
+  playerName: string;
+  awards: number;
+}
+
+const calculateMotmLeaders = (matches: Match[]): MotmStats[] => {
+  const tallies: Record<string, number> = {};
+  matches.forEach(m => {
+    if (m.status === 'finished' && m.manOfTheMatch) {
+      tallies[m.manOfTheMatch] = (tallies[m.manOfTheMatch] || 0) + 1;
+    }
+  });
+  return Object.entries(tallies)
+    .map(([playerName, awards]) => ({ playerName, awards }))
+    .sort((a, b) => b.awards - a.awards);
+};
+
 const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer }: { team: Team, matches: Match[], teams: Team[], onClose: () => void, isAdmin?: boolean, resetPlayer?: (id: string) => void }) => {
   const [confirmReset, setConfirmReset] = useState(false);
   const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id);
@@ -371,7 +388,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
               return (
                                 <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
                   <div className="flex items-center gap-3">
-                    <div className="bg-blue-600/20 text-blue-400 text-[8px] font-black px-1.5 py-0.5 rounded border border-blue-500/20">M#{m.matchNumber}</div>
+                    <EditableMatchBadge match={m} isAdmin={isAdmin} className="bg-blue-600/20 px-1.5 py-0.5 rounded border border-blue-500/20" textClassName="text-blue-400 text-[8px] font-black" />
                     <span className="text-xs font-bold uppercase">{opp?.name || 'TBD'}</span>
                   </div>
                   <span className="text-[10px] uppercase font-black text-white/30 tracking-widest">{m.date}</span>
@@ -415,6 +432,52 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
 };
 
 const NEWS_POSTS: any[] = [];
+
+const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClassName }: { match: Match, isAdmin?: boolean, onUpdateMatch?: (m: Match) => void, className?: string, textClassName?: string }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [val, setVal] = useState(match.matchNumber?.toString() || '');
+
+  return (
+    <div 
+      onClick={(e) => {
+        if (isAdmin) {
+          e.stopPropagation();
+          setIsEditing(true);
+          setVal(match.matchNumber?.toString() || '');
+        }
+      }}
+      className={`${className || ''} ${isAdmin ? 'cursor-pointer hover:scale-110 transition-all' : ''}`}
+    >
+      {isEditing ? (
+        <input 
+          autoFocus
+          className={`bg-transparent text-center outline-none p-0 m-0 w-8 ${textClassName || ''}`}
+          value={val}
+          onChange={e => setVal(e.target.value)}
+          onBlur={(e) => {
+            setIsEditing(false);
+            const num = parseInt(val);
+            if (!isNaN(num) && num !== match.matchNumber) {
+              if (onUpdateMatch) {
+                onUpdateMatch({ ...match, matchNumber: num });
+              } else {
+                import('./supabase_mock').then(({ doc, updateDoc, db }) => {
+                  updateDoc(doc(db, 'matches', match.id), { matchNumber: num }).catch(console.error);
+                });
+                match.matchNumber = num;
+              }
+            } else {
+              setVal(match.matchNumber?.toString() || '');
+            }
+          }}
+          onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur(); }}
+        />
+      ) : (
+        <span className={textClassName || ''}>M# {match.matchNumber}</span>
+      )}
+    </div>
+  );
+};
 
   const MatchCard = ({ match, teams, overrideStatus, onClick, isEditingMode, isAdmin, onUpdateMatch }: { match: Match, teams: Team[], overrideStatus?: string, onClick: () => void, isEditingMode?: boolean, isAdmin?: boolean, onUpdateMatch?: (updatedMatch: Match) => void, key?: any }) => {
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
@@ -488,9 +551,13 @@ const NEWS_POSTS: any[] = [];
           </div>
 
           <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
-            <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-blue-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-white shadow-lg">
-              M# {match.matchNumber}
-            </div>
+            <EditableMatchBadge 
+              match={match} 
+              isAdmin={isAdmin} 
+              onUpdateMatch={onUpdateMatch}
+              className="absolute -top-2 left-1/2 -translate-x-1/2 bg-blue-600 px-2 py-0.5 rounded shadow-lg"
+              textClassName="text-[8px] font-black text-white uppercase tracking-widest placeholder-white/50"
+            />
             <div className="flex items-center gap-4">
               <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
                 {match.homeScore ?? '-'}
@@ -2862,6 +2929,75 @@ const parseTourneyDate = (dStr: string) => {
   return new Date(cleanStr);
 };
 
+const NewsFeed = ({ articles }: { articles: any[] }) => {
+  if (!articles || articles.length === 0) return null;
+
+  const getCategoryColor = (category: string) => {
+    switch(category) {
+      case 'SPICY': return 'bg-red-500/20 text-red-400 border-red-500/30';
+      case 'BANTER': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+      case 'ANALYSIS': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'PREDICTION': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
+      case 'MATCHDAY': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case 'FORM': return 'bg-green-500/20 text-green-400 border-green-500/30';
+      default: return 'bg-white/10 text-white/50 border-white/20';
+    }
+  };
+
+  const getCategoryIcon = (category: string) => {
+    switch(category) {
+      case 'SPICY': return '🔥';
+      case 'BANTER': return '😂';
+      case 'ANALYSIS': return '📊';
+      case 'PREDICTION': return '🏆';
+      case 'MATCHDAY': return '📅';
+      case 'FORM': return '📈';
+      default: return '🗞️';
+    }
+  };
+
+  const getTimeAgo = (dateStr: string) => {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diffHours = Math.floor((now.getTime() - d.getTime()) / (1000 * 60 * 60));
+    if (diffHours === 0) return 'Just now';
+    if (diffHours === 1) return '1 hr ago';
+    return `${diffHours} hrs ago`;
+  };
+
+  return (
+    <div className="w-full space-y-4 mb-12">
+      <div className="flex items-center gap-3 mb-6">
+        <Sparkles className="w-5 h-5 text-blue-400" />
+        <h2 className="font-display font-black text-xl italic uppercase tracking-widest text-white">UXL News Network</h2>
+      </div>
+      <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
+        {articles.map((article: any) => (
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            key={article.id} 
+            className="flex-none w-80 md:w-96 bg-black/40 border border-white/10 rounded-2xl p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none group-hover:bg-blue-500/10 transition-colors" />
+            <div className="flex items-start justify-between mb-3 relative z-10">
+              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
+                <span>{getCategoryIcon(article.category)}</span> {article.category}
+              </span>
+              <span className="text-[10px] uppercase font-black tracking-widest text-white/30">
+                {article.created_at ? getTimeAgo(article.created_at) : 'Just now'}
+              </span>
+            </div>
+            
+            <h3 className="text-lg font-display font-black leading-tight text-white mb-2 relative z-10">{article.title}</h3>
+            <p className="text-sm text-white/60 leading-relaxed font-medium relative z-10">{article.content}</p>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   const [hasQuotaError, setHasQuotaError] = useState(false);
 
@@ -2919,6 +3055,35 @@ export default function App() {
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
+  const [newsFeed, setNewsFeed] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchNews = async () => {
+      const { data } = await supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (data) setNewsFeed(data);
+    };
+
+    fetchNews();
+
+    const channel = supabase
+      .channel('public:news')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
+        if (payload.eventType === 'INSERT') {
+          setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
+        } else {
+           fetchNews();
+        }
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const teams = useMemo(() => {
@@ -3041,6 +3206,7 @@ export default function App() {
   const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
   const stats = useMemo(() => calculateStats(teams, matches).slice(0, 10), [teams, matches]);
   const cleanSheets = useMemo(() => calculateCleanSheets(teams, matches).slice(0, 10), [teams, matches]);
+  const motmLeaders = useMemo(() => calculateMotmLeaders(matches).slice(0, 5), [matches]);
   const upcomingRef = React.useRef<HTMLDivElement>(null);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -3601,6 +3767,18 @@ export default function App() {
       setDbMatches(prev => prev.map(m => m.id === match.id ? { ...m, ...cleanedData } as Match : m));
       await updateDoc(doc(db, 'matches', match.id), cleanedData);
       await refreshCache('matches');
+      
+      if (cleanedData.status === 'finished') {
+        fetch('/api/generate-news', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            matchData: cleanedData,
+            leagueTable: null, // Could map team names to their standings here if we wanted
+            trigger: 'match-updated'
+          })
+        }).catch(e => console.error("News trigger failed:", e));
+      }
     } catch (error) {
       console.error("Error updating match:", error);
       alert("Failed to update match.");
@@ -4178,6 +4356,18 @@ export default function App() {
           }
           await updateDoc(matchRef, cleanedPayload);
           await refreshCache('matches');
+
+          if (cleanedPayload.status === 'finished') {
+            fetch('/api/generate-news', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                matchData: cleanedPayload,
+                leagueTable: null,
+                trigger: 'match-updated'
+              })
+            }).catch(e => console.error("News trigger failed:", e));
+          }
 
           setAiAnalysisResult("SUCCESS: Match result verified and updated!");
         }
@@ -4971,16 +5161,16 @@ export default function App() {
                                        <div className={`w-14 items-center justify-center flex py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
                                          {isHome ? 'Home' : 'Away'}
                                        </div>
-                                       <div className="flex-1">
-                                         <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
-                                         <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
-                                           <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                                             <span className="text-blue-400 font-bold">M# {m.matchNumber}</span>
-                                             <div className="w-[1px] h-3 bg-white/10 mx-1" />
-                                             <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                                             <span className="text-blue-300">{m.date || 'TBD'}</span>
-                                           </div>
-                                         </div>
+                                      <div className="flex-1">
+                                        <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
+                                        <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
+                                          <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                            <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-blue-400 font-bold" />
+                                            <div className="w-[1px] h-3 bg-white/10 mx-1" />
+                                            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                            <span className="text-blue-300">{m.date || 'TBD'}</span>
+                                          </div>
+                                        </div>
                                        </div>
                                      </div>
                                      <div className="relative z-10 md:w-auto w-full">
@@ -5081,6 +5271,8 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
+              <NewsFeed articles={newsFeed} />
+              
               {/* Top Scorers Section */}
               <div className="flex items-center gap-4 mb-4 mt-2">
                 <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
@@ -5237,6 +5429,42 @@ export default function App() {
                     )}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Man of the Match Leaders */}
+              <div className="flex items-center gap-4 mb-4 mt-8">
+                <div className="p-3 bg-yellow-500/20 rounded-2xl border border-yellow-500/30">
+                  <Award className="w-6 h-6 text-yellow-400" />
+                </div>
+                <div>
+                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Man of the Match Leaders</h2>
+                  <p className="text-white/40 text-xs uppercase tracking-widest mt-1">Top Performers</p>
+                </div>
+              </div>
+
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-yellow-500/10 rounded-bl-full pointer-events-none" />
+                
+                <div className="space-y-4 relative z-10 max-w-2xl">
+                  {motmLeaders.length > 0 ? (
+                    motmLeaders.map((leader, index) => (
+                      <div key={leader.playerName} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
+                        <div className="flex items-center gap-4">
+                          <span className="text-lg font-bold text-white/40">{index + 1}.</span>
+                          <span className="text-base font-black uppercase tracking-widest text-white">{leader.playerName}</span>
+                        </div>
+                        <div className="flex items-center gap-2 sm:ml-auto">
+                          <span className="text-yellow-400 font-bold">{leader.awards} award{leader.awards !== 1 ? 's' : ''}</span>
+                          <TrophyIcon className="w-4 h-4 text-yellow-500" />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <p className="text-white/40 uppercase font-black text-xs tracking-widest">No MOTM awards recorded yet</p>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Team Statistics Grid */}
