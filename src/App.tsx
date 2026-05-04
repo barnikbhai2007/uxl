@@ -3643,11 +3643,15 @@ export default function App() {
           const t2Score = Number(data.team2Score ?? data.awayScore ?? 0);
           const safeScorers = data.scorers || [];
           
-          const isT1 = (t: string) => t && (normalize(t) === normalize(data.team1) || normalize(t) === 'team 1' || normalize(t) === 'team1');
-          const isT2 = (t: string) => t && (normalize(t) === normalize(data.team2) || normalize(t) === 'team 2' || normalize(t) === 'team2');
+          const isT1 = (t: string) => t && (normalize(t) === normalize(data.team1) || normalize(data.team1).includes(normalize(t)) || normalize(t).includes(normalize(data.team1)) || normalize(t) === 'team 1' || normalize(t) === 'team1');
+          const isT2 = (t: string) => t && (normalize(t) === normalize(data.team2) || normalize(data.team2).includes(normalize(t)) || normalize(t).includes(normalize(data.team2)) || normalize(t) === 'team 2' || normalize(t) === 'team2');
+          
           const parseScorers = (filterFn: (t: string) => boolean) => 
             safeScorers
-              .filter((s:any) => filterFn(s.team))
+              .filter((s:any) => {
+                 if (!s.team) return false;
+                 return filterFn(s.team);
+              })
               .map((s:any) => ({ playerName: s.name || 'Unknown', goals: Number(s.goals) || 1, time: s.time || null }));
 
           const buildStats = (s: any) => s ? {
