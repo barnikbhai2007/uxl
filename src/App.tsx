@@ -3152,9 +3152,10 @@ export default function App() {
     return result;
   };
 
-  const handleAddNewMatch = async (defaultDate?: string) => {
+
+  const handleAddNewFixture = async (day?: string) => {
     if (!isAdmin) return;
-    const date = defaultDate ?? prompt("Enter match date (YYYY-MM-DD or TBD):", "TBD");
+    const date = prompt("Enter match date (YYYY-MM-DD or TBD):", day || "TBD");
     if (date === null) return;
     
     try {
@@ -3162,41 +3163,19 @@ export default function App() {
       const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
       const newMatchNumber = maxMatchNum + 1;
       
+      const dayKey = day || date;
       const newMatch: Match = {
         id: matchId,
         matchNumber: newMatchNumber,
         date: date,
-        status: 'scheduled',
+        status: (matchLabels[dayKey] as 'scheduled' | 'live' | 'finished' | 'rescheduled') || 'scheduled',
         homeTeamId: '',
         awayTeamId: '',
       };
       
       await setDoc(doc(db, 'matches', matchId), newMatch);
-      // Force refresh if possible or just inform user to refresh
-      window.location.reload(); 
-    } catch(err) {
-      console.error("Error adding match:", err);
-      alert('Error adding new fixture.');
-    }
-  };
-
-  const handleAddNewFixture = async (day: string) => {
-    if (!isAdmin) return;
-    try {
-      const matchId = `match-${Math.random().toString(36).substring(7)}`;
-      const maxMatchNum = matches.reduce((max, m) => Math.max(max, m.matchNumber || 0), 0);
-      const newMatchNumber = maxMatchNum + 1;
-      
-      const newMatch: Match = {
-        id: matchId,
-        matchNumber: newMatchNumber,
-        date: day,
-        status: (matchLabels[day] as 'scheduled' | 'live' | 'finished' | 'rescheduled') || 'scheduled',
-        homeTeamId: '',
-        awayTeamId: '',
-      };
-      
-      await setDoc(doc(db, 'matches', matchId), newMatch);
+      // Update state immediately for fast UI feedback
+      setDbMatches(prev => [...prev, newMatch]);
     } catch(err) {
       console.error("Error adding match:", err);
       alert('Error adding new fixture.');
@@ -5000,7 +4979,7 @@ export default function App() {
                       </span>
                     </h2>
                     {isAdmin && isEditingMode && (
-                      <button onClick={() => handleAddNewMatch()} className="ml-4 text-sm bg-blue-600 text-white px-3 py-1 rounded-full uppercase hover:bg-blue-700 transition-all">Add New Match</button>
+                      <button onClick={() => handleAddNewFixture()} className="ml-4 text-sm bg-blue-600 text-white px-3 py-1 rounded-full uppercase hover:bg-blue-700 transition-all">Add New Match</button>
                     )}
                     <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
