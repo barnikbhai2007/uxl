@@ -350,9 +350,9 @@ const TeamProfileModal = ({ team, matches, teams, onClose }: { team: Team, match
             {upcomingMatches.length > 0 ? upcomingMatches.slice(0, 3).map(m => {
               const opp = m.homeTeamId === team.id ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
               return (
-                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
                   <div className="flex items-center gap-3">
-                    <Calendar className="w-4 h-4 text-blue-400/50" />
+                    <div className="bg-blue-600/20 text-blue-400 text-[8px] font-black px-1.5 py-0.5 rounded border border-blue-500/20">M#{m.matchNumber}</div>
                     <span className="text-xs font-bold uppercase">{opp?.name || 'TBD'}</span>
                   </div>
                   <span className="text-[10px] uppercase font-black text-white/30 tracking-widest">{m.date}</span>
@@ -456,7 +456,7 @@ const NEWS_POSTS: any[] = [];
         onClick={onClick}
         className="bg-white/5 border border-white/10 rounded-3xl p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-visible backdrop-blur-sm"
       >
-        <div className="absolute top-0 right-0 p-4 opacity-[0.03] pointer-events-none select-none">
+        <div className="absolute top-0 right-0 p-4 opacity-[0.08] pointer-events-none select-none">
            <span className="text-6xl font-black italic text-white tracking-tighter">
              {match.matchNumber}
            </span>
@@ -469,6 +469,9 @@ const NEWS_POSTS: any[] = [];
           </div>
 
           <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
+            <div className="absolute -top-2 left-1/2 -translate-x-1/2 bg-blue-600 px-2 py-0.5 rounded text-[8px] font-black uppercase tracking-widest text-white shadow-lg">
+              M# {match.matchNumber}
+            </div>
             <div className="flex items-center gap-4">
               <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
                 {match.awayScore ?? '-'}
@@ -4419,8 +4422,22 @@ export default function App() {
     const sortedDays = Object.keys(grouped).sort((a, b) => {
        if (a === todayIST) return -1;
        if (b === todayIST) return 1;
-       // Fallback to chronological if not today
-       return new Date(a).getTime() - new Date(b).getTime();
+       
+       // Improved date parsing for '4th May 2026' format
+       const parseDate = (dStr: string) => {
+         if (!dStr || dStr === 'TBD') return new Date(0);
+         // Remove st, nd, rd, th suffixes
+         const cleanStr = dStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
+         return new Date(cleanStr);
+       };
+
+       const timeA = parseDate(a).getTime();
+       const timeB = parseDate(b).getTime();
+       
+       if (isNaN(timeA) || isNaN(timeB)) {
+         return a.localeCompare(b);
+       }
+       return timeA - timeB;
     });
 
     const finalGrouped: Record<string, Match[]> = {};
@@ -4432,30 +4449,16 @@ export default function App() {
   }, [matches, searchTerm, teams]);
 
   const firstUpcomingDay = useMemo(() => {
+    const parseDate = (dStr: string) => {
+      if (!dStr || dStr === 'TBD') return new Date(0);
+      const cleanStr = dStr.replace(/(\d+)(st|nd|rd|th)/, '$1');
+      return new Date(cleanStr);
+    };
+
     const days = Object.keys(matchesByDay).sort((a, b) => {
-      if (a === b) return 0;
-      if (a === '31st March 2026') return -1;
-      if (b === '31st March 2026') return 1;
-      
-      if (a === '30th March 2026') return -1;
-      if (b === '30th March 2026') return 1;
-      
-      if (a === '27th March 2026') return -1;
-      if (b === '27th March 2026') return 1;
-      
-      if (a === '28th March 2026') return -1;
-      if (b === '28th March 2026') return 1;
-      
-      if (a === '29th March 2026') return -1;
-      if (b === '29th March 2026') return 1;
-      
-      const isAprilA = a.includes('April');
-      const isAprilB = b.includes('April');
-      if (isAprilA && !isAprilB) return 1;
-      if (!isAprilA && isAprilB) return -1;
-      const dayA = parseInt(a);
-      const dayB = parseInt(b);
-      return dayA - dayB;
+      const timeA = parseDate(a).getTime();
+      const timeB = parseDate(b).getTime();
+      return timeA - timeB;
     });
     return days.find(day => matchesByDay[day].some(m => m.status !== 'finished'));
   }, [matchesByDay]);
@@ -4791,7 +4794,7 @@ export default function App() {
                                    <p className="text-white/40">No upcoming matches at the moment.</p>
                                 </div>
                              ) : (
-                               myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).sort((a, b) => (a.matchday || 0) - (b.matchday || 0)).slice(0, 5).map(m => {
+                               myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0)).slice(0, 15).map(m => {
                                  const isHome = m.homeTeamId === myRegistration.id;
                                  const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
                                  const opponent = teams.find(t => t.id === opponentId);
@@ -4808,6 +4811,8 @@ export default function App() {
                                          <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
                                          <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
                                            <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                             <span className="text-blue-400 font-bold">M# {m.matchNumber}</span>
+                                             <div className="w-[1px] h-3 bg-white/10 mx-1" />
                                              <Calendar className="w-3.5 h-3.5 text-blue-400" />
                                              <span className="text-blue-300">{m.date || 'TBD'}</span>
                                            </div>
