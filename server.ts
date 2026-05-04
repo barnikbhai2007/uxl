@@ -21,14 +21,13 @@ async function getAiConfig() {
   };
 }
 
-async function startServer() {
-  const app = express();
-  const PORT = process.env.PORT || 3000;
+const app = express();
+const PORT = process.env.PORT || 3000;
 
-  // IMPORTANT: Configure CORS to allow your Vercel frontend URL
-  app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
-  
-  app.use(express.json({ limit: '10mb' }));
+// IMPORTANT: Configure CORS to allow your Vercel frontend URL
+app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
+
+app.use(express.json({ limit: '10mb' }));
 
   // AI Endpoint for Testing Connection
   app.get("/api/test-ai", async (req, res) => {
@@ -396,50 +395,42 @@ async function startServer() {
     }
   });
 
-  function scheduleNewsGeneration() {
-    setInterval(async () => {
-      try {
-        // Get current IST hour
-        const istHour = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-        ).getHours();
+  app.get("/api/cron-news", async (req, res) => {
+    const istHour = new Date(
+      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+    ).getHours();
 
-        // OFF during 2am to 1pm IST
-        if (istHour >= 2 && istHour < 13) {
-          console.log(`[News] Sleeping — IST hour ${istHour}, skipping`);
-          return;
-        }
+    if (istHour >= 2 && istHour < 13) {
+      return res.json({ skipped: true, reason: "Sleeping hours IST" });
+    }
 
-        // ACTIVE 1pm to 2am IST
-        const { data: recentMatches } = await supabase
-          .from('documents')
-          .select('data')
-          .eq('collection', 'matches')
-          .eq('data->>status', 'finished')
-          .order('id', { ascending: false }) // Fallback since created_at is not natively mapped here, though matches usually IDs generated sequentially won't work well without a real timestamp, we'll order by data->>timestamp if possible, but let's stick to supabase order or fetch all. Wait, just ID assuming monotonic or random uuid. We could use data->>matchNumber.
-          .limit(5);
+    // fetch recent matches and generate news
+    const { data: allMatches } = await supabase
+      .from('documents')
+      .select('data')
+      .eq('collection', 'matches')
+      .eq('data->>status', 'finished');
 
-        // A quick hack since documents might not sort nicely:
-        const { data: allMatches } = await supabase.from('documents').select('data').eq('collection', 'matches').eq('data->>status', 'finished');
-        let latestMatches = (allMatches || []).map((row: any) => row.data).sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0)).slice(0, 5);
+    const latestMatch = (allMatches || [])
+      .map((r: any) => r.data)
+      .sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
 
-        await fetch(`http://localhost:${PORT}/api/generate-news`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            matchData: latestMatches?.[0] || null,
-            leagueTable: null,
-            trigger: 'auto-timer'
-          })
-        });
-        console.log(`[News] Auto article generated at IST hour ${istHour}`);
-      } catch (e) {
-        console.error('[News] Auto generation failed:', e);
-      }
-    }, 2 * 60 * 60 * 1000); // every 2 hours
-  }
+    // call generate-news internally
+    const { key, model } = await getAiConfig();
+    if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
-  scheduleNewsGeneration();
+    const groq = new Groq({ apiKey: key });
+    const response = await groq.chat.completions.create({
+      model: model,
+      messages: [{ role: "user", content: `You are a spicy football journalist for UXL tournament. Write a 150 word news article. Match: ${JSON.stringify(latestMatch)}. Return JSON: { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }` }],
+      response_format: { type: "json_object" }
+    });
+
+    const article = JSON.parse(response.choices[0]?.message?.content || "{}");
+    await supabase.from('news').insert({ ...article, triggered_by: 'cron' });
+
+    res.json({ success: true, article });
+  });
 
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
@@ -457,9 +448,11 @@ async function startServer() {
     });
   }
 
-  app.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-}
+  if (process.env.NODE_ENV !== "production") {
+    // Only listen if running locally, not on Vercel
+    app.listen(Number(PORT), "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
+  }
 
-startServer();
+  export default app;
