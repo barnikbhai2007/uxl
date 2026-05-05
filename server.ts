@@ -109,7 +109,7 @@ app.use(express.json({ limit: '10mb' }));
                 - Ensure "team1Score" matches the total number of goals in the "team1" scorers list if possible.
                 - One team must match or contain "${fcName}".
                 
-                Return JSON in this exact structure:
+                Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation:
                 { 
                   "team1": "string", "team2": "string", 
                   "team1Score": number, "team2Score": number, 
@@ -121,12 +121,12 @@ app.use(express.json({ limit: '10mb' }));
               }
             ]
           }
-        ],
-        response_format: { type: "json_object" }
+        ]
       });
 
-      const text = response.choices[0]?.message?.content || "{}";
-      const resultParsed = JSON.parse(text);
+      const raw = response.choices[0]?.message?.content || "{}";
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const resultParsed = JSON.parse(clean);
       console.log("AI Match Analysis Output:", JSON.stringify(resultParsed, null, 2));
       if (resultParsed.error) {
           throw new Error(resultParsed.error);
@@ -353,7 +353,7 @@ app.use(express.json({ limit: '10mb' }));
   app.post("/api/generate-news", async (req, res) => {
     try {
       const { matchData, leagueTable, trigger } = req.body;
-      const { key, model } = await getAiConfig();
+      console.log(`[News] Triggered by: ${trigger}`);
       if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
       const groq = new Groq({ apiKey: key });
@@ -379,20 +379,27 @@ app.use(express.json({ limit: '10mb' }));
           
           Use football journalism language. Add emojis. Be creative and unpredictable.
           
-          Return JSON only: { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }`
-        }],
-        response_format: { type: "json_object" }
+          Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+          { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }`
+        }]
       });
 
-      const article = JSON.parse(response.choices[0]?.message?.content || "{}");
+      const rawContent = response.choices[0]?.message?.content || "{}";
+      console.log("[News] Raw AI response:", rawContent);
+      const cleanContent = rawContent.replace(/```json|```/g, "").trim();
+      const article = JSON.parse(cleanContent);
       
-      await supabase.from('news').insert({
+      console.log("[News] Article generated:", article?.title);
+      
+      const { data, error } = await supabase.from('news').insert({
         title: article.title,
         content: article.content,
         category: article.category,
         triggered_by: trigger,
         matchday: matchData?.matchday || null
-      });
+      }).select();
+
+      console.log("[News] Supabase insert result:", data, error);
 
       res.json({ success: true, article });
     } catch (e: any) {
@@ -410,7 +417,7 @@ app.use(express.json({ limit: '10mb' }));
       return res.json({ skipped: true, reason: "Sleeping hours IST" });
     }
 
-    // fetch recent matches and generate news
+    console.log("[News Cron] Triggered via /api/cron-news");
     const { data: allMatches } = await supabase
       .from('documents')
       .select('data')
@@ -421,19 +428,39 @@ app.use(express.json({ limit: '10mb' }));
       .map((r: any) => r.data)
       .sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
 
-    // call generate-news internally
+    if (!latestMatch) {
+       return res.json({ skipped: true, reason: "No finished matches found" });
+    }
+
+    // Generate news using the same robust logic as /api/generate-news
     const { key, model } = await getAiConfig();
     if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
     const groq = new Groq({ apiKey: key });
     const response = await groq.chat.completions.create({
       model: model,
-      messages: [{ role: "user", content: `You are a spicy football journalist for UXL tournament. Write a 150 word news article. Match: ${JSON.stringify(latestMatch)}. Return JSON: { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }` }],
-      response_format: { type: "json_object" }
+      messages: [{ 
+        role: "user", 
+        content: `You are a spicy, funny, dramatic football journalist for UXL tournament. 
+        Write a 150 word news article about this match: ${JSON.stringify(latestMatch)}. 
+        Use journalism language and emojis.
+        Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+        { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }` 
+      }]
     });
 
-    const article = JSON.parse(response.choices[0]?.message?.content || "{}");
-    await supabase.from('news').insert({ ...article, triggered_by: 'cron' });
+    const rawContent = response.choices[0]?.message?.content || "{}";
+    const cleanContent = rawContent.replace(/```json|```/g, "").trim();
+    const article = JSON.parse(cleanContent);
+    
+    console.log("[News Cron] Article generated:", article?.title);
+    
+    const { data, error } = await supabase.from('news').insert({ 
+      ...article, 
+      triggered_by: 'cron' 
+    }).select();
+
+    console.log("[News Cron] Supabase insert result:", data, error);
 
     res.json({ success: true, article });
   });

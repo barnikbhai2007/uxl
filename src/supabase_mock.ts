@@ -166,14 +166,77 @@ export function limit(value: number) {
 }
 
 const localEmitter = new EventTarget();
+const globalCache: Record<string, Record<string, any>> = {};
+
+function updateGlobalCache(collection: string, id: string, data: any, isDelete = false) {
+  if (!globalCache[collection]) globalCache[collection] = {};
+  if (isDelete) {
+    delete globalCache[collection][id];
+  } else {
+    globalCache[collection][id] = data;
+  }
+}
+
+function getFromCache(collection: string, id: string) {
+  return globalCache[collection]?.[id];
+}
+
+function applyQueryLocally(ref: CollRef | Query) {
+  const collectionName = ref.collectionName;
+  const docsMap = globalCache[collectionName] || {};
+  let docs = Object.entries(docsMap).map(([id, data]) => ({
+    id,
+    data: () => data,
+    exists: () => true,
+    ref: doc("db", collectionName, id),
+  }));
+
+  if (ref instanceof Query) {
+    ref.filters.forEach((f) => {
+      docs = docs.filter((d) => {
+        const val = (d.data() as any)[f.field];
+        if (f.op === "==") return val == f.value;
+        if (f.op === "<") return val < f.value;
+        if (f.op === ">") return val > f.value;
+        return true;
+      });
+    });
+    ref.orderBys.forEach((o) => {
+      docs.sort((a, b) => {
+        const valA = (a.data() as any)[o.field];
+        const valB = (b.data() as any)[o.field];
+        if (valA < valB) return o.dir === "asc" ? -1 : 1;
+        if (valA > valB) return o.dir === "asc" ? 1 : -1;
+        return 0;
+      });
+    });
+    if (ref.qlimit) docs = docs.slice(0, ref.qlimit);
+  }
+
+  return {
+    docs,
+    empty: docs.length === 0,
+    forEach: (cb: any) => docs.forEach(cb),
+  };
+}
 
 export async function getDoc(ref: DocRef) {
+  const cached = getFromCache(ref.collectionName, ref.id);
+  if (cached) {
+      return {
+          exists: () => true,
+          id: ref.id,
+          data: () => cached
+      };
+  }
   const { data, error } = await supabase
     .from("documents")
     .select("*")
     .eq("collection", ref.collectionName)
     .eq("id", ref.id)
     .single();
+  
+  if (data) updateGlobalCache(ref.collectionName, ref.id, data.data);
   return {
     exists: () => !!data,
     id: ref.id,
@@ -215,7 +278,7 @@ export async function getDocs(ref: CollRef | Query) {
       error,
     );
   } else {
-    // console.log("getDocs success for collection", ref.collectionName, "count:", data?.length);
+    (data || []).forEach((d: any) => updateGlobalCache(ref.collectionName, d.id, d.data));
   }
   const docs = (data || []).map((d: any) => ({
     id: d.id,
@@ -248,11 +311,16 @@ async function handleSpecialOps(target: any, incoming: any) {
 
 export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   const finalData = JSON.parse(JSON.stringify(data)); // strip undefined
-  
   let dataToSave = finalData;
 
+  // Optimistic update for non-merge or if we can guess the state
+  if (!options?.merge) {
+    updateGlobalCache(ref.collectionName, ref.id, dataToSave);
+    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+  }
+
   if (options && options.merge) {
-    const { data: existing, error: fetchErr } = await supabase
+    const { data: existing } = await supabase
       .from("documents")
       .select("data")
       .eq("collection", ref.collectionName)
@@ -261,21 +329,18 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
     
     if (existing) {
       dataToSave = await handleSpecialOps(existing.data, finalData);
-      const { error } = await supabase
+      await supabase
         .from("documents")
         .update({ data: dataToSave })
         .eq("collection", ref.collectionName)
         .eq("id", ref.id);
-      if (error) {
-        console.error("setDoc merge update error:", error);
-      } else {
-        localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-      }
+      
+      updateGlobalCache(ref.collectionName, ref.id, dataToSave);
+      localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
       return;
     }
   }
 
-  // If not merge, or doc doesn't exist, we still check for ops (e.g. increment starts from 0)
   if (Object.values(dataToSave).some((v: any) => v && v.__op)) {
     dataToSave = await handleSpecialOps({}, dataToSave);
   }
@@ -286,16 +351,42 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       { id: ref.id, collection: ref.collectionName, data: dataToSave },
       { onConflict: "collection,id" },
     );
+  
   if (error) {
     console.error("setDoc upsert error:", error);
   } else {
+    updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   }
 }
 
 export async function updateDoc(ref: DocRef, data: any) {
   const finalData = JSON.parse(JSON.stringify(data));
-  const { data: existing, error: fetchErr } = await supabase
+  
+  // Try to find cached data for optimistic update
+  const cached = getFromCache(ref.collectionName, ref.id);
+  if (cached) {
+      const nextData = { ...cached };
+      for (const key in finalData) {
+          const val = finalData[key];
+          if (key.includes(".")) {
+              const parts = key.split(".");
+              let cur = nextData;
+              for (let i = 0; i < parts.length - 1; i++) {
+                  cur[parts[i]] = cur[parts[i]] || {};
+                  cur = cur[parts[i]];
+              }
+              const lastPart = parts[parts.length - 1];
+              cur[lastPart] = val; // Nested increment/arrayUnion not fully mocked here but simple assignments work
+          } else {
+              nextData[key] = val;
+          }
+      }
+      updateGlobalCache(ref.collectionName, ref.id, nextData);
+      localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+  }
+
+  const { data: existing } = await supabase
     .from("documents")
     .select("data")
     .eq("collection", ref.collectionName)
@@ -336,22 +427,21 @@ export async function updateDoc(ref: DocRef, data: any) {
       }
     }
     
-    const { error: updateErr } = await supabase
+    await supabase
       .from("documents")
       .update({ data: nextData })
       .eq("collection", ref.collectionName)
       .eq("id", ref.id);
-    if (updateErr) {
-      console.error("updateDoc error:", updateErr);
-    } else {
-        localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-    }
-  } else {
-    console.warn("updateDoc: doc not found", ref.collectionName, ref.id);
+    
+    updateGlobalCache(ref.collectionName, ref.id, nextData);
+    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   }
 }
 
 export async function deleteDoc(ref: DocRef) {
+  updateGlobalCache(ref.collectionName, ref.id, null, true);
+  localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+
   const { error } = await supabase
     .from("documents")
     .delete()
@@ -359,35 +449,48 @@ export async function deleteDoc(ref: DocRef) {
     .eq("id", ref.id);
   if (error) {
     console.error("deleteDoc error:", error);
-  } else {
-    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   }
 }
 
 export function onSnapshot(ref: any, callback: any, errorCb?: any) {
+  const isDoc = ref instanceof DocRef;
+  const collectionName = isDoc
+    ? ref.collectionName
+    : (ref as unknown as CollRef | Query).collectionName;
+
   // Initial fetch
-  if (ref instanceof DocRef) {
+  if (isDoc) {
+    const cached = getFromCache(collectionName, ref.id);
+    if (cached) {
+        callback({ exists: () => true, id: ref.id, data: () => cached });
+    }
     getDoc(ref)
-      .then((doc) => callback(doc))
+      .then((doc) => {
+          if (doc.exists()) callback(doc);
+      })
       .catch(errorCb);
   } else {
+    // For collections, check if we have any data already
+    if (globalCache[collectionName]) {
+        callback(applyQueryLocally(ref));
+    }
     getDocs(ref)
       .then((snap) => callback(snap))
       .catch(errorCb);
   }
 
   // Subscribe to realtime updates
-  const isDoc = ref instanceof DocRef;
-  const collectionName = isDoc
-    ? ref.collectionName
-    : (ref as unknown as CollRef | Query).collectionName;
-
   const localHandler = (e: any) => {
     if (e.detail === collectionName) {
       if (isDoc) {
-        getDoc(ref).then((doc) => callback(doc)).catch(errorCb);
+        const cached = getFromCache(collectionName, ref.id);
+        if (cached) {
+            callback({ exists: () => true, id: ref.id, data: () => cached });
+        } else {
+            callback({ exists: () => false, id: ref.id, data: () => undefined });
+        }
       } else {
-        getDocs(ref).then((snap) => callback(snap)).catch(errorCb);
+        callback(applyQueryLocally(ref));
       }
     }
   };
@@ -403,16 +506,24 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         table: "documents",
         filter: `collection=eq.${collectionName}`,
       },
-      (payload) => {
-        // Refetch and give the callback the new data. (Simple but effective mock)
-        if (isDoc) {
-          getDoc(ref)
-            .then((doc) => callback(doc))
-            .catch(errorCb);
+      (payload: any) => {
+        // Update cache from payload first
+        if (payload.eventType === 'DELETE') {
+            updateGlobalCache(collectionName, payload.old.id, null, true);
         } else {
-          getDocs(ref)
-            .then((snap) => callback(snap))
-            .catch(errorCb);
+            updateGlobalCache(collectionName, payload.new.id, payload.new.data);
+        }
+
+        // Now trigger callback using cache
+        if (isDoc) {
+          if (payload.old && payload.old.id === ref.id && payload.eventType === 'DELETE') {
+             callback({ exists: () => false, id: ref.id, data: () => undefined });
+          } else if (payload.new && payload.new.id === ref.id) {
+             callback({ exists: () => true, id: ref.id, data: () => payload.new.data });
+          }
+        } else {
+          // Collection update
+          callback(applyQueryLocally(ref));
         }
       },
     )
