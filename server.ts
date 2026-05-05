@@ -90,30 +90,39 @@ app.use(express.json({ limit: '10mb' }));
                 2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
                 3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
                 4. Extract GOAL SCORERS:
-                   - In EAFC/FIFA match facts, there's usually a unified timeline indicating who scored. 
+                   - In EAFC/FIFA match facts, there's usually a unified timeline on the RIGHT side indicating who scored. 
                    - Scan the entire screen to identify ANY player names accompanied by a Goal icon (soccer ball) and a minute (e.g. 18').
-                   - If you see player names with a soccer ball icon, they are goal scorers. Look carefully near the scoreline or in the timeline.
-                   - For EACH scorer, provide:
-                     - "name": Player's name.
-                     - "goals": How many goals they scored (count their soccer ball icons). Default to 1.
-                     - "team": IMPORTANT: You MUST output exactly "team1" or "team2". If one team scored 0, all scorers belong to the scoring team. Avoid using the team's actual name, use exactly "team1" or "team2" based on the logo/header position (Left=team1, Right=team2).
-                     - "time": The minute(s).
+                   - FOLLOW THE CRITICAL SCORER ASSIGNMENT RULES BELOW.
                 5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
                    - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
                    - Left-side values = "team1Stats".
                    - Right-side values = "team2Stats".
                 6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
                 
+                CRITICAL SCORER ASSIGNMENT RULES:
+                1. The scorers list on the RIGHT SIDE of the screen belongs to BOTH teams combined (unified timeline).
+                2. You MUST figure out which goal belongs to which team by using the FINAL SCORE as truth:
+                   - If team1Score is 3, exactly 3 goals must be assigned to team1 in the scorers list.
+                   - If team2Score is 2, exactly 2 goals must be assigned to team2 in the scorers list.
+                   - Total scorers must always add up to the correct score.
+                3. Goals are listed in TIME ORDER (earliest first) — NOT grouped by team.
+                4. To assign a goal to the correct team, use the running score logic if possible, or context clues.
+                5. NEVER assign more goals to a team than their final score.
+                6. If unsure which team scored a goal, assign it to the team that still needs goals to reach their final score.
+                7. team1 = the LEFT side player (home), team2 = the RIGHT side player (away).
+                8. Double check: count team1 scorers = team1Score, count team2 scorers = team2Score.
+
                 CRITICAL RULES:
                 - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
-                - Ensure "team1Score" matches the total number of goals in the "team1" scorers list if possible.
+                - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
                 - One team must match or contain "${fcName}".
                 
-                Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation:
+                Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation.
+                CRITICAL: The "scorers" array must have ALL goals assigned.
                 { 
                   "team1": "string", "team2": "string", 
                   "team1Score": number, "team2Score": number, 
-                  "scorers": [{ "name": "string", "goals": number, "team": "team1"|"team2", "time": "string" }],
+                  "scorers": [{ "name": "string", "team": "team1"|"team2", "minute": number, "goals": 1 }],
                   "team1Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
                   "team2Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
                   "manOfTheMatch": "string"
@@ -183,12 +192,25 @@ app.use(express.json({ limit: '10mb' }));
 
           if (oppScore >= 5) award('goalkeeper_nightmare');
 
+          // Group player scorers by name for goal-count achievements
+          const groupedPlayerScorers: Record<string, { totalGoals: number, name: string }> = {};
           playerScorers.forEach((s: any) => {
-            if (s.goals >= 3) award('hat_trick_hero');
-            if (s.goals >= 5) award('sniper');
+            const name = s.name || s.playerName || 'Unknown';
+            if (!groupedPlayerScorers[name]) {
+              groupedPlayerScorers[name] = { totalGoals: 0, name };
+            }
+            groupedPlayerScorers[name].totalGoals += Number(s.goals || 1);
+          });
+
+          Object.values(groupedPlayerScorers).forEach((ps: any) => {
+            if (ps.totalGoals >= 3) award('hat_trick_hero');
+            if (ps.totalGoals >= 5) award('sniper');
+          });
+
+          playerScorers.forEach((s: any) => {
             if (s.name && s.name.includes('(OG)')) award('uno_reversed');
             
-            const times = String(s.time || '').split(',').map((t:string) => parseInt(t.trim().replace("'", ""))).filter(t => !isNaN(t));
+            const times = (s.minute !== undefined ? [s.minute] : String(s.time || '').split(',').map((t:string) => parseInt(t.trim().replace("'", "")))).filter(t => !isNaN(Number(t))).map(t => Number(t));
             times.forEach((t:number) => {
               if (t >= 90) award('last_minute_hero');
               if (t === 67) award('lover_67');
@@ -197,7 +219,7 @@ app.use(express.json({ limit: '10mb' }));
           });
 
           oppScorers.forEach((s: any) => {
-            const times = String(s.time || '').split(',').map((t:string) => parseInt(t.trim().replace("'", ""))).filter(t => !isNaN(t));
+            const times = (s.minute !== undefined ? [s.minute] : String(s.time || '').split(',').map((t:string) => parseInt(t.trim().replace("'", "")))).filter(t => !isNaN(Number(t))).map(t => Number(t));
             times.forEach((t:number) => {
               if (t >= 90) award('heartbreak_90');
             });
@@ -350,59 +372,62 @@ app.use(express.json({ limit: '10mb' }));
     }
   });
 
+  async function handleNewsGeneration(matchData: any, leagueTable: any, trigger: string) {
+    const config = await getAiConfig();
+    if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
+
+    const groq = new Groq({ apiKey: config.key });
+
+    const response = await groq.chat.completions.create({
+      model: config.model,
+      messages: [{
+        role: "user",
+        content: `You are a spicy, funny, dramatic football journalist for a FC Mobile tournament called UXL.
+        Write a short news article (max 150 words).
+        
+        Match Data: ${JSON.stringify(matchData)}
+        League Table: ${JSON.stringify(leagueTable)}
+        Trigger: ${trigger}
+        
+        Randomly vary your style each time — choose ONE of these angles:
+        - 🔥 Spicy/dramatic match reaction
+        - 😂 Funny trolling of the losing team
+        - 📊 Serious league table analysis
+        - 🏆 Bold prediction for upcoming matches
+        - 📅 Matchday history/recap
+        - 📈 Form guide and momentum discussion
+        
+        Use football journalism language. Add emojis. Be creative and unpredictable.
+        
+        Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
+        { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }`
+      }]
+    });
+
+    const rawContent = response.choices[0]?.message?.content || "{}";
+    console.log("[News] Raw AI response:", rawContent);
+    const cleanContent = rawContent.replace(/```json|```/g, "").trim();
+    const article = JSON.parse(cleanContent);
+    
+    console.log("[News] Article generated:", article?.title);
+    
+    const { data, error } = await supabase.from('news').insert({
+      title: article.title,
+      content: article.content,
+      category: article.category,
+      triggered_by: trigger,
+      matchday: matchData?.matchday || null
+    }).select();
+
+    return { article, data, error };
+  }
+
   app.post("/api/generate-news", async (req, res) => {
     try {
       const { matchData, leagueTable, trigger } = req.body;
       console.log(`[News] Triggered by: ${trigger}`);
-      const config = await getAiConfig();
-      if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
-
-      const groq = new Groq({ apiKey: config.key });
-
-      const response = await groq.chat.completions.create({
-        model: config.model,
-        messages: [{
-          role: "user",
-          content: `You are a spicy, funny, dramatic football journalist for a FC Mobile tournament called UXL.
-          Write a short news article (max 150 words).
-          
-          Match Data: ${JSON.stringify(matchData)}
-          League Table: ${JSON.stringify(leagueTable)}
-          Trigger: ${trigger}
-          
-          Randomly vary your style each time — choose ONE of these angles:
-          - 🔥 Spicy/dramatic match reaction
-          - 😂 Funny trolling of the losing team
-          - 📊 Serious league table analysis
-          - 🏆 Bold prediction for upcoming matches
-          - 📅 Matchday history/recap
-          - 📈 Form guide and momentum discussion
-          
-          Use football journalism language. Add emojis. Be creative and unpredictable.
-          
-          Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
-          { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }`
-        }]
-      });
-
-      const rawContent = response.choices[0]?.message?.content || "{}";
-      console.log("[News] Raw AI response:", rawContent);
-      const cleanContent = rawContent.replace(/```json|```/g, "").trim();
-      const article = JSON.parse(cleanContent);
-      
-      console.log("[News] Article generated:", article?.title);
-      
-      const { data, error } = await supabase.from('news').insert({
-        title: article.title,
-        content: article.content,
-        category: article.category,
-        triggered_by: trigger,
-        matchday: matchData?.matchday || null
-      }).select();
-
-      console.log("[News] Supabase insert result:", data, error);
-
-      res.json({ success: true, article });
+      const result = await handleNewsGeneration(matchData, leagueTable, trigger);
+      res.json({ success: true, article: result.article });
     } catch (e: any) {
       console.error("[News] Generation Error:", e);
       res.status(500).json({ success: false, message: e.message });
@@ -410,60 +435,36 @@ app.use(express.json({ limit: '10mb' }));
   });
 
   app.get("/api/cron-news", async (req, res) => {
-    const istHour = new Date(
-      new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-    ).getHours();
+    try {
+      const istHour = new Date(
+        new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+      ).getHours();
 
-    if (istHour >= 2 && istHour < 13) {
-      return res.json({ skipped: true, reason: "Sleeping hours IST" });
+      if (istHour >= 2 && istHour < 13) {
+        return res.json({ skipped: true, reason: "Sleeping hours IST" });
+      }
+
+      console.log("[News Cron] Triggered via /api/cron-news");
+      const { data: allMatches } = await supabase
+        .from('documents')
+        .select('data')
+        .eq('collection', 'matches')
+        .eq('data->>status', 'finished');
+
+      const latestMatch = (allMatches || [])
+        .map((r: any) => r.data)
+        .sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
+
+      if (!latestMatch) {
+         return res.json({ skipped: true, reason: "No finished matches found" });
+      }
+
+      const result = await handleNewsGeneration(latestMatch, null, 'cron');
+      res.json({ success: true, article: result.article });
+    } catch (e: any) {
+      console.error("[News Cron] Error:", e);
+      res.status(500).json({ success: false, message: e.message });
     }
-
-    console.log("[News Cron] Triggered via /api/cron-news");
-    const { data: allMatches } = await supabase
-      .from('documents')
-      .select('data')
-      .eq('collection', 'matches')
-      .eq('data->>status', 'finished');
-
-    const latestMatch = (allMatches || [])
-      .map((r: any) => r.data)
-      .sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
-
-    if (!latestMatch) {
-       return res.json({ skipped: true, reason: "No finished matches found" });
-    }
-
-    // Generate news using the same robust logic as /api/generate-news
-    const config = await getAiConfig();
-    if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
-
-    const groq = new Groq({ apiKey: config.key });
-    const response = await groq.chat.completions.create({
-      model: config.model,
-      messages: [{ 
-        role: "user", 
-        content: `You are a spicy, funny, dramatic football journalist for UXL tournament. 
-        Write a 150 word news article about this match: ${JSON.stringify(latestMatch)}. 
-        Use journalism language and emojis.
-        Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
-        { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }` 
-      }]
-    });
-
-    const rawContent = response.choices[0]?.message?.content || "{}";
-    const cleanContent = rawContent.replace(/```json|```/g, "").trim();
-    const article = JSON.parse(cleanContent);
-    
-    console.log("[News Cron] Article generated:", article?.title);
-    
-    const { data, error } = await supabase.from('news').insert({ 
-      ...article, 
-      triggered_by: 'cron' 
-    }).select();
-
-    console.log("[News Cron] Supabase insert result:", data, error);
-
-    res.json({ success: true, article });
   });
 
   // Vite middleware for development
@@ -503,7 +504,21 @@ app.use(express.json({ limit: '10mb' }));
           }
 
           console.log(`[News Scheduler] Triggering automatic news generation (IST hour ${istHour})`);
-          await fetch(`http://localhost:${PORT}/api/cron-news`);
+          
+          // Get latest match
+          const { data: allMatches } = await supabase
+            .from('documents')
+            .select('data')
+            .eq('collection', 'matches')
+            .eq('data->>status', 'finished');
+
+          const latestMatch = (allMatches || [])
+            .map((r: any) => r.data)
+            .sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
+
+          if (latestMatch) {
+            await handleNewsGeneration(latestMatch, null, 'scheduler');
+          }
         } catch (err) {
           console.error("[News Scheduler] Error:", err);
         }

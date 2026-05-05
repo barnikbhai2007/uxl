@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -4138,27 +4138,50 @@ export default function App() {
     const awayMinutes = getMinutes(awayScorers);
     
     // Determine who is who
-    const isCurrentUserHome = homeTeam?.toLowerCase().includes(myRegistrationData?.fcName.toLowerCase() || '');
+    const isCurrentUserHome = myRegistrationData?.fcName && homeTeam?.toLowerCase().includes(myRegistrationData.fcName.toLowerCase());
     const myScore = isCurrentUserHome ? homeScore : awayScore;
     const oppScore = isCurrentUserHome ? awayScore : homeScore;
     const myMinutes = isCurrentUserHome ? homeMinutes : awayMinutes;
     const oppMinutes = isCurrentUserHome ? awayMinutes : homeMinutes;
 
-    if (myScore > oppScore) currentUserAchievements.push('first_blood');
-    if (oppScore === 0) currentUserAchievements.push('clean_sheet_king');
-    if (myScore === 0) opponentAchievements.push('clean_sheet_king');
-    if (myScore >= 5) opponentAchievements.push('goalkeepers_nightmare');
-    if (oppScore >= 5) currentUserAchievements.push('goalkeepers_nightmare');
-    if (myScore >= 3 && oppScore >= 3) {
-      currentUserAchievements.push('thriller');
-      opponentAchievements.push('thriller');
+    if (myRegistrationData?.fcName) {
+      if (myScore > oppScore) currentUserAchievements.push('first_blood');
+      if (oppScore === 0 && myScore > 0) currentUserAchievements.push('clean_sheet_king');
+      if (myScore === 0 && oppScore > 0) opponentAchievements.push('clean_sheet_king');
+      if (myScore >= 5) opponentAchievements.push('goalkeepers_nightmare');
+      if (oppScore >= 5) currentUserAchievements.push('goalkeepers_nightmare');
+      if (myScore >= 3 && oppScore >= 3) {
+        currentUserAchievements.push('thriller');
+        opponentAchievements.push('thriller');
+      }
+      
+      // Scorers logic
+      const myScorers = isCurrentUserHome ? homeScorers : awayScorers;
+      const oppScorers = isCurrentUserHome ? awayScorers : homeScorers;
+      
+      myScorers?.forEach((s: any) => {
+        if (s.goals >= 3) currentUserAchievements.push('hat_trick_hero');
+        if (s.goals >= 5) currentUserAchievements.push('sniper');
+        if (s.playerName?.includes('(OG)')) currentUserAchievements.push('uno_reversed');
+      });
+      oppScorers?.forEach((s: any) => {
+        if (s.playerName?.includes('(OG)')) opponentAchievements.push('uno_reversed');
+      });
+
+      if (oppMinutes?.some((m: number) => m >= 90)) {
+        currentUserAchievements.push('heartbreak_90');
+        currentUserAchievements.push('last_minute_hero');
+      }
+      if (myMinutes?.some((m: number) => m >= 90)) {
+        opponentAchievements.push('heartbreak_90');
+        opponentAchievements.push('last_minute_hero');
+      }
+      
+      if (myMinutes?.includes(67)) currentUserAchievements.push('lover_67');
+      if (myMinutes?.includes(69)) currentUserAchievements.push('lover_69');
+      if (oppMinutes?.includes(67)) opponentAchievements.push('lover_67');
+      if (oppMinutes?.includes(69)) opponentAchievements.push('lover_69');
     }
-    if (oppMinutes?.some((m: number) => m > 90)) currentUserAchievements.push('heartbreak_90');
-    if (myMinutes?.some((m: number) => m > 90)) opponentAchievements.push('heartbreak_90');
-    if (myMinutes?.includes(67)) currentUserAchievements.push('lover_67');
-    if (myMinutes?.includes(69)) currentUserAchievements.push('lover_69');
-    if (oppMinutes?.includes(67)) opponentAchievements.push('lover_67');
-    if (oppMinutes?.includes(69)) opponentAchievements.push('lover_69');
 
     const updateAchievements = async (userId: string, achievements: string[]) => {
       if (!userId) return;
@@ -4247,39 +4270,47 @@ export default function App() {
       let bestMatch: Match | null = null;
       let bestOpponentTeam: Team | null = null;
 
-      // 1. Intelligent matching: Prioritize ongoing/live match
-      const ongoingMatches = userMatches.filter(m => m.status === 'ongoing' || m.status === 'live');
+      // Define display status logic inside processing to align with UI expectations
+      const getDisplayStatus = (m: Match) => {
+        if (m.status === 'finished') return 'finished';
+        const label = matchLabels[m.date];
+        return label || m.status;
+      };
+
+      // 1. Intelligent matching: ONLY look for matches that are labeled as ongoing/live
+      const ongoingMatches = userMatches.filter(m => {
+          const ds = getDisplayStatus(m);
+          return ds === 'ongoing' || ds === 'live';
+      });
       
-      if (ongoingMatches.length === 1) {
-          bestMatch = ongoingMatches[0];
-          const opponentId = bestMatch.homeTeamId === userTeam.id ? bestMatch.awayTeamId : bestMatch.homeTeamId;
-          bestOpponentTeam = teams.find(t => t.id === opponentId) || null;
-      } else {
-          for (const m of userMatches) {
-            const opponentId = m.homeTeamId === userTeam.id ? m.awayTeamId : m.homeTeamId;
-            const oppTeam = teams.find(t => t.id === opponentId);
-            if (!oppTeam) continue;
+      if (ongoingMatches.length > 0) {
+          // If multiple ongoing, try to find the one matching the AI opponent name
+          if (ongoingMatches.length === 1) {
+              bestMatch = ongoingMatches[0];
+              const opponentId = bestMatch.homeTeamId === userTeam.id ? bestMatch.awayTeamId : bestMatch.homeTeamId;
+              bestOpponentTeam = teams.find(t => t.id === opponentId) || null;
+          } else {
+              for (const m of ongoingMatches) {
+                  const opponentId = m.homeTeamId === userTeam.id ? m.awayTeamId : m.homeTeamId;
+                  const oppTeam = teams.find(t => t.id === opponentId);
+                  if (!oppTeam) continue;
 
-            const oppNormName = normalize(oppTeam.name);
-            const oppNormFcName = normalize(oppTeam.fcName);
+                  const oppNormName = normalize(oppTeam.name);
+                  const oppNormFcName = normalize(oppTeam.fcName);
 
-            // Check if AI opponent name matches oppTeam
-            const isMatch = oppNormName === opponentAiName || oppNormFcName === opponentAiName ||
-                            oppNormName.includes(opponentAiName) || opponentAiName.includes(oppNormName) ||
-                            oppNormFcName.includes(opponentAiName) || opponentAiName.includes(oppNormFcName) ||
-                            (opponentAiName.length > 3 && (oppNormName.includes(opponentAiName.substring(0,4)) || opponentAiName.includes(oppNormName.substring(0,4))));
-            
-            if (isMatch) {
-                if (!bestMatch || (bestMatch.status === 'finished' && m.status !== 'finished')) {
-                    bestMatch = m;
-                    bestOpponentTeam = oppTeam;
-                }
-            }
+                  if (oppNormName === opponentAiName || oppNormFcName === opponentAiName ||
+                      oppNormName.includes(opponentAiName) || opponentAiName.includes(oppNormName) ||
+                      oppNormFcName.includes(opponentAiName) || opponentAiName.includes(oppNormFcName)) {
+                      bestMatch = m;
+                      bestOpponentTeam = oppTeam;
+                      break;
+                  }
+              }
           }
       }
 
       if (!bestMatch || !bestOpponentTeam) {
-          setAiAnalysisResult(`ERROR: No active match found for you against "${opponentAiNameRaw}". Make sure the match is scheduled/ongoing.`);
+          setAiAnalysisResult(`ERROR: No ONGOING match found for you against "${opponentAiNameRaw}". Only matches marked as "Ongoing" by an admin can be analyzed.`);
           return;
       }
 
@@ -4295,7 +4326,14 @@ export default function App() {
             return;
           }
 
-          // 3. Winner check
+          // 3. Status logic check
+          const effectiveStatus = getDisplayStatus(existingMatch);
+          if (effectiveStatus !== 'ongoing' && effectiveStatus !== 'live') {
+            setAiAnalysisResult(`REJECTED: This match (vs ${bestOpponentTeam.name}) is currently "${effectiveStatus}". AI Analysis can only be performed on "Ongoing" matches. Please wait for an admin to start your match.`);
+            return;
+          }
+
+          // 4. Winner check
           const winnerTeam = data.team1Score > data.team2Score ? team1 : (data.team1Score < data.team2Score ? team2 : null);
           if (winnerTeam && !isAdmin) {
              const isWinnerReporter = normalize(winnerTeam.fcName) === userFcName || 
@@ -4337,7 +4375,7 @@ export default function App() {
               .map((s:any) => ({ 
                 playerName: s.name || s.playerName || 'Unknown', 
                 goals: Number(s.goals) || 1, 
-                time: s.time || null 
+                time: (s.minute !== undefined ? String(s.minute) : s.time) || null 
               }));
 
           const buildStats = (s: any) => s ? {
@@ -5235,26 +5273,52 @@ export default function App() {
                             </p>
                             
                             <div className="space-y-6">
-                              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/50 transition-all group cursor-pointer relative">
-                                <input 
-                                  type="file" 
-                                  accept="image/*"
-                                  onChange={(e) => {
-                                    const file = e.target.files?.[0];
-                                    if (file) {
-                                      if (!myRegistration) {
-                                        alert("Please register a team first to submit match results.");
-                                        return;
-                                      }
-                                      if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
-                                      processMatchResultImage(file, myRegistration);
-                                    }
-                                  }}
-                                  className="absolute inset-0 opacity-0 cursor-pointer"
-                                />
-                                <Plus className="w-8 h-8 text-blue-400/40 mb-3 group-hover:text-blue-400 transition-colors" />
-                                <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
-                              </div>
+                              {(() => {
+                                const myOngoingMatches = matches.filter(m => {
+                                  if (m.homeTeamId !== myRegistration?.id && m.awayTeamId !== myRegistration?.id) return false;
+                                  if (m.status === 'finished') return false;
+                                  const label = matchLabels[m.date];
+                                  const effectiveStatus = label || m.status;
+                                  return effectiveStatus === 'ongoing' || effectiveStatus === 'live';
+                                });
+
+                                if (myOngoingMatches.length === 0) {
+                                  return (
+                                    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center gap-3 text-center">
+                                      <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
+                                        <AlertCircle className="w-5 h-5 text-blue-400/60" />
+                                      </div>
+                                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/40">
+                                        No Ongoing Matches Found<br/>
+                                        <span className="text-blue-400/60 lowercase font-bold tracking-normal italic mt-1 block">Analysis is only enabled when your match is marked as "Ongoing" by an admin</span>
+                                      </p>
+                                    </div>
+                                  );
+                                }
+
+                                return (
+                                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/50 transition-all group cursor-pointer relative">
+                                    <input 
+                                      type="file" 
+                                      accept="image/*"
+                                      onChange={(e) => {
+                                        const file = e.target.files?.[0];
+                                        if (file) {
+                                          if (!myRegistration) {
+                                            alert("Please register a team first to submit match results.");
+                                            return;
+                                          }
+                                          if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
+                                          processMatchResultImage(file, myRegistration);
+                                        }
+                                      }}
+                                      className="absolute inset-0 opacity-0 cursor-pointer"
+                                    />
+                                    <Plus className="w-8 h-8 text-blue-400/40 mb-3 group-hover:text-blue-400 transition-colors" />
+                                    <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                                  </div>
+                                );
+                              })()}
 
                               {isSubmittingImg && (
                                  <div className="flex items-center justify-center gap-3 text-blue-400">
