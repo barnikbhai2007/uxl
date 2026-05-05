@@ -3834,11 +3834,18 @@ export default function App() {
       }
 
       if (cleanedData.status === 'finished') {
+        const homeT = dbTeams.find(t => t.id === match.homeTeamId);
+        const awayT = dbTeams.find(t => t.id === match.awayTeamId);
+        const enrichedMatchData = {
+          ...cleanedData,
+          homePlayer: homeT?.name || homeT?.fcName,
+          awayPlayer: awayT?.name || awayT?.fcName
+        };
         fetch('/api/generate-news', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            matchData: cleanedData,
+            matchData: enrichedMatchData,
             leagueTable: null, // Could map team names to their standings here if we wanted
             trigger: 'match-updated'
           })
@@ -4481,11 +4488,18 @@ export default function App() {
           }
 
           if (cleanedPayload.status === 'finished') {
+            const homeT = dbTeams.find(t => t.id === existingMatch.homeTeamId);
+            const awayT = dbTeams.find(t => t.id === existingMatch.awayTeamId);
+            const enrichedMatchData = {
+              ...cleanedPayload,
+              homePlayer: homeT?.name || homeT?.fcName,
+              awayPlayer: awayT?.name || awayT?.fcName
+            };
             fetch('/api/generate-news', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                matchData: cleanedPayload,
+                matchData: enrichedMatchData,
                 leagueTable: null,
                 trigger: 'match-updated'
               })
