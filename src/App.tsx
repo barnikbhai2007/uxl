@@ -4521,7 +4521,7 @@ export default function App() {
       if (teamsLoaded && matchesLoaded && _mounted) {
         setTimeout(() => {
           if(_mounted) setIsDataLoading(false);
-        }, 800);
+        }, 0);
       }
     };
 
