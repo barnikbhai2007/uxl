@@ -456,9 +456,33 @@ app.use(express.json({ limit: '10mb' }));
 
   if (!process.env.VERCEL) {
     // Listen unconditionally unless running in Vercel.
-    app.listen(Number(PORT), "0.0.0.0", () => {
+    const server = app.listen(Number(PORT), "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
+
+    // Internal scheduler - only runs 1pm to 2am IST
+    const scheduleNewsGeneration = () => {
+      setInterval(async () => {
+        try {
+          const istHour = new Date(
+            new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+          ).getHours();
+
+          // OFF during 2am to 1pm IST (auto scheduler only)
+          if (istHour >= 2 && istHour < 13) {
+            console.log(`[News Scheduler] Sleeping — IST hour ${istHour}, skipping`);
+            return;
+          }
+
+          console.log(`[News Scheduler] Triggering automatic news generation (IST hour ${istHour})`);
+          await fetch(`http://localhost:${PORT}/api/cron-news`);
+        } catch (err) {
+          console.error("[News Scheduler] Error:", err);
+        }
+      }, 2 * 60 * 60 * 1000); // Every 2 hours
+    };
+
+    scheduleNewsGeneration();
   }
 
   export default app;
