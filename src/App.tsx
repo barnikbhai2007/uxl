@@ -3044,7 +3044,7 @@ export default function App() {
       setDbMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...resetData } as Match : m));
       try {
         localStorage.removeItem('cache_matches');
-        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 0);
+        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 30000);
         setDbMatches(data);
       } catch(e) {}
       
@@ -3265,7 +3265,7 @@ export default function App() {
     let _mounted = true;
     const loadMatchLabels = async () => {
       try {
-        const data = await fetchWithCache('cache_match_labels', collection(db, 'match_labels'), false, 300000);
+        const data = await fetchWithCache('cache_match_labels', collection(db, 'match_labels'), false, 600000);
         const labels: Record<string, string> = {};
         data.forEach((docData: any) => labels[docData.id] = docData.status);
         if (_mounted) setMatchLabels(labels);
@@ -3291,7 +3291,7 @@ export default function App() {
     let _mounted = true;
     const loadQual = async () => {
       try {
-        const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 300000);
+        const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 600000);
         if (_mounted && docSnap?.statuses) setQualificationStatus(docSnap.statuses);
       } catch (err) {}
     };
@@ -3370,7 +3370,7 @@ export default function App() {
     setIsSubmittingRegistration(true);
     try {
       await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
-      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 0);
+      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 30000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
         name: data.fcName,
@@ -3416,7 +3416,7 @@ export default function App() {
     const loadSiteContent = async () => {
       try {
         const q = query(collection(db, 'site_content'));
-        const data = await fetchWithCache('cache_site_content', q, false, 300000);
+        const data = await fetchWithCache('cache_site_content', q, false, 600000);
         const content: Record<string, any> = {};
         data.forEach((docData: any) => {
           content[docData.id] = docData;
@@ -3765,10 +3765,10 @@ export default function App() {
   const refreshCache = async (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => {
     try {
       if (type === 'matches') {
-        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 0);
+        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 30000);
         setDbMatches(data);
       } else if (type === 'teams') {
-        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 0);
+        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 30000);
         const teamsList: Team[] = teamsData.map((data: any) => ({
           id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
           fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.fcUid,
@@ -3786,12 +3786,12 @@ export default function App() {
          if (data) setConfig(data as Config);
       } else if (type === 'site_content') {
          const q = query(collection(db, 'site_content'));
-         const data = await fetchWithCache('cache_site_content', q, false, 0);
+         const data = await fetchWithCache('cache_site_content', q, false, 600000);
          const content: Record<string, any> = {};
          data.forEach((docData: any) => { content[docData.id] = docData; });
          setSiteContent(content);
       } else if (type === 'cache_qual') {
-         const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 0);
+         const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 600000);
          if (docSnap?.statuses) setQualificationStatus(docSnap.statuses);
       }
     } catch (e) {
@@ -3889,7 +3889,7 @@ export default function App() {
     setIsSubmittingRegistration(true);
     try {
       await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
-      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 0);
+      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 30000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
         name: data.fcName,

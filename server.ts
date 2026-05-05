@@ -387,7 +387,11 @@ app.use(express.json({ limit: '10mb' }));
       awayTeam: matchData.awayTeam || matchData.team2,
       homeScore: matchData.homeScore ?? matchData.team1Score,
       awayScore: matchData.awayScore ?? matchData.team2Score,
-      scorers: matchData.homeScorers || matchData.scorers || [],
+      scorers: (matchData.homeScorers || []).concat(matchData.awayScorers || []).map((s: any) => ({
+        name: s.playerName || s.name,
+        goals: s.goals,
+        time: s.time
+      })),
       manOfTheMatch: matchData.manOfTheMatch || null,
       matchday: matchData.matchday || null
     } : null;
@@ -403,9 +407,13 @@ Write a 100 word max news article about this match.
 Match: ${JSON.stringify(trimmedMatch)}
 Trigger: ${trigger}
 
-Pick ONE random angle: match reaction, troll the loser, league analysis, bold prediction, matchday recap, or form guide.
+IMPORTANT: 
+- ALWAYS mention the actual player names from the scorers list
+- ALWAYS mention the MOTM player name
+- Use their real names like "Barnik", "Pritam" etc - never say "a player" or "the striker"
+- Pick ONE angle: match reaction, troll loser, league analysis, prediction, matchday recap, form guide
 
-Use emojis. Be creative.
+Use emojis. Be dramatic and creative.
 
 Return ONLY this JSON:
 {"title":"...","content":"...","category":"SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM"}`

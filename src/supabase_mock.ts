@@ -231,7 +231,7 @@ export async function getDoc(ref: DocRef) {
   }
   const { data, error } = await supabase
     .from("documents")
-    .select("*")
+    .select("id, collection, data")
     .eq("collection", ref.collectionName)
     .eq("id", ref.id)
     .single();
@@ -251,7 +251,7 @@ export async function getDocFromServer(ref: DocRef) {
 export async function getDocs(ref: CollRef | Query) {
   let sb = supabase
     .from("documents")
-    .select("*")
+    .select("id, collection, data")
     .eq("collection", ref.collectionName);
 
   if (ref instanceof Query) {
