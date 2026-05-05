@@ -81,9 +81,15 @@ app.use(express.json({ limit: '10mb' }));
                 - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
                 INSTRUCTIONS:
-                1. Identify the TWO TEAM NAMES from the top header or team logos (Left team = "team1", Right team = "team2").
-                2. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
-                3. Extract GOAL SCORERS:
+                1. USERNAME DETECTION (CRITICAL):
+                   - Home player username = large bold text TOP LEFT of screen.
+                   - Away player username = large bold Latin text TOP RIGHT of screen.
+                   - IGNORE all subtitle text below usernames (team names, league names, Cyrillic text, "NO LEAGUE" etc.).
+                   - The username is ALWAYS Latin alphabet, never Cyrillic. 
+                   - Examples: "brokenaqua", "Icebear" — NOT "збірна України 3", "KOLKATA MASTERS", or "NO LEAGUE".
+                2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
+                3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
+                4. Extract GOAL SCORERS:
                    - In EAFC/FIFA match facts, there's usually a unified timeline indicating who scored. 
                    - Scan the entire screen to identify ANY player names accompanied by a Goal icon (soccer ball) and a minute (e.g. 18').
                    - If you see player names with a soccer ball icon, they are goal scorers. Look carefully near the scoreline or in the timeline.
@@ -92,11 +98,11 @@ app.use(express.json({ limit: '10mb' }));
                      - "goals": How many goals they scored (count their soccer ball icons). Default to 1.
                      - "team": IMPORTANT: You MUST output exactly "team1" or "team2". If one team scored 0, all scorers belong to the scoring team. Avoid using the team's actual name, use exactly "team1" or "team2" based on the logo/header position (Left=team1, Right=team2).
                      - "time": The minute(s).
-                4. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
+                5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
                    - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
                    - Left-side values = "team1Stats".
                    - Right-side values = "team2Stats".
-                5. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
+                6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
                 
                 CRITICAL RULES:
                 - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.

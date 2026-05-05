@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "build.sh",
+      "src": "package.json",
       "use": "@vercel/static-build",
       "config": { "distDir": "dist" }
     },
@@ -16,9 +16,5 @@
     { "src": "/assets/(.*)", "dest": "/dist/assets/$1" },
     { "src": "/(.*\\.(js|css|ico|png|svg|json))", "dest": "/dist/$1" },
     { "src": "/(.*)", "dest": "/dist/index.html" }
-  ],
-  "crons": [{
-    "path": "/api/cron-news",
-    "schedule": "0 */2 * * *"
-  }]
+  ]
 }
