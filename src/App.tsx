@@ -3057,7 +3057,7 @@ export default function App() {
   const [isAddMatchModalOpen, setIsAddMatchModalOpen] = useState(false);
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ date: string, home: string, away: string }>({ date: '2026-05-TBD', home: '', away: '' });
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
-  const [isDataLoading, setIsDataLoading] = useState(false);
+  const [isDataLoading, setIsDataLoading] = useState(true);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
@@ -4930,21 +4930,6 @@ export default function App() {
 
   return (
     <>
-      <AnimatePresence>
-        {isDataLoading && (
-          <motion.div 
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-[#000030] flex flex-col items-center justify-center pointer-events-none"
-          >
-            <Trophy className="w-16 h-16 text-blue-400 drop-shadow-[0_0_20px_rgba(96,165,250,0.6)] mb-8 animate-pulse" />
-            <Loader2 className="w-12 h-12 text-blue-500 animate-spin mb-6" />
-            <h2 className="text-3xl font-black uppercase tracking-tighter text-white italic">Arena Server</h2>
-            <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold mt-2 animate-pulse">Syncing matches & teams...</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="min-h-screen bg-[#000030] text-white font-sans selection:bg-blue-500/30 relative overflow-hidden">
       {hasQuotaError && (
         <div className="bg-red-500/20 border-b border-red-500/50 p-4 text-center z-50 relative backdrop-blur-sm">
@@ -5135,6 +5120,14 @@ export default function App() {
               ) : (
                 (() => {
                   const myRegistration = myRegistrationData;
+                  if (isDataLoading) {
+                    return (
+                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-6">
+                        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                        <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold animate-pulse">Loading Campaign Data...</p>
+                      </div>
+                    );
+                  }
                   if (!myRegistration) {
                      return (
                         <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
@@ -5879,6 +5872,15 @@ export default function App() {
 
                       if (!isAdmin || !isEditingMode) {
                         orderedDays = orderedDays.filter(day => !config.hiddenDates?.includes(day));
+                      }
+                      
+                      if (isDataLoading) {
+                        return (
+                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-6">
+                            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                            <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold animate-pulse">Syncing matches & teams...</p>
+                          </div>
+                        );
                       }
 
                       if (orderedDays.length === 0) {
