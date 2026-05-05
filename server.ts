@@ -373,6 +373,10 @@ app.use(express.json({ limit: '10mb' }));
   });
 
   async function handleNewsGeneration(matchData: any, leagueTable: any, trigger: string) {
+    console.log('[News] Supabase URL:', process.env.VITE_SUPABASE_URL ? 'SET' : 'MISSING');
+    console.log('[News] Service key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
+    console.log('[News] Anon key:', process.env.VITE_SUPABASE_ANON_KEY ? 'SET' : 'MISSING');
+
     const config = await getAiConfig();
     if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
@@ -423,8 +427,8 @@ Return ONLY this JSON:
       matchday: matchData?.matchday || null
     }).select();
 
-    console.log('[News] Supabase insert data:', data);
-    console.log('[News] Supabase insert error:', error);
+    console.log('[News] Insert data:', JSON.stringify(data));
+    console.log('[News] Insert error:', JSON.stringify(error));
 
     if (error) {
       console.error("[News] Error inserting into Supabase:", error);

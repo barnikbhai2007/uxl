@@ -3098,7 +3098,10 @@ export default function App() {
         console.error("Error fetching news:", error);
       }
       if (data) {
+        console.log("[News] Fetched news data length:", data.length, data);
         setNewsFeed(data);
+      } else {
+        console.log("[News] Fetched news data is null/undefined");
       }
     };
 
@@ -3107,13 +3110,16 @@ export default function App() {
     const channel = supabase
       .channel('public:news')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
+        console.log("[News] Realtime payload received:", payload);
         if (payload.eventType === 'INSERT') {
           setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
         } else {
            fetchNews();
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        console.log("[News] Realtime subscription status:", status);
+      });
 
     return () => {
       supabase.removeChannel(channel);
