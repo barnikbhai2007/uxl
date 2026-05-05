@@ -10,7 +10,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const supabaseUrl = process.env.VITE_SUPABASE_URL as string;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY as string;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY as string;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function getAiConfig() {
@@ -415,21 +415,20 @@ Return ONLY this JSON:
     
     console.log("[News] Article generated:", article?.title);
     
-    const newsId = crypto.randomUUID();
-    const { data, error } = await supabase.from('documents').insert({
-      id: newsId,
-      collection: 'news',
-      data: {
-        title: article.title,
-        content: article.content,
-        category: article.category,
-        triggered_by: trigger,
-        matchday: matchData?.matchday || null
-      }
+    const { data, error } = await supabase.from('news').insert({
+      title: article.title,
+      content: article.content,
+      category: article.category,
+      triggered_by: trigger,
+      matchday: matchData?.matchday || null
     }).select();
+
+    console.log('[News] Supabase insert data:', data);
+    console.log('[News] Supabase insert error:', error);
 
     if (error) {
       console.error("[News] Error inserting into Supabase:", error);
+      throw new Error(`Supabase insert failed: ${error.message}`);
     } else {
       console.log("[News] Successfully inserted news into Supabase:", data);
     }

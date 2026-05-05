@@ -3075,10 +3075,10 @@ export default function App() {
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
 
-  const handleDeleteNews = async (id: string) => {
+  const handleDeleteNews = async (id: string | number) => {
     if (!isAdmin || !confirm('Are you sure you want to delete this news article?')) return;
     try {
-      const { error } = await supabase.from('documents').delete().eq('collection', 'news').eq('id', id);
+      const { error } = await supabase.from('news').delete().eq('id', id);
       if (error) throw error;
       setNewsFeed(prev => prev.filter(n => n.id !== id));
     } catch (e: any) {
@@ -3090,16 +3090,15 @@ export default function App() {
   useEffect(() => {
     const fetchNews = async () => {
       const { data, error } = await supabase
-        .from('documents')
+        .from('news')
         .select('*')
-        .eq('collection', 'news')
         .order('created_at', { ascending: false })
         .limit(20);
       if (error) {
         console.error("Error fetching news:", error);
       }
       if (data) {
-        setNewsFeed(data.map((d: any) => ({ ...d.data, id: d.id, created_at: d.created_at })));
+        setNewsFeed(data);
       }
     };
 
@@ -3107,9 +3106,9 @@ export default function App() {
 
     const channel = supabase
       .channel('public:news')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: 'collection=eq.news' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setNewsFeed(prev => [{ ...(payload.new as any).data, id: (payload.new as any).id, created_at: (payload.new as any).created_at }, ...prev].slice(0, 20));
+          setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
         } else {
            fetchNews();
         }
