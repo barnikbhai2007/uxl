@@ -383,15 +383,22 @@ app.use(express.json({ limit: '10mb' }));
     const groq = new Groq({ apiKey: config.key });
 
     const trimmedMatch = matchData ? {
-      homeTeam: matchData.homeTeam || matchData.team1,
-      awayTeam: matchData.awayTeam || matchData.team2,
+      homePlayer: matchData.homePlayer || matchData.team1 || matchData.homeTeam,
+      awayPlayer: matchData.awayPlayer || matchData.team2 || matchData.awayTeam,
       homeScore: matchData.homeScore ?? matchData.team1Score,
       awayScore: matchData.awayScore ?? matchData.team2Score,
-      scorers: (matchData.homeScorers || []).concat(matchData.awayScorers || []).map((s: any) => ({
-        name: s.playerName || s.name,
-        goals: s.goals,
-        time: s.time
-      })),
+      scorers: [
+        ...(matchData.homeScorers || []).map((s: any) => ({
+          name: s.playerName || s.name,
+          goals: s.goals,
+          team: matchData.homePlayer || matchData.team1
+        })),
+        ...(matchData.awayScorers || []).map((s: any) => ({
+          name: s.playerName || s.name,
+          goals: s.goals,
+          team: matchData.awayPlayer || matchData.team2
+        }))
+      ],
       manOfTheMatch: matchData.manOfTheMatch || null,
       matchday: matchData.matchday || null
     } : null;
@@ -401,21 +408,30 @@ app.use(express.json({ limit: '10mb' }));
       max_tokens: 300,
       messages: [{
         role: "user",
-        content: `You are a spicy football journalist for UXL FC Mobile tournament.
-Write a 100 word max news article about this match.
+        content: `You are a savage, funny, dramatic football journalist for UXL — an FC Mobile tournament.
+Write a 100 word max news article.
 
-Match: ${JSON.stringify(trimmedMatch)}
-Trigger: ${trigger}
+Match data: ${JSON.stringify(trimmedMatch)}
 
-IMPORTANT: 
-- ALWAYS mention the actual player names from the scorers list
-- ALWAYS mention the MOTM player name
-- Use their real names like "Barnik", "Pritam" etc - never say "a player" or "the striker"
-- Pick ONE angle: match reaction, troll loser, league analysis, prediction, matchday recap, form guide
+STRICT RULES:
+- The GAMER usernames are homePlayer and awayPlayer (e.g. "Barnik", "Priyam", "Pritam") — USE THEM by name, every time
+- NEVER say "the home team" or "the away team" — always use their actual username
+- ALWAYS mention the MOTM player by name
+- ALWAYS name the goalscorers
+- If someone lost badly, ROAST them by username (e.g. "Priyam had a night to forget")
+- If someone won big, HYPE them by username (e.g. "Barnik is UNSTOPPABLE")
+- For matchday breakdown, mention EVERY player who played that matchday by name
+- Be unpredictable — sometimes serious, sometimes savage banter
 
-Use emojis. Be dramatic and creative.
+Pick ONE angle randomly:
+1. 🔥 Savage match reaction — roast the loser by name, hype the winner
+2. 😂 Full banter — mock the losing gamer's performance
+3. 📊 Serious breakdown — tactical analysis mentioning both gamers
+4. 🏆 Bold prediction — call out specific gamers by name for next match
+5. 📅 Matchday recap — mention ALL gamers who played
+6. 📈 Form guide — rank gamers by recent form using their names
 
-Return ONLY this JSON:
+Return ONLY this JSON with no markdown:
 {"title":"...","content":"...","category":"SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM"}`
       }]
     });
