@@ -3772,6 +3772,28 @@ export default function App() {
       await updateDoc(doc(db, 'matches', match.id), cleanedData);
       await refreshCache('matches');
       
+      // Call achievements after match saved
+      if (cleanedData.status === 'finished' && user?.uid) {
+        const homeT = dbTeams.find(t => t.id === match.homeTeamId);
+        const awayT = dbTeams.find(t => t.id === match.awayTeamId);
+        try {
+          await checkAndAwardAchievements(
+            {
+              homeScore: cleanedData.homeScore,
+              awayScore: cleanedData.awayScore,
+              homeScorers: cleanedData.homeScorers || [],
+              awayScorers: cleanedData.awayScorers || [],
+              homeTeam: homeT?.fcName || '', 
+              awayTeam: awayT?.fcName || '',
+            },
+            user.uid,
+            (user.uid === match.homeTeamId ? match.awayTeamId : match.homeTeamId) || ''
+          );
+        } catch (e) {
+          console.warn('Achievement check failed:', e);
+        }
+      }
+
       if (cleanedData.status === 'finished') {
         fetch('/api/generate-news', {
           method: 'POST',
@@ -4360,6 +4382,26 @@ export default function App() {
           }
           await updateDoc(matchRef, cleanedPayload);
           await refreshCache('matches');
+
+          // Call achievements after match saved
+          if (cleanedPayload.status === 'finished' && user?.uid) {
+            try {
+              await checkAndAwardAchievements(
+                {
+                  homeScore: cleanedPayload.homeScore,
+                  awayScore: cleanedPayload.awayScore,
+                  homeScorers: cleanedPayload.homeScorers || [],
+                  awayScorers: cleanedPayload.awayScorers || [],
+                  homeTeam: team1.fcName,
+                  awayTeam: team2.fcName,
+                },
+                user.uid,
+                opponentReg?.userId || ''
+              );
+            } catch (e) {
+              console.warn('Achievement check failed:', e);
+            }
+          }
 
           if (cleanedPayload.status === 'finished') {
             fetch('/api/generate-news', {
