@@ -448,8 +448,8 @@ app.use(express.json({ limit: '10mb' }));
     });
   }
 
-  if (process.env.NODE_ENV !== "production") {
-    // Only listen if running locally, not on Vercel
+  if (!process.env.VERCEL) {
+    // Listen unconditionally unless running in Vercel.
     app.listen(Number(PORT), "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });

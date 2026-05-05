@@ -2416,7 +2416,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
                 <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Tab Visibility Management</h3>
                 <div className="space-y-4">
-                  {['Fixtures', 'Table', 'Bracket', 'Registration', 'Stats', 'Campaign'].map(tab => (
+                  {['Fixtures', 'Table', 'Bracket', 'Registration', 'Stats', 'News', 'Campaign'].map(tab => (
                     <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
                       <span className="text-sm font-bold text-white">{tab}</span>
                       <button 
@@ -2930,7 +2930,11 @@ const parseTourneyDate = (dStr: string) => {
 };
 
 const NewsFeed = ({ articles }: { articles: any[] }) => {
-  if (!articles || articles.length === 0) return null;
+  if (!articles || articles.length === 0) return (
+    <div className="p-8 text-center text-white/40 bg-white/5 rounded-3xl border border-white/10 uppercase tracking-widest font-black text-xs">
+      No recent news
+    </div>
+  );
 
   const getCategoryColor = (category: string) => {
     switch(category) {
@@ -4923,6 +4927,7 @@ export default function App() {
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
               { id: 'stats', label: 'Stats', icon: BarChart2 },
+              { id: 'news', label: 'News', icon: Sparkles },
               { id: 'registration', label: 'Registration', icon: Layout },
               { id: 'campaign', label: 'My Campaign', icon: UserIcon },
             ].filter(tab => {
@@ -5114,152 +5119,160 @@ export default function App() {
                            )}
                         </div>
                       ) : (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                      <div className="lg:col-span-2 space-y-8">
-                        {/* Performance Snapshot */}
-                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
-                              <EditableText id="stats_status_label" defaultText="Status" />
-                            </p>
-                            <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
-                          </div>
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">OVR</p>
-                            <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
-                          </div>
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Goals</p>
-                            <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
-                          </div>
-                          <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                            <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Played</p>
-                            <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
-                          </div>
-                        </div>
-
-                        {/* Upcoming Matches */}
-                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                          <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Upcoming Fixtures</h3>
-                          <div className="space-y-4">
-                             {myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).length === 0 ? (
-                                <div className="p-8 text-center bg-white/5 rounded-[2rem] border border-white/10">
-                                   <Calendar className="w-12 h-12 text-white/20 mx-auto mb-4" />
-                                   <p className="text-white/40">No upcoming matches at the moment.</p>
-                                </div>
-                             ) : (
-                               myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0)).slice(0, 15).map(m => {
-                                 const isHome = m.homeTeamId === myRegistration.id;
-                                 const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
-                                 const opponent = teams.find(t => t.id === opponentId);
-                                 return (
-                                   <div key={m.id} className="group relative bg-white/5 border border-white/10 p-4 md:p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-white/10 overflow-hidden">
-                                     {/* Background glow based on Home/Away */}
-                                     <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
-                                     
-                                     <div className="flex items-center gap-4 relative z-10 w-full">
-                                       <div className={`w-14 items-center justify-center flex py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
-                                         {isHome ? 'Home' : 'Away'}
-                                       </div>
-                                      <div className="flex-1">
-                                        <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
-                                        <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
-                                          <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                                            <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-blue-400 font-bold" />
-                                            <div className="w-[1px] h-3 bg-white/10 mx-1" />
-                                            <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                                            <span className="text-blue-300">{m.date || 'TBD'}</span>
-                                          </div>
-                                        </div>
-                                       </div>
-                                     </div>
-                                     <div className="relative z-10 md:w-auto w-full">
-                                        <button 
-                                          onClick={() => setSelectedMatch(m)} 
-                                          className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
-                                        >
-                                          View Details
-                                        </button>
-                                     </div>
-                                   </div>
-                                 );
-                               })
-                             )}
-                          </div>
-                        </div>
-
-                        {/* Goal Scorers */}
-                        <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                          <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Top Scorers</h3>
-                          <div className="space-y-4">
-                            {myStats.length === 0 ? (
-                              <p className="text-white/20 text-center py-4 text-sm uppercase font-black tracking-widest">No goals recorded yet</p>
-                            ) : (
-                              myStats.map(s => (
-                                <div key={s.playerName} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
-                                  <span className="font-bold text-white">{s.playerName}</span>
-                                  <span className="font-display font-black text-blue-400 text-xl italic">{s.goals}</span>
-                                </div>
-                              ))
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="space-y-8">
-                        {/* Result Submission AI */}
-                        <div className="bg-blue-600/5 border border-blue-500/20 rounded-[2rem] p-8 relative overflow-hidden">
-                          <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[60px] pointer-events-none" />
-                          <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-blue-400 mb-2" />
-                          <p className="text-white/40 text-[10px] uppercase tracking-widest mb-6">
-                            <EditableText id="ai_verify_sub" defaultText="AI-Powered Verification" />
-                          </p>
-                          
-                          <div className="space-y-6">
-                            <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/50 transition-all group cursor-pointer relative">
-                              <input 
-                                type="file" 
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) {
-                                    if (!myRegistration) {
-                                      alert("Please register a team first to submit match results.");
-                                      return;
-                                    }
-                                    if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
-                                    processMatchResultImage(file, myRegistration);
-                                  }
-                                }}
-                                className="absolute inset-0 opacity-0 cursor-pointer"
-                              />
-                              <Plus className="w-8 h-8 text-blue-400/40 mb-3 group-hover:text-blue-400 transition-colors" />
-                              <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                        <div className="max-w-4xl mx-auto space-y-8">
+                          {/* Performance Snapshot */}
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                            <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                                <EditableText id="stats_status_label" defaultText="Status" />
+                              </p>
+                              <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
                             </div>
-
-                            {isSubmittingImg && (
-                               <div className="flex items-center justify-center gap-3 text-blue-400">
-                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                 <span className="text-[10px] font-black uppercase tracking-widest">AI Analyzing Photo...</span>
-                               </div>
-                            )}
-
-                            {aiAnalysisResult && (
-                              <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${
-                                aiAnalysisResult.startsWith('SUCCESS') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
-                              }`}>
-                                {aiAnalysisResult}
-                              </div>
-                            )}
+                            <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">OVR</p>
+                              <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Goals</p>
+                              <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
+                            </div>
+                            <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
+                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Played</p>
+                              <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
+                            </div>
                           </div>
-                        </div>
-                      </div>
+
+                          {/* Goal Scorers */}
+                          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                            <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Top Scorers</h3>
+                            <div className="space-y-4">
+                              {myStats.length === 0 ? (
+                                <p className="text-white/20 text-center py-4 text-sm uppercase font-black tracking-widest">No goals recorded yet</p>
+                              ) : (
+                                myStats.map(s => (
+                                  <div key={s.playerName} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                    <span className="font-bold text-white">{s.playerName}</span>
+                                    <span className="font-display font-black text-blue-400 text-xl italic">{s.goals}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Result Submission AI */}
+                          <div className="bg-blue-600/5 border border-blue-500/20 rounded-[2rem] p-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[60px] pointer-events-none" />
+                            <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-blue-400 mb-2" />
+                            <p className="text-white/40 text-[10px] uppercase tracking-widest mb-6">
+                              <EditableText id="ai_verify_sub" defaultText="AI-Powered Verification" />
+                            </p>
+                            
+                            <div className="space-y-6">
+                              <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/50 transition-all group cursor-pointer relative">
+                                <input 
+                                  type="file" 
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      if (!myRegistration) {
+                                        alert("Please register a team first to submit match results.");
+                                        return;
+                                      }
+                                      if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
+                                      processMatchResultImage(file, myRegistration);
+                                    }
+                                  }}
+                                  className="absolute inset-0 opacity-0 cursor-pointer"
+                                />
+                                <Plus className="w-8 h-8 text-blue-400/40 mb-3 group-hover:text-blue-400 transition-colors" />
+                                <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                              </div>
+
+                              {isSubmittingImg && (
+                                 <div className="flex items-center justify-center gap-3 text-blue-400">
+                                   <Loader2 className="w-4 h-4 animate-spin" />
+                                   <span className="text-[10px] font-black uppercase tracking-widest">AI Analyzing Photo...</span>
+                                 </div>
+                              )}
+
+                              {aiAnalysisResult && (
+                                <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                                  aiAnalysisResult.startsWith('SUCCESS') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                                }`}>
+                                  {aiAnalysisResult}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Upcoming Matches */}
+                          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
+                            <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Upcoming Fixtures</h3>
+                            <div className="space-y-4">
+                               {myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).length === 0 ? (
+                                  <div className="p-8 text-center bg-white/5 rounded-[2rem] border border-white/10">
+                                     <Calendar className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                                     <p className="text-white/40">No upcoming matches at the moment.</p>
+                                  </div>
+                               ) : (
+                                 myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0)).slice(0, 15).map(m => {
+                                   const isHome = m.homeTeamId === myRegistration.id;
+                                   const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
+                                   const opponent = teams.find(t => t.id === opponentId);
+                                   return (
+                                     <div key={m.id} className="group relative bg-white/5 border border-white/10 p-4 md:p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-white/10 overflow-hidden">
+                                       {/* Background glow based on Home/Away */}
+                                       <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
+                                       
+                                       <div className="flex items-center gap-4 relative z-10 w-full">
+                                         <div className={`w-14 items-center justify-center flex py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
+                                           {isHome ? 'Home' : 'Away'}
+                                         </div>
+                                        <div className="flex-1">
+                                          <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
+                                          <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
+                                            <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
+                                              <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-blue-400 font-bold" />
+                                              <div className="w-[1px] h-3 bg-white/10 mx-1" />
+                                              <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                                              <span className="text-blue-300">{m.date || 'TBD'}</span>
+                                            </div>
+                                          </div>
+                                         </div>
+                                       </div>
+                                       <div className="relative z-10 md:w-auto w-full">
+                                          <button 
+                                            onClick={() => setSelectedMatch(m)} 
+                                            className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
+                                          >
+                                            View Details
+                                          </button>
+                                       </div>
+                                     </div>
+                                   );
+                                 })
+                               )}
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
                   );
                 })()
               )}
+            </motion.div>
+          )}
+
+          {activeTab === 'news' && (
+            <motion.div
+              key="news"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              className="space-y-6"
+            >
+              <NewsFeed articles={newsFeed} />
             </motion.div>
           )}
 
@@ -5271,8 +5284,6 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <NewsFeed articles={newsFeed} />
-              
               {/* Top Scorers Section */}
               <div className="flex items-center gap-4 mb-4 mt-2">
                 <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
