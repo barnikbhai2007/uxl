@@ -354,6 +354,7 @@ app.use(express.json({ limit: '10mb' }));
     try {
       const { matchData, leagueTable, trigger } = req.body;
       console.log(`[News] Triggered by: ${trigger}`);
+      const { key, model } = await getAiConfig();
       if (!key) throw new Error("GROQ_API_KEY is not configured.");
 
       const groq = new Groq({ apiKey: key });
