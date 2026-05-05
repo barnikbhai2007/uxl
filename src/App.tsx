@@ -3057,7 +3057,7 @@ export default function App() {
   const [isAddMatchModalOpen, setIsAddMatchModalOpen] = useState(false);
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ date: string, home: string, away: string }>({ date: '2026-05-TBD', home: '', away: '' });
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
-  const [isDataLoading, setIsDataLoading] = useState(true);
+  const [isDataLoading, setIsDataLoading] = useState(false);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
@@ -5712,12 +5712,21 @@ export default function App() {
                 <tbody className="divide-y divide-white/5">
                     {standings.map((team, index) => {
                       let rowClass = "hover:bg-white/5 transition-colors";
+                      if (index < 4) {
+                        rowClass = "bg-green-500/10 hover:bg-green-500/20 transition-colors";
+                      } else if (index >= 4 && index < 8) {
+                        rowClass = "bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors";
+                      } else if (index >= 16) {
+                        rowClass = "bg-red-500/10 hover:bg-red-500/20 transition-colors";
+                      }
                       
                       return (
                         <tr key={team.id} className={`${rowClass} relative group/row cursor-pointer`} onClick={() => setSelectedTeam(team)}>
                           <td className="px-3 md:px-6 py-3 md:py-4 relative text-center">
                             <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
-                              index < 8 ? 'bg-blue-600/20 text-blue-400 ring-1 ring-blue-500/30' : 
+                              index < 4 ? 'bg-green-600/20 text-green-400 ring-1 ring-green-500/30' : 
+                              index >= 4 && index < 8 ? 'bg-yellow-600/20 text-yellow-400 ring-1 ring-yellow-500/30' :
+                              index >= 16 ? 'bg-red-600/20 text-red-400 ring-1 ring-red-500/30' :
                               'bg-white/10 text-white/70'
                             }`}>
                               {index + 1}
@@ -5795,6 +5804,20 @@ export default function App() {
                   })}
                 </tbody>
               </table>
+              <div className="mt-4 flex flex-wrap gap-4 px-4 pb-4">
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-green-500/20 border border-green-500/30"></span>
+                  <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Quarterfinal</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-yellow-500/20 border border-yellow-500/30"></span>
+                  <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Round of 8</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="w-3 h-3 rounded-sm bg-red-500/20 border border-red-500/30"></span>
+                  <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Eliminated</span>
+                </div>
+              </div>
             </motion.div>
           )}
 
