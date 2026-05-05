@@ -2935,7 +2935,7 @@ const parseTourneyDate = (dStr: string) => {
   return new Date(cleanStr);
 };
 
-const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: any[], isAdmin?: boolean, isEditingMode?: boolean, onDelete?: (id: number) => void }) => {
+const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: any[], isAdmin?: boolean, isEditingMode?: boolean, onDelete?: (id: string) => void }) => {
   if (!articles || articles.length === 0) return (
     <div className="p-8 text-center text-white/40 bg-white/5 rounded-3xl border border-white/10 uppercase tracking-widest font-black text-xs">
       No recent news
@@ -3075,10 +3075,10 @@ export default function App() {
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
 
-  const handleDeleteNews = async (id: number) => {
+  const handleDeleteNews = async (id: string) => {
     if (!isAdmin || !confirm('Are you sure you want to delete this news article?')) return;
     try {
-      const { error } = await supabase.from('news').delete().eq('id', id);
+      const { error } = await supabase.from('documents').delete().eq('collection', 'news').eq('id', id);
       if (error) throw error;
       setNewsFeed(prev => prev.filter(n => n.id !== id));
     } catch (e: any) {
@@ -3089,21 +3089,27 @@ export default function App() {
 
   useEffect(() => {
     const fetchNews = async () => {
-      const { data } = await supabase
-        .from('news')
+      const { data, error } = await supabase
+        .from('documents')
         .select('*')
+        .eq('collection', 'news')
         .order('created_at', { ascending: false })
         .limit(20);
-      if (data) setNewsFeed(data);
+      if (error) {
+        console.error("Error fetching news:", error);
+      }
+      if (data) {
+        setNewsFeed(data.map((d: any) => ({ ...d.data, id: d.id, created_at: d.created_at })));
+      }
     };
 
     fetchNews();
 
     const channel = supabase
       .channel('public:news')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'documents', filter: 'collection=eq.news' }, (payload) => {
         if (payload.eventType === 'INSERT') {
-          setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
+          setNewsFeed(prev => [{ ...(payload.new as any).data, id: (payload.new as any).id, created_at: (payload.new as any).created_at }, ...prev].slice(0, 20));
         } else {
            fetchNews();
         }

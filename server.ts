@@ -415,13 +415,24 @@ Return ONLY this JSON:
     
     console.log("[News] Article generated:", article?.title);
     
-    const { data, error } = await supabase.from('news').insert({
-      title: article.title,
-      content: article.content,
-      category: article.category,
-      triggered_by: trigger,
-      matchday: matchData?.matchday || null
+    const newsId = crypto.randomUUID();
+    const { data, error } = await supabase.from('documents').insert({
+      id: newsId,
+      collection: 'news',
+      data: {
+        title: article.title,
+        content: article.content,
+        category: article.category,
+        triggered_by: trigger,
+        matchday: matchData?.matchday || null
+      }
     }).select();
+
+    if (error) {
+      console.error("[News] Error inserting into Supabase:", error);
+    } else {
+      console.log("[News] Successfully inserted news into Supabase:", data);
+    }
 
     return { article, data, error };
   }
