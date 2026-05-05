@@ -1229,7 +1229,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     key={team.id}
                     onClick={() => {
                       const displayValue = team.fullName || team.fcName || team.name;
-                      onChange(displayValue);
+                      onChange(team.id);
                       setSearch(displayValue);
                       setIsOpen(false);
                     }}
@@ -1936,10 +1936,16 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     const saveMatch = async () => {
       if (!editingMatchId) return;
+      
+      const resolveName = (idOrName: string) => {
+        const team = teams.find(t => t.id === idOrName);
+        return team ? (team.fullName || team.fcName || team.name) : idOrName;
+      };
+
       await handleSaveBracket({
         id: editingMatchId,
-        homeTeamName: editHomeName,
-        awayTeamName: editAwayName,
+        homeTeamName: resolveName(editHomeName),
+        awayTeamName: resolveName(editAwayName),
         round: editRound,
         homeScore: editHomeScore,
         awayScore: editAwayScore
@@ -3668,6 +3674,7 @@ export default function App() {
       
       if (homePlayer && homePlayer !== 'TBD') {
         const team = dbTeams.find(t => 
+          t.id === homePlayer ||
           t.name?.toLowerCase() === homePlayer.toLowerCase() || 
           t.fullName?.toLowerCase() === homePlayer.toLowerCase() ||
           t.fcName?.toLowerCase() === homePlayer.toLowerCase()
@@ -3677,6 +3684,7 @@ export default function App() {
       
       if (awayPlayer && awayPlayer !== 'TBD') {
         const team = dbTeams.find(t => 
+          t.id === awayPlayer ||
           t.name?.toLowerCase() === awayPlayer.toLowerCase() || 
           t.fullName?.toLowerCase() === awayPlayer.toLowerCase() ||
           t.fcName?.toLowerCase() === awayPlayer.toLowerCase()
@@ -4729,8 +4737,25 @@ export default function App() {
     }
   };
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
+    const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
+      if (u && !u.isAnonymous) {
+        // Ensure user profile document exists
+        const userRef = doc(db, 'users', u.uid);
+        try {
+          const snap = await getDoc(userRef);
+          if (!snap.exists()) {
+            await setDoc(userRef, {
+              uid: u.uid,
+              email: u.email,
+              role: 'user',
+              achievements: {}
+            });
+          }
+        } catch (e) {
+          console.warn("Failed to ensure user profile:", e);
+        }
+      }
       if (!u) {
         signInAnon().catch((error) => {
           if (error.code === 'auth/network-request-failed') {

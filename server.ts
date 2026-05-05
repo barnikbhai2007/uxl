@@ -32,18 +32,18 @@ app.use(express.json({ limit: '10mb' }));
   // AI Endpoint for Testing Connection
   app.get("/api/test-ai", async (req, res) => {
     try {
-      const { key, model, source } = await getAiConfig();
-      if (!key) throw new Error("GROQ_API_KEY is not configured.");
+      const config = await getAiConfig();
+      if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const groq = new Groq({ apiKey: key });
+      const groq = new Groq({ apiKey: config.key });
       
       const response = await groq.chat.completions.create({
-        model: model,
+        model: config.model,
         messages: [{ role: 'user', content: "Respond with only the word 'OK' if you can read this." }]
       });
       const text = response.choices[0]?.message?.content || "{}";
       
-      res.json({ success: true, message: `Connected to ${model} successfully! AI response: ${text}`, source });
+      res.json({ success: true, message: `Connected to ${config.model} successfully! AI response: ${text}`, source: config.source });
     } catch (error: any) {
       console.error("AI Test Error:", error);
       res.status(500).json({ success: false, message: error.message });
@@ -54,16 +54,16 @@ app.use(express.json({ limit: '10mb' }));
   app.post("/api/analyze-match", async (req, res) => {
     try {
       const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper } = req.body;
-      const { key, model, source } = await getAiConfig();
+      const config = await getAiConfig();
       
-      console.log(`[AI] Analysis Request | Model: ${model} | Source: ${source}`);
+      console.log(`[AI] Analysis Request | Model: ${config.model} | Source: ${config.source}`);
       
-      if (!key) throw new Error("GROQ_API_KEY is not configured.");
+      if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const groq = new Groq({ apiKey: key });
+      const groq = new Groq({ apiKey: config.key });
 
       const response = await groq.chat.completions.create({
-        model: model,
+        model: config.model,
         messages: [
           {
             role: "user",
@@ -267,20 +267,20 @@ app.use(express.json({ limit: '10mb' }));
   app.post("/api/admin-ai-command", async (req, res) => {
     try {
       const { command, teams } = req.body;
-      const { key, model, source } = await getAiConfig();
+      const config = await getAiConfig();
 
-      console.log(`[AI] Admin Command | Model: ${model} | Source: ${source}`);
+      console.log(`[AI] Admin Command | Model: ${config.model} | Source: ${config.source}`);
       
-      if (!key) throw new Error("GROQ_API_KEY is not configured.");
+      if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const groq = new Groq({ apiKey: key });
+      const groq = new Groq({ apiKey: config.key });
       
       const teamsStr = teams && Array.isArray(teams) 
           ? teams.map((t: any) => `ID: "${t.id}", Names: ["${t.name}", "${t.fcName}"]`).join(' | ')
           : 'No teams available';
 
       const response = await groq.chat.completions.create({
-        model: model,
+        model: config.model,
         messages: [
           {
             role: "user",
@@ -354,13 +354,13 @@ app.use(express.json({ limit: '10mb' }));
     try {
       const { matchData, leagueTable, trigger } = req.body;
       console.log(`[News] Triggered by: ${trigger}`);
-      const { key, model } = await getAiConfig();
-      if (!key) throw new Error("GROQ_API_KEY is not configured.");
+      const config = await getAiConfig();
+      if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
-      const groq = new Groq({ apiKey: key });
+      const groq = new Groq({ apiKey: config.key });
 
       const response = await groq.chat.completions.create({
-        model: model,
+        model: config.model,
         messages: [{
           role: "user",
           content: `You are a spicy, funny, dramatic football journalist for a FC Mobile tournament called UXL.
@@ -434,12 +434,12 @@ app.use(express.json({ limit: '10mb' }));
     }
 
     // Generate news using the same robust logic as /api/generate-news
-    const { key, model } = await getAiConfig();
-    if (!key) throw new Error("GROQ_API_KEY is not configured.");
+    const config = await getAiConfig();
+    if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
-    const groq = new Groq({ apiKey: key });
+    const groq = new Groq({ apiKey: config.key });
     const response = await groq.chat.completions.create({
-      model: model,
+      model: config.model,
       messages: [{ 
         role: "user", 
         content: `You are a spicy, funny, dramatic football journalist for UXL tournament. 
