@@ -2935,7 +2935,7 @@ const parseTourneyDate = (dStr: string) => {
   return new Date(cleanStr);
 };
 
-const NewsFeed = ({ articles }: { articles: any[] }) => {
+const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: any[], isAdmin?: boolean, isEditingMode?: boolean, onDelete?: (id: number) => void }) => {
   if (!articles || articles.length === 0) return (
     <div className="p-8 text-center text-white/40 bg-white/5 rounded-3xl border border-white/10 uppercase tracking-widest font-black text-xs">
       No recent news
@@ -2989,6 +2989,14 @@ const NewsFeed = ({ articles }: { articles: any[] }) => {
             key={article.id} 
             className="flex-none w-80 md:w-96 bg-black/40 border border-white/10 rounded-2xl p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
           >
+            {isAdmin && isEditingMode && onDelete && (
+              <button 
+                onClick={() => onDelete(article.id)}
+                className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center bg-red-500/20 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            )}
             <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none group-hover:bg-blue-500/10 transition-colors" />
             <div className="flex items-start justify-between mb-3 relative z-10">
               <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
@@ -3066,6 +3074,18 @@ export default function App() {
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
+
+  const handleDeleteNews = async (id: number) => {
+    if (!isAdmin || !confirm('Are you sure you want to delete this news article?')) return;
+    try {
+      const { error } = await supabase.from('news').delete().eq('id', id);
+      if (error) throw error;
+      setNewsFeed(prev => prev.filter(n => n.id !== id));
+    } catch (e: any) {
+      console.error("Error deleting news:", e);
+      alert("Failed to delete news: " + e.message);
+    }
+  };
 
   useEffect(() => {
     const fetchNews = async () => {
@@ -5396,7 +5416,7 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-6"
             >
-              <NewsFeed articles={newsFeed} />
+              <NewsFeed articles={newsFeed} isAdmin={isAdmin} isEditingMode={isEditingMode} onDelete={handleDeleteNews} />
             </motion.div>
           )}
 

@@ -378,29 +378,33 @@ app.use(express.json({ limit: '10mb' }));
 
     const groq = new Groq({ apiKey: config.key });
 
+    const trimmedMatch = matchData ? {
+      homeTeam: matchData.homeTeam || matchData.team1,
+      awayTeam: matchData.awayTeam || matchData.team2,
+      homeScore: matchData.homeScore ?? matchData.team1Score,
+      awayScore: matchData.awayScore ?? matchData.team2Score,
+      scorers: matchData.homeScorers || matchData.scorers || [],
+      manOfTheMatch: matchData.manOfTheMatch || null,
+      matchday: matchData.matchday || null
+    } : null;
+
     const response = await groq.chat.completions.create({
       model: config.model,
+      max_tokens: 300,
       messages: [{
         role: "user",
-        content: `You are a spicy, funny, dramatic football journalist for a FC Mobile tournament called UXL.
-        Write a short news article (max 150 words).
-        
-        Match Data: ${JSON.stringify(matchData)}
-        League Table: ${JSON.stringify(leagueTable)}
-        Trigger: ${trigger}
-        
-        Randomly vary your style each time — choose ONE of these angles:
-        - 🔥 Spicy/dramatic match reaction
-        - 😂 Funny trolling of the losing team
-        - 📊 Serious league table analysis
-        - 🏆 Bold prediction for upcoming matches
-        - 📅 Matchday history/recap
-        - 📈 Form guide and momentum discussion
-        
-        Use football journalism language. Add emojis. Be creative and unpredictable.
-        
-        Return ONLY a raw JSON object, no markdown, no backticks, no explanation:
-        { "title": "...", "content": "...", "category": "SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM" }`
+        content: `You are a spicy football journalist for UXL FC Mobile tournament.
+Write a 100 word max news article about this match.
+
+Match: ${JSON.stringify(trimmedMatch)}
+Trigger: ${trigger}
+
+Pick ONE random angle: match reaction, troll the loser, league analysis, bold prediction, matchday recap, or form guide.
+
+Use emojis. Be creative.
+
+Return ONLY this JSON:
+{"title":"...","content":"...","category":"SPICY|BANTER|ANALYSIS|PREDICTION|MATCHDAY|FORM"}`
       }]
     });
 
