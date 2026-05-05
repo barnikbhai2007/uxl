@@ -3078,8 +3078,9 @@ export default function App() {
   const handleDeleteNews = async (id: string | number) => {
     if (!isAdmin || !confirm('Are you sure you want to delete this news article?')) return;
     try {
-      const { error } = await supabase.from('news').delete().eq('id', id);
-      if (error) throw error;
+      const response = await fetch(`/api/news/${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete news');
       setNewsFeed(prev => prev.filter(n => n.id !== id));
     } catch (e: any) {
       console.error("Error deleting news:", e);

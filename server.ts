@@ -372,6 +372,18 @@ app.use(express.json({ limit: '10mb' }));
     }
   });
 
+  app.delete("/api/news/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { error } = await supabase.from('news').delete().eq('id', id);
+      if (error) throw error;
+      res.json({ success: true, message: "News deleted successfully" });
+    } catch (error: any) {
+      console.error("Error deleting news:", error);
+      res.status(500).json({ success: false, error: "Internal server error", details: error.message });
+    }
+  });
+
   async function handleNewsGeneration(matchData: any, leagueTable: any, trigger: string) {
     console.log('[News] Supabase URL:', process.env.VITE_SUPABASE_URL ? 'SET' : 'MISSING');
     console.log('[News] Service key:', process.env.SUPABASE_SERVICE_ROLE_KEY ? 'SET' : 'MISSING');
