@@ -718,7 +718,22 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     </div>
                   )}
                 </div>
-                {match.homeScorers && match.homeScorers.length > 0 && (
+                {isEditingMode && isAdmin ? (
+                  <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-[200px]">
+                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
+                    {match.homeScorers?.map((s, i) => (
+                      <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
+                        <input type="text" value={s.playerName} onChange={e => { s.playerName = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
+                        <div className="flex gap-1 items-center">
+                          <input type="number" value={s.goals} onChange={e => { s.goals = parseInt(e.target.value)||0; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { s.time = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { e.stopPropagation(); match.homeScorers?.splice(i, 1); if(updateMatch) updateMatch({...match}); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={(e) => { e.stopPropagation(); if(!match.homeScorers) match.homeScorers = []; match.homeScorers.push({ playerName: '', goals: 1 }); if(updateMatch) updateMatch({...match}); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                  </div>
+                ) : match.homeScorers && match.homeScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
                     {match.homeScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
@@ -728,7 +743,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="flex flex-col items-center gap-2 md:gap-4">
@@ -833,7 +848,22 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     </div>
                   )}
                 </div>
-                {match.awayScorers && match.awayScorers.length > 0 && (
+                {isEditingMode && isAdmin ? (
+                  <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-[200px]">
+                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
+                    {match.awayScorers?.map((s, i) => (
+                      <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
+                        <input type="text" value={s.playerName} onChange={e => { s.playerName = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
+                        <div className="flex gap-1 items-center">
+                          <input type="number" value={s.goals} onChange={e => { s.goals = parseInt(e.target.value)||0; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { s.time = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { e.stopPropagation(); match.awayScorers?.splice(i, 1); if(updateMatch) updateMatch({...match}); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
+                        </div>
+                      </div>
+                    ))}
+                    <button onClick={(e) => { e.stopPropagation(); if(!match.awayScorers) match.awayScorers = []; match.awayScorers.push({ playerName: '', goals: 1 }); if(updateMatch) updateMatch({...match}); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                  </div>
+                ) : match.awayScorers && match.awayScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
                     {match.awayScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
@@ -843,7 +873,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
 
