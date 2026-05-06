@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -744,6 +744,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         <div className="flex gap-1 items-center">
                           <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
                           <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { e.stopPropagation(); const scorer = localHomeScorers[i]; const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); setLocalAwayScorers([...localAwayScorers, scorer]); }} className="p-1 min-w-[24px] flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Away Team"><ArrowRightLeft className="w-3 h-3" /></button>
                           <button onClick={(e) => { e.stopPropagation(); const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
@@ -877,6 +878,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         <div className="flex gap-1 items-center">
                           <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
                           <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { e.stopPropagation(); const scorer = localAwayScorers[i]; const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); setLocalHomeScorers([...localHomeScorers, scorer]); }} className="p-1 min-w-[24px] flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Home Team"><ArrowRightLeft className="w-3 h-3" /></button>
                           <button onClick={(e) => { e.stopPropagation(); const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>

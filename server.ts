@@ -21,6 +21,64 @@ async function getAiConfig() {
   };
 }
 
+async function sendTelegramMatchResult(matchData: any, imageBase64: string, mimeType: string) {
+  try {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const chatId = process.env.TELEGRAM_CHAT_ID;
+    
+    if (!botToken || !chatId) {
+      console.log('[Telegram] Bot token or chat ID missing, skipping');
+      return;
+    }
+
+    // Convert base64 to buffer
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
+    const extension = mimeType.split('/')[1] || 'jpg';
+
+    // Build caption
+    const caption = `
+🎮 *New Match Result Uploaded!*
+
+⚽ *${matchData.homePlayer || matchData.team1}* ${matchData.homeScore ?? matchData.team1Score ?? 0} - ${matchData.awayScore ?? matchData.team2Score ?? 0} *${matchData.awayPlayer || matchData.team2}*
+
+📅 Matchday: ${matchData.matchday || 'N/A'}
+🏆 MOTM: ${matchData.manOfTheMatch || 'N/A'}
+
+⚽ *Scorers:*
+${[...(matchData.homeScorers || matchData.team1Scorers || []), ...(matchData.awayScorers || matchData.team2Scorers || matchData.scorers || [])]
+  .map((s: any) => \`• \${s.playerName || s.name} (\${s.goals} goal\${s.goals > 1 ? 's' : ''})\`)
+  .join('\\n') || 'No scorers recorded'}
+
+🕐 ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
+    `.trim();
+
+    // Send photo with caption using multipart form
+    const FormData = (await import('form-data')).default;
+    const form = new FormData();
+    form.append('chat_id', chatId);
+    form.append('caption', caption);
+    form.append('parse_mode', 'Markdown');
+    form.append('photo', imageBuffer, {
+      filename: \`match_result.\${extension}\`,
+      contentType: mimeType
+    });
+
+    const response = await fetch(
+      \`https://api.telegram.org/bot\${botToken}/sendPhoto\`,
+      { method: 'POST', body: form as any, headers: form.getHeaders() }
+    );
+
+    const result = await response.json();
+    if (result.ok) {
+      console.log('[Telegram] Match result sent successfully');
+    } else {
+      console.error('[Telegram] Failed to send:', result);
+    }
+  } catch (e) {
+    console.error('[Telegram] Error:', e);
+  }
+}
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -257,6 +315,9 @@ app.use(express.json({ limit: '10mb' }));
       if (opponentName) {
         await checkAndAwardAchievements(opponentName, matchData);
       }
+
+      console.log('[Telegram] Sending match result...');
+      await sendTelegramMatchResult(matchData, base64, mimeType);
 
       // Save report for admin review
       try {
