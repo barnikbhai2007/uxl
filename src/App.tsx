@@ -602,6 +602,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     resetMatch?: (id: string) => Promise<void> | void
   }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
+    const [localHomeScorers, setLocalHomeScorers] = useState<any[]>(match.homeScorers ? JSON.parse(JSON.stringify(match.homeScorers)) : []);
+    const [localAwayScorers, setLocalAwayScorers] = useState<any[]>(match.awayScorers ? JSON.parse(JSON.stringify(match.awayScorers)) : []);
+    const [isSavingScorers, setIsSavingScorers] = useState(false);
+
+    const handleSaveScorers = async () => {
+      if (!updateMatch) return;
+      setIsSavingScorers(true);
+      await updateMatch({
+        ...match,
+        homeScorers: localHomeScorers,
+        awayScorers: localAwayScorers
+      });
+      setIsSavingScorers(false);
+    };
+
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
     const awayTeam = teams.find(t => t.id === match.awayTeamId);
 
@@ -684,54 +699,57 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
-              <div 
-                className="flex-1 flex flex-col items-center text-center gap-4 cursor-pointer hover:bg-white/5 p-4 rounded-3xl transition-colors"
-                onClick={() => { if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
-              >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
-                  {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
-                </div>
-                <div className="space-y-1">
-                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{homeTeam?.fullName || 'TBD'}</h2>
-                  {homeTeam && (
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(homeTeam.uid);
-                          }}
-                          className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
-                        >
-                          <span className="font-mono font-bold tracking-wider uppercase">
-                            {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
-                          </span>
-                          {copiedId === homeTeam.uid ? (
-                            <Check className="w-2.5 h-2.5 text-green-400" />
-                          ) : (
-                            <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
-                          )}
-                        </button>
+              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-3xl transition-colors">
+                <div 
+                  className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
+                >
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                    {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-blue-400 transition-colors">{homeTeam?.fullName || 'TBD'}</h2>
+                    {homeTeam && (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(homeTeam.uid);
+                            }}
+                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
+                          >
+                            <span className="font-mono font-bold tracking-wider uppercase">
+                              {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
+                            </span>
+                            {copiedId === homeTeam.uid ? (
+                              <Check className="w-2.5 h-2.5 text-green-400" />
+                            ) : (
+                              <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
+                            )}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 {isEditingMode && isAdmin ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-[200px]">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
-                    {match.homeScorers?.map((s, i) => (
+                    {localHomeScorers.map((s, i) => (
                       <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
-                        <input type="text" value={s.playerName} onChange={e => { s.playerName = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
+                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { s.goals = parseInt(e.target.value)||0; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { s.time = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
-                          <button onClick={(e) => { e.stopPropagation(); match.homeScorers?.splice(i, 1); if(updateMatch) updateMatch({...match}); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { e.stopPropagation(); const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); if(!match.homeScorers) match.homeScorers = []; match.homeScorers.push({ playerName: '', goals: 1 }); if(updateMatch) updateMatch({...match}); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.homeScorers && match.homeScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
@@ -814,54 +832,57 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 )}
               </div>
 
-              <div 
-                className="flex-1 flex flex-col items-center text-center gap-4 cursor-pointer hover:bg-white/5 p-4 rounded-3xl transition-colors"
-                onClick={() => { if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
-              >
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
-                  {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
-                </div>
-                <div className="space-y-1">
-                  <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1">{awayTeam?.fullName || 'TBD'}</h2>
-                  {awayTeam && (
-                    <div className="flex flex-col items-center gap-1">
-                      <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
-                      <div className="flex items-center gap-2">
-                        <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
-                        <button 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            copyToClipboard(awayTeam.uid);
-                          }}
-                          className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
-                        >
-                          <span className="font-mono font-bold tracking-wider uppercase">
-                            {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
-                          </span>
-                          {copiedId === awayTeam.uid ? (
-                            <Check className="w-2.5 h-2.5 text-green-400" />
-                          ) : (
-                            <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
-                          )}
-                        </button>
+              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-3xl transition-colors">
+                <div 
+                  className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
+                  onClick={(e) => { e.stopPropagation(); if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
+                >
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                    {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
+                  </div>
+                  <div className="space-y-1">
+                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-blue-400 transition-colors">{awayTeam?.fullName || 'TBD'}</h2>
+                    {awayTeam && (
+                      <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              copyToClipboard(awayTeam.uid);
+                            }}
+                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
+                          >
+                            <span className="font-mono font-bold tracking-wider uppercase">
+                              {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
+                            </span>
+                            {copiedId === awayTeam.uid ? (
+                              <Check className="w-2.5 h-2.5 text-green-400" />
+                            ) : (
+                              <Copy className="w-2.5 h-2.5 opacity-40 group-hover/uid:opacity-100" />
+                            )}
+                          </button>
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 {isEditingMode && isAdmin ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-[200px]">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
-                    {match.awayScorers?.map((s, i) => (
+                    {localAwayScorers.map((s, i) => (
                       <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
-                        <input type="text" value={s.playerName} onChange={e => { s.playerName = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
+                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { s.goals = parseInt(e.target.value)||0; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { s.time = e.target.value; if(updateMatch) updateMatch({...match}); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
-                          <button onClick={(e) => { e.stopPropagation(); match.awayScorers?.splice(i, 1); if(updateMatch) updateMatch({...match}); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { e.stopPropagation(); const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); if(!match.awayScorers) match.awayScorers = []; match.awayScorers.push({ playerName: '', goals: 1 }); if(updateMatch) updateMatch({...match}); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.awayScorers && match.awayScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
