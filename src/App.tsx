@@ -22,7 +22,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { auth, db, signIn, logout, handleFirestoreError, OperationType, signInAnon } from './supabase_mock';
+import { auth, db, signIn, logout, handleFirestoreError, OperationType } from './supabase_mock';
 import { onAuthStateChanged, User, supabase } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ACHIEVEMENTS } from './achievements';
@@ -4892,13 +4892,7 @@ export default function App() {
         }
       }
       if (!u) {
-        signInAnon().catch((error) => {
-          if (error.code === 'auth/network-request-failed') {
-            console.error("Anonymous sign-in failed: Network error. Please check your internet connection.");
-          } else {
-            console.error("Anonymous sign-in error:", error);
-          }
-        });
+        // user logged out
       }
     });
 
@@ -5987,9 +5981,9 @@ export default function App() {
                               <Calendar className="w-10 h-10 text-blue-400" />
                             </div>
                             <div>
-                              <EditableText id="loading_fixtures_title" defaultText="Fixtures Loading" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
+                              <EditableText id="loading_fixtures_title" defaultText="No Fixtures Scheduled" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
                               <p className="text-white/40 text-sm font-bold uppercase tracking-widest">
-                                <EditableText id="loading_fixtures_sub" defaultText="Mark will update soon" isAdmin={isAdmin} />
+                                <EditableText id="loading_fixtures_sub" defaultText="Mark will add fixtures soon" isAdmin={isAdmin} />
                               </p>
                             </div>
                             {isAdmin && isEditingMode && (

@@ -168,21 +168,47 @@ export function limit(value: number) {
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
 
+function initCache(collection: string) {
+  if (!globalCache[collection]) {
+    try {
+      const fromLocal = localStorage.getItem(`sb_cache_${collection}`);
+      globalCache[collection] = fromLocal ? JSON.parse(fromLocal) : {};
+    } catch (e) {
+      globalCache[collection] = {};
+    }
+  }
+}
+
+let persistTimers: Record<string, any> = {};
+function persistCache(collection: string) {
+  if (persistTimers[collection]) clearTimeout(persistTimers[collection]);
+  persistTimers[collection] = setTimeout(() => {
+    try {
+      localStorage.setItem(`sb_cache_${collection}`, JSON.stringify(globalCache[collection]));
+    } catch (e) {
+      console.warn("Failed to persist cache", e);
+    }
+  }, 1000);
+}
+
 function updateGlobalCache(collection: string, id: string, data: any, isDelete = false) {
-  if (!globalCache[collection]) globalCache[collection] = {};
+  initCache(collection);
   if (isDelete) {
     delete globalCache[collection][id];
   } else {
     globalCache[collection][id] = data;
   }
+  persistCache(collection);
 }
 
 function getFromCache(collection: string, id: string) {
+  initCache(collection);
   return globalCache[collection]?.[id];
 }
 
 function applyQueryLocally(ref: CollRef | Query) {
   const collectionName = ref.collectionName;
+  initCache(collectionName);
   const docsMap = globalCache[collectionName] || {};
   let docs = Object.entries(docsMap).map(([id, data]) => ({
     id,
@@ -236,6 +262,11 @@ export async function getDoc(ref: DocRef) {
     .eq("id", ref.id)
     .single();
   
+  if (error && error.code !== "PGRST116") { // Ignore strict single row missing error
+    console.error("getDoc error:", error);
+    throw new Error(error.message || JSON.stringify(error));
+  }
+
   if (data) updateGlobalCache(ref.collectionName, ref.id, data.data);
   return {
     exists: () => !!data,
@@ -269,7 +300,21 @@ export async function getDocs(ref: CollRef | Query) {
     }
   }
 
-  const { data, error } = await sb;
+  let data = null, error = null;
+  let retries = 3;
+  while (retries > 0) {
+    const res = await sb;
+    data = res.data;
+    error = res.error;
+    if (error && error.message && error.message.includes('statement timeout')) {
+      console.warn(`Query timed out for ${ref.collectionName}, retrying... (${retries} retries left)`);
+      retries--;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } else {
+      break;
+    }
+  }
+
   if (error) {
     console.error(
       "getDocs error for collection",
@@ -277,6 +322,7 @@ export async function getDocs(ref: CollRef | Query) {
       ":",
       error,
     );
+    throw new Error(error.message || JSON.stringify(error));
   } else {
     (data || []).forEach((d: any) => updateGlobalCache(ref.collectionName, d.id, d.data));
   }
@@ -471,12 +517,20 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
       .catch(errorCb);
   } else {
     // For collections, check if we have any data already
-    if (globalCache[collectionName]) {
+    initCache(collectionName);
+    if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
         callback(applyQueryLocally(ref));
     }
     getDocs(ref)
       .then((snap) => callback(snap))
-      .catch(errorCb);
+      .catch((err) => {
+         if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
+             console.warn(`Fallback to local cache due to fetch error for ${collectionName}:`, err);
+             // We already fired the callback with cache above, so we can ignore this error
+         } else if (errorCb) {
+             errorCb(err);
+         }
+      });
   }
 
   // Subscribe to realtime updates
