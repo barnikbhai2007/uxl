@@ -612,18 +612,30 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       if (!updateMatch) return;
       setIsSavingScorers(true);
       
+      const stringifyScorers = (scorers: any[]) => scorers.map(s => `${s.playerName} (${s.goals} goals, ${s.time || 'no time'})`).join(', ') || 'None';
+      const changesStrs: string[] = [];
+      const oldHStr = stringifyScorers(match.homeScorers || []);
+      const newHStr = stringifyScorers(localHomeScorers || []);
+      if (oldHStr !== newHStr) changesStrs.push(`Home: [${oldHStr}] -> [${newHStr}]`);
+
+      const oldAStr = stringifyScorers(match.awayScorers || []);
+      const newAStr = stringifyScorers(localAwayScorers || []);
+      if (oldAStr !== newAStr) changesStrs.push(`Away: [${oldAStr}] -> [${newAStr}]`);
+
+      const finalChangeStr = changesStrs.length > 0 ? changesStrs.join(' | ') : 'Update scorers (no structure changes)';
+
       const newEditLogs = match.editLogs ? [...match.editLogs] : [];
       if (!isAdmin && currentUser && myRegistrationData) {
          newEditLogs.push({
            editedBy: myRegistrationData.fcName || currentUser.email || 'Participant',
            editedAt: new Date().toISOString(),
-           changes: `Updated goal scorers/time`
+           changes: finalChangeStr
          });
       } else if (isAdmin) {
          newEditLogs.push({
            editedBy: 'Admin',
            editedAt: new Date().toISOString(),
-           changes: `Updated goal scorers/time`
+           changes: finalChangeStr
          });
       }
 
@@ -634,6 +646,26 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         editLogs: newEditLogs
       });
       setIsSavingScorers(false);
+    };
+
+    const addLogAndUpdate = (field: keyof Match, newVal: any, descField?: string) => {
+      if (!updateMatch) return;
+      const oldVal = match[field];
+      if (oldVal === newVal) return;
+
+      const newEditLogs = match.editLogs ? [...match.editLogs] : [];
+      const editorName = (!isAdmin && currentUser && myRegistrationData) ? (myRegistrationData.fcName || currentUser.email || 'Participant') : (isAdmin ? 'Admin' : 'Someone');
+      newEditLogs.push({
+         editedBy: editorName,
+         editedAt: new Date().toISOString(),
+         changes: `${descField || field}: '${oldVal ?? '-'}' -> '${newVal ?? '-'}'`
+      });
+
+      const updated = { ...match, [field]: newVal, editLogs: newEditLogs } as Match;
+      // Also mutate local match object so input doesn't glitch if there is a delay
+      (match as any)[field] = newVal;
+      match.editLogs = newEditLogs;
+      updateMatch(updated);
     };
 
     const homeTeam = teams.find(t => t.id === match.homeTeamId);
@@ -799,16 +831,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
                   ) : isEditingMode && isAdmin ? (
                     <div className="flex items-center gap-2">
-                      <input type="number" min="0" defaultValue={match.homeScore ?? 0} onChange={(e) => {
+                      <input type="number" min="0" defaultValue={match.homeScore ?? 0} onBlur={(e) => {
                           const val = parseInt(e.target.value);
-                          match.homeScore = isNaN(val) ? 0 : val;
-                          if(updateMatch) updateMatch(match);
+                          addLogAndUpdate('homeScore', isNaN(val) ? 0 : val, 'Home Score');
                       }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
                       <span className="text-2xl text-white/20">VS</span>
-                      <input type="number" min="0" defaultValue={match.awayScore ?? 0} onChange={(e) => {
+                      <input type="number" min="0" defaultValue={match.awayScore ?? 0} onBlur={(e) => {
                           const val = parseInt(e.target.value);
-                          match.awayScore = isNaN(val) ? 0 : val;
-                          if(updateMatch) updateMatch(match);
+                          addLogAndUpdate('awayScore', isNaN(val) ? 0 : val, 'Away Score');
                       }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
                     </div>
                   ) : (
@@ -845,10 +875,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Edit Status</p>
                     <select 
                       value={match.status}
-                      onChange={(e) => {
-                        match.status = e.target.value as any;
-                        if (updateMatch) updateMatch(match);
-                      }}
+                      onChange={(e) => addLogAndUpdate('status', e.target.value as any, 'Match Status')}
                       className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-blue-500 transition-all hover:bg-white/10"
                     >
                       <option value="scheduled" className="bg-[#000030]">Scheduled</option>
@@ -946,12 +973,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     {isEditingMode && isAdmin ? (
                       <input 
                         type="text" 
-                        value={match.manOfTheMatch || ''} 
+                        defaultValue={match.manOfTheMatch || ''} 
                         placeholder="Player Name"
-                        onChange={(e) => {
-                          match.manOfTheMatch = e.target.value;
-                          if(updateMatch) updateMatch(match);
-                        }}
+                        onBlur={(e) => addLogAndUpdate('manOfTheMatch', e.target.value, 'MOTM')}
                         className="bg-black/40 border border-yellow-500/30 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
                       />
                     ) : (
@@ -997,10 +1021,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       type="number" 
                       min="1" 
                       defaultValue={match.matchNumber} 
-                      onChange={(e) => {
+                      onBlur={(e) => {
                         const val = parseInt(e.target.value);
-                        match.matchNumber = isNaN(val) ? 1 : val;
-                        if (updateMatch) updateMatch(match);
+                        addLogAndUpdate('matchNumber', isNaN(val) ? 1 : val, 'Match Number');
                       }}
                       className="w-16 bg-black/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-blue-400 outline-none focus:border-blue-500 font-bold"
                     />
