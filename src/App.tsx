@@ -736,21 +736,29 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                 </div>
                 {isEditingMode && isAdmin ? (
-                  <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-[200px]">
+                  <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
                     {localHomeScorers.map((s, i) => (
                       <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
                         <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
-                          <button onClick={(e) => { e.stopPropagation(); const scorer = localHomeScorers[i]; const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); setLocalAwayScorers([...localAwayScorers, scorer]); }} className="p-1 min-w-[24px] flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Away Team"><ArrowRightLeft className="w-3 h-3" /></button>
-                          <button onClick={(e) => { e.stopPropagation(); const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setLocalHomeScorers(prev => {
+                              const newS = [...prev];
+                              const scorer = newS.splice(i, 1)[0];
+                              setLocalAwayScorers(prevA => [...prevA, scorer]);
+                              return newS;
+                            });
+                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Away Team"><ArrowRightLeft className="w-3 h-3" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); }} className="p-1 w-8 h-8 flex shrink-0 items-center justify-center bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
-                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.homeScorers && match.homeScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
@@ -870,21 +878,29 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                 </div>
                 {isEditingMode && isAdmin ? (
-                  <div className="mt-4 flex flex-col items-center gap-2 w-full max-w-[200px]">
+                  <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
                     {localAwayScorers.map((s, i) => (
                       <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
                         <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-16 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
-                          <button onClick={(e) => { e.stopPropagation(); const scorer = localAwayScorers[i]; const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); setLocalHomeScorers([...localHomeScorers, scorer]); }} className="p-1 min-w-[24px] flex items-center justify-center bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Home Team"><ArrowRightLeft className="w-3 h-3" /></button>
-                          <button onClick={(e) => { e.stopPropagation(); const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); }} className="p-1 min-w-[24px] bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <button onClick={(e) => { 
+                            e.stopPropagation(); 
+                            setLocalAwayScorers(prev => {
+                              const newS = [...prev];
+                              const scorer = newS.splice(i, 1)[0];
+                              setLocalHomeScorers(prevH => [...prevH, scorer]);
+                              return newS;
+                            });
+                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Home Team"><ArrowRightLeft className="w-3 h-3" /></button>
+                          <button onClick={(e) => { e.stopPropagation(); const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); }} className="p-1 w-8 h-8 flex shrink-0 items-center justify-center bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
-                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-1.5 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.awayScorers && match.awayScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
