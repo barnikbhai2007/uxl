@@ -35,6 +35,12 @@ export interface MatchStats {
   saves: number;
 }
 
+export interface MatchEditLog {
+  editedBy: string;
+  editedAt: string;
+  changes: string;
+}
+
 export interface Match {
   id: string;
   matchNumber: number;
@@ -44,6 +50,7 @@ export interface Match {
   awayScore?: number;
   homeScorers?: Scorer[];
   awayScorers?: Scorer[];
+  editLogs?: MatchEditLog[];
   homeStats?: MatchStats;
   awayStats?: MatchStats;
   manOfTheMatch?: string;

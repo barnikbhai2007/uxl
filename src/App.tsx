@@ -588,7 +588,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     );
   };
 
-  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent, isAdmin, resetMatch }: { 
+  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent, isAdmin, resetMatch, currentUser, myRegistrationData }: { 
     match: Match & { _overrideStatus?: string }, 
     onClose: () => void,
     teams: Team[],
@@ -599,7 +599,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     isEditingMode?: boolean,
     siteContent?: any,
     isAdmin?: boolean,
-    resetMatch?: (id: string) => Promise<void> | void
+    resetMatch?: (id: string) => Promise<void> | void,
+    currentUser?: any,
+    myRegistrationData?: any
   }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [localHomeScorers, setLocalHomeScorers] = useState<any[]>(match.homeScorers ? JSON.parse(JSON.stringify(match.homeScorers)) : []);
@@ -609,10 +611,27 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const handleSaveScorers = async () => {
       if (!updateMatch) return;
       setIsSavingScorers(true);
+      
+      const newEditLogs = match.editLogs ? [...match.editLogs] : [];
+      if (!isAdmin && currentUser && myRegistrationData) {
+         newEditLogs.push({
+           editedBy: myRegistrationData.fcName || currentUser.email || 'Participant',
+           editedAt: new Date().toISOString(),
+           changes: `Updated goal scorers/time`
+         });
+      } else if (isAdmin) {
+         newEditLogs.push({
+           editedBy: 'Admin',
+           editedAt: new Date().toISOString(),
+           changes: `Updated goal scorers/time`
+         });
+      }
+
       await updateMatch({
         ...match,
         homeScorers: localHomeScorers,
-        awayScorers: localAwayScorers
+        awayScorers: localAwayScorers,
+        editLogs: newEditLogs
       });
       setIsSavingScorers(false);
     };
@@ -735,7 +754,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     )}
                   </div>
                 </div>
-                {isEditingMode && isAdmin ? (
+                {isEditingMode ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
                     {localHomeScorers.map((s, i) => (
@@ -877,7 +896,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     )}
                   </div>
                 </div>
-                {isEditingMode && isAdmin ? (
+                {isEditingMode ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
                     <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
                     {localAwayScorers.map((s, i) => (
@@ -1670,7 +1689,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleAnalyzeQualification,
     handleUpdateConfig,
     setAdminEditingRegistration,
-    teams
+    teams,
+    matches
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -1695,9 +1715,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleAnalyzeQualification: () => Promise<void>,
     handleUpdateConfig: (config: Config) => Promise<void>,
     setAdminEditingRegistration: (reg: Registration | null) => void,
-    teams: Team[]
+    teams: Team[],
+    matches?: Match[]
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup' | 'edits'>('bracket');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -2114,6 +2135,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Backup
+            </button>
+            <button 
+              onClick={() => setActiveTab('edits')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Edits
             </button>
           </div>
         </div>
@@ -2811,6 +2838,46 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+            )}
+            
+            {activeTab === 'edits' && (
+              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-display font-black italic uppercase text-white">Recent Match Edits</h3>
+                </div>
+
+                <div className="grid gap-4">
+                  {matches?.flatMap(m => (m.editLogs || []).map(log => ({ match: m, log })))
+                    .sort((a, b) => new Date(b.log.editedAt).getTime() - new Date(a.log.editedAt).getTime())
+                    .map((item, i) => {
+                      const m = item.match;
+                      const log = item.log;
+                      const homeTeam = teams.find(t => t.id === m.homeTeamId);
+                      const awayTeam = teams.find(t => t.id === m.awayTeamId);
+                      return (
+                        <div key={`${m.id}-${i}`} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                          <div>
+                            <div className="text-[10px] font-black tracking-widest uppercase text-blue-400 mb-1">
+                              {new Date(log.editedAt).toLocaleString()}
+                            </div>
+                            <div className="text-sm font-bold text-white mb-1">
+                              Match #{m.matchNumber}: {homeTeam?.name || m.homeTeamId} <span className="text-white/40 text-xs px-2">vs</span> {awayTeam?.name || m.awayTeamId}
+                            </div>
+                            <div className="text-xs text-white/60">
+                              <span className="font-bold text-orange-400">{log.editedBy}</span> - {log.changes}
+                            </div>
+                          </div>
+                          <div className="text-xs font-mono bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-white/50">
+                            {m.homeScore ?? 0} - {m.awayScore ?? 0}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  {(!matches || matches.length === 0 || matches.every(m => !m.editLogs || m.editLogs.length === 0)) && (
+                    <div className="text-center py-12 text-white/40 font-bold uppercase tracking-widest text-sm">No edits found</div>
+                  )}
                 </div>
               </div>
             )}
@@ -6353,6 +6420,8 @@ export default function App() {
             siteContent={siteContent}
             isAdmin={isAdmin}
             resetMatch={handleResetSingleMatch}
+            currentUser={user}
+            myRegistrationData={myRegistrationData}
           />
         )}
         {isRegistrationModalOpen && (
@@ -6417,6 +6486,7 @@ export default function App() {
             handleUpdateConfig={handleUpdateConfig}
             setAdminEditingRegistration={setAdminEditingRegistration}
             teams={dbTeams}
+            matches={matches}
           />
         )}
         {selectedTeam && (
