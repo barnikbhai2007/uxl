@@ -5,6 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import cors from "cors";
 import crypto from "crypto";
+import FormData from "form-data";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -53,7 +54,6 @@ ${[...(matchData.homeScorers || matchData.team1Scorers || []), ...(matchData.awa
     `.trim();
 
     // Send photo with caption using multipart form
-    const FormData = (await import('form-data')).default;
     const form = new FormData();
     form.append('chat_id', chatId);
     form.append('caption', caption);
