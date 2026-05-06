@@ -5,7 +5,7 @@ import { createClient } from "@supabase/supabase-js";
 import Groq from "groq-sdk";
 import cors from "cors";
 import crypto from "crypto";
-import FormData from "form-data";
+
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,53 +26,76 @@ async function sendTelegramMatchResult(matchData: any, imageBase64: string, mime
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
-    
+
     if (!botToken || !chatId) {
-      console.log('[Telegram] Bot token or chat ID missing, skipping');
+      console.log('[Telegram] Missing credentials, skipping');
       return;
     }
 
-    // Convert base64 to buffer
-    const imageBuffer = Buffer.from(imageBase64, 'base64');
-    const extension = mimeType.split('/')[1] || 'jpg';
-
-    // Build caption
     const caption = `
-🎮 *New Match Result Uploaded!*
+🎮 *New Match Result!*
 
-⚽ *${matchData.homePlayer || matchData.team1}* ${matchData.homeScore ?? matchData.team1Score ?? 0} - ${matchData.awayScore ?? matchData.team2Score ?? 0} *${matchData.awayPlayer || matchData.team2}*
+⚽ *${matchData.homePlayer || matchData.team1 || 'Home'}* ${matchData.homeScore ?? matchData.team1Score ?? 0} - ${matchData.awayScore ?? matchData.team2Score ?? 0} *${matchData.awayPlayer || matchData.team2 || 'Away'}*
 
 📅 Matchday: ${matchData.matchday || 'N/A'}
 🏆 MOTM: ${matchData.manOfTheMatch || 'N/A'}
 
 ⚽ *Scorers:*
-${[...(matchData.homeScorers || matchData.team1Scorers || []), ...(matchData.awayScorers || matchData.team2Scorers || matchData.scorers || [])]
-  .map((s: any) => \`• \${s.playerName || s.name} (\${s.goals} goal\${s.goals > 1 ? 's' : ''})\`)
-  .join('\\n') || 'No scorers recorded'}
+${[...(matchData.homeScorers || matchData.team1Scorers || []), ...(matchData.awayScorers || matchData.team2Scorers || [])]
+  .map((s: any) => `• ${s.playerName || s.name} (${s.goals} goal${s.goals > 1 ? 's' : ''})`)
+  .join('\n') || 'No scorers recorded'}
 
 🕐 ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })} IST
     `.trim();
 
-    // Send photo with caption using multipart form
-    const form = new FormData();
-    form.append('chat_id', chatId);
-    form.append('caption', caption);
-    form.append('parse_mode', 'Markdown');
-    form.append('photo', imageBuffer, {
-      filename: \`match_result.\${extension}\`,
-      contentType: mimeType
-    });
+    const imageBuffer = Buffer.from(imageBase64, 'base64');
+    const ext = mimeType.split('/')[1] || 'jpg';
+    const boundary = '----TelegramBoundary' + Date.now();
+
+    const header = [
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="chat_id"`,
+      '',
+      chatId,
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="parse_mode"`,
+      '',
+      'Markdown',
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="caption"`,
+      '',
+      caption,
+      `--${boundary}`,
+      `Content-Disposition: form-data; name="photo"; filename="match.${ext}"`,
+      `Content-Type: ${mimeType}`,
+      '',
+      ''
+    ].join('\r\n');
+
+    const footer = `\r\n--${boundary}--`;
+    const body = Buffer.concat([
+      Buffer.from(header, 'utf8'),
+      imageBuffer,
+      Buffer.from(footer, 'utf8')
+    ]);
 
     const response = await fetch(
-      \`https://api.telegram.org/bot\${botToken}/sendPhoto\`,
-      { method: 'POST', body: form as any, headers: form.getHeaders() }
+      `https://api.telegram.org/bot${botToken}/sendPhoto`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'Content-Length': body.length.toString()
+        },
+        body
+      }
     );
 
     const result = await response.json();
     if (result.ok) {
-      console.log('[Telegram] Match result sent successfully');
+      console.log('[Telegram] ✅ Sent successfully');
     } else {
-      console.error('[Telegram] Failed to send:', result);
+      console.error('[Telegram] ❌ Failed:', result.description);
     }
   } catch (e) {
     console.error('[Telegram] Error:', e);
