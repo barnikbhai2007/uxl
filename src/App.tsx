@@ -4730,6 +4730,26 @@ export default function App() {
       }
     };
 
+    // Realtime sync for all collections
+    const collections = ['matches', 'teams', 'registrations', 'documents', 'bracket', 'config', 'site_content'];
+    const channels = collections.map(col => {
+      return supabase
+        .channel(`realtime_${col}`)
+        .on('postgres_changes', 
+          { event: '*', schema: 'public', table: 'documents', filter: `collection=eq.${col}` },
+          async (payload) => {
+            console.log(`[Realtime] Change detected in ${col} — refreshing cache`);
+            
+            // Clear localStorage cache for this collection
+            localStorage.removeItem(`uxl_cache_v1_${col}`);
+            
+            // Refetch and update state
+            await refreshCache(col as any);
+          }
+        )
+        .subscribe();
+    });
+
     // Teams Sync
     const unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
       const teamsList: Team[] = snapshot.docs.map(docSnap => {
@@ -4774,6 +4794,7 @@ export default function App() {
       _mounted = false;
       unsubTeams();
       unsubMatches();
+      channels.forEach(ch => supabase.removeChannel(ch));
     };
   }, []);
 
