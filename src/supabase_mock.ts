@@ -509,28 +509,30 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     const cached = getFromCache(collectionName, ref.id);
     if (cached) {
         callback({ exists: () => true, id: ref.id, data: () => cached });
+    } else {
+        getDoc(ref)
+          .then((doc) => {
+              if (doc.exists()) callback(doc);
+          })
+          .catch(errorCb);
     }
-    getDoc(ref)
-      .then((doc) => {
-          if (doc.exists()) callback(doc);
-      })
-      .catch(errorCb);
   } else {
     // For collections, check if we have any data already
     initCache(collectionName);
     if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
         callback(applyQueryLocally(ref));
+    } else {
+        getDocs(ref)
+          .then((snap) => callback(snap))
+          .catch((err) => {
+             if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
+                 console.warn(`Fallback to local cache due to fetch error for ${collectionName}:`, err);
+                 // We already fired the callback with cache above, so we can ignore this error
+             } else if (errorCb) {
+                 errorCb(err);
+             }
+          });
     }
-    getDocs(ref)
-      .then((snap) => callback(snap))
-      .catch((err) => {
-         if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
-             console.warn(`Fallback to local cache due to fetch error for ${collectionName}:`, err);
-             // We already fired the callback with cache above, so we can ignore this error
-         } else if (errorCb) {
-             errorCb(err);
-         }
-      });
   }
 
   // Subscribe to realtime updates

@@ -4723,7 +4723,7 @@ export default function App() {
 
     const checkLoaded = () => {
       // Small timeout to prevent aggressive flashing and let UI settle
-      if (teamsLoaded && matchesLoaded && _mounted) {
+      if (matchesLoaded && _mounted) {
         setTimeout(() => {
           if(_mounted) setIsDataLoading(false);
         }, 0);

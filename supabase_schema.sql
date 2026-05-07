@@ -34,6 +34,11 @@ CREATE TABLE news (
 );
 CREATE INDEX idx_documents_collection ON public.documents(collection);
 
+-- Indexes for fast status querying and JSONB extraction
+CREATE INDEX idx_documents_data_status ON public.documents USING gin (data jsonb_path_ops);
+CREATE INDEX idx_documents_status ON public.documents ((data->>'status'));
+CREATE INDEX idx_documents_collection_status ON public.documents (collection, (data->>'status'));
+
 -- Enable Realtime for the documents table
 begin;
   -- remove the supabase_realtime publication
