@@ -308,7 +308,7 @@ export async function getDocs(ref: CollRef | Query) {
     try {
       // Add a small timeout race to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout')), 6000)
+        setTimeout(() => reject(new Error('Query timeout')), 30000)
       );
       
       const res = await Promise.race([sb, timeoutPromise]) as any;
@@ -332,7 +332,7 @@ export async function getDocs(ref: CollRef | Query) {
     // If we have cache, fallback to it on error instead of throwing a critical error
     initCache(ref.collectionName);
     if (globalCache[ref.collectionName] && Object.keys(globalCache[ref.collectionName]).length > 0) {
-      console.warn(`[Mock] getDocs timed out for ${ref.collectionName} after 6s (likely due to payload size), falling back to local cache.`);
+      console.warn(`[Mock] getDocs timed out for ${ref.collectionName} after 30s (likely due to payload size), falling back to local cache.`);
       const fallback = applyQueryLocally(ref);
       return fallback;
     }

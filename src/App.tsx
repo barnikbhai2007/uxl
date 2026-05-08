@@ -4746,7 +4746,7 @@ export default function App() {
 
     const checkLoaded = () => {
       // Small timeout to prevent aggressive flashing and let UI settle
-      if ((matchesLoaded || teamsLoaded) && _mounted) {
+      if (matchesLoaded && teamsLoaded && _mounted) {
         setIsDataLoading(false);
       }
     };
@@ -4859,7 +4859,7 @@ export default function App() {
       unsubTeams();
       unsubMatches();
     };
-  }, [user?.uid]);
+  }, []);
 
     useEffect(() => {
       const statsRef = doc(db, 'stats', 'global');
@@ -4900,7 +4900,7 @@ export default function App() {
     });
 
     return () => unsubBracket();
-  }, [user?.uid]);
+  }, []);
 
   useEffect(() => {
     const testConnection = async () => {
