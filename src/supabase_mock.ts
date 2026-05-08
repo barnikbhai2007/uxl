@@ -306,7 +306,7 @@ export async function getDocs(ref: CollRef | Query) {
   
   while (retries >= 0) {
     try {
-      // Add a small timeout race to prevent hanging for 25s
+      // Add a small timeout race to prevent hanging
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error('Query timeout')), 6000)
       );
@@ -329,19 +329,20 @@ export async function getDocs(ref: CollRef | Query) {
   }
 
   if (error) {
+    // If we have cache, fallback to it on error instead of throwing a critical error
+    initCache(ref.collectionName);
+    if (globalCache[ref.collectionName] && Object.keys(globalCache[ref.collectionName]).length > 0) {
+      console.warn(`[Mock] getDocs timed out for ${ref.collectionName} after 6s (likely due to payload size), falling back to local cache.`);
+      const fallback = applyQueryLocally(ref);
+      return fallback;
+    }
+    
     console.error(
       "getDocs error for collection",
       ref.collectionName,
       ":",
       error,
     );
-    // If we have cache, fallback to it on error instead of throwing
-    initCache(ref.collectionName);
-    if (globalCache[ref.collectionName] && Object.keys(globalCache[ref.collectionName]).length > 0) {
-      console.warn(`[Mock] Critical error in getDocs, falling back to LOCAL cache for ${ref.collectionName}`);
-      const fallback = applyQueryLocally(ref);
-      return fallback;
-    }
     throw error;
   } else {
     (data || []).forEach((d: any) => updateGlobalCache(ref.collectionName, d.id, d.data));
@@ -548,10 +549,8 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     : getDocs(ref as any);
 
   fetchPromise.then((snap: any) => {
-    // Only fire callback if the data changed or we haven't fired it yet
-    if (!initialFetchDone) {
-      callback(snap);
-    }
+    // Fire callback to ensure UI has the freshest data from server
+    callback(snap);
   }).catch((err) => {
     if (!initialFetchDone && errorCb) errorCb(err);
     else console.warn(`[Mock] Background snapshot fetch failed for ${collectionName}, using cache.`);

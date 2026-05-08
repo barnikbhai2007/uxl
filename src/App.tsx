@@ -4622,11 +4622,6 @@ export default function App() {
           // Deep clean payload to guarantee no undefined values or internal fields throw a Firestore error
           const cleanedPayload = cleanDocData(updatePayload);
           
-          // Save the compressed base64 image as evidence for admins to verify
-          cleanedPayload.evidenceImage = `data:image/jpeg;base64,${base64}`;
-          cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
-          cleanedPayload.evidenceTimestamp = serverTimestamp();
-
           const updatedMatch = { ...existingMatch, ...cleanedPayload } as Match;
           setDbMatches(prev => prev.map(m => m.id === existingMatch.id ? updatedMatch : m));
           if (selectedMatch?.id === existingMatch.id) {
@@ -4634,6 +4629,18 @@ export default function App() {
           }
           await updateDoc(matchRef, cleanedPayload);
           await refreshCache('matches');
+
+          // Store image evidence separately to avoid bloating the matches collection (prevents timeouts)
+          try {
+            await setDoc(doc(db, 'match_reports', existingMatch.id), {
+              matchId: existingMatch.id,
+              evidenceImage: `data:image/jpeg;base64,${base64}`,
+              uploadedByName: playerRegistration.fcName,
+              uploadedAt: serverTimestamp()
+            });
+          } catch (e) {
+            console.warn("Match report storage failed:", e);
+          }
 
           // Call achievements after match saved
           if (cleanedPayload.status === 'finished' && user?.uid) {
@@ -4729,13 +4736,13 @@ export default function App() {
     let teamsLoaded = false;
     let matchesLoaded = false;
 
-    // Safety fallback: if we don't load within 3s, show whatever we have
+    // Safety fallback: if we don't load within 8s, show whatever we have
     const safetyTimeout = setTimeout(() => {
       if (_mounted && isDataLoading) {
         console.warn("Loading safety timeout triggered");
         setIsDataLoading(false);
       }
-    }, 3000);
+    }, 8000);
 
     const checkLoaded = () => {
       // Small timeout to prevent aggressive flashing and let UI settle
@@ -4747,39 +4754,47 @@ export default function App() {
     // Load from cache first for immediate UI - FAST PATH
     const loadInitialFromCache = () => {
       try {
-        const cachedMatches = localStorage.getItem('cache_matches');
-        const cachedTeams = localStorage.getItem('cache_teams');
+        // Use the same keys as supabase_mock for consistency
+        const cachedMatches = localStorage.getItem('sb_cache_matches');
+        const cachedTeams = localStorage.getItem('sb_cache_registrations');
         
         let hasAnyCache = false;
         if (cachedMatches && _mounted) {
-          setDbMatches(JSON.parse(cachedMatches));
-          matchesLoaded = true;
-          hasAnyCache = true;
+          const rawData = JSON.parse(cachedMatches);
+          const matchesData = Object.entries(rawData).map(([id, data]) => ({ ...(data as any), id })) as Match[];
+          if (matchesData.length > 0) {
+            setDbMatches(matchesData);
+            matchesLoaded = true;
+            hasAnyCache = true;
+          }
         }
         if (cachedTeams && _mounted) {
-          const teamsData = JSON.parse(cachedTeams);
-          const teamsList: Team[] = teamsData.map((data: any) => ({
-            id: data.id, 
-            name: data.fcName, 
-            shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
-            fullName: data.name, 
-            fcName: data.fcName, 
-            ovr: data.teamOvr, 
-            uid: data.fcUid,
-            logoUrl: data.logoUrl, 
-            goalkeeper: data.goalkeeper, 
-            played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
-          }));
-          setDbTeams(teamsList);
-          teamsLoaded = true;
-          hasAnyCache = true;
+          const rawData = JSON.parse(cachedTeams);
+          const registrations = Object.entries(rawData).map(([id, data]) => ({ ...(data as any), id })) as any[];
+          const approvedRegs = registrations.filter(r => r.status === 'approved');
+          
+          if (approvedRegs.length > 0) {
+            const teamsList: Team[] = approvedRegs.map((data: any) => ({
+              id: data.id, 
+              name: data.fcName, 
+              shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
+              fullName: data.name, 
+              fcName: data.fcName, 
+              ovr: data.teamOvr, 
+              uid: data.fcUid,
+              logoUrl: data.logoUrl, 
+              goalkeeper: data.goalkeeper, 
+              played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+            }));
+            setDbTeams(teamsList);
+            teamsLoaded = true;
+            hasAnyCache = true;
+          }
         }
         
         if (hasAnyCache && _mounted) {
-          // If we have cache, hide loader immediately or after tiny delay
-          setTimeout(() => {
-            if (_mounted) setIsDataLoading(false);
-          }, 100);
+          // If we have cache, hide loader immediately
+          setIsDataLoading(false);
         }
       } catch (e) {
         console.warn("Cache load failed:", e);
@@ -4809,12 +4824,14 @@ export default function App() {
         setDbTeams(teamsList);
         teamsLoaded = true;
         checkLoaded();
-        try {
-          localStorage.setItem('cache_teams', JSON.stringify(snapshot.docs.map(d => ({id: d.id, ...d.data()}))));
-        } catch(e) {}
+        // teamsData (registrations) persistence is already handled by supabase_mock's internal cache
       }
     }, (error) => {
-      console.error("Teams sync error:", error);
+      if (teamsLoaded) {
+        console.warn("Teams background sync slow/failed, using cached data.");
+      } else {
+        console.error("Teams sync error:", error);
+      }
       if (_mounted) { teamsLoaded = true; checkLoaded(); }
     });
 
@@ -4825,12 +4842,14 @@ export default function App() {
         setDbMatches(matchesData);
         matchesLoaded = true;
         checkLoaded();
-        try {
-          localStorage.setItem('cache_matches', JSON.stringify(matchesData));
-        } catch(e) {}
+        // matchesData persistence is already handled by supabase_mock's internal cache
       }
     }, (error) => {
-      console.error("Matches sync error:", error);
+      if (matchesLoaded) {
+        console.warn("Matches background sync slow/failed, using cached data.");
+      } else {
+        console.error("Matches sync error:", error);
+      }
       if (_mounted) { matchesLoaded = true; checkLoaded(); }
     });
 
@@ -4840,7 +4859,7 @@ export default function App() {
       unsubTeams();
       unsubMatches();
     };
-  }, []);
+  }, [user?.uid]);
 
     useEffect(() => {
       const statsRef = doc(db, 'stats', 'global');
@@ -4881,7 +4900,7 @@ export default function App() {
     });
 
     return () => unsubBracket();
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     const testConnection = async () => {
