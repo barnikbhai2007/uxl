@@ -301,50 +301,28 @@ export async function getDocs(ref: CollRef | Query) {
   }
 
   let data = null, error = null;
-  let retries = 1; // Reduced retries for faster failure/fallback
-  const startTime = Date.now();
-  
-  while (retries >= 0) {
-    try {
-      // Add a small timeout race to prevent hanging
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Query timeout')), 30000)
-      );
-      
-      const res = await Promise.race([sb, timeoutPromise]) as any;
-      data = res.data;
-      error = res.error;
-      console.log(`[Mock] Raw fetched from ${ref.collectionName}: ${data?.length || 0} items`);
-      
-      if (error) throw error;
-      break;
-    } catch (err: any) {
-      if (retries > 0 && (err.message?.includes('timeout') || err.message?.includes('statement timeout'))) {
-        console.warn(`Query timed out for ${ref.collectionName}, retrying once...`);
-        retries--;
-        continue;
-      }
-      error = err;
+  let retries = 3;
+  while (retries > 0) {
+    const res = await sb;
+    data = res.data;
+    error = res.error;
+    if (error && error.message && error.message.includes('statement timeout')) {
+      console.warn(`Query timed out for ${ref.collectionName}, retrying... (${retries} retries left)`);
+      retries--;
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    } else {
       break;
     }
   }
 
   if (error) {
-    // If we have cache, fallback to it on error instead of throwing a critical error
-    initCache(ref.collectionName);
-    if (globalCache[ref.collectionName] && Object.keys(globalCache[ref.collectionName]).length > 0) {
-      console.warn(`[Mock] getDocs timed out for ${ref.collectionName} after 30s (likely due to payload size), falling back to local cache.`);
-      const fallback = applyQueryLocally(ref);
-      return fallback;
-    }
-    
     console.error(
       "getDocs error for collection",
       ref.collectionName,
       ":",
       error,
     );
-    throw error;
+    throw new Error(error.message || JSON.stringify(error));
   } else {
     (data || []).forEach((d: any) => updateGlobalCache(ref.collectionName, d.id, d.data));
   }
@@ -526,46 +504,36 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     ? ref.collectionName
     : (ref as unknown as CollRef | Query).collectionName;
 
-  let initialFetchDone = false;
-
-  // Initial fetch from cache (synchronous/immediate)
-  initCache(collectionName);
+  // Initial fetch
   if (isDoc) {
     const cached = getFromCache(collectionName, ref.id);
     if (cached) {
-      callback({ exists: () => true, id: ref.id, data: () => cached });
-      initialFetchDone = true;
+        callback({ exists: () => true, id: ref.id, data: () => cached });
+    } else {
+        getDoc(ref)
+          .then((doc) => {
+              if (doc.exists()) callback(doc);
+          })
+          .catch(errorCb);
     }
   } else {
-    const docs = globalCache[collectionName];
-    if (docs && Object.keys(docs).length > 0) {
-      callback(applyQueryLocally(ref));
-      initialFetchDone = true;
+    // For collections, check if we have any data already
+    initCache(collectionName);
+    if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
+        callback(applyQueryLocally(ref));
+    } else {
+        getDocs(ref)
+          .then((snap) => callback(snap))
+          .catch((err) => {
+             if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
+                 console.warn(`Fallback to local cache due to fetch error for ${collectionName}:`, err);
+                 // We already fired the callback with cache above, so we can ignore this error
+             } else if (errorCb) {
+                 errorCb(err);
+             }
+          });
     }
   }
-
-    // Background fetch to ensure data is fresh - NEVER BLOCK THE UI
-  const startFetch = (retries = 2) => {
-    const fetchPromise = isDoc 
-      ? getDoc(ref as DocRef)
-      : getDocs(ref as any);
-
-    fetchPromise.then((snap: any) => {
-      // Fire callback to ensure UI has the freshest data from server
-      callback(snap);
-      initialFetchDone = true;
-    }).catch((err) => {
-      if (retries > 0) {
-        console.warn(`[Mock] Retrying fetch for ${collectionName}... (${retries} left)`);
-        setTimeout(() => startFetch(retries - 1), 2000);
-      } else {
-        if (!initialFetchDone && errorCb) errorCb(err);
-        else console.warn(`[Mock] Background snapshot fetch failed for ${collectionName} after retries, using cache.`);
-      }
-    });
-  };
-
-  startFetch();
 
   // Subscribe to realtime updates
   const localHandler = (e: any) => {
