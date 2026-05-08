@@ -165,39 +165,8 @@ export function limit(value: number) {
   return { type: "limit", value };
 }
 
-const CACHE_VERSION = 'v1';
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
-
-export function getCacheKey(collection: string) {
-  return `uxl_cache_${CACHE_VERSION}_${collection}`;
-}
-
-export function saveToLocalStorage(collection: string, data: any[]) {
-  try {
-    localStorage.setItem(getCacheKey(collection), JSON.stringify({
-      data,
-      timestamp: Date.now()
-    }));
-  } catch (e) {
-    console.warn('[Cache] localStorage save failed:', e);
-  }
-}
-
-export function loadFromLocalStorage(collection: string) {
-  try {
-    const raw = localStorage.getItem(getCacheKey(collection));
-    if (!raw) return null;
-    const { data, timestamp } = JSON.parse(raw);
-    if (Date.now() - timestamp > CACHE_TTL) return null; // expired
-    return data;
-  } catch (e) {
-    return null;
-  }
-}
-
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
-
 
 function initCache(collection: string) {
   if (!globalCache[collection]) {
@@ -311,20 +280,6 @@ export async function getDocFromServer(ref: DocRef) {
 }
 
 export async function getDocs(ref: CollRef | Query) {
-  const collectionName = ref.collectionName;
-  const isQuery = ref instanceof Query && (ref.filters.length > 0 || ref.orderBys.length > 0 || ref.qlimit);
-  const cacheKey = isQuery ? `${collectionName}_${JSON.stringify(ref.filters)}_${JSON.stringify(ref.orderBys)}_${ref.qlimit || ''}` : collectionName;
-
-  // Try localStorage first
-  const cached = loadFromLocalStorage(cacheKey);
-  if (cached) {
-    console.log(`[Cache] HIT for ${collectionName} — loaded instantly`);
-    cached.forEach((d: any) => updateGlobalCache(collectionName, d.id, d.data));
-    return applyQueryLocally(ref);
-  }
-
-  console.log(`[Cache] MISS for ${collectionName} — fetching from Supabase`);
-
   let sb = supabase
     .from("documents")
     .select("id, collection, data")
@@ -369,11 +324,19 @@ export async function getDocs(ref: CollRef | Query) {
     );
     throw new Error(error.message || JSON.stringify(error));
   } else {
-    saveToLocalStorage(cacheKey, data || []);
     (data || []).forEach((d: any) => updateGlobalCache(ref.collectionName, d.id, d.data));
   }
-  
-  return applyQueryLocally(ref);
+  const docs = (data || []).map((d: any) => ({
+    id: d.id,
+    data: () => d.data,
+    exists: () => true,
+    ref: doc(ref as CollRef, d.id),
+  }));
+  return {
+    docs,
+    empty: docs.length === 0,
+    forEach: (cb: any) => docs.forEach(cb),
+  };
 }
 
 async function handleSpecialOps(target: any, incoming: any) {

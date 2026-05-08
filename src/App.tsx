@@ -3051,42 +3051,16 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
 
   // Main app component follows...
 
-const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 5 * 60 * 1000) => {
+const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 300000) => {
   const cached = localStorage.getItem(cacheKey);
   const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
   
-  // Return cache immediately if still valid — no network call
   if (cached && cachedTimeStr) {
     if (Date.now() - Number(cachedTimeStr) < ttlMs) {
       return JSON.parse(cached);
     }
   }
-
-  // If cache expired but exists, return it immediately and refresh in background
-  if (cached) {
-    const parsedCache = JSON.parse(cached);
-    // Background refresh — don't await
-    (async () => {
-      try {
-        let data;
-        if (isDoc) {
-          const snap = await getDoc(queryRef);
-          if (snap.exists()) data = { id: snap.id, ...(snap.data() as any) };
-          else data = null;
-        } else {
-          const snap = await getDocs(queryRef);
-          data = snap.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
-        }
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(data));
-          localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
-        } catch(e) {}
-      } catch(e) {}
-    })();
-    return parsedCache; // Return stale cache instantly
-  }
   
-  // No cache at all — must fetch
   try {
     let data;
     if (isDoc) {
@@ -3275,6 +3249,15 @@ export default function App() {
 
   useEffect(() => {
     const fetchNews = async () => {
+      const cacheKey = 'cache_supabase_news';
+      const cached = localStorage.getItem(cacheKey);
+      const cachedTime = localStorage.getItem(`${cacheKey}_time`);
+      
+      if (cached && cachedTime && (Date.now() - Number(cachedTime) < 600000)) {
+        setNewsFeed(JSON.parse(cached));
+        return;
+      }
+
       const { data, error } = await supabase
         .from('news')
         .select('*')
@@ -3284,10 +3267,9 @@ export default function App() {
         console.error("Error fetching news:", error);
       }
       if (data) {
-        console.log("[News] Fetched news data length:", data.length, data);
         setNewsFeed(data);
-      } else {
-        console.log("[News] Fetched news data is null/undefined");
+        localStorage.setItem(cacheKey, JSON.stringify(data));
+        localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
       }
     };
 
@@ -3964,11 +3946,11 @@ export default function App() {
       } else if (type === 'bracket') {
          const q = query(collection(db, 'bracket'));
          const bracketDataMap: Record<string, BracketMatch> = {};
-         const snapshot = await fetchWithCache('cache_bracket', q, false, 0);
+         const snapshot = await fetchWithCache('cache_bracket', q, false, 300000);
          snapshot.forEach((data: any) => { bracketDataMap[data.id] = data; });
          setBracket(Object.values(bracketDataMap));
       } else if (type === 'config') {
-         const data = await fetchWithCache('cache_config', doc(db, 'config', 'system'), true, 0);
+         const data = await fetchWithCache('cache_config', doc(db, 'config', 'system'), true, 300000);
          if (data) setConfig(data as Config);
       } else if (type === 'site_content') {
          const q = query(collection(db, 'site_content'));
@@ -4748,7 +4730,6 @@ export default function App() {
     let matchesLoaded = false;
 
     const checkLoaded = () => {
-      // Small timeout to prevent aggressive flashing and let UI settle
       if (matchesLoaded && _mounted) {
         setTimeout(() => {
           if(_mounted) setIsDataLoading(false);
@@ -4756,25 +4737,40 @@ export default function App() {
       }
     };
 
-    // Realtime sync for all collections
-    const collections = ['matches', 'teams', 'registrations', 'documents', 'bracket', 'config', 'site_content'];
-    const channels = collections.map(col => {
-      return supabase
-        .channel(`realtime_${col}`)
-        .on('postgres_changes', 
-          { event: '*', schema: 'public', table: 'documents', filter: `collection=eq.${col}` },
-          async (payload) => {
-            console.log(`[Realtime] Change detected in ${col} — refreshing cache`);
-            
-            // Clear localStorage cache for this collection
-            localStorage.removeItem(`uxl_cache_v1_${col}`);
-            
-            // Refetch and update state
-            await refreshCache(col as any);
-          }
-        )
-        .subscribe();
-    });
+    // Load from cache first for immediate UI
+    const loadInitialFromCache = () => {
+      try {
+        const cachedMatches = localStorage.getItem('cache_matches');
+        const cachedTeams = localStorage.getItem('cache_teams');
+        
+        if (cachedMatches && _mounted) {
+          setDbMatches(JSON.parse(cachedMatches));
+          matchesLoaded = true;
+        }
+        if (cachedTeams && _mounted) {
+          const teamsData = JSON.parse(cachedTeams);
+          const teamsList: Team[] = teamsData.map((data: any) => ({
+            id: data.id, 
+            name: data.fcName, 
+            shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
+            fullName: data.name, 
+            fcName: data.fcName, 
+            ovr: data.teamOvr, 
+            uid: data.fcUid,
+            logoUrl: data.logoUrl, 
+            goalkeeper: data.goalkeeper, 
+            played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+          }));
+          setDbTeams(teamsList);
+          teamsLoaded = true;
+        }
+        if (matchesLoaded && _mounted) {
+          setIsDataLoading(false);
+        }
+      } catch (e) {}
+    };
+    
+    loadInitialFromCache();
 
     // Teams Sync
     const unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
@@ -4820,7 +4816,6 @@ export default function App() {
       _mounted = false;
       unsubTeams();
       unsubMatches();
-      channels.forEach(ch => supabase.removeChannel(ch));
     };
   }, []);
 
