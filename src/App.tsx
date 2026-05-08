@@ -4729,23 +4729,32 @@ export default function App() {
     let teamsLoaded = false;
     let matchesLoaded = false;
 
+    // Safety fallback: if we don't load within 3s, show whatever we have
+    const safetyTimeout = setTimeout(() => {
+      if (_mounted && isDataLoading) {
+        console.warn("Loading safety timeout triggered");
+        setIsDataLoading(false);
+      }
+    }, 3000);
+
     const checkLoaded = () => {
-      if (matchesLoaded && _mounted) {
-        setTimeout(() => {
-          if(_mounted) setIsDataLoading(false);
-        }, 0);
+      // Small timeout to prevent aggressive flashing and let UI settle
+      if ((matchesLoaded || teamsLoaded) && _mounted) {
+        setIsDataLoading(false);
       }
     };
 
-    // Load from cache first for immediate UI
+    // Load from cache first for immediate UI - FAST PATH
     const loadInitialFromCache = () => {
       try {
         const cachedMatches = localStorage.getItem('cache_matches');
         const cachedTeams = localStorage.getItem('cache_teams');
         
+        let hasAnyCache = false;
         if (cachedMatches && _mounted) {
           setDbMatches(JSON.parse(cachedMatches));
           matchesLoaded = true;
+          hasAnyCache = true;
         }
         if (cachedTeams && _mounted) {
           const teamsData = JSON.parse(cachedTeams);
@@ -4763,11 +4772,18 @@ export default function App() {
           }));
           setDbTeams(teamsList);
           teamsLoaded = true;
+          hasAnyCache = true;
         }
-        if (matchesLoaded && _mounted) {
-          setIsDataLoading(false);
+        
+        if (hasAnyCache && _mounted) {
+          // If we have cache, hide loader immediately or after tiny delay
+          setTimeout(() => {
+            if (_mounted) setIsDataLoading(false);
+          }, 100);
         }
-      } catch (e) {}
+      } catch (e) {
+        console.warn("Cache load failed:", e);
+      }
     };
     
     loadInitialFromCache();
@@ -4793,6 +4809,9 @@ export default function App() {
         setDbTeams(teamsList);
         teamsLoaded = true;
         checkLoaded();
+        try {
+          localStorage.setItem('cache_teams', JSON.stringify(snapshot.docs.map(d => ({id: d.id, ...d.data()}))));
+        } catch(e) {}
       }
     }, (error) => {
       console.error("Teams sync error:", error);
@@ -4806,6 +4825,9 @@ export default function App() {
         setDbMatches(matchesData);
         matchesLoaded = true;
         checkLoaded();
+        try {
+          localStorage.setItem('cache_matches', JSON.stringify(matchesData));
+        } catch(e) {}
       }
     }, (error) => {
       console.error("Matches sync error:", error);
@@ -4814,6 +4836,7 @@ export default function App() {
 
     return () => {
       _mounted = false;
+      clearTimeout(safetyTimeout);
       unsubTeams();
       unsubMatches();
     };
