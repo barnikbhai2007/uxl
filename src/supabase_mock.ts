@@ -314,6 +314,7 @@ export async function getDocs(ref: CollRef | Query) {
       const res = await Promise.race([sb, timeoutPromise]) as any;
       data = res.data;
       error = res.error;
+      console.log(`[Mock] Raw fetched from ${ref.collectionName}: ${data?.length || 0} items`);
       
       if (error) throw error;
       break;
@@ -543,18 +544,28 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     }
   }
 
-  // Background fetch to ensure data is fresh - NEVER BLOCK THE UI
-  const fetchPromise = isDoc 
-    ? getDoc(ref as DocRef)
-    : getDocs(ref as any);
+    // Background fetch to ensure data is fresh - NEVER BLOCK THE UI
+  const startFetch = (retries = 2) => {
+    const fetchPromise = isDoc 
+      ? getDoc(ref as DocRef)
+      : getDocs(ref as any);
 
-  fetchPromise.then((snap: any) => {
-    // Fire callback to ensure UI has the freshest data from server
-    callback(snap);
-  }).catch((err) => {
-    if (!initialFetchDone && errorCb) errorCb(err);
-    else console.warn(`[Mock] Background snapshot fetch failed for ${collectionName}, using cache.`);
-  });
+    fetchPromise.then((snap: any) => {
+      // Fire callback to ensure UI has the freshest data from server
+      callback(snap);
+      initialFetchDone = true;
+    }).catch((err) => {
+      if (retries > 0) {
+        console.warn(`[Mock] Retrying fetch for ${collectionName}... (${retries} left)`);
+        setTimeout(() => startFetch(retries - 1), 2000);
+      } else {
+        if (!initialFetchDone && errorCb) errorCb(err);
+        else console.warn(`[Mock] Background snapshot fetch failed for ${collectionName} after retries, using cache.`);
+      }
+    });
+  };
+
+  startFetch();
 
   // Subscribe to realtime updates
   const localHandler = (e: any) => {

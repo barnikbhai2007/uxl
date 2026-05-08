@@ -3175,6 +3175,15 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
   );
 };
 
+// Clear stale cache on module load to avoid data format inconsistencies
+if (typeof localStorage !== 'undefined') {
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith('uxl_cache') || key.startsWith('sb_cache') || key.startsWith('cache_')) {
+      localStorage.removeItem(key);
+    }
+  });
+}
+
 export default function App() {
   const [hasQuotaError, setHasQuotaError] = useState(false);
 
@@ -4733,21 +4742,24 @@ export default function App() {
 
   useEffect(() => {
     let _mounted = true;
+    setIsDataLoading(true);
     let teamsLoaded = false;
     let matchesLoaded = false;
 
-    // Safety fallback: if we don't load within 8s, show whatever we have
+    // Safety fallback: if we don't load within 15s, show whatever we have
     const safetyTimeout = setTimeout(() => {
       if (_mounted && isDataLoading) {
-        console.warn("Loading safety timeout triggered");
+        console.warn("Loading safety timeout triggered - showing current state");
         setIsDataLoading(false);
       }
-    }, 8000);
+    }, 15000);
 
     const checkLoaded = () => {
       // Small timeout to prevent aggressive flashing and let UI settle
       if (matchesLoaded && teamsLoaded && _mounted) {
-        setIsDataLoading(false);
+        setTimeout(() => {
+          if (_mounted) setIsDataLoading(false);
+        }, 500);
       }
     };
 
@@ -4760,35 +4772,56 @@ export default function App() {
         
         let hasAnyCache = false;
         if (cachedMatches && _mounted) {
-          const rawData = JSON.parse(cachedMatches);
-          const matchesData = Object.entries(rawData).map(([id, data]) => ({ ...(data as any), id })) as Match[];
-          if (matchesData.length > 0) {
-            setDbMatches(matchesData);
-            matchesLoaded = true;
-            hasAnyCache = true;
+          try {
+            const rawData = JSON.parse(cachedMatches);
+            let matchesData: Match[] = [];
+            if (Array.isArray(rawData)) {
+              matchesData = rawData;
+            } else if (typeof rawData === 'object' && rawData !== null) {
+              matchesData = Object.entries(rawData).map(([id, data]) => ({ ...(data as any), id })) as Match[];
+            }
+            
+            if (matchesData.length > 0) {
+              console.log(`[Cache] Loaded ${matchesData.length} matches`);
+              setDbMatches(matchesData);
+              matchesLoaded = true;
+              hasAnyCache = true;
+            }
+          } catch(e) {
+            console.warn("Matches cache parse failed", e);
           }
         }
         if (cachedTeams && _mounted) {
-          const rawData = JSON.parse(cachedTeams);
-          const registrations = Object.entries(rawData).map(([id, data]) => ({ ...(data as any), id })) as any[];
-          const approvedRegs = registrations.filter(r => r.status === 'approved');
-          
-          if (approvedRegs.length > 0) {
-            const teamsList: Team[] = approvedRegs.map((data: any) => ({
-              id: data.id, 
-              name: data.fcName, 
-              shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
-              fullName: data.name, 
-              fcName: data.fcName, 
-              ovr: data.teamOvr, 
-              uid: data.fcUid,
-              logoUrl: data.logoUrl, 
-              goalkeeper: data.goalkeeper, 
-              played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
-            }));
-            setDbTeams(teamsList);
-            teamsLoaded = true;
-            hasAnyCache = true;
+          try {
+            const rawData = JSON.parse(cachedTeams);
+            let registrations: any[] = [];
+            if (Array.isArray(rawData)) {
+              registrations = rawData;
+            } else if (typeof rawData === 'object' && rawData !== null) {
+              registrations = Object.entries(rawData).map(([id, data]) => ({ ...(data as any), id })) as any[];
+            }
+
+            const approvedRegs = registrations.filter(r => r.status === 'approved');
+            
+            if (approvedRegs.length > 0) {
+              const teamsList: Team[] = approvedRegs.map((data: any) => ({
+                id: data.id, 
+                name: data.fcName, 
+                shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
+                fullName: data.name, 
+                fcName: data.fcName, 
+                ovr: data.teamOvr, 
+                uid: data.fcUid,
+                logoUrl: data.logoUrl, 
+                goalkeeper: data.goalkeeper, 
+                played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+              }));
+              setDbTeams(teamsList);
+              teamsLoaded = true;
+              hasAnyCache = true;
+            }
+          } catch(e) {
+            console.warn("Teams cache parse failed", e);
           }
         }
         
@@ -4805,6 +4838,7 @@ export default function App() {
 
     // Teams Sync
     const unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
+      console.log(`[Sync] Registrations/Teams snapshot received: ${snapshot.docs.length} items`);
       const teamsList: Team[] = snapshot.docs.map(docSnap => {
         const data = docSnap.data();
         return {
@@ -4827,6 +4861,7 @@ export default function App() {
         // teamsData (registrations) persistence is already handled by supabase_mock's internal cache
       }
     }, (error) => {
+      console.error(`[Sync] Teams error for user ${user?.uid}:`, error);
       if (teamsLoaded) {
         console.warn("Teams background sync slow/failed, using cached data.");
       } else {
@@ -4838,6 +4873,7 @@ export default function App() {
     // Matches Sync
     const unsubMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
       const matchesData = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id } as Match));
+      console.log(`[Sync] Matches count: ${matchesData.length}`);
       if (_mounted) {
         setDbMatches(matchesData);
         matchesLoaded = true;
@@ -4845,6 +4881,7 @@ export default function App() {
         // matchesData persistence is already handled by supabase_mock's internal cache
       }
     }, (error) => {
+      console.error(`[Sync] Matches error for user ${user?.uid}:`, error);
       if (matchesLoaded) {
         console.warn("Matches background sync slow/failed, using cached data.");
       } else {
@@ -4859,7 +4896,7 @@ export default function App() {
       unsubTeams();
       unsubMatches();
     };
-  }, []);
+  }, [user?.uid]);
 
     useEffect(() => {
       const statsRef = doc(db, 'stats', 'global');
@@ -4900,7 +4937,7 @@ export default function App() {
     });
 
     return () => unsubBracket();
-  }, []);
+  }, [user?.uid]);
 
   useEffect(() => {
     const testConnection = async () => {
@@ -5126,6 +5163,7 @@ export default function App() {
   };
 
   const matchesByDay = useMemo(() => {
+    console.log(`[matchesByDay] Recalculating with ${matches.length} matches`);
     const grouped: Record<string, Match[]> = {};
     const filtered = searchTerm 
       ? matches.filter(m => {
@@ -5141,11 +5179,14 @@ export default function App() {
         })
       : matches;
 
+    console.log(`[matchesByDay] Filtered count: ${filtered.length}`);
     filtered.forEach(m => {
       const dateKey = m.date || 'TBD';
       if (!grouped[dateKey]) grouped[dateKey] = [];
       grouped[dateKey].push(m);
     });
+    
+    console.log(`[matchesByDay] Grouped keys: ${Object.keys(grouped).join(', ')}`);
     
     // Sort matches within each day by matchNumber
     Object.keys(grouped).forEach(day => {
