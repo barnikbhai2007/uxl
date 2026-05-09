@@ -3247,42 +3247,68 @@ export default function App() {
     }
   };
 
+  // OPTIMIZATION: Track fetch timer to debounce refreshes
+  const newsFetchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
-    const fetchNews = async () => {
-      const { data, error } = await supabase
-        .from('news')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) {
-        console.error("Error fetching news:", error);
-      }
-      if (data) {
-        console.log("[News] Fetched news data length:", data.length, data);
-        setNewsFeed(data);
-      } else {
-        console.log("[News] Fetched news data is null/undefined");
+    // OPTIMIZATION: Debounced fetch to prevent rapid repeated calls
+    const debouncedFetchNews = async () => {
+      try {
+        // OPTIMIZATION: Select only needed columns, not '*'
+        const { data, error } = await supabase
+          .from('news')
+          .select('id, title, content, author, created_at, updated_at')
+          .order('created_at', { ascending: false })
+          .limit(20);
+        
+        if (error) {
+          console.error("[News] Error fetching news:", error);
+          return;
+        }
+        
+        if (data) {
+          console.log("[News] Fetched news data length:", data.length);
+          setNewsFeed(data);
+        }
+      } catch (err) {
+        console.error("[News] Fetch exception:", err);
       }
     };
 
-    fetchNews();
+    // Initial fetch
+    debouncedFetchNews();
 
+    // OPTIMIZATION: Reuse stable channel name instead of creating new one per render
+    // Use collection-based channel name instead of random UUID (from supabase_mock fixes)
     const channel = supabase
-      .channel('public:news')
+      .channel('public:news:feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
         console.log("[News] Realtime payload received:", payload);
+        
+        // OPTIMIZATION: Handle events optimistically without full refetch
         if (payload.eventType === 'INSERT') {
+          // Only update on INSERT: add new item
           setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
-        } else {
-           fetchNews();
+        } else if (payload.eventType === 'DELETE') {
+          // Optimistic delete: remove item from state
+          setNewsFeed(prev => prev.filter(n => n.id !== payload.old.id));
+        } else if (payload.eventType === 'UPDATE') {
+          // Optimistic update: replace the item
+          setNewsFeed(prev => prev.map(n => n.id === payload.new.id ? payload.new : n));
         }
+        
+        // Debounce full refetch for safety (only if many changes happen)
+        if (newsFetchTimerRef.current) clearTimeout(newsFetchTimerRef.current);
+        newsFetchTimerRef.current = setTimeout(debouncedFetchNews, 5000);
       })
       .subscribe((status) => {
         console.log("[News] Realtime subscription status:", status);
       });
 
+    // OPTIMIZATION: Proper cleanup
     return () => {
       supabase.removeChannel(channel);
+      if (newsFetchTimerRef.current) clearTimeout(newsFetchTimerRef.current);
     };
   }, []);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);

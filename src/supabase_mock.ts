@@ -168,6 +168,9 @@ export function limit(value: number) {
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
 
+// Track active subscriptions to prevent duplicate channels (deduplication)
+const activeSubscriptions: Record<string, { channel: any; count: number; unsubscribe: () => void }> = {};
+
 function initCache(collection: string) {
   if (!globalCache[collection]) {
     try {
@@ -504,6 +507,10 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     ? ref.collectionName
     : (ref as unknown as CollRef | Query).collectionName;
 
+  // Generate a stable channel name based on collection (NOT random UUID)
+  // This ensures reusing the same channel for the same collection
+  const channelName = `public:documents:${collectionName}`;
+
   // Initial fetch
   if (isDoc) {
     const cached = getFromCache(collectionName, ref.id);
@@ -535,7 +542,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     }
   }
 
-  // Subscribe to realtime updates
+  // Subscribe to local cache changes
   const localHandler = (e: any) => {
     if (e.detail === collectionName) {
       if (isDoc) {
@@ -552,42 +559,57 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   };
   localEmitter.addEventListener('db_change', localHandler);
 
-  const channel = supabase
-    .channel(`public:documents:${generateUUID()}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "*",
-        schema: "public",
-        table: "documents",
-        filter: `collection=eq.${collectionName}`,
-      },
-      (payload: any) => {
-        // Update cache from payload first
-        if (payload.eventType === 'DELETE') {
-            updateGlobalCache(collectionName, payload.old.id, null, true);
-        } else {
-            updateGlobalCache(collectionName, payload.new.id, payload.new.data);
-        }
-
-        // Now trigger callback using cache
-        if (isDoc) {
-          if (payload.old && payload.old.id === ref.id && payload.eventType === 'DELETE') {
-             callback({ exists: () => false, id: ref.id, data: () => undefined });
-          } else if (payload.new && payload.new.id === ref.id) {
-             callback({ exists: () => true, id: ref.id, data: () => payload.new.data });
+  // Use existing channel if available (DEDUPLICATION)
+  // This is KEY: instead of creating a new channel per subscription,
+  // reuse the same channel for each collection
+  if (!activeSubscriptions[channelName]) {
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "documents",
+          filter: `collection=eq.${collectionName}`,
+        },
+        (payload: any) => {
+          // Update cache from payload
+          if (payload.eventType === 'DELETE') {
+              updateGlobalCache(collectionName, payload.old.id, null, true);
+          } else {
+              updateGlobalCache(collectionName, payload.new.id, payload.new.data);
           }
-        } else {
-          // Collection update
-          callback(applyQueryLocally(ref));
-        }
-      },
-    )
-    .subscribe();
+          // Notify all listeners for this collection
+          localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: collectionName }));
+        },
+      )
+      .subscribe();
 
+    activeSubscriptions[channelName] = {
+      channel,
+      count: 1,
+      unsubscribe: () => {
+        supabase.removeChannel(channel);
+        delete activeSubscriptions[channelName];
+      }
+    };
+  } else {
+    // Increment reference count for existing subscription
+    activeSubscriptions[channelName].count++;
+  }
+
+  // Return cleanup function that decrements reference count
   return () => {
     localEmitter.removeEventListener('db_change', localHandler);
-    supabase.removeChannel(channel);
+    
+    // Decrement reference count and only unsubscribe when count hits 0
+    if (activeSubscriptions[channelName]) {
+      activeSubscriptions[channelName].count--;
+      if (activeSubscriptions[channelName].count === 0) {
+        activeSubscriptions[channelName].unsubscribe();
+      }
+    }
   };
 }
 
