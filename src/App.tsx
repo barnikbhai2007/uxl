@@ -346,14 +346,14 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10 mt-8 md:mt-0">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-sm bg-fc-purple-light/30 border border-fc-gold/50/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
             {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : team.name[0]}
           </div>
           <div className="flex-1 space-y-2">
             <h2 className="text-3xl md:text-5xl font-display font-black uppercase italic tracking-tighter leading-none">{team.fullName}</h2>
             <div className="flex flex-wrap items-center gap-3">
               <span className="px-3 py-1 bg-white/10 rounded-sm text-xs font-black uppercase tracking-widest text-white/60">FC: {team.fcName}</span>
-              <span className="px-3 py-1 bg-fc-neon-green text-black/20 border border-fc-gold/50/30 rounded-sm text-xs font-black uppercase tracking-widest text-fc-neon-green">OVR {team.ovr}</span>
+              <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-sm text-xs font-black uppercase tracking-widest text-fc-neon-green">OVR {team.ovr}</span>
               <div className="px-3 py-1 bg-white/5 rounded-sm flex items-center gap-1.5 text-xs text-white/40 font-mono">
                  UID: <span>{team.uid}</span>
               </div>
@@ -383,7 +383,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
-            <h3 className="font-display text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Upcoming Matches</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Upcoming Matches</h3>
             {upcomingMatches.length > 0 ? upcomingMatches.slice(0, 3).map(m => {
               const opp = m.homeTeamId === team.id ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
               return (
@@ -401,7 +401,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
           </div>
 
           <div className="space-y-4">
-            <h3 className="font-display text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Recent Form</h3>
+            <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Recent Form</h3>
             {recentMatches.length > 0 ? recentMatches.map(m => {
               const isHome = m.homeTeamId === team.id;
               const opp = isHome ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
@@ -500,7 +500,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       if (isAdmin && isEditingMode && onUpdateMatch) {
         return (
           <select
-            className="mt-2 bg-fc-purple-dark/80 border border-fc-gold/50/50 rounded-sm text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
+            className="mt-2 bg-fc-purple-dark/80 border border-fc-neon-green/50/50 rounded-sm text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
             value={team?.id || ''}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
@@ -792,10 +792,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
                     {localHomeScorers.map((s, i) => (
                       <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-sm w-full border border-white/5">
-                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-gold/50" placeholder="Player Name" />
+                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-gold/50" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-gold/50" placeholder="Time" />
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Time" />
                           <button onClick={(e) => { 
                             e.stopPropagation(); 
                             setLocalHomeScorers(prev => {
@@ -809,7 +809,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-gold/50/30 text-fc-neon-green px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
                     <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.homeScorers && match.homeScorers.length > 0 ? (
@@ -877,7 +877,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <select 
                       value={match.status}
                       onChange={(e) => addLogAndUpdate('status', e.target.value as any, 'Match Status')}
-                      className="bg-white/5 border border-white/10 rounded-sm px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-fc-gold/50 transition-all hover:bg-white/10"
+                      className="bg-white/5 border border-white/10 rounded-sm px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-fc-neon-green/50 transition-all hover:bg-white/10"
                     >
                       <option value="scheduled" className="bg-fc-purple-dark">Scheduled</option>
                       <option value="ongoing" className="bg-fc-purple-dark">Ongoing</option>
@@ -929,10 +929,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
                     {localAwayScorers.map((s, i) => (
                       <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-sm w-full border border-white/5">
-                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-gold/50" placeholder="Player Name" />
+                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-gold/50" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-gold/50" placeholder="Time" />
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Time" />
                           <button onClick={(e) => { 
                             e.stopPropagation(); 
                             setLocalAwayScorers(prev => {
@@ -946,7 +946,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-gold/50/30 text-fc-neon-green px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
                     <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.awayScorers && match.awayScorers.length > 0 ? (
@@ -1026,7 +1026,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         const val = parseInt(e.target.value);
                         addLogAndUpdate('matchNumber', isNaN(val) ? 1 : val, 'Match Number');
                       }}
-                      className="w-16 bg-fc-purple-dark/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-fc-neon-green outline-none focus:border-fc-gold/50 font-bold"
+                      className="w-16 bg-fc-purple-dark/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-fc-neon-green outline-none focus:border-fc-neon-green/50 font-bold"
                     />
                   ) : (
                     <span className="text-xs md:text-sm font-bold text-fc-neon-green">#{match.matchNumber}</span>
@@ -1036,7 +1036,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             </div>
 
             {match.evidenceUploadedBy && (
-              <div className="mt-4 p-4 bg-fc-neon-green text-black/5 border border-fc-gold/50/10 rounded-sm flex flex-col items-center gap-2">
+              <div className="mt-4 p-4 bg-fc-neon-green/5 border border-fc-neon-green/50/10 rounded-sm flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2">
                   <div className="w-2 h-2 bg-fc-neon-green text-black rounded-sm animate-pulse" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Result Verified by AI</span>
@@ -1053,7 +1053,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <div className="mt-8 flex flex-col items-center gap-4">
               <button 
                 onClick={onClose}
-                className="px-8 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black font-black uppercase text-xs tracking-[0.2em] rounded-sm transition-all shadow-lg shadow-fc-gold/20"
+                className="px-8 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black font-black uppercase text-xs tracking-[0.2em] rounded-sm transition-all shadow-lg shadow-fc-neon-green/20"
               >
                 Close Details
               </button>
@@ -1177,7 +1177,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1187,7 +1187,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="number"
                   value={formData.age}
                   onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1197,7 +1197,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.fcUid}
                   onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1207,7 +1207,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.fcName}
                   onChange={(e) => setFormData({...formData, fcName: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1217,7 +1217,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="number"
                   value={formData.teamOvr}
                   onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1227,7 +1227,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.goalkeeper}
                   onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -1237,15 +1237,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.experience}
                   onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Logo Photo</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
-                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-sm p-8 cursor-pointer hover:bg-white/10 hover:border-fc-gold/50/50 transition-all">
+                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-sm p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
                   {formData.logoUrl ? (
-                    <img src={formData.logoUrl} className="w-16 h-16 rounded-sm object-cover border-2 border-fc-gold/50" />
+                    <img src={formData.logoUrl} className="w-16 h-16 rounded-sm object-cover border-2 border-fc-neon-green/50" />
                   ) : <Plus className="w-6 h-6" />}
                 </label>
               </div>
@@ -1322,7 +1322,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               setIsOpen(true);
             }} 
             placeholder={placeholder}
-            className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-gold/50 outline-none transition-all" 
+            className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none transition-all" 
           />
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
         </div>
@@ -1396,7 +1396,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 placeholder="YYYY-MM-DD or TBD"
-                className="w-full bg-white/5 border border-white/10 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-fc-gold/50 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-fc-neon-green/50 transition-colors"
               />
             </div>
 
@@ -1426,7 +1426,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             </button>
             <button 
               onClick={() => onSave({ date, home, away })}
-              className="flex-1 py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green-dark text-black rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-fc-gold/20"
+              className="flex-1 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-fc-neon-green/20"
             >
               Add Match
             </button>
@@ -1540,7 +1540,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 <button 
                   onClick={() => handleRegister({} as any)} 
-                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-sm font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-gold/20"
+                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black rounded-sm font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-neon-green/20"
                 >
                   <LogIn className="w-4 h-4" />
                   Continue with Google
@@ -1570,7 +1570,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Enter your name"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1581,7 +1581,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.age}
                     onChange={(e) => setFormData({...formData, age: e.target.value})}
                     placeholder="21"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1592,7 +1592,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.fcUid}
                     onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
                     placeholder="Unique ID"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1603,7 +1603,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.fcName}
                     onChange={(e) => setFormData({...formData, fcName: e.target.value})}
                     placeholder="In-game name"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1614,7 +1614,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.teamOvr}
                     onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
                     placeholder="90"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1625,7 +1625,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.goalkeeper}
                     onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
                     placeholder="Enter Goalkeeper Name"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1636,7 +1636,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.experience}
                     onChange={(e) => setFormData({...formData, experience: e.target.value})}
                     placeholder="e.g. 2 years, since FIFA 22"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-gold/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
@@ -1651,11 +1651,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     />
                     <label 
                       htmlFor="logo-upload"
-                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-sm p-8 cursor-pointer hover:bg-white/10 hover:border-fc-gold/50/50 transition-all group"
+                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-sm p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
                     >
                       {formData.logoUrl ? (
                         <div className="flex flex-col items-center gap-2">
-                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-sm object-cover border-2 border-fc-gold/50 shadow-lg" />
+                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-sm object-cover border-2 border-fc-neon-green/50 shadow-lg" />
                           <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Photo Selected</span>
                         </div>
                       ) : (
@@ -1676,7 +1676,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <button 
                     type="submit"
                     disabled={isSubmitting || isCompressing}
-                    className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-neon-green-dark disabled:opacity-50 text-black rounded-sm font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-gold/20"
+                    className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-sm font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
                   >
                     {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Registration"}
                   </button>
@@ -2001,7 +2001,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
 
       return (
-        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-sm border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-gold/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
+        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-sm border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
           <div className="flex items-center gap-4">
             <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-sm transition-colors">
               <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
@@ -2026,7 +2026,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <select 
               value={matchLabels[date] || 'scheduled'}
               onChange={(e) => updateMatchLabel(date, e.target.value)}
-              className="bg-fc-purple-dark/40 border border-white/10 rounded-sm p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-fc-gold/50"
+              className="bg-fc-purple-dark/40 border border-white/10 rounded-sm p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-fc-neon-green/50"
             >
               <option value="scheduled">Scheduled</option>
               <option value="ongoing">Ongoing</option>
@@ -2120,55 +2120,55 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <div className="w-px bg-white/10 mx-2 flex-shrink-0" />
             <button 
               onClick={() => setActiveTab('bracket')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
             </button>
             <button 
               onClick={() => setActiveTab('registrations')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
             </button>
             <button 
               onClick={() => setActiveTab('label')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Label
             </button>
             <button 
               onClick={() => setActiveTab('visibility')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Visibility
             </button>
             <button 
               onClick={() => setActiveTab('reports')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Evidence
             </button>
             <button 
               onClick={() => setActiveTab('achievements')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Trophies
             </button>
             <button 
               onClick={() => setActiveTab('ai')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               AI Settings
             </button>
             <button 
               onClick={() => setActiveTab('backup')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Backup
             </button>
             <button 
               onClick={() => setActiveTab('edits')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.3)]' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Edits
             </button>
@@ -2177,9 +2177,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
         <div className="flex-1 overflow-y-auto hide-scrollbar p-4 md:p-8 lg:p-12">
           <div className="max-w-6xl mx-auto w-full">
-            <div className="mb-12 bg-fc-neon-green text-black/5 border border-fc-neon-green/30 rounded-sm p-6 md:p-8">
+            <div className="mb-12 bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-sm p-6 md:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-fc-purple-light/30 rounded-sm flex items-center justify-center border border-fc-gold/50/30">
+                <div className="w-10 h-10 bg-fc-purple-light/30 rounded-sm flex items-center justify-center border border-fc-neon-green/50/30">
                   <Star className="w-5 h-5 text-fc-neon-green animate-pulse" />
                 </div>
                 <div className="text-left">
@@ -2195,11 +2195,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   value={aiCommand}
                   onChange={e => setAiCommand(e.target.value)}
                   placeholder="e.g. 'Team A vs Team B ended 3-2. Scorers: John x2, Mike x1' or 'Reset all matches'"
-                  className="flex-1 bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-gold/50 transition-all"
+                  className="flex-1 bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all"
                 />
                 <button 
                   disabled={isAiLoading}
-                  className="px-8 bg-fc-neon-green text-black hover:bg-fc-neon-green-dark disabled:opacity-50 rounded-sm font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-fc-gold/20 flex items-center gap-3 shrink-0"
+                  className="px-8 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 rounded-sm font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-fc-neon-green/20 flex items-center gap-3 shrink-0"
                 >
                   {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
                   Execute
@@ -2220,10 +2220,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         if (roundMatches.length === 0) return null;
                         return (
                           <div key={round} className="space-y-4">
-                            <h4 className="font-display text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 border-b border-white/5 pb-2">{round}</h4>
+                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 border-b border-white/5 pb-2">{round}</h4>
                             <div className="grid grid-cols-1 gap-3">
                               {roundMatches.map(match => (
-                                <div key={match.id} className={`p-4 md:p-5 rounded-sm border transition-all ${editingMatchId === match.id ? 'bg-fc-purple-light/20 border-fc-gold/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+                                <div key={match.id} className={`p-4 md:p-5 rounded-sm border transition-all ${editingMatchId === match.id ? 'bg-fc-purple-light/20 border-fc-neon-green/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
                                   {editingMatchId === match.id ? (
                                     <div className="space-y-4">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2243,11 +2243,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                           <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
-                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-gold/50 outline-none" />
+                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="space-y-2">
                                           <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
-                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-gold/50 outline-none" />
+                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="flex items-end gap-2">
                                           <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-black uppercase text-[10px] tracking-widest rounded-sm hover:bg-green-400 transition-all">Save</button>
@@ -2306,14 +2306,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-sm">
                         <div className="flex items-center gap-3 mb-3">
                           <Users className="w-5 h-5 text-fc-neon-green" />
-                          <h4 className="font-display text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Total Applicants</h4>
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Total Applicants</h4>
                         </div>
                         <p className="text-5xl font-display font-black italic text-white">{registrations.length}</p>
                       </div>
                     <div className="bg-red-500/5 border border-red-500/20 rounded-sm p-6">
                       <div className="flex items-center gap-3 mb-4 text-red-400">
                         <Trash2 className="w-5 h-5" />
-                        <h4 className="font-display text-[10px] font-black uppercase tracking-widest">Danger Zone</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest">Danger Zone</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <button 
@@ -2415,7 +2415,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-sm p-6">
                       <div className="flex items-center gap-3 mb-4 text-yellow-500">
                         <BarChart2 className="w-5 h-5" />
-                        <h4 className="font-display text-[10px] font-black uppercase tracking-widest">Table Analysis</h4>
+                        <h4 className="text-[10px] font-black uppercase tracking-widest">Table Analysis</h4>
                       </div>
                       <button 
                         onClick={handleAnalyzeQualification}
@@ -2438,7 +2438,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Registered Users</h3>
                     <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review applicant field data</p>
                    </div>
-                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-gold/50/30 rounded-sm flex items-center gap-3">
+                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-sm flex items-center gap-3">
                       <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Active applicants:</span>
                       <span className="text-xl md:text-2xl font-display font-black italic text-white">{registrations.length}</span>
                    </div>
@@ -2621,7 +2621,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 ) : (
                   <div className="grid gap-6">
                     {reports.map((report) => (
-                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-sm overflow-hidden group hover:border-fc-gold/50/30 transition-all">
+                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-sm overflow-hidden group hover:border-fc-neon-green/50/30 transition-all">
                         <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
                           <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-fc-purple-dark relative flex items-center justify-center overflow-hidden">
                             {report.imageUrl ? (
@@ -2630,7 +2630,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">No Image Available</span>
                             )}
                             <div className="absolute top-4 left-4">
-                              <span className="px-3 py-1.5 bg-fc-neon-green text-black text-[9px] font-black uppercase tracking-widest rounded-sm shadow-xl shadow-fc-gold/10 border border-fc-neon-green/40/20">Screenshot</span>
+                              <span className="px-3 py-1.5 bg-fc-neon-green text-black text-black text-[9px] font-black uppercase tracking-widest rounded-sm shadow-xl shadow-fc-neon-green/10 border border-fc-neon-green/40/20">Screenshot</span>
                             </div>
                           </div>
                           <div className="flex-1 p-6 md:p-8 space-y-6">
@@ -2728,7 +2728,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         <select 
                           value={awardUserId}
                           onChange={e => setAwardUserId(e.target.value)}
-                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-fc-gold/50 font-sans outline-none disabled:opacity-50"
+                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose User --</option>
                           {registrations.filter(r => r.status === 'approved' && r.userId).map(r => (
@@ -2742,7 +2742,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         <select 
                           value={awardAchvId}
                           onChange={e => setAwardAchvId(e.target.value)}
-                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-fc-gold/50 font-sans outline-none disabled:opacity-50"
+                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose Achievement --</option>
                           {(ACHIEVEMENTS || []).map(a => (
@@ -2780,7 +2780,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <button 
                       onClick={handleSaveAiSettings}
                       disabled={isSavingAdmin}
-                      className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black hover:bg-fc-neon-green-dark disabled:opacity-50 text-black rounded-sm text-[10px] font-black uppercase tracking-widest shadow-lg shadow-fc-gold/20 transition-all font-sans"
+                      className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-sm text-[10px] font-black uppercase tracking-widest shadow-lg shadow-fc-neon-green/20 transition-all font-sans"
                     >
                       {isSavingAdmin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                       Save
@@ -2796,7 +2796,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         value={localApiKey}
                         onChange={(e) => setLocalApiKey(e.target.value)}
                         placeholder="Paste your Gemini API Key here..."
-                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-gold/50 transition-all font-mono"
+                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all font-mono"
                       />
                       <Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                     </div>
@@ -2809,7 +2809,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <select 
                         value={localModel || 'gemini-3-flash-preview'}
                         onChange={(e) => setLocalModel(e.target.value)}
-                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-gold/50 transition-all appearance-none cursor-pointer font-sans"
+                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all appearance-none cursor-pointer font-sans"
                       >
                         <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Balanced)</option>
                         <option value="gemini-pro-latest">gemini-pro-latest (Smartest)</option>
@@ -2827,7 +2827,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-sm flex items-start gap-4">
                     <Info className="w-5 h-5 text-fc-neon-green shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="font-display text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Configuration Status</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Configuration Status</h4>
                       <p className="text-[10px] font-black uppercase text-white/40 leading-relaxed font-sans">
                         Changes are saved to Firestore and take effect immediately for all subsequent AI requests (Match Analysis & Admin Commands).
                       </p>
@@ -2848,7 +2848,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <div className="bg-fc-purple-dark/20 border border-white/5 rounded-sm p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-fc-purple-light/20 rounded-bl-full -z-10 group-hover:bg-fc-purple-light/30 transition-all" />
                     <Download className="w-8 h-8 text-fc-neon-green mb-4" />
-                    <h4 className="font-display font-black text-white uppercase text-sm mb-2">Export Data Backup</h4>
+                    <h4 className="font-black text-white uppercase text-sm mb-2">Export Data Backup</h4>
                     <p className="text-white/40 text-xs leading-relaxed mb-6">
                       Download a JSON backup of everything: registrations, bracket matches, historical matches, match labels, stats, users, and reports. Do this regularly.
                     </p>
@@ -2865,7 +2865,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <div className="bg-fc-purple-dark/20 border border-red-500/20 rounded-sm p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-red-600/5 rounded-bl-full -z-10 group-hover:bg-red-600/10 transition-all" />
                     <Upload className="w-8 h-8 text-red-400 mb-4" />
-                    <h4 className="font-display font-black text-white uppercase text-sm mb-2">Restore Backup</h4>
+                    <h4 className="font-black text-white uppercase text-sm mb-2">Restore Backup</h4>
                     <p className="text-red-400/60 text-xs leading-relaxed mb-6 font-bold">
                       DANGER: Restoring a backup will overwrite your current live database with the data contained in the file.
                     </p>
@@ -2934,15 +2934,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="fixed top-0 left-[-9999px] pointer-events-none z-[-1] opacity-0 overflow-hidden">
             <div 
               ref={cardRef}
-              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-fc-gold/50 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
-              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-fc-neon-green/50 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
+              style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-fc-neon-green text-black/30 rounded-sm blur-[100px] -z-10" />
+              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-fc-neon-green/30 rounded-sm blur-[100px] -z-10" />
               <div className="absolute bottom-0 left-0 p-32 w-[600px] h-[600px] bg-fc-purple-base/30 rounded-sm blur-[100px] -z-10" />
               
               <div className="flex justify-between items-start mb-12">
                  <div>
-                   <h1 className="font-display text-5xl font-black italic uppercase text-white tracking-tighter shadow-sm w-[400px]">UXIT TOURNAMENT</h1>
+                   <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter shadow-sm w-[400px]">UXIT TOURNAMENT</h1>
                    <p className="text-2xl font-bold uppercase text-fc-neon-green tracking-widest mt-2">{downloadingRegistration.fcName}</p>
                  </div>
                  <div className="w-24 h-24 bg-white p-2 rounded-sm text-black relative flex-shrink-0 shadow-lg">
@@ -2960,7 +2960,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <span className="text-8xl font-black text-white/20">{downloadingRegistration.name[0]}</span>
                    )}
                  </div>
-                 <h2 className="font-display text-5xl font-black text-white uppercase text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-tight">{downloadingRegistration.name}</h2>
+                 <h2 className="text-5xl font-black text-white uppercase text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-tight">{downloadingRegistration.name}</h2>
                  <p className="text-2xl text-white/60 font-black uppercase tracking-widest mt-4">FC UID: {downloadingRegistration.fcUid}</p>
               </div>
 
@@ -3043,7 +3043,7 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-sm bg-fc-purple-light/30 border border-fc-gold/50/30 flex items-center justify-center text-fc-neon-green font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
+            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-fc-neon-green font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
               {team.name[0]}
             </div>
           )}
@@ -3128,7 +3128,7 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
     switch(category) {
       case 'SPICY': return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'BANTER': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'ANALYSIS': return 'bg-fc-neon-green text-black/20 text-fc-neon-green border-fc-gold/50/30';
+      case 'ANALYSIS': return 'bg-fc-neon-green/20 text-fc-neon-green border-fc-neon-green/50/30';
       case 'PREDICTION': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
       case 'MATCHDAY': return 'bg-fc-purple-light/20 text-fc-neon-green border-fc-purple-light/30';
       case 'FORM': return 'bg-green-500/20 text-green-400 border-green-500/30';
@@ -3179,7 +3179,7 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-fc-neon-green text-black/5 rounded-bl-[100px] pointer-events-none group-hover:bg-fc-purple-light/20 transition-colors" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-fc-neon-green/5 rounded-bl-[100px] pointer-events-none group-hover:bg-fc-purple-light/20 transition-colors" />
             <div className="flex items-start justify-between mb-3 relative z-10">
               <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
                 <span>{getCategoryIcon(article.category)}</span> {article.category}
@@ -3742,7 +3742,7 @@ export default function App() {
             type="text"
             value={tempContent || ''}
             onChange={(e) => setTempContent(e.target.value)}
-            className="bg-white/20 border border-fc-gold/50 rounded p-1 outline-none text-white text-xs font-sans"
+            className="bg-white/20 border border-fc-neon-green/50 rounded p-1 outline-none text-white text-xs font-sans"
             autoFocus
             placeholder={isImage ? "Image URL" : "Text"}
             onKeyDown={(e) => {
@@ -5238,7 +5238,7 @@ export default function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-fc-purple-dark text-white font-sans selection:bg-fc-neon-green text-black/30 relative overflow-hidden">
+      <div className="min-h-screen bg-fc-purple-dark text-white font-sans selection:bg-fc-neon-green/30 relative overflow-hidden">
       {hasQuotaError && (
         <div className="bg-red-500/20 border-b border-red-500/50 p-4 text-center z-50 relative backdrop-blur-sm">
           <p className="text-red-200 font-bold max-w-4xl mx-auto">
@@ -5298,7 +5298,7 @@ export default function App() {
             ) : (
               <button 
                 onClick={() => signIn()}
-                className="flex items-center gap-2 px-4 py-2 rounded-sm bg-fc-purple-light/30 border border-fc-gold/50/30 text-fc-neon-green hover:bg-fc-neon-green text-black-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 text-fc-neon-green hover:bg-fc-neon-green-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 Login
@@ -5306,9 +5306,9 @@ export default function App() {
             )}
           </div>
 
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-fc-gold drop-shadow-[0_0_15px_rgba(255,215,0,0.5)]" />
+          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-fc-neon-green drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
           <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none pr-2">
-            <EditableText id="hero_title_main" defaultText="THE WORLD'S GAME" />
+            <EditableText id="hero_title_main" defaultText="UXI Tournament" />
           </h1>
           <p className="text-fc-neon-green/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">
             <EditableText id="hero_subtitle" defaultText="THE WORLD'S GAME" />
@@ -5373,7 +5373,7 @@ export default function App() {
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-gold/50/30 shrink-0">
+                  <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-neon-green/50/30 shrink-0">
                     <UserIcon className="w-6 h-6 text-fc-neon-green" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -5394,25 +5394,25 @@ export default function App() {
                   <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-sm md:ml-auto overflow-x-auto hide-scrollbar w-full">
                     <button 
                       onClick={() => setCampaignTab('stats')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 text-black shadow-lg shadow-fc-gold/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Stats
                     </button>
                     <button 
                       onClick={() => setCampaignTab('history')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 text-black shadow-lg shadow-fc-gold/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Results
                     </button>
                     <button 
                       onClick={() => setCampaignTab('achievements')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 text-black shadow-lg shadow-fc-gold/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Achievements
                     </button>
                     <button 
                       onClick={() => setCampaignTab('edit')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-purple-dark text-fc-gold border border-fc-gold/50 text-black shadow-lg shadow-fc-gold/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Edit
                     </button>
@@ -5472,7 +5472,7 @@ export default function App() {
                   
                   if (myMatches.length === 0) {
                     return (
-                      <div className="p-12 text-center bg-fc-neon-green text-black/5 rounded-sm border border-fc-neon-green/30">
+                      <div className="p-12 text-center bg-fc-neon-green/5 rounded-sm border border-fc-neon-green/30">
                         <Calendar className="w-12 h-12 text-fc-neon-green/40 mx-auto mb-6" />
                         <h3 className="text-xl font-display font-black text-fc-neon-green uppercase italic">Waiting for Fixture Update</h3>
                         <p className="text-white/40 text-sm mt-2">You are registered and approved! Matches will appear here once the schedule is released.</p>
@@ -5505,7 +5505,7 @@ export default function App() {
                             <p className="text-white/40 text-sm max-w-sm mx-auto mt-2">Use the "Edit Info" button in the header to modify your tournament registration details.</p>
                             <button 
                               onClick={() => setIsEditingProfile(true)}
-                              className="mt-8 px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase text-xs tracking-widest text-black hover:bg-fc-purple-light transition-all shadow-xl shadow-fc-gold/20"
+                              className="mt-8 px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase text-xs tracking-widest text-black hover:bg-fc-purple-light transition-all shadow-xl shadow-fc-neon-green/20"
                             >
                               Launch Editor
                             </button>
@@ -5566,7 +5566,7 @@ export default function App() {
                           </div>
 
                           {/* Result Submission AI */}
-                          <div className="bg-fc-neon-green text-black/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative overflow-hidden">
+                          <div className="bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-fc-purple-light/20 blur-[60px] pointer-events-none" />
                             <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-fc-neon-green mb-2" />
                             <p className="text-white/40 text-[10px] uppercase tracking-widest mb-6">
@@ -5599,7 +5599,7 @@ export default function App() {
 
                                 return (
                                   <div className="flex gap-4 w-full">
-                                    <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-sm hover:border-fc-gold/50/50 transition-all group cursor-pointer relative">
+                                    <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-sm hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
                                       <input 
                                         type="file" 
                                         accept="image/*"
@@ -5634,7 +5634,7 @@ export default function App() {
                                               placeholder="Search MOTM... (optional)" 
                                               value={motmSearch}
                                               onChange={(e) => setMotmSearch(e.target.value)}
-                                              className="w-full bg-black/20 border border-white/10 rounded-sm p-3 text-white focus:border-fc-gold/50 outline-none text-sm text-center"
+                                              className="w-full bg-black/20 border border-white/10 rounded-sm p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center"
                                             />
                                             {motmSearch && (
                                               <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-sm shadow-xl z-[100] max-h-40 overflow-y-auto hide-scrollbar">
@@ -5693,7 +5693,7 @@ export default function App() {
                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-fc-neon-green text-black' : 'bg-orange-500'}`}></div>
                                        
                                        <div className="flex items-center gap-4 relative z-10 w-full">
-                                         <div className={`w-14 items-center justify-center flex py-2 rounded-sm text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-fc-purple-light/30 text-fc-neon-green border border-fc-gold/50/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
+                                         <div className={`w-14 items-center justify-center flex py-2 rounded-sm text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-fc-purple-light/30 text-fc-neon-green border border-fc-neon-green/50/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
                                            {isHome ? 'Home' : 'Away'}
                                          </div>
                                         <div className="flex-1">
@@ -5753,7 +5753,7 @@ export default function App() {
             >
               {/* Top Scorers Section */}
               <div className="flex items-center gap-4 mb-4 mt-2">
-                <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-gold/50/30">
+                <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-neon-green/50/30">
                   <BarChart2 className="w-6 h-6 text-fc-neon-green" />
                 </div>
                 <div>
@@ -6036,7 +6036,7 @@ export default function App() {
             >
               <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-4">
-                  <h2 className="font-display text-xl font-black uppercase italic tracking-tighter">
+                  <h2 className="text-xl font-black uppercase italic tracking-tighter">
                     <EditableText id="league_table_header" defaultText="League" /> <span className="text-fc-neon-green">
                       <EditableText id="league_table_header_bold" defaultText="Table" />
                     </span>
@@ -6190,12 +6190,12 @@ export default function App() {
             >
               <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between w-full bg-white/5 p-6 rounded-sm border border-white/10 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-gold/50/30">
+                  <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-neon-green/50/30">
                     <Calendar className="w-6 h-6 text-fc-neon-green" />
                   </div>
                   <div>
-                    <h2 className="font-display text-2xl font-black uppercase italic tracking-tighter">
-                      <EditableText id="fixtures_header" defaultText="THE WORLD'S GAME" isAdmin={isAdmin} /> <span className="text-fc-neon-green">
+                    <h2 className="text-2xl font-black uppercase italic tracking-tighter">
+                      <EditableText id="fixtures_header" defaultText="Tournament" isAdmin={isAdmin} /> <span className="text-fc-neon-green">
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
@@ -6209,7 +6209,7 @@ export default function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleAddNewFixture()}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-fc-neon-green to-fc-purple-base hover:from-fc-neon-green hover:to-fc-purple-light text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm transition-all shadow-xl shadow-fc-gold/30 border border-white/20 whitespace-nowrap"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-fc-neon-green to-fc-purple-base hover:from-fc-neon-green hover:to-fc-purple-light text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm transition-all shadow-xl shadow-fc-neon-green/30 border border-white/20 whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />
                     Add Fixture
@@ -6268,7 +6268,7 @@ export default function App() {
                             {isAdmin && isEditingMode && (
                               <button 
                                 onClick={() => handleAddNewFixture()}
-                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green-dark text-black text-xs font-black uppercase tracking-widest rounded-sm transition-all shadow-xl shadow-fc-gold/30"
+                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black text-xs font-black uppercase tracking-widest rounded-sm transition-all shadow-xl shadow-fc-neon-green/30"
                               >
                                 <Plus className="w-4 h-4" />
                                 Add First Fixture
@@ -6281,7 +6281,7 @@ export default function App() {
                       return orderedDays.map(day => (
                         <div key={day} className="space-y-6">
                           <div className="flex items-center gap-4">
-                            <div className="px-4 py-2 bg-fc-purple-light/30 border border-fc-gold/50/30 rounded-sm">
+                            <div className="px-4 py-2 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-sm">
                               <span className="text-xs font-black text-fc-neon-green uppercase tracking-widest">{day}</span>
                             </div>
                             <div className="h-[1px] flex-1 bg-white/10" />
@@ -6302,7 +6302,7 @@ export default function App() {
                             {isAdmin && isEditingMode && (
                               <button
                                 onClick={() => handleAddNewFixture(day)}
-                                className="flex items-center justify-center gap-2 p-6 bg-fc-purple-light/20 border border-dashed border-fc-gold/50/30 rounded-sm text-fc-neon-green hover:bg-fc-neon-green text-black-dark/20 hover:border-fc-gold/50 transition-all font-black uppercase text-xs tracking-widest"
+                                className="flex items-center justify-center gap-2 p-6 bg-fc-purple-light/20 border border-dashed border-fc-neon-green/50/30 rounded-sm text-fc-neon-green hover:bg-fc-neon-green-dark/20 hover:border-fc-neon-green/50 transition-all font-black uppercase text-xs tracking-widest"
                               >
                                 <Plus className="w-5 h-5" /> Add Fixture
                               </button>
@@ -6325,7 +6325,7 @@ export default function App() {
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
-                  <h3 className="font-display text-fc-neon-green font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-fc-neon-green text-black/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
+                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qual-${i}`;
                     const match = getBracketMatch(matchId);
@@ -6350,7 +6350,7 @@ export default function App() {
 
                 {/* Quarter Finals */}
                 <div className="flex flex-col justify-center gap-16">
-                  <h3 className="font-display text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green text-black/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
+                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qf-${i}`;
                     const match = getBracketMatch(matchId);
@@ -6385,7 +6385,7 @@ export default function App() {
 
                 {/* Semi Finals */}
                 <div className="flex flex-col justify-center gap-32">
-                  <h3 className="font-display text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green text-black/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
+                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => {
                     const matchId = `sf-${i}`;
                     const match = getBracketMatch(matchId);
@@ -6420,7 +6420,7 @@ export default function App() {
                 {/* Final & 3rd Place */}
                 <div className="flex flex-col justify-center gap-16">
                   <div>
-                    <h3 className="font-display text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
+                    <h3 className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
                     {(() => {
                       const match = getBracketMatch('final');
                       return (
@@ -6441,7 +6441,7 @@ export default function App() {
                   </div>
 
                   <div>
-                    <h3 className="font-display text-orange-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
+                    <h3 className="text-orange-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
                     {(() => {
                       const match = getBracketMatch('third-place');
                       return (
@@ -6496,13 +6496,13 @@ export default function App() {
                 <EditableImage 
                   id="reg_hero_image" 
                   defaultSrc="https://picsum.photos/seed/tournament/1920/1080" 
-                  alt="THE WORLD'S GAME Registration" 
+                  alt="Tournament Registration" 
                   className="w-full h-full text-[0] leading-[0] transition-transform duration-700 group-hover:scale-110" 
                   isAdmin={isAdmin} 
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#000020] via-[#000020]/40 to-transparent pointer-events-none" />
                 <div className="absolute inset-x-8 bottom-8 pointer-events-none">
-                  <span className="px-3 py-1 bg-fc-neon-green text-black text-[10px] font-black rounded-sm uppercase tracking-widest mb-3 inline-block pointer-events-auto">
+                  <span className="px-3 py-1 bg-fc-neon-green text-black text-black text-[10px] font-black rounded-sm uppercase tracking-widest mb-3 inline-block pointer-events-auto">
                     <EditableText id="apps_live_status" defaultText="Applications Live" isAdmin={isAdmin} />
                   </span>
                   <div className="pointer-events-auto inline-block relative">
@@ -6516,7 +6516,7 @@ export default function App() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
-                   <div className="w-12 h-12 bg-fc-purple-light/30 rounded-sm flex items-center justify-center mb-6 border border-fc-gold/50/30">
+                   <div className="w-12 h-12 bg-fc-purple-light/30 rounded-sm flex items-center justify-center mb-6 border border-fc-neon-green/50/30">
                      <Users className="w-6 h-6 text-fc-neon-green" />
                    </div>
                    <EditableText id="player_reg_title" defaultText="Player Registration" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
@@ -6542,7 +6542,7 @@ export default function App() {
                           }
                           setIsRegistrationModalOpen(true);
                         }}
-                       className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-neon-green-dark text-black rounded-sm font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-gold/20"
+                       className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-sm font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
                      >
                        Register Now
                      </button>
@@ -6587,7 +6587,7 @@ export default function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => { setActiveTab('registration'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="flex items-center gap-3 px-6 py-4 bg-fc-neon-green text-black rounded-sm shadow-[0_10px_30px_rgba(255,215,0,0.3)] border border-fc-neon-green/40/30 group relative overflow-hidden"
+              className="flex items-center gap-3 px-6 py-4 bg-fc-neon-green text-black rounded-sm shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-fc-neon-green/40/30 group relative overflow-hidden"
             >
               <div className="relative z-10 flex items-center gap-3">
                 <Layout className="w-5 h-5 text-white" />
@@ -6728,7 +6728,7 @@ export default function App() {
                 </div>
           </div>
           <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest">
-            &copy; 2026 THE WORLD'S GAME Hub
+            &copy; 2026 UXI Tournament Hub
           </p>
         </div>
       </footer>

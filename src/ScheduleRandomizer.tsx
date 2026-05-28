@@ -288,7 +288,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
                type="date" 
                value={startDate}
                onChange={e => setStartDate(e.target.value)}
-               className="w-full bg-black/20 border border-white/10 rounded-sm p-4 text-white uppercase font-black text-sm outline-none focus:border-fc-gold/50 transition-all"
+               className="w-full bg-black/20 border border-white/10 rounded-sm p-4 text-white uppercase font-black text-sm outline-none focus:border-fc-neon-green/50 transition-all"
              />
           </div>
           
@@ -305,7 +305,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
           
           <button 
             onClick={handleGenerate}
-            className="px-8 py-4 bg-fc-neon-green text-black text-black hover:bg-fc-neon-green-dark rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-xl shadow-fc-gold/20 h-full min-h-[56px] flex items-center justify-center gap-2"
+            className="px-8 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-xl shadow-fc-neon-green/20 h-full min-h-[56px] flex items-center justify-center gap-2"
           >
             <Play className="w-4 h-4" /> Generate Schedule
           </button>
@@ -367,7 +367,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
                                     type="date" 
                                     value={m.scheduledDate} 
                                     onChange={(e) => updateMatchDate(m.id, e.target.value)}
-                                    className="bg-transparent border border-white/10 hover:border-fc-gold/50 outline-none text-[10px] uppercase font-black tracking-widest text-white/60 p-2 rounded-sm cursor-pointer transition-all w-36"
+                                    className="bg-transparent border border-white/10 hover:border-fc-neon-green/50 outline-none text-[10px] uppercase font-black tracking-widest text-white/60 p-2 rounded-sm cursor-pointer transition-all w-36"
                                   />
                                </div>
                             </div>
@@ -427,7 +427,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
       {/* Preview Modal */}
       {previewData && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
-          <div className="bg-fc-purple-dark border border-white/10 rounded-sm max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl shadow-fc-gold/10">
+          <div className="bg-fc-purple-dark border border-white/10 rounded-sm max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl shadow-fc-neon-green/10">
             <div className="p-6 border-b border-white/5 flex justify-between items-center bg-black/20">
                <div>
                   <h3 className="text-xl font-black italic uppercase text-fc-neon-green tracking-tighter flex items-center gap-3">
@@ -446,7 +446,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
             <div className="flex-1 overflow-y-auto hide-scrollbar p-6 space-y-8 bg-gradient-to-b from-transparent to-black/20">
               
               <div className="bg-white/5 border border-fc-neon-green/20 rounded-sm p-6 relative overflow-hidden">
-                 <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-fc-neon-green text-black/5 rounded-bl-full pointer-events-none" />
+                 <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-fc-neon-green/5 rounded-bl-full pointer-events-none" />
                  <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-4 flex items-center gap-2">
                     <Users className="w-4 h-4" /> Home/Away Balance Table
                  </h4>
@@ -488,7 +488,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
                    
                    return (
                      <details key={day} className="bg-black/40 border border-white/5 rounded-sm overflow-hidden group">
-                        <summary className="p-4 cursor-pointer text-xs font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors flex items-center justify-between outline-none bg-white/5 group-open:bg-fc-neon-green text-black group-open:text-black">
+                        <summary className="p-4 cursor-pointer text-xs font-black uppercase tracking-widest text-white/60 hover:text-white transition-colors flex items-center justify-between outline-none bg-white/5 group-open:bg-fc-neon-green group-open:text-black">
                           <span>📅 Day {day} — {new Date(dayMatches[0].scheduledDate).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })} • {dayMatches.length} matches</span>
                           <span className="opacity-50">+</span>
                         </summary>
@@ -522,7 +522,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
                </div>
                
                {isSaving ? (
-                 <div className="flex items-center justify-center p-4 bg-fc-neon-green text-black/10 text-fc-neon-green rounded-sm text-sm font-black uppercase tracking-widest border border-fc-neon-green/20 animate-pulse">
+                 <div className="flex items-center justify-center p-4 bg-fc-neon-green/10 text-fc-neon-green rounded-sm text-sm font-black uppercase tracking-widest border border-fc-neon-green/20 animate-pulse">
                    {saveProgress}
                  </div>
                ) : saveComplete ? (
@@ -534,7 +534,7 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
                    <button onClick={() => setPreviewData(null)} className="px-6 py-4 text-white/60 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors rounded-sm hover:bg-white/5">
                      ❌ Cancel
                    </button>
-                   <button onClick={handleSave} className="px-8 py-4 bg-fc-neon-green text-black text-black hover:bg-fc-neon-green-dark rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-xl shadow-fc-gold/20 flex items-center gap-2">
+                   <button onClick={handleSave} className="px-8 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-xl shadow-fc-neon-green/20 flex items-center gap-2">
                      <Save className="w-4 h-4" /> Confirm & Generate
                    </button>
                  </div>

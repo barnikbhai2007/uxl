@@ -1,16 +1,15 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Barlow Condensed", ui-sans-serif, system-ui, sans-serif;
-  --font-display: "Bebas Neue", sans-serif;
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Montserrat", sans-serif;
   --font-mono: "Space Grotesk", ui-monospace, SFMono-Regular, monospace;
   
-  --color-fc-purple-dark: #0a0a1a;
-  --color-fc-purple-base: #111122;
-  --color-fc-purple-light: #1a1a33;
-  --color-fc-neon-green: #00FF87;
-  --color-fc-neon-green-dark: #00CC6A;
-  --color-fc-gold: #FFD700;
+  --color-fc-purple-dark: #1F0042;
+  --color-fc-purple-base: #380075;
+  --color-fc-purple-light: #5A00BA;
+  --color-fc-neon-green: #00FF55;
+  --color-fc-neon-green-dark: #00CC44;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
