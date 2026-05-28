@@ -2642,6 +2642,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                 <h4 className="text-lg font-display font-black italic uppercase text-white tracking-tight">
                                   {report.matchData.homeTeam} {report.matchData.homeScore} - {report.matchData.awayScore} {report.matchData.awayTeam}
                                 </h4>
+                                {report.motm && (
+                                  <div className="mt-2">
+                                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block flex items-center gap-1"><Trophy className="w-3 h-3"/> MAN OF THE MATCH</span>
+                                    <span className="text-lg md:text-xl font-black text-yellow-400 block">{report.motm.fcName}</span>
+                                  </div>
+                                )}
                                 <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">
                                   {report.timestamp ? formatTimestamp(report.timestamp) : 'Time Pending...'}
                                 </div>
@@ -2650,6 +2656,16 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                 onClick={async () => {
                                   if (window.confirm("Are you sure you want to delete this report?")) {
                                     await deleteDoc(doc(db, 'reports', report.id));
+                                    if (report.motm) {
+                                      try {
+                                        const leaderboardRef = doc(db, 'motm_leaderboard', 'global');
+                                        await updateDoc(leaderboardRef, {
+                                          [`players.${report.motm.fcName}`]: increment(-1)
+                                        });
+                                      } catch(e) {
+                                        console.error("Failed to decrement MOTM leaderboard: ", e);
+                                      }
+                                    }
                                   }
                                 }}
                                 className="p-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-sm transition-all border border-red-500/20"
@@ -3235,6 +3251,8 @@ export default function App() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
+  const [selectedMotm, setSelectedMotm] = useState<{fcName: string, userId: string} | null>(null);
+  const [motmSearch, setMotmSearch] = useState('');
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
@@ -3413,7 +3431,25 @@ export default function App() {
   const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
   const stats = useMemo(() => calculateStats(teams, matches).slice(0, 10), [teams, matches]);
   const cleanSheets = useMemo(() => calculateCleanSheets(teams, matches).slice(0, 10), [teams, matches]);
-  const motmLeaders = useMemo(() => calculateMotmLeaders(matches).slice(0, 5), [matches]);
+  
+  const [liveMotmLeaders, setLiveMotmLeaders] = useState<{playerName: string, awards: number}[]>([]);
+  useEffect(() => {
+    const unsub = onSnapshot(doc(db, 'motm_leaderboard', 'global'), (docSnap) => {
+       if (docSnap.exists()) {
+          const players = docSnap.data().players || {};
+          const leaders = Object.entries(players)
+             .map(([playerName, awards]) => ({ playerName, awards: awards as number }))
+             .filter(p => p.awards > 0)
+             .sort((a,b) => b.awards - a.awards)
+             .slice(0, 5);
+          setLiveMotmLeaders(leaders);
+       } else {
+          setLiveMotmLeaders([]);
+       }
+    });
+    return () => unsub();
+  }, []);
+
   const upcomingRef = React.useRef<HTMLDivElement>(null);
 
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -4431,7 +4467,7 @@ export default function App() {
     if (opponentUserId) await updateAchievements(opponentUserId, opponentAchievements);
   };
 
-  const processMatchResultImage = async (file: File, playerRegistration: Registration) => {
+  const processMatchResultImage = async (file: File, playerRegistration: Registration, motm: {fcName: string, userId: string} | null = null) => {
     setIsSubmittingImg(true);
     setAiAnalysisResult(null);
     try {
@@ -4445,7 +4481,8 @@ export default function App() {
           mimeType: 'image/jpeg',
           fcName: playerRegistration.fcName,
           homeGoalkeeper: teams.find(t => t.fcName === playerRegistration.fcName)?.goalkeeper,
-          awayGoalkeeper: teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper
+          awayGoalkeeper: teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper,
+          motm
         })
       });
       
@@ -4652,6 +4689,9 @@ export default function App() {
           }
           cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
           cleanedPayload.evidenceTimestamp = serverTimestamp();
+          if (motm) {
+            cleanedPayload.motm = motm;
+          }
 
           const updatedMatch = { ...existingMatch, ...cleanedPayload } as Match;
           setDbMatches(prev => prev.map(m => m.id === existingMatch.id ? updatedMatch : m));
@@ -4660,6 +4700,25 @@ export default function App() {
           }
           await updateDoc(matchRef, cleanedPayload);
           await refreshCache('matches');
+
+          // Increment MOTM Leaderboard
+          if (motm) {
+            try {
+               const leaderboardRef = doc(db, 'motm_leaderboard', 'global');
+               const lbSnap = await getDoc(leaderboardRef);
+               if (lbSnap.exists()) {
+                  await updateDoc(leaderboardRef, {
+                     [`players.${motm.fcName}`]: increment(1)
+                  });
+               } else {
+                  await setDoc(leaderboardRef, {
+                     players: { [motm.fcName]: 1 }
+                  });
+               }
+            } catch(e) {
+               console.error("Failed to update MOTM leaderboard: ", e);
+            }
+          }
 
           // Call achievements after match saved
           if (cleanedPayload.status === 'finished' && user?.uid) {
@@ -5538,25 +5597,60 @@ export default function App() {
                                 }
 
                                 return (
-                                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-sm hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
-                                    <input 
-                                      type="file" 
-                                      accept="image/*"
-                                      onChange={(e) => {
-                                        const file = e.target.files?.[0];
-                                        if (file) {
-                                          if (!myRegistration) {
-                                            alert("Please register a team first to submit match results.");
-                                            return;
+                                  <div className="flex gap-4 w-full">
+                                    <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-sm hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
+                                      <input 
+                                        type="file" 
+                                        accept="image/*"
+                                        onChange={(e) => {
+                                          const file = e.target.files?.[0];
+                                          if (file) {
+                                            if (!myRegistration) {
+                                              alert("Please register a team first to submit match results.");
+                                              return;
+                                            }
+                                            if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
+                                            processMatchResultImage(file, myRegistration, selectedMotm);
                                           }
-                                          if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
-                                          processMatchResultImage(file, myRegistration);
-                                        }
-                                      }}
-                                      className="absolute inset-0 opacity-0 cursor-pointer"
-                                    />
-                                    <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
-                                    <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                                        }}
+                                        className="absolute inset-0 opacity-0 cursor-pointer"
+                                      />
+                                      <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
+                                      <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                                    </div>
+                                    <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-sm bg-white/5 relative">
+                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block text-center">Man of the Match (Optional)</label>
+                                        {selectedMotm ? (
+                                           <div className="flex items-center justify-center gap-2 bg-yellow-500/20 text-yellow-500 rounded-sm px-4 py-2 border border-yellow-500/30 mx-auto w-fit">
+                                             <Star className="w-4 h-4 fill-current" />
+                                             <span className="text-sm font-bold">{selectedMotm.fcName}</span>
+                                             <button onClick={() => setSelectedMotm(null)} className="ml-2 hover:text-white z-10 relative"><X className="w-4 h-4" /></button>
+                                           </div>
+                                        ) : (
+                                          <div className="relative w-full max-w-xs mx-auto">
+                                            <input 
+                                              type="text" 
+                                              placeholder="Search MOTM... (optional)" 
+                                              value={motmSearch}
+                                              onChange={(e) => setMotmSearch(e.target.value)}
+                                              className="w-full bg-black/20 border border-white/10 rounded-sm p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center"
+                                            />
+                                            {motmSearch && (
+                                              <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-sm shadow-xl z-[100] max-h-40 overflow-y-auto hide-scrollbar">
+                                                {registrations.filter(r => r.fcName.toLowerCase().includes(motmSearch.toLowerCase())).map(r => (
+                                                  <button 
+                                                    key={r.userId}
+                                                    onClick={() => { setSelectedMotm({fcName: r.fcName, userId: r.userId}); setMotmSearch(''); }}
+                                                    className="w-full text-center p-3 hover:bg-white/10 text-sm font-bold text-white border-b border-white/5 last:border-0"
+                                                  >
+                                                    {r.fcName}
+                                                  </button>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        )}
+                                    </div>
                                   </div>
                                 );
                               })()}
@@ -5829,19 +5923,42 @@ export default function App() {
                 <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-yellow-500/10 rounded-bl-full pointer-events-none" />
                 
                 <div className="space-y-4 relative z-10 max-w-2xl">
-                  {motmLeaders.length > 0 ? (
-                    motmLeaders.map((leader, index) => (
-                      <div key={leader.playerName} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 bg-fc-purple-dark/40 rounded-sm border border-white/5">
-                        <div className="flex items-center gap-4">
-                          <span className="text-lg font-bold text-white/40">{index + 1}.</span>
-                          <span className="text-base font-black uppercase tracking-widest text-white">{leader.playerName}</span>
+                  {liveMotmLeaders.length > 0 ? (
+                    liveMotmLeaders.map((leader, index) => {
+                      let styleClass = 'bg-fc-purple-dark/40 border-white/5';
+                      let rankClass = 'text-white/40';
+                      let awardClass = 'text-yellow-400';
+                      let iconClass = 'text-yellow-500';
+
+                      if (index === 0) {
+                        styleClass = 'bg-yellow-500/10 border-yellow-500/50 shadow-lg shadow-yellow-500/10';
+                        rankClass = 'text-yellow-500 text-xl';
+                        awardClass = 'text-yellow-400';
+                      } else if (index === 1) {
+                        styleClass = 'bg-gray-300/10 border-gray-300/50 shadow-lg shadow-gray-300/10';
+                        rankClass = 'text-gray-300 text-xl';
+                        awardClass = 'text-gray-200';
+                        iconClass = 'text-gray-300';
+                      } else if (index === 2) {
+                        styleClass = 'bg-amber-700/10 border-amber-700/50 shadow-lg shadow-amber-700/10';
+                        rankClass = 'text-amber-600 text-xl';
+                        awardClass = 'text-amber-500';
+                        iconClass = 'text-amber-600';
+                      }
+
+                      return (
+                        <div key={leader.playerName} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-sm border ${styleClass} transition-all`}>
+                          <div className="flex items-center gap-4">
+                            <span className={`text-lg font-black ${rankClass}`}>#{index + 1}</span>
+                            <span className="text-base font-black uppercase tracking-widest text-white">{leader.playerName}</span>
+                          </div>
+                          <div className="flex items-center gap-2 sm:ml-auto">
+                            <span className={`${awardClass} font-bold`}>{leader.awards} award{leader.awards !== 1 ? 's' : ''}</span>
+                            <Star className={`w-4 h-4 fill-current ${iconClass}`} />
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 sm:ml-auto">
-                          <span className="text-yellow-400 font-bold">{leader.awards} award{leader.awards !== 1 ? 's' : ''}</span>
-                          <TrophyIcon className="w-4 h-4 text-yellow-500" />
-                        </div>
-                      </div>
-                    ))
+                      );
+                    })
                   ) : (
                     <div className="text-center py-8">
                       <p className="text-white/40 uppercase font-black text-xs tracking-widest">No MOTM awards recorded yet</p>

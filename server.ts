@@ -22,7 +22,7 @@ async function getAiConfig() {
   };
 }
 
-async function sendTelegramMatchResult(matchData: any, imageBase64: string, mimeType: string) {
+async function sendTelegramMatchResult(matchData: any, imageBase64: string, mimeType: string, motm: {fcName: string, userId: string} | null = null) {
   try {
     const botToken = process.env.TELEGRAM_BOT_TOKEN;
     const chatId = process.env.TELEGRAM_CHAT_ID;
@@ -38,7 +38,7 @@ async function sendTelegramMatchResult(matchData: any, imageBase64: string, mime
 ⚽ *${matchData.homePlayer || matchData.team1 || 'Home'}* ${matchData.homeScore ?? matchData.team1Score ?? 0} - ${matchData.awayScore ?? matchData.team2Score ?? 0} *${matchData.awayPlayer || matchData.team2 || 'Away'}*
 
 📅 Matchday: ${matchData.matchday || 'N/A'}
-🏆 MOTM: ${matchData.manOfTheMatch || 'N/A'}
+${motm ? `⭐ Man of the Match: ${motm.fcName}` : `🏆 MOTM: ${matchData.manOfTheMatch || 'N/A'}`}
 
 ⚽ *Scorers:*
 ${[...(matchData.homeScorers || matchData.team1Scorers || []), ...(matchData.awayScorers || matchData.team2Scorers || [])]
@@ -134,7 +134,7 @@ app.use(express.json({ limit: '10mb' }));
   // AI Endpoint for match analysis
   app.post("/api/analyze-match", async (req, res) => {
     try {
-      const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper } = req.body;
+      const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper, motm } = req.body;
       const config = await getAiConfig();
       
       console.log(`[AI] Analysis Request | Model: ${config.model} | Source: ${config.source}`);
@@ -370,7 +370,7 @@ app.use(express.json({ limit: '10mb' }));
       }
 
       console.log('[Telegram] Sending match result...');
-      await sendTelegramMatchResult(matchData, base64, mimeType);
+      await sendTelegramMatchResult(matchData, base64, mimeType, motm);
 
       // Save report for admin review
       try {
@@ -384,6 +384,7 @@ app.use(express.json({ limit: '10mb' }));
           imageUrl: publicImageUrl,   // Store URL instead of raw base64
           mimeType: mimeType || 'image/jpeg',
           matchId: matchData.matchId || null,
+          motm: motm || null,
           analysisSummary: `Verified match between ${matchData.team1} and ${matchData.team2} (Reported by ${fcName || 'Unknown'})`
         };
         await supabase.from('documents').insert({ id: crypto.randomUUID(), collection: 'reports', data: reportData });

@@ -54,6 +54,7 @@ export interface Match {
   homeStats?: MatchStats;
   awayStats?: MatchStats;
   manOfTheMatch?: string;
+  motm?: { fcName: string, userId: string } | null;
   date: string;
   status: 'scheduled' | 'live' | 'finished' | 'rescheduled';
   type?: 'qualifier' | 'quarterfinal' | 'semifinal' | 'thirdplace' | 'final';
@@ -118,6 +119,7 @@ export interface MatchReport {
   timestamp: any;
   imageUrl: string;
   mimeType: string;
+  motm?: { fcName: string; userId: string } | null;
 }
 
 export interface Achievement {
