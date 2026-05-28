@@ -1,0 +1,298 @@
+319:      <div className="absolute inset-0 bg-fc-purple-dark/80 backdrop-blur-md" onClick={onClose} />
+324:        className="relative w-full max-w-4xl bg-gradient-to-b from-fc-purple-dark to-fc-purple-base/50 border border-white/10 rounded-[12px] p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
+348:          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[12px] bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
+355:              <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-[4px] text-xs font-black uppercase tracking-widest text-fc-neon-green">OVR {team.ovr}</span>
+374:            <span className="text-2xl font-black text-fc-neon-green">{avgPossession}%</span>
+391:                    <EditableMatchBadge match={m} isAdmin={isAdmin} className="bg-fc-purple-light/30 px-1.5 py-0.5 rounded border border-fc-neon-green/30" textClassName="text-fc-neon-green text-[8px] font-black" />
+502:            className="mt-2 bg-fc-purple-dark/80 border border-fc-neon-green/50/50 rounded-[4px] text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
+553:          <div className="flex flex-col items-center gap-3 px-6 py-2 bg-fc-purple-dark/20 rounded-[8px] border border-white/5">
+558:              className="absolute -top-2 left-1/2 -translate-x-1/2 bg-fc-neon-green text-black px-2 py-0.5 rounded shadow-lg"
+576:              'bg-fc-purple-light/20 text-white border border-fc-neon-green/30'
+686:            <span className="text-fc-neon-green/40 text-[9px]">{label}</span>
+690:            <div className="h-full bg-fc-neon-green text-black transition-all duration-700" style={{ width: `${homePercent}%` }} />
+703:        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-fc-purple-dark/95 cursor-pointer will-change-opacity"
+711:          className="w-full max-w-2xl bg-fc-purple-base border border-white/10 rounded-[12px] overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default will-change-transform"
+714:          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-fc-neon-green/20 to-transparent pointer-events-none" />
+742:                <span className="text-xs font-black uppercase tracking-[0.3em] text-fc-neon-green">Match Details</span>
+762:                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{homeTeam?.fullName || 'TBD'}</h2>
+765:                        <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
+767:                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-black text-fc-neon-green">OVR {homeTeam.ovr}</span>
+773:                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-fc-neon-green transition-colors group/uid"
+791:                    <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
+793:                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-[6px] w-full border border-white/5">
+794:                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
+796:                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
+797:                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Time" />
+806:                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black rounded transition-colors" title="Swap to Away Team"><ArrowRightLeft className="w-3 h-3" /></button>
+811:                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-[4px] font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+828:                <div className="text-[10px] md:text-xs font-black text-fc-neon-green/50 uppercase tracking-widest">Score</div>
+860:                  displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-red-500/20 text-red-400' : 'bg-fc-purple-light/30 text-fc-neon-green'
+879:                      className="bg-white/5 border border-white/10 rounded-[6px] px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-fc-neon-green/50 transition-all hover:bg-white/10"
+881:                      <option value="scheduled" className="bg-fc-purple-dark">Scheduled</option>
+882:                      <option value="ongoing" className="bg-fc-purple-dark">Ongoing</option>
+883:                      <option value="finished" className="bg-fc-purple-dark">Final Result</option>
+884:                      <option value="rescheduled" className="bg-fc-purple-dark">Rescheduled</option>
+899:                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{awayTeam?.fullName || 'TBD'}</h2>
+902:                        <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
+904:                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-black text-fc-neon-green">OVR {awayTeam.ovr}</span>
+910:                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-fc-neon-green transition-colors group/uid"
+928:                    <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
+930:                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-[6px] w-full border border-white/5">
+931:                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
+933:                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
+934:                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Time" />
+943:                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black rounded transition-colors" title="Swap to Home Team"><ArrowRightLeft className="w-3 h-3" /></button>
+948:                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-[4px] font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+979:                        className="bg-fc-purple-dark/40 border border-yellow-500/30 rounded-[4px] px-3 py-1.5 text-xs font-black uppercase tracking-widest text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
+990:                      <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
+1014:                <div className="text-xs md:text-sm font-bold text-fc-neon-green">{match.date}</div>
+1028:                      className="w-16 bg-fc-purple-dark/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-fc-neon-green outline-none focus:border-fc-neon-green/50 font-bold"
+1031:                    <span className="text-xs md:text-sm font-bold text-fc-neon-green">#{match.matchNumber}</span>
+1038:              <div className="mt-4 p-4 bg-fc-neon-green/5 border border-fc-neon-green/50/10 rounded-[8px] flex flex-col items-center gap-2">
+1040:                  <div className="w-2 h-2 bg-fc-neon-green text-black rounded-[4px] animate-pulse" />
+1041:                  <span className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Result Verified by AI</span>
+1055:                className="px-8 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black font-black uppercase text-xs tracking-[0.2em] rounded-[6px] transition-all shadow-lg shadow-fc-neon-green/20"
+1147:          className="absolute inset-0 bg-fc-purple-dark/90 backdrop-blur-xl"
+1153:          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-[12px] overflow-hidden shadow-2xl"
+1155:          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
+1159:                <p className="text-fc-neon-green/60 text-[10px] font-black uppercase tracking-[0.2em]">Update your tournament information</p>
+1179:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1189:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1199:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1209:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1219:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1229:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1239:                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1245:                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-[6px] p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
+1247:                    <img src={formData.logoUrl} className="w-16 h-16 rounded-[4px] object-cover border-2 border-fc-neon-green/50" />
+1255:                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-[8px] font-black uppercase text-xs tracking-widest transition-all"
+1324:            className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none transition-all" 
+1347:                    className="w-full px-4 py-3 text-left hover:bg-fc-purple-light/30 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
+1353:                        <Star className="w-4 h-4 text-fc-neon-green" />
+1381:      <div className="fixed inset-0 bg-fc-purple-dark/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+1387:          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fc-neon-green to-fc-purple-base" />
+1393:              <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1 block">Match Date</label>
+1398:                className="w-full bg-white/5 border border-white/10 rounded-[6px] px-4 py-3 text-white focus:outline-none focus:border-fc-neon-green/50 transition-colors"
+1428:              className="flex-1 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-[6px] font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-fc-neon-green/20"
+1507:          className="absolute inset-0 bg-fc-purple-dark/90 backdrop-blur-xl"
+1513:          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-[12px] overflow-hidden shadow-2xl"
+1515:          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
+1519:                <p className="text-fc-neon-green/60 text-[10px] font-black uppercase tracking-[0.2em]">Join THE WORLD'S GAME</p>
+1533:                <div className="w-20 h-20 bg-fc-purple-light/30 rounded-[4px] flex items-center justify-center mx-auto">
+1534:                  <LogIn className="w-10 h-10 text-fc-neon-green" />
+1542:                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black rounded-[8px] font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-neon-green/20"
+1572:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1583:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1594:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1605:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1616:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1627:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1638:                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+1653:                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-[6px] p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
+1657:                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-[4px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
+1658:                          <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Photo Selected</span>
+1662:                          <div className="p-3 bg-white/5 rounded-[4px] group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
+1678:                    className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-[8px] font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
+2003:        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-[6px] border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
+2028:              className="bg-fc-purple-dark/40 border border-white/10 rounded-[4px] p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-fc-neon-green/50"
+2092:        className="fixed inset-0 z-[200] bg-fc-purple-dark text-white flex flex-col font-sans"
+2094:        <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-fc-purple-dark/40 backdrop-blur-md sticky top-0 z-20 gap-4">
+2100:              <ArrowLeft className="w-4 md:w-5 h-4 md:h-5 text-fc-neon-green group-hover:-translate-x-1 transition-transform" />
+2106:              <p className="text-fc-neon-green/40 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] mt-0.5 md:mt-1 truncate max-w-[200px]">
+2122:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2128:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2134:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2140:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2146:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2152:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2158:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2164:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2170:              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+2179:            <div className="mb-12 bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[12px] p-6 md:p-8">
+2181:                <div className="w-10 h-10 bg-fc-purple-light/30 rounded-[6px] flex items-center justify-center border border-fc-neon-green/50/30">
+2182:                  <Star className="w-5 h-5 text-fc-neon-green animate-pulse" />
+2186:                  <p className="text-fc-neon-green/40 text-[9px] uppercase tracking-widest">
+2197:                  className="flex-1 bg-fc-purple-dark/40 border border-white/10 rounded-[8px] px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all"
+2201:                  className="px-8 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 rounded-[8px] font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-fc-neon-green/20 flex items-center gap-3 shrink-0"
+2212:                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
+2225:                                <div key={match.id} className={`p-4 md:p-5 rounded-[8px] border transition-all ${editingMatchId === match.id ? 'bg-fc-purple-light/20 border-fc-neon-green/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+2245:                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
+2249:                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
+2260:                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-[4px]">
+2262:                                          <span className="text-lg font-display font-black italic text-fc-neon-green">{match.homeScore}</span>
+2264:                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-[4px]">
+2266:                                          <span className="text-lg font-display font-black italic text-fc-neon-green">{match.awayScore}</span>
+2269:                                      <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-[8px] bg-white/5 hover:bg-white/10 text-fc-neon-green hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
+2286:                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
+2305:                      <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-[8px]">
+2307:                          <Users className="w-5 h-5 text-fc-neon-green" />
+2308:                          <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Total Applicants</h4>
+2389:                          className={`relative px-4 py-3 border rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'stats' ? 'bg-fc-neon-green text-black border-fc-neon-green text-black animate-pulse' : 'bg-fc-purple-light/20 border-fc-neon-green/30 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black'}`}
+2438:                    <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review applicant field data</p>
+2440:                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-[8px] flex items-center gap-3">
+2441:                      <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Active applicants:</span>
+2458:                               <p className="text-[8px] font-black uppercase tracking-widest text-fc-neon-green mb-0.5">Status</p>
+2496:                                 className="p-2 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black transition-all rounded-[6px]"
+2503:                                 className="p-2 bg-fc-purple-light/20 text-fc-neon-green hover:bg-fc-purple-light hover:text-white transition-all rounded-[6px]"
+2520:                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">FC Name</p>
+2524:                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Age</p>
+2528:                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Team OVR</p>
+2535:                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Experience</p>
+2603:                    <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review AI analysis and match verification screenshots</p>
+2609:                    <Loader2 className="w-8 h-8 text-fc-neon-green animate-spin" />
+2623:                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-[12px] overflow-hidden group hover:border-fc-neon-green/50/30 transition-all">
+2625:                          <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-fc-purple-dark relative flex items-center justify-center overflow-hidden">
+2632:                              <span className="px-3 py-1.5 bg-fc-neon-green text-black text-black text-[9px] font-black uppercase tracking-widest rounded-[4px] shadow-xl shadow-fc-neon-green/10 border border-fc-neon-green/40/20">Screenshot</span>
+2639:                                  <div className="px-2 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[8px] font-black text-fc-neon-green uppercase tracking-tighter">Reporter</div>
+2675:                              <div className="bg-fc-purple-dark/20 rounded-[8px] p-4 border border-white/5 space-y-2">
+2681:                                      <span className="text-fc-neon-green">
+2704:                   <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
+2710:                        <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60 mb-2 block">Select Registered Player</label>
+2714:                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
+2724:                        <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60 mb-2 block">Select Trophy / Achievement</label>
+2728:                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
+2766:                      className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-[6px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-fc-neon-green/20 transition-all font-sans"
+2775:                    <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60">Gemini API Key</label>
+2782:                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[8px] px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all font-mono"
+2790:                    <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60">Gemini Model</label>
+2795:                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[8px] px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all appearance-none cursor-pointer font-sans"
+2810:                  <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-[8px] flex items-start gap-4">
+2811:                    <Info className="w-5 h-5 text-fc-neon-green shrink-0 mt-0.5" />
+2813:                      <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Configuration Status</h4>
+2831:                  <div className="bg-fc-purple-dark/20 border border-white/5 rounded-[8px] p-6 relative overflow-hidden group">
+2832:                    <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-fc-purple-light/20 rounded-bl-full -z-10 group-hover:bg-fc-purple-light/30 transition-all" />
+2833:                    <Download className="w-8 h-8 text-fc-neon-green mb-4" />
+2840:                      className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-[6px] text-[10px] font-black tracking-[0.2em] uppercase transition-all text-black flex items-center justify-center gap-2"
+2848:                  <div className="bg-fc-purple-dark/20 border border-red-500/20 rounded-[8px] p-6 relative overflow-hidden group">
+2889:                        <div key={`${m.id}-${i}`} className="bg-fc-purple-dark/20 border border-white/5 rounded-[8px] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+2891:                            <div className="text-[10px] font-black tracking-widest uppercase text-fc-neon-green mb-1">
+2920:              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-fc-neon-green/50 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
+2923:              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-fc-neon-green/30 rounded-[4px] blur-[100px] -z-10" />
+2924:              <div className="absolute bottom-0 left-0 p-32 w-[600px] h-[600px] bg-fc-purple-base/30 rounded-[4px] blur-[100px] -z-10" />
+2929:                   <p className="text-2xl font-bold uppercase text-fc-neon-green tracking-widest mt-2">{downloadingRegistration.fcName}</p>
+2939:                 <div className="w-64 h-64 rounded-[4px] border-[10px] border-white/20 overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.4)] mb-8 flex items-center justify-center bg-fc-purple-base">
+2950:              <div className="grid grid-cols-2 gap-6 bg-fc-purple-dark/40 backdrop-blur-2xl rounded-[12px] p-8 border-2 border-white/10 relative z-10 shadow-2xl mt-8">
+2952:                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Team OVR</p>
+2956:                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Age</p>
+2960:                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Goalkeeper</p>
+3029:            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-[4px] bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-fc-neon-green font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
+3043:            className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
+3114:      case 'ANALYSIS': return 'bg-fc-neon-green/20 text-fc-neon-green border-fc-neon-green/50/30';
+3116:      case 'MATCHDAY': return 'bg-fc-purple-light/20 text-fc-neon-green border-fc-purple-light/30';
+3146:        <Sparkles className="w-5 h-5 text-fc-neon-green" />
+3155:            className="flex-none w-80 md:w-96 bg-fc-purple-dark/40 border border-white/10 rounded-[8px] p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
+3165:            <div className="absolute top-0 right-0 w-32 h-32 bg-fc-neon-green/5 rounded-bl-[100px] pointer-events-none group-hover:bg-fc-purple-light/20 transition-colors" />
+3653:          <div className="absolute inset-0 bg-fc-purple-dark/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+3654:             <label className="bg-fc-neon-green text-black px-4 py-2 rounded-[6px] text-black text-xs font-black uppercase cursor-pointer hover:bg-fc-neon-green text-black transition-colors">
+3708:            className="bg-white/20 border border-fc-neon-green/50 rounded p-1 outline-none text-white text-xs font-sans"
+3743:            className="p-1.5 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-[4px] text-black transition-all scale-75 absolute -right-8 top-1/2 -translate-y-1/2 z-[100] shadow-xl border border-fc-neon-green/40"
+5181:      <div className="min-h-screen bg-fc-purple-dark text-white font-sans selection:bg-fc-neon-green/30 relative overflow-hidden">
+5193:        <div className="absolute inset-0 bg-gradient-to-t from-fc-purple-dark via-transparent to-transparent" />
+5199:          <div className="absolute inset-0 bg-gradient-to-b from-fc-purple-base/20 to-[#000030]" />
+5219:                  <p className="text-xs font-bold text-fc-neon-green truncate max-w-[100px]">{user.displayName || user.email}</p>
+5241:                className="flex items-center gap-2 px-4 py-2 rounded-[6px] bg-fc-purple-light/30 border border-fc-neon-green/50/30 text-fc-neon-green hover:bg-fc-neon-green-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
+5249:          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-fc-neon-green drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
+5253:          <p className="text-fc-neon-green/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">
+5260:      <nav className="sticky top-0 z-50 bg-fc-purple-dark/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
+5289:                    className="absolute inset-0 bg-gradient-to-br from-fc-neon-green to-fc-purple-light rounded-[6px] shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+5316:                  <div className="p-3 bg-fc-purple-light/30 rounded-[8px] border border-fc-neon-green/50/30 shrink-0">
+5317:                    <UserIcon className="w-6 h-6 text-fc-neon-green" />
+5321:                    <p className="text-fc-neon-green/40 text-xs uppercase tracking-widest mt-1 truncate">
+5331:                    <Edit3 className="w-4 h-4 text-fc-neon-green group-hover:scale-110 transition-transform" />
+5337:                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+5343:                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+5349:                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+5355:                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+5366:                  <button onClick={() => signIn()} className="px-8 py-4 bg-fc-neon-green text-black rounded-[8px] font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
+5374:                        <Loader2 className="w-12 h-12 text-fc-neon-green animate-spin" />
+5383:                          <button onClick={() => setActiveTab('registration')} className="px-8 py-4 bg-fc-neon-green text-black rounded-[8px] font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Register Now</button>
+5415:                      <div className="p-12 text-center bg-fc-neon-green/5 rounded-[12px] border border-fc-neon-green/30">
+5416:                        <Calendar className="w-12 h-12 text-fc-neon-green/40 mx-auto mb-6" />
+5417:                        <h3 className="text-xl font-display font-black text-fc-neon-green uppercase italic">Waiting for Fixture Update</h3>
+5443:                            <Shield className="w-16 h-16 text-fc-neon-green/20 mx-auto mb-6" />
+5448:                              className="mt-8 px-8 py-4 bg-fc-neon-green text-black rounded-[8px] font-black uppercase text-xs tracking-widest text-black hover:bg-fc-purple-light transition-all shadow-xl shadow-fc-neon-green/20"
+5472:                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">
+5478:                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">OVR</p>
+5482:                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">Goals</p>
+5486:                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">Played</p>
+5501:                                    <span className="font-display font-black text-fc-neon-green text-xl italic">{s.goals}</span>
+5509:                          <div className="bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative overflow-hidden">
+5510:                            <div className="absolute top-0 right-0 w-32 h-32 bg-fc-purple-light/20 blur-[60px] pointer-events-none" />
+5511:                            <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-fc-neon-green mb-2" />
+5529:                                      <div className="w-10 h-10 bg-fc-purple-light/20 rounded-[4px] flex items-center justify-center">
+5530:                                        <AlertCircle className="w-5 h-5 text-fc-neon-green/60" />
+5534:                                        <span className="text-fc-neon-green/60 lowercase font-bold tracking-normal italic mt-1 block">Analysis is only enabled when your match is marked as "Ongoing" by an admin</span>
+5541:                                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-[8px] hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
+5558:                                    <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
+5565:                                 <div className="flex items-center justify-center gap-3 text-fc-neon-green">
+5598:                                       <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-fc-neon-green text-black' : 'bg-orange-500'}`}></div>
+5601:                                         <div className={`w-14 items-center justify-center flex py-2 rounded-[6px] text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-fc-purple-light/30 text-fc-neon-green border border-fc-neon-green/50/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
+5608:                                              <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-fc-neon-green font-bold" />
+5610:                                              <Calendar className="w-3.5 h-3.5 text-fc-neon-green" />
+5611:                                              <span className="text-fc-neon-green">{m.date || 'TBD'}</span>
+5661:                <div className="p-3 bg-fc-purple-light/30 rounded-[8px] border border-fc-neon-green/50/30">
+5662:                  <BarChart2 className="w-6 h-6 text-fc-neon-green" />
+5666:                  <p className="text-fc-neon-green/40 text-xs uppercase tracking-widest mt-1">
+5675:                    <tr className="bg-white/5 text-fc-neon-green/50 text-[10px] uppercase tracking-[0.2em] font-bold">
+5702:                            <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">{stat.gamerName}</span>
+5711:                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green transition-all border border-white/5"
+5722:                          <span className="text-lg font-black text-fc-neon-green">{stat.goals}</span>
+5834:                      <div key={leader.playerName} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 bg-fc-purple-dark/40 rounded-[8px] border border-white/5">
+5855:                <div className="p-3 bg-fc-purple-base/20 rounded-[8px] border border-fc-purple-light/30">
+5856:                  <BarChart2 className="w-6 h-6 text-fc-neon-green" />
+5866:                  <span className="text-[10px] font-black uppercase text-fc-neon-green/60 tracking-widest mb-1">Highest Average Possession</span>
+5868:                  <div className="px-3 py-1 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-[4px] text-fc-neon-green font-bold text-sm">
+5880:                  <span className="text-[10px] font-black uppercase text-fc-neon-green/60 tracking-widest mb-1">Best Defense</span>
+5882:                  <div className="px-3 py-1 bg-fc-purple-light/10 border border-fc-purple-light/20 rounded-[4px] text-fc-neon-green font-bold text-sm">
+5922:                    <EditableText id="league_table_header" defaultText="League" /> <span className="text-fc-neon-green">
+5928:                  <div className="w-2 h-2 rounded-[4px] bg-fc-neon-green text-black" />
+5936:                  <tr className="bg-white/5 text-fc-neon-green/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
+6005:                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green transition-all border border-white/5"
+6016:                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] md:text-[10px] font-black text-fc-neon-green">{team.ovr}</span>
+6025:                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-xs md:text-sm text-fc-neon-green">{team.points}</td>
+6075:                  <div className="p-3 bg-fc-purple-light/30 rounded-[8px] border border-fc-neon-green/50/30">
+6076:                    <Calendar className="w-6 h-6 text-fc-neon-green" />
+6080:                      <EditableText id="fixtures_header" defaultText="Tournament" isAdmin={isAdmin} /> <span className="text-fc-neon-green">
+6084:                    <p className="text-fc-neon-green/40 text-[10px] uppercase font-black tracking-widest">
+6094:                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-fc-neon-green to-fc-purple-base hover:from-fc-neon-green hover:to-fc-purple-light text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[4px] transition-all shadow-xl shadow-fc-neon-green/30 border border-white/20 whitespace-nowrap"
+6128:                            <Loader2 className="w-12 h-12 text-fc-neon-green animate-spin" />
+6137:                            <div className="w-20 h-20 bg-fc-purple-light/20 rounded-[4px] flex items-center justify-center border border-fc-neon-green/30">
+6138:                              <Calendar className="w-10 h-10 text-fc-neon-green" />
+6149:                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black text-xs font-black uppercase tracking-widest rounded-[4px] transition-all shadow-xl shadow-fc-neon-green/30"
+6162:                            <div className="px-4 py-2 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-[6px]">
+6163:                              <span className="text-xs font-black text-fc-neon-green uppercase tracking-widest">{day}</span>
+6183:                                className="flex items-center justify-center gap-2 p-6 bg-fc-purple-light/20 border border-dashed border-fc-neon-green/50/30 rounded-[12px] text-fc-neon-green hover:bg-fc-neon-green-dark/20 hover:border-fc-neon-green/50 transition-all font-black uppercase text-xs tracking-widest"
+6206:                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
+6212:                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-[4px] overflow-hidden shadow-lg transition-all group/match relative">
+6213:                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-fc-purple-light/20' : ''} relative z-10 gap-6`}>
+6214:                            <span className="font-display font-black text-fc-neon-green/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+6215:                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+6217:                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-fc-purple-light/20' : ''} gap-6`}>
+6218:                            <span className="font-display font-black text-fc-neon-green/70 uppercase italic whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+6219:                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+6231:                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
+6238:                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-[4px] overflow-hidden shadow-lg transition-all group/match relative">
+6240:                            <span className="font-display font-black uppercase italic transition-colors text-fc-neon-green/70 whitespace-nowrap">
+6243:                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+6246:                            <span className="font-display font-black uppercase italic transition-colors text-fc-neon-green/70 whitespace-nowrap">
+6249:                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+6266:                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
+6273:                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-[4px] overflow-hidden shadow-lg transition-all group/match relative">
+6275:                            <span className="font-display font-black uppercase italic text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+6276:                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+6279:                            <span className="font-display font-black uppercase italic text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+6280:                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+6305:                        <div className="w-fit min-w-[200px] bg-gradient-to-br from-fc-neon-green/20 to-fc-purple-base/20 border border-yellow-500/50 rounded-[6px] overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
+6306:                          <div className="bg-fc-purple-dark rounded-[4px] overflow-hidden relative z-10">
+6361:                <p className="text-[9px] font-black uppercase tracking-widest text-fc-neon-green/40 italic">Note: Seeding benefit allows play second leg at home</p>
+6383:                  <span className="px-3 py-1 bg-fc-neon-green text-black text-black text-[10px] font-black rounded-[4px] uppercase tracking-widest mb-3 inline-block pointer-events-auto">
+6397:                   <div className="w-12 h-12 bg-fc-purple-light/30 rounded-[8px] flex items-center justify-center mb-6 border border-fc-neon-green/50/30">
+6398:                     <Users className="w-6 h-6 text-fc-neon-green" />
+6423:                       className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-[8px] font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
+6443:                         <div className="w-1.5 h-1.5 bg-fc-neon-green text-black rounded-[4px]" />
+6468:              className="flex items-center gap-3 px-6 py-4 bg-fc-neon-green text-black rounded-[8px] shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-fc-neon-green/40/30 group relative overflow-hidden"
+6580:      <footer className="mt-20 py-8 md:py-12 border-t border-white/10 bg-fc-purple-dark/20">
+6584:                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+6590:                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+6596:                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+6602:                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">

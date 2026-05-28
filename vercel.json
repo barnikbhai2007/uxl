@@ -13,16 +13,8 @@
       "use": "@vercel/node"
     }
   ],
-  "routes": [
-    { "src": "/api/analyze-match", "dest": "/server.ts" },
-    { "src": "/api/generate-news", "dest": "/server.ts" },
-    { "src": "/api/cron-news", "dest": "/server.ts" },
-    { "src": "/api/test-ai", "dest": "/server.ts" },
-    { "src": "/api/admin-ai-command", "dest": "/server.ts" },
-    { "src": "/api/vote", "dest": "/server.ts" },
-    { "src": "/api/news/(.*)", "dest": "/server.ts" },
-    { "src": "/assets/(.*)", "dest": "/dist/assets/$1" },
-    { "src": "/(.*\\.(js|css|ico|png|svg|json))", "dest": "/dist/$1" },
-    { "src": "/(.*)", "dest": "/dist/index.html" }
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": "/server.ts" },
+    { "source": "/(.*)", "destination": "/index.html" }
   ]
 }

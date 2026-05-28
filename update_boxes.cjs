@@ -2,14 +2,10 @@ const fs = require('fs');
 const file = 'src/App.tsx';
 let data = fs.readFileSync(file, 'utf8');
 
-// The FC Mobile theme is more squarish, so let's tone down the rounding
-data = data.replace(/rounded-3xl/g, 'rounded-[12px]');
-data = data.replace(/rounded-2xl/g, 'rounded-[8px]');
-data = data.replace(/rounded-xl/g, 'rounded-[6px]');
-data = data.replace(/rounded-lg/g, 'rounded-[4px]');
-
-// Ensure text on neon green buttons is black
-data = data.replace(/bg-fc-neon-green text-white/g, 'bg-fc-neon-green text-black');
+data = data.replace(/rounded-\[12px\]/g, 'rounded-sm');
+data = data.replace(/rounded-\[8px\]/g, 'rounded-sm');
+data = data.replace(/rounded-\[6px\]/g, 'rounded-sm');
+data = data.replace(/rounded-\[4px\]/g, 'rounded-sm');
 
 fs.writeFileSync(file, data);
-console.log('done');
+console.log('done squaring');
