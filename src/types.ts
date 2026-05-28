@@ -77,9 +77,14 @@ export interface BracketMatch {
   awayScore?: number;
   winnerId?: string;
   nextMatchId?: string;
-  round: string;
+  round: string | number;
   leg?: 'Leg 1' | 'Leg 2';
   month?: 'April' | 'May';
+  scheduledDate?: string;
+  matchday?: number;
+  matchNumber?: number;
+  status?: string;
+  isBye?: boolean;
 }
 
 export interface Registration {
