@@ -1,6 +1,7 @@
 {
   "version": 2,
   "regions": ["bom1"],
+  "functions": { "server.ts": { "maxDuration": 60 } },
   "builds": [
     {
       "src": "build.sh",

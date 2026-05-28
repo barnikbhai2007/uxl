@@ -48,6 +48,6 @@ begin;
   create publication supabase_realtime;
 commit;
 
--- add the documents table to the publication
-alter publication supabase_realtime add table public.documents;
+-- add the news table to the publication
+alter publication supabase_realtime add table public.news;
 

@@ -1858,16 +1858,22 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     useEffect(() => {
       if (activeTab === 'reports') {
         setIsReportsLoading(true);
-        const q = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
-        const unsubscribe = onSnapshot(q, (snapshot) => {
-          const reportsList = snapshot.docs.map(doc => ({ 
-            id: doc.id, 
-            ...doc.data() 
-          } as MatchReport));
-          setReports(reportsList);
-          setIsReportsLoading(false);
-        });
-        return () => unsubscribe();
+        const getReports = async () => {
+          try {
+            const q = query(collection(db, 'reports'), orderBy('timestamp', 'desc'));
+            const snapshot = await getDocs(q);
+            const reportsList = snapshot.docs.map(doc => ({ 
+              id: doc.id, 
+              ...doc.data() 
+            } as MatchReport));
+            setReports(reportsList);
+          } catch (e) {
+            console.error("Failed to fetch reports:", e);
+          } finally {
+            setIsReportsLoading(false);
+          }
+        };
+        getReports();
       }
     }, [activeTab]);
     const [localApiKey, setLocalApiKey] = useState(config.geminiApiKey || '');
@@ -2618,7 +2624,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
                           <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-black relative flex items-center justify-center overflow-hidden">
                             {report.imageUrl ? (
-                              <img src={`data:${report.mimeType || 'image/png'};base64,${report.imageUrl}`} alt="Evidence" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
+                              <img src={report.imageUrl.startsWith('http') ? report.imageUrl : `data:${report.mimeType || 'image/png'};base64,${report.imageUrl}`} loading="lazy" alt="Evidence" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                             ) : (
                               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">No Image Available</span>
                             )}
@@ -3247,68 +3253,42 @@ export default function App() {
     }
   };
 
-  // OPTIMIZATION: Track fetch timer to debounce refreshes
-  const newsFetchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
-
   useEffect(() => {
-    // OPTIMIZATION: Debounced fetch to prevent rapid repeated calls
-    const debouncedFetchNews = async () => {
-      try {
-        // OPTIMIZATION: Select only needed columns, not '*'
-        const { data, error } = await supabase
-          .from('news')
-          .select('id, title, content, author, created_at, updated_at')
-          .order('created_at', { ascending: false })
-          .limit(20);
-        
-        if (error) {
-          console.error("[News] Error fetching news:", error);
-          return;
-        }
-        
-        if (data) {
-          console.log("[News] Fetched news data length:", data.length);
-          setNewsFeed(data);
-        }
-      } catch (err) {
-        console.error("[News] Fetch exception:", err);
+    const fetchNews = async () => {
+      const { data, error } = await supabase
+        .from('news')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (error) {
+        console.error("Error fetching news:", error);
+      }
+      if (data) {
+        console.log("[News] Fetched news data length:", data.length, data);
+        setNewsFeed(data);
+      } else {
+        console.log("[News] Fetched news data is null/undefined");
       }
     };
 
-    // Initial fetch
-    debouncedFetchNews();
+    fetchNews();
 
-    // OPTIMIZATION: Reuse stable channel name instead of creating new one per render
-    // Use collection-based channel name instead of random UUID (from supabase_mock fixes)
     const channel = supabase
-      .channel('public:news:feed')
+      .channel('public:news')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
         console.log("[News] Realtime payload received:", payload);
-        
-        // OPTIMIZATION: Handle events optimistically without full refetch
         if (payload.eventType === 'INSERT') {
-          // Only update on INSERT: add new item
           setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
-        } else if (payload.eventType === 'DELETE') {
-          // Optimistic delete: remove item from state
-          setNewsFeed(prev => prev.filter(n => n.id !== payload.old.id));
-        } else if (payload.eventType === 'UPDATE') {
-          // Optimistic update: replace the item
-          setNewsFeed(prev => prev.map(n => n.id === payload.new.id ? payload.new : n));
+        } else {
+           fetchNews();
         }
-        
-        // Debounce full refetch for safety (only if many changes happen)
-        if (newsFetchTimerRef.current) clearTimeout(newsFetchTimerRef.current);
-        newsFetchTimerRef.current = setTimeout(debouncedFetchNews, 5000);
       })
       .subscribe((status) => {
         console.log("[News] Realtime subscription status:", status);
       });
 
-    // OPTIMIZATION: Proper cleanup
     return () => {
       supabase.removeChannel(channel);
-      if (newsFetchTimerRef.current) clearTimeout(newsFetchTimerRef.current);
     };
   }, []);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -4341,12 +4321,37 @@ export default function App() {
   };
 
   const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onloadend = () => {
-        const base64String = (reader.result as string).split(',')[1];
-        resolve(base64String);
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          const maxDim = 800;
+
+          if (width > height && width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          } else if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Canvas context unavailable'));
+          ctx.drawImage(img, 0, 0, width, height);
+
+          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          resolve(dataUrl.split(',')[1]);
+        };
+        img.onerror = () => reject(new Error('Image load failed'));
+        img.src = e.target?.result as string;
       };
+      reader.onerror = () => reject(new Error('FileReader error'));
       reader.readAsDataURL(file);
     });
   };
@@ -4437,7 +4442,7 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           base64,
-          mimeType: file.type,
+          mimeType: 'image/jpeg',
           fcName: playerRegistration.fcName,
           homeGoalkeeper: teams.find(t => t.fcName === playerRegistration.fcName)?.goalkeeper,
           awayGoalkeeper: teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper
@@ -4640,8 +4645,11 @@ export default function App() {
           // Deep clean payload to guarantee no undefined values or internal fields throw a Firestore error
           const cleanedPayload = cleanDocData(updatePayload);
           
-          // Save the compressed base64 image as evidence for admins to verify
-          cleanedPayload.evidenceImage = `data:image/jpeg;base64,${base64}`;
+          // Save the URL as evidence for admins to verify
+          cleanedPayload.evidenceImage = resData.evidenceUrl || null;
+          if (!cleanedPayload.evidenceImage) {
+            console.warn("No evidence URL returned from API, not saving image link.");
+          }
           cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
           cleanedPayload.evidenceTimestamp = serverTimestamp();
 
@@ -4746,60 +4754,75 @@ export default function App() {
     let _mounted = true;
     let teamsLoaded = false;
     let matchesLoaded = false;
+    let unsubTeams: any = null;
+    let unsubMatches: any = null;
 
-    const checkLoaded = () => {
-      // Small timeout to prevent aggressive flashing and let UI settle
-      if (matchesLoaded && _mounted) {
-        setTimeout(() => {
-          if(_mounted) setIsDataLoading(false);
-        }, 0);
+    const loadData = async () => {
+      // 1. Wake up Supabase with a very small dummy query
+      try {
+        await getDocs(query(collection(db, 'registrations'), limit(1)));
+      } catch (err) {
+        console.warn("Wake up query failed, continuing anyway", err);
       }
+
+      if (!_mounted) return;
+
+      const checkLoaded = () => {
+        // Small timeout to prevent aggressive flashing and let UI settle
+        if (matchesLoaded && _mounted) {
+          setTimeout(() => {
+            if(_mounted) setIsDataLoading(false);
+          }, 0);
+        }
+      };
+
+      // Teams Sync
+      unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
+        const teamsList: Team[] = snapshot.docs.map(docSnap => {
+          const data = docSnap.data();
+          return {
+            id: docSnap.id,
+            name: data.fcName,
+            shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
+            fullName: data.name,
+            fcName: data.fcName,
+            ovr: data.teamOvr,
+            uid: data.fcUid,
+            logoUrl: data.logoUrl,
+            goalkeeper: data.goalkeeper,
+            played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+          };
+        });
+        if (_mounted) {
+          setDbTeams(teamsList);
+          teamsLoaded = true;
+          checkLoaded();
+        }
+      }, (error) => {
+        console.error("Teams sync error:", error);
+        if (_mounted) { teamsLoaded = true; checkLoaded(); }
+      });
+
+      // Matches Sync
+      unsubMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
+        const matchesData = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id } as Match));
+        if (_mounted) {
+          setDbMatches(matchesData);
+          matchesLoaded = true;
+          checkLoaded();
+        }
+      }, (error) => {
+        console.error("Matches sync error:", error);
+        if (_mounted) { matchesLoaded = true; checkLoaded(); }
+      });
     };
 
-    // Teams Sync
-    const unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
-      const teamsList: Team[] = snapshot.docs.map(docSnap => {
-        const data = docSnap.data();
-        return {
-          id: docSnap.id,
-          name: data.fcName,
-          shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
-          fullName: data.name,
-          fcName: data.fcName,
-          ovr: data.teamOvr,
-          uid: data.fcUid,
-          logoUrl: data.logoUrl,
-          goalkeeper: data.goalkeeper,
-          played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
-        };
-      });
-      if (_mounted) {
-        setDbTeams(teamsList);
-        teamsLoaded = true;
-        checkLoaded();
-      }
-    }, (error) => {
-      console.error("Teams sync error:", error);
-      if (_mounted) { teamsLoaded = true; checkLoaded(); }
-    });
-
-    // Matches Sync
-    const unsubMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
-      const matchesData = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id } as Match));
-      if (_mounted) {
-        setDbMatches(matchesData);
-        matchesLoaded = true;
-        checkLoaded();
-      }
-    }, (error) => {
-      console.error("Matches sync error:", error);
-      if (_mounted) { matchesLoaded = true; checkLoaded(); }
-    });
+    loadData();
 
     return () => {
       _mounted = false;
-      unsubTeams();
-      unsubMatches();
+      if (unsubTeams) unsubTeams();
+      if (unsubMatches) unsubMatches();
     };
   }, []);
 

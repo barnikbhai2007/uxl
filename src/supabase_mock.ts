@@ -168,9 +168,6 @@ export function limit(value: number) {
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
 
-// Track active subscriptions to prevent duplicate channels (deduplication)
-const activeSubscriptions: Record<string, { channel: any; count: number; unsubscribe: () => void }> = {};
-
 function initCache(collection: string) {
   if (!globalCache[collection]) {
     try {
@@ -306,26 +303,55 @@ export async function getDocs(ref: CollRef | Query) {
   let data = null, error = null;
   let retries = 3;
   while (retries > 0) {
-    const res = await sb;
-    data = res.data;
-    error = res.error;
-    if (error && error.message && error.message.includes('statement timeout')) {
-      console.warn(`Query timed out for ${ref.collectionName}, retrying... (${retries} retries left)`);
+    try {
+      const res = await Promise.race([
+        sb,
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('client_timeout')), 15000)
+        )
+      ]) as any;
+      data = res.data;
+      error = res.error;
+  
+      if (error && (
+        error.message?.includes('statement timeout') ||
+        error.message?.includes('client_timeout')
+      )) {
+        retries--;
+        console.warn(`Timeout for ${ref.collectionName}, retry ${3 - retries}/3...`);
+        const delay = (3 - retries) * 1500; // 1.5s, 3s, 4.5s
+        await new Promise(resolve => setTimeout(resolve, delay));
+      } else {
+        break;
+      }
+    } catch (e: any) {
       retries--;
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    } else {
-      break;
+      const delay = (3 - retries) * 1500; // 1.5s, 3s, 4.5s
+      console.warn(`Fetch error for ${ref.collectionName}, retry ${3 - retries}/3...`, e);
+      await new Promise(resolve => setTimeout(resolve, delay));
+      if (retries === 0) {
+        error = e;
+      }
     }
   }
 
+  // If still failing, serve from cache silently
   if (error) {
-    console.error(
-      "getDocs error for collection",
-      ref.collectionName,
-      ":",
-      error,
-    );
-    throw new Error(error.message || JSON.stringify(error));
+    initCache(ref.collectionName);
+    const cached = globalCache[ref.collectionName];
+    if (cached && Object.keys(cached).length > 0) {
+      console.warn(`Serving ${ref.collectionName} from cache due to timeout`);
+      const docs = Object.entries(cached).map(([id, d]: any) => ({
+        id,
+        data: () => d,
+        exists: () => true,
+        ref: doc(ref as CollRef, id),
+      }));
+      return { docs, empty: docs.length === 0, forEach: (cb: any) => docs.forEach(cb) };
+    }
+    // Silently continue if cache is completely empty instead of crashing
+    console.warn(`Falling back to empty response for ${ref.collectionName}`);
+    return { docs: [], empty: true, forEach: () => {} };
   } else {
     (data || []).forEach((d: any) => updateGlobalCache(ref.collectionName, d.id, d.data));
   }
@@ -507,51 +533,76 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     ? ref.collectionName
     : (ref as unknown as CollRef | Query).collectionName;
 
-  // Generate a stable channel name based on collection (NOT random UUID)
-  // This ensures reusing the same channel for the same collection
-  const channelName = `public:documents:${collectionName}`;
+  let _mounted = true;
 
-  // Initial fetch
-  if (isDoc) {
-    const cached = getFromCache(collectionName, ref.id);
-    if (cached) {
-        callback({ exists: () => true, id: ref.id, data: () => cached });
-    } else {
-        getDoc(ref)
-          .then((doc) => {
-              if (doc.exists()) callback(doc);
-          })
-          .catch(errorCb);
-    }
-  } else {
-    // For collections, check if we have any data already
-    initCache(collectionName);
-    if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
-        callback(applyQueryLocally(ref));
-    } else {
-        getDocs(ref)
-          .then((snap) => callback(snap))
-          .catch((err) => {
-             if (globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0) {
-                 console.warn(`Fallback to local cache due to fetch error for ${collectionName}:`, err);
-                 // We already fired the callback with cache above, so we can ignore this error
-             } else if (errorCb) {
-                 errorCb(err);
-             }
-          });
-    }
-  }
-
-  // Subscribe to local cache changes
-  const localHandler = (e: any) => {
-    if (e.detail === collectionName) {
+  const fetchAndNotify = async () => {
+    try {
       if (isDoc) {
         const cached = getFromCache(collectionName, ref.id);
         if (cached) {
-            callback({ exists: () => true, id: ref.id, data: () => cached });
+          callback({ exists: () => true, id: ref.id, data: () => cached });
         } else {
-            callback({ exists: () => false, id: ref.id, data: () => undefined });
+          const d = await getDoc(ref);
+          if (_mounted && d.exists()) callback(d);
         }
+      } else {
+        initCache(collectionName);
+        const hasCache = globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0;
+        if (hasCache) {
+          callback(applyQueryLocally(ref));
+        } else {
+          const snap = await getDocs(ref);
+          if (_mounted) callback(snap);
+        }
+      }
+    } catch (err) {
+      if (errorCb) errorCb(err);
+    }
+  };
+
+  // Initial fetch immediately
+  fetchAndNotify();
+
+  // ✅ Poll with smart jitter to avoid thundering herd database timeouts
+  const BASE_INTERVAL = 2 * 60 * 1000; // 2 minutes
+  const JITTER = Math.floor(Math.random() * 45000); // Up to 45s of jitter
+  
+  const timer = setInterval(async () => {
+    if (!_mounted) return;
+    try {
+      if (isDoc) {
+        const d = await getDoc(ref);
+        if (_mounted && d.exists()) callback(d);
+      } else {
+        const snap = await getDocs(ref);
+        // Only if successful do we replace the cache to handle document deletions
+        if (_mounted) {
+          if (!(ref instanceof Query) || ref.filters.length === 0) {
+            // For full collection fetches, we can confidently wipe deleted records
+            globalCache[collectionName] = {};
+            snap.forEach((doc: any) => {
+                globalCache[collectionName][doc.id] = doc.data();
+            });
+            persistCache(collectionName);
+          }
+          callback(applyQueryLocally(ref));
+        }
+      }
+    } catch (err) {
+      if (errorCb) errorCb(err);
+      console.warn("Polling fetch failed, keeping cache intact:", err);
+    }
+  }, BASE_INTERVAL + JITTER);
+
+  // Local emitter still works for instant updates when THIS tab writes
+  const localHandler = (e: any) => {
+    if (e.detail === collectionName && _mounted) {
+      if (isDoc) {
+        const cached = getFromCache(collectionName, ref.id);
+        callback(cached
+          ? { exists: () => true, id: ref.id, data: () => cached }
+          : { exists: () => false, id: ref.id, data: () => undefined }
+        );
       } else {
         callback(applyQueryLocally(ref));
       }
@@ -559,57 +610,11 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   };
   localEmitter.addEventListener('db_change', localHandler);
 
-  // Use existing channel if available (DEDUPLICATION)
-  // This is KEY: instead of creating a new channel per subscription,
-  // reuse the same channel for each collection
-  if (!activeSubscriptions[channelName]) {
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "documents",
-          filter: `collection=eq.${collectionName}`,
-        },
-        (payload: any) => {
-          // Update cache from payload
-          if (payload.eventType === 'DELETE') {
-              updateGlobalCache(collectionName, payload.old.id, null, true);
-          } else {
-              updateGlobalCache(collectionName, payload.new.id, payload.new.data);
-          }
-          // Notify all listeners for this collection
-          localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: collectionName }));
-        },
-      )
-      .subscribe();
-
-    activeSubscriptions[channelName] = {
-      channel,
-      count: 1,
-      unsubscribe: () => {
-        supabase.removeChannel(channel);
-        delete activeSubscriptions[channelName];
-      }
-    };
-  } else {
-    // Increment reference count for existing subscription
-    activeSubscriptions[channelName].count++;
-  }
-
-  // Return cleanup function that decrements reference count
   return () => {
+    _mounted = false;
+    clearInterval(timer);
     localEmitter.removeEventListener('db_change', localHandler);
-    
-    // Decrement reference count and only unsubscribe when count hits 0
-    if (activeSubscriptions[channelName]) {
-      activeSubscriptions[channelName].count--;
-      if (activeSubscriptions[channelName].count === 0) {
-        activeSubscriptions[channelName].unsubscribe();
-      }
-    }
+    // No supabase.removeChannel needed — no channel opened!
   };
 }
 

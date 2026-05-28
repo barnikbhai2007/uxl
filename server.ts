@@ -228,7 +228,7 @@ app.use(express.json({ limit: '10mb' }));
       const checkAndAwardAchievements = async (playerFcName: string, data: any) => {
         try {
           const { data: regSnapshot } = await supabase.from('documents')
-            .select('*')
+            .select('id, data')
             .eq('collection', 'registrations')
             .eq('data->>fcName', playerFcName)
             .limit(1);
@@ -236,7 +236,7 @@ app.use(express.json({ limit: '10mb' }));
           if (!regSnapshot || regSnapshot.length === 0) return null;
           const regDoc = regSnapshot[0].data;
           const userId = regDoc.userId;
-          const { data: userDoc } = await supabase.from('documents').select('*').eq('collection', 'users').eq('id', userId).single();
+          const { data: userDoc } = await supabase.from('documents').select('id, data').eq('collection', 'users').eq('id', userId).single();
           const userData = userDoc?.data || { achievements: {} };
           const unlockedIds = new Set(Object.keys(userData.achievements || {}));
           
@@ -339,6 +339,36 @@ app.use(express.json({ limit: '10mb' }));
         await checkAndAwardAchievements(opponentName, matchData);
       }
 
+      let publicImageUrl = null;
+      try {
+        const ext = (mimeType && mimeType.includes('png')) ? 'png' : 'jpg';
+        const fileName = `report_${Date.now()}_${crypto.randomUUID()}.${ext}`;
+        const buffer = Buffer.from(base64, 'base64');
+        
+        // Attempt upload
+        let { error: uploadError } = await supabase.storage.from('match-evidence').upload(fileName, buffer, {
+          contentType: mimeType || 'image/jpeg',
+          upsert: false
+        });
+        
+        if (uploadError && uploadError.message.includes('Bucket not found')) {
+            await supabase.storage.createBucket('match-evidence', { public: true });
+            const retry = await supabase.storage.from('match-evidence').upload(fileName, buffer, {
+                contentType: mimeType || 'image/jpeg', upsert: false
+            });
+            uploadError = retry.error;
+        }
+
+        if (!uploadError) {
+           const { data: publicUrlData } = supabase.storage.from('match-evidence').getPublicUrl(fileName);
+           publicImageUrl = publicUrlData.publicUrl;
+        } else {
+           console.error("Upload error:", uploadError);
+        }
+      } catch (err) {
+        console.error("Storage upload exception:", err);
+      }
+
       console.log('[Telegram] Sending match result...');
       await sendTelegramMatchResult(matchData, base64, mimeType);
 
@@ -351,7 +381,7 @@ app.use(express.json({ limit: '10mb' }));
           },
           reporterName: fcName || 'Unknown Player',
           timestamp: new Date().toISOString(),
-          imageUrl: base64,
+          imageUrl: publicImageUrl,   // Store URL instead of raw base64
           mimeType: mimeType || 'image/jpeg',
           matchId: matchData.matchId || null,
           analysisSummary: `Verified match between ${matchData.team1} and ${matchData.team2} (Reported by ${fcName || 'Unknown'})`
@@ -362,7 +392,7 @@ app.use(express.json({ limit: '10mb' }));
         // Don't fail the whole request just because report saving failed
       }
       
-      res.json({ success: true, matchData });
+      res.json({ success: true, matchData, evidenceUrl: publicImageUrl });
     } catch (error: any) {
       console.error("AI Error:", error);
       res.status(500).json({ success: false, message: error.message });
