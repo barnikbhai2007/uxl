@@ -316,12 +316,12 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <div className="absolute inset-0 bg-fc-purple-dark/80 backdrop-blur-md" onClick={onClose} />
       <motion.div 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-4xl bg-gradient-to-b from-[#000030] to-blue-900/20 border border-white/10 rounded-[2.5rem] p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
+        className="relative w-full max-w-4xl bg-gradient-to-b from-fc-purple-dark to-fc-purple-base/50 border border-white/10 rounded-[12px] p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
       >
         <div className="absolute top-6 right-6 flex gap-2 z-20">
           {isAdmin && resetPlayer && (
@@ -333,27 +333,27 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
                   setConfirmReset(true);
                 }
               }} 
-              className={`p-2 rounded-full transition-colors flex items-center gap-2 px-4 text-xs font-black uppercase tracking-widest ${confirmReset ? 'bg-red-600 text-white animate-pulse' : 'bg-red-600/20 text-red-400 hover:bg-red-600/40'}`}
+              className={`p-2 rounded-[4px] transition-colors flex items-center gap-2 px-4 text-xs font-black uppercase tracking-widest ${confirmReset ? 'bg-red-600 text-white animate-pulse' : 'bg-red-600/20 text-red-400 hover:bg-red-600/40'}`}
             >
               <RotateCcw className="w-4 h-4" />
               {confirmReset ? 'Confirm Reset' : 'Reset Player Data'}
             </button>
           )}
-          <button onClick={onClose} className="p-2 rounded-full bg-white/5 hover:bg-white/10 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-[4px] bg-white/5 hover:bg-white/10 transition-colors">
             <X className="w-5 h-5 text-white/60" />
           </button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10 mt-8 md:mt-0">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-3xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-[12px] bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
             {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : team.name[0]}
           </div>
           <div className="flex-1 space-y-2">
             <h2 className="text-3xl md:text-5xl font-display font-black uppercase italic tracking-tighter leading-none">{team.fullName}</h2>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="px-3 py-1 bg-white/10 rounded-lg text-xs font-black uppercase tracking-widest text-white/60">FC: {team.fcName}</span>
-              <span className="px-3 py-1 bg-blue-500/20 border border-blue-500/30 rounded-lg text-xs font-black uppercase tracking-widest text-blue-400">OVR {team.ovr}</span>
-              <div className="px-3 py-1 bg-white/5 rounded-lg flex items-center gap-1.5 text-xs text-white/40 font-mono">
+              <span className="px-3 py-1 bg-white/10 rounded-[4px] text-xs font-black uppercase tracking-widest text-white/60">FC: {team.fcName}</span>
+              <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-[4px] text-xs font-black uppercase tracking-widest text-fc-neon-green">OVR {team.ovr}</span>
+              <div className="px-3 py-1 bg-white/5 rounded-[4px] flex items-center gap-1.5 text-xs text-white/40 font-mono">
                  UID: <span>{team.uid}</span>
               </div>
             </div>
@@ -361,19 +361,19 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+          <div className="bg-white/5 border border-white/10 rounded-[8px] p-4 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Total Goals</span>
             <span className="text-2xl font-black text-green-400">{totalGoalsScored}</span>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+          <div className="bg-white/5 border border-white/10 rounded-[8px] p-4 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Goals Conceded</span>
             <span className="text-2xl font-black text-red-400">{totalGoalsConceded}</span>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+          <div className="bg-white/5 border border-white/10 rounded-[8px] p-4 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Avg Possession</span>
-            <span className="text-2xl font-black text-blue-400">{avgPossession}%</span>
+            <span className="text-2xl font-black text-fc-neon-green">{avgPossession}%</span>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+          <div className="bg-white/5 border border-white/10 rounded-[8px] p-4 flex flex-col justify-center items-center text-center">
             <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Top Scorer</span>
             <span className="text-lg font-black text-orange-400 truncate w-full px-2" title={topScorerInfo[0] as string}>{topScorerInfo[0]}</span>
             <span className="text-[10px] font-bold text-orange-400/50">{topScorerInfo[1]} Goals</span>
@@ -386,16 +386,16 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
             {upcomingMatches.length > 0 ? upcomingMatches.slice(0, 3).map(m => {
               const opp = m.homeTeamId === team.id ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
               return (
-                                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-[6px] border border-white/10">
                   <div className="flex items-center gap-3">
-                    <EditableMatchBadge match={m} isAdmin={isAdmin} className="bg-blue-600/20 px-1.5 py-0.5 rounded border border-blue-500/20" textClassName="text-blue-400 text-[8px] font-black" />
+                    <EditableMatchBadge match={m} isAdmin={isAdmin} className="bg-fc-purple-light/30 px-1.5 py-0.5 rounded border border-fc-neon-green/30" textClassName="text-fc-neon-green text-[8px] font-black" />
                     <span className="text-xs font-bold uppercase">{opp?.name || 'TBD'}</span>
                   </div>
                   <span className="text-[10px] uppercase font-black text-white/30 tracking-widest">{m.date}</span>
                 </div>
               );
             }) : (
-               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-xl border border-white/10">No upcoming matches</div>
+               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-[6px] border border-white/10">No upcoming matches</div>
             )}
           </div>
 
@@ -409,9 +409,9 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
               const isWin = myScore > oppScore;
               const isDraw = myScore === oppScore;
               return (
-                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-xl border border-white/10">
+                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-[6px] border border-white/10">
                   <div className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-full ${isWin ? 'bg-green-500' : isDraw ? 'bg-gray-400' : 'bg-red-500'}`} />
+                    <span className={`w-2 h-2 rounded-[4px] ${isWin ? 'bg-green-500' : isDraw ? 'bg-gray-400' : 'bg-red-500'}`} />
                     <span className="text-xs font-bold uppercase">{opp?.name || 'Unknown'}</span>
                   </div>
                   <div className="flex items-center gap-3 font-mono font-bold">
@@ -422,7 +422,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
                 </div>
               );
             }) : (
-               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-xl border border-white/10">No recent matches</div>
+               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-[6px] border border-white/10">No recent matches</div>
             )}
           </div>
         </div>
@@ -486,7 +486,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const displayStatus = match.status === 'finished' ? 'finished' : (overrideStatus || match.status);
 
     const TeamLogo = ({ team }: { team: Team | undefined }) => (
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10">
+      <div className="w-14 h-14 rounded-[8px] bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10">
         {team?.logoUrl ? (
           <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
@@ -499,7 +499,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       if (isAdmin && isEditingMode && onUpdateMatch) {
         return (
           <select
-            className="mt-2 bg-black/80 border border-blue-500/50 rounded-lg text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
+            className="mt-2 bg-fc-purple-dark/80 border border-fc-neon-green/50/50 rounded-[4px] text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
             value={team?.id || ''}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
@@ -536,7 +536,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       <motion.div
         whileHover={{ scale: 1.01, y: -2 }}
         onClick={onClick}
-        className="bg-white/5 border border-white/10 rounded-3xl p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-visible backdrop-blur-sm"
+        className="bg-white/5 border border-white/10 rounded-[12px] p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-visible backdrop-blur-sm"
       >
         <div className="absolute top-0 right-0 p-4 opacity-[0.08] pointer-events-none select-none">
            <span className="text-6xl font-black italic text-white tracking-tighter">
@@ -550,13 +550,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {renderTeamName('home', homeTeam)}
           </div>
 
-          <div className="flex flex-col items-center gap-3 px-6 py-2 bg-black/20 rounded-2xl border border-white/5">
+          <div className="flex flex-col items-center gap-3 px-6 py-2 bg-fc-purple-dark/20 rounded-[8px] border border-white/5">
             <EditableMatchBadge 
               match={match} 
               isAdmin={isAdmin} 
               onUpdateMatch={onUpdateMatch}
-              className="absolute -top-2 left-1/2 -translate-x-1/2 bg-blue-600 px-2 py-0.5 rounded shadow-lg"
-              textClassName="text-[8px] font-black text-white uppercase tracking-widest placeholder-white/50"
+              className="absolute -top-2 left-1/2 -translate-x-1/2 bg-fc-neon-green text-black px-2 py-0.5 rounded shadow-lg"
+              textClassName="text-[8px] font-black text-black uppercase tracking-widest placeholder-black/50"
             />
             <div className="flex items-center gap-4">
               <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
@@ -570,10 +570,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 {match.awayScore ?? '-'}
               </span>
             </div>
-            <div className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
+            <div className={`px-3 py-1 rounded-[4px] text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
               displayStatus === 'finished' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
               displayStatus === 'ongoing' || displayStatus === 'live' ? 'bg-red-500/10 text-red-100 animate-pulse border border-red-500/20' :
-              'bg-blue-500/10 text-blue-100 border border-blue-500/20'
+              'bg-fc-purple-light/20 text-white border border-fc-neon-green/30'
             }`}>
               {displayStatus === 'finished' ? 'Final' : displayStatus === 'ongoing' || displayStatus === 'live' ? 'Live' : 'Upcoming'}
             </div>
@@ -683,11 +683,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         <div className="space-y-1.5">
           <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
             <span className="text-white w-12 text-left">{home}{suffix}</span>
-            <span className="text-blue-400/40 text-[9px]">{label}</span>
+            <span className="text-fc-neon-green/40 text-[9px]">{label}</span>
             <span className="text-white w-12 text-right">{away}{suffix}</span>
           </div>
-          <div className="h-1 bg-white/5 rounded-full overflow-hidden flex">
-            <div className="h-full bg-blue-500 transition-all duration-700" style={{ width: `${homePercent}%` }} />
+          <div className="h-1 bg-white/5 rounded-[4px] overflow-hidden flex">
+            <div className="h-full bg-fc-neon-green text-black transition-all duration-700" style={{ width: `${homePercent}%` }} />
             <div className="h-full bg-white/10 transition-all duration-700" style={{ width: `${100 - homePercent}%` }} />
           </div>
         </div>
@@ -700,7 +700,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         transition={{ duration: 0.15, ease: "easeOut" }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#000030]/95 cursor-pointer will-change-opacity"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-fc-purple-dark/95 cursor-pointer will-change-opacity"
         onClick={onClose}
       >
         <motion.div
@@ -708,10 +708,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.98, opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          className="w-full max-w-2xl bg-[#000040] border border-white/10 rounded-3xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default will-change-transform"
+          className="w-full max-w-2xl bg-fc-purple-base border border-white/10 rounded-[12px] overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default will-change-transform"
           onClick={e => e.stopPropagation()}
         >
-          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-blue-500/20 to-transparent pointer-events-none" />
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-fc-neon-green/20 to-transparent pointer-events-none" />
           
           <div className="p-8 relative z-10">
             {isEditingMode && isAdmin && (
@@ -725,7 +725,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       setConfirmDelete(true);
                     }
                   }}
-                  className={`px-4 py-2 border rounded-lg text-xs font-black uppercase transition-all ${confirmDelete ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/20 hover:bg-red-600/40 border-red-500/50 text-red-400'}`}
+                  className={`px-4 py-2 border rounded-[4px] text-xs font-black uppercase transition-all ${confirmDelete ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/20 hover:bg-red-600/40 border-red-500/50 text-red-400'}`}
                 >
                   {confirmDelete ? 'Click to Confirm Delete' : 'Delete Match'}
                 </button>
@@ -739,38 +739,38 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <div className="flex justify-between items-center mb-12 relative z-10">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="text-xs font-black uppercase tracking-[0.3em] text-blue-400">Match Details</span>
+                <span className="text-xs font-black uppercase tracking-[0.3em] text-fc-neon-green">Match Details</span>
               </div>
               <button 
                 onClick={onClose}
-                className="w-10 h-10 rounded-full bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                className="w-10 h-10 rounded-[4px] bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
               >
                 <span className="text-2xl">&times;</span>
               </button>
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
-              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-3xl transition-colors">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-[12px] transition-colors">
                 <div 
                   className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
                 >
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
                     {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
                   </div>
                   <div className="space-y-1">
-                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-blue-400 transition-colors">{homeTeam?.fullName || 'TBD'}</h2>
+                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{homeTeam?.fullName || 'TBD'}</h2>
                     {homeTeam && (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
+                        <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {homeTeam.ovr}</span>
+                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-black text-fc-neon-green">OVR {homeTeam.ovr}</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               copyToClipboard(homeTeam.uid);
                             }}
-                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
+                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-fc-neon-green transition-colors group/uid"
                           >
                             <span className="font-mono font-bold tracking-wider uppercase">
                               {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
@@ -788,13 +788,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 {isEditingMode ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
-                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
+                    <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
                     {localHomeScorers.map((s, i) => (
-                      <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
-                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
+                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-[6px] w-full border border-white/5">
+                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localHomeScorers]; newS[i].time = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Time" />
                           <button onClick={(e) => { 
                             e.stopPropagation(); 
                             setLocalHomeScorers(prev => {
@@ -803,13 +803,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setLocalAwayScorers(prevA => [...prevA, scorer]);
                               return newS;
                             });
-                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Away Team"><ArrowRightLeft className="w-3 h-3" /></button>
+                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black rounded transition-colors" title="Swap to Away Team"><ArrowRightLeft className="w-3 h-3" /></button>
                           <button onClick={(e) => { e.stopPropagation(); const newS = [...localHomeScorers]; newS.splice(i, 1); setLocalHomeScorers(newS); }} className="p-1 w-8 h-8 flex shrink-0 items-center justify-center bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
-                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-[4px] font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-[4px] font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.homeScorers && match.homeScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
@@ -825,7 +825,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
 
               <div className="flex flex-col items-center gap-2 md:gap-4">
-                <div className="text-[10px] md:text-xs font-black text-blue-400/50 uppercase tracking-widest">Score</div>
+                <div className="text-[10px] md:text-xs font-black text-fc-neon-green/50 uppercase tracking-widest">Score</div>
                 <div className="flex items-center gap-4 md:gap-6">
                   {match.isDNF ? (
                     <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
@@ -834,12 +834,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <input type="number" min="0" defaultValue={match.homeScore ?? 0} onBlur={(e) => {
                           const val = parseInt(e.target.value);
                           addLogAndUpdate('homeScore', isNaN(val) ? 0 : val, 'Home Score');
-                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
+                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-[8px] text-center text-4xl md:text-6xl font-black text-white" />
                       <span className="text-2xl text-white/20">VS</span>
                       <input type="number" min="0" defaultValue={match.awayScore ?? 0} onBlur={(e) => {
                           const val = parseInt(e.target.value);
                           addLogAndUpdate('awayScore', isNaN(val) ? 0 : val, 'Away Score');
-                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-black text-white" />
+                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-[8px] text-center text-4xl md:text-6xl font-black text-white" />
                     </div>
                   ) : (
                     <>
@@ -854,15 +854,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     Rescheduled Match
                   </div>
                 )}
-                <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-full text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
+                <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-[4px] text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
                   displayStatus === 'finished' ? 'bg-green-500/20 text-green-400' : 
                   displayStatus === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                  displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-red-500/20 text-red-400' : 'bg-blue-600/20 text-blue-400'
+                  displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-red-500/20 text-red-400' : 'bg-fc-purple-light/30 text-fc-neon-green'
                 }`}>
                   {(displayStatus === 'live' || displayStatus === 'ongoing') && (
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-[4px] bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-[4px] h-2 w-2 bg-red-500"></span>
                     </span>
                   )}
                   {displayStatus === 'finished' ? 'Final Result' : 
@@ -876,38 +876,38 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <select 
                       value={match.status}
                       onChange={(e) => addLogAndUpdate('status', e.target.value as any, 'Match Status')}
-                      className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-blue-500 transition-all hover:bg-white/10"
+                      className="bg-white/5 border border-white/10 rounded-[6px] px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-fc-neon-green/50 transition-all hover:bg-white/10"
                     >
-                      <option value="scheduled" className="bg-[#000030]">Scheduled</option>
-                      <option value="ongoing" className="bg-[#000030]">Ongoing</option>
-                      <option value="finished" className="bg-[#000030]">Final Result</option>
-                      <option value="rescheduled" className="bg-[#000030]">Rescheduled</option>
+                      <option value="scheduled" className="bg-fc-purple-dark">Scheduled</option>
+                      <option value="ongoing" className="bg-fc-purple-dark">Ongoing</option>
+                      <option value="finished" className="bg-fc-purple-dark">Final Result</option>
+                      <option value="rescheduled" className="bg-fc-purple-dark">Rescheduled</option>
                     </select>
                   </div>
                 )}
               </div>
 
-              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-3xl transition-colors">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-[12px] transition-colors">
                 <div 
                   className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
                 >
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-[8px] bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
                     {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
                   </div>
                   <div className="space-y-1">
-                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-blue-400 transition-colors">{awayTeam?.fullName || 'TBD'}</h2>
+                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{awayTeam?.fullName || 'TBD'}</h2>
                     {awayTeam && (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
+                        <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] font-black text-blue-400">OVR {awayTeam.ovr}</span>
+                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-black text-fc-neon-green">OVR {awayTeam.ovr}</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
                               copyToClipboard(awayTeam.uid);
                             }}
-                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-blue-400 transition-colors group/uid"
+                            className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-fc-neon-green transition-colors group/uid"
                           >
                             <span className="font-mono font-bold tracking-wider uppercase">
                               {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
@@ -925,13 +925,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 {isEditingMode ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
-                    <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Edit Scorers</span>
+                    <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
                     {localAwayScorers.map((s, i) => (
-                      <div key={i} className="flex flex-col gap-1 bg-black/20 p-2 rounded-xl w-full border border-white/5">
-                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-blue-500" placeholder="Player Name" />
+                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-[6px] w-full border border-white/5">
+                        <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
-                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-blue-500" placeholder="Goals" min="0" />
-                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-blue-500" placeholder="Time" />
+                          <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
+                          <input type="text" value={s.time||''} onChange={e => { const newS = [...localAwayScorers]; newS[i].time = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 flex-1 w-0 min-w-[50px] text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Time" />
                           <button onClick={(e) => { 
                             e.stopPropagation(); 
                             setLocalAwayScorers(prev => {
@@ -940,13 +940,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setLocalHomeScorers(prevH => [...prevH, scorer]);
                               return newS;
                             });
-                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white rounded transition-colors" title="Swap to Home Team"><ArrowRightLeft className="w-3 h-3" /></button>
+                          }} className="p-1 w-8 h-8 flex items-center justify-center shrink-0 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black rounded transition-colors" title="Swap to Home Team"><ArrowRightLeft className="w-3 h-3" /></button>
                           <button onClick={(e) => { e.stopPropagation(); const newS = [...localAwayScorers]; newS.splice(i, 1); setLocalAwayScorers(newS); }} className="p-1 w-8 h-8 flex shrink-0 items-center justify-center bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded transition-colors">&times;</button>
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-blue-500/10 border border-blue-500/30 text-blue-400 px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-blue-500 hover:text-white transition-colors w-full">+ Add Scorer</button>
-                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-lg font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-[4px] font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-[4px] font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.awayScorers && match.awayScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
@@ -965,7 +965,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {displayStatus === 'finished' && (
               <>
                 {match.manOfTheMatch || (isEditingMode && isAdmin) ? (
-                  <div className="mt-6 flex flex-col items-center gap-2 bg-yellow-500/10 py-3 px-4 rounded-2xl border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)]">
+                  <div className="mt-6 flex flex-col items-center gap-2 bg-yellow-500/10 py-3 px-4 rounded-[8px] border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)]">
                     <div className="flex items-center justify-center gap-2">
                       <Trophy className="w-4 h-4 text-yellow-500" />
                       <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500/80">Man of the Match: </span>
@@ -976,7 +976,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         defaultValue={match.manOfTheMatch || ''} 
                         placeholder="Player Name"
                         onBlur={(e) => addLogAndUpdate('manOfTheMatch', e.target.value, 'MOTM')}
-                        className="bg-black/40 border border-yellow-500/30 rounded-lg px-3 py-1.5 text-xs font-black uppercase tracking-widest text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
+                        className="bg-fc-purple-dark/40 border border-yellow-500/30 rounded-[4px] px-3 py-1.5 text-xs font-black uppercase tracking-widest text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
                       />
                     ) : (
                       <span className="text-sm font-display font-black italic uppercase text-yellow-400">{match.manOfTheMatch}</span>
@@ -985,9 +985,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 ) : null}
 
                 {match.homeStats && match.awayStats && (
-                  <div className="mt-4 md:mt-6 space-y-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
+                  <div className="mt-4 md:mt-6 space-y-4 p-4 md:p-6 bg-white/5 rounded-[8px] border border-white/5">
                     <div className="text-center mb-1 md:mb-2">
-                      <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
+                      <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
                     </div>
                     <div className="grid gap-3 md:gap-4">
                       <StatRow 
@@ -1008,10 +1008,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-3 md:gap-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 p-4 md:p-6 bg-white/5 rounded-[8px] border border-white/5">
               <div className="text-center space-y-1">
                 <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match Date</div>
-                <div className="text-xs md:text-sm font-bold text-blue-400">{match.date}</div>
+                <div className="text-xs md:text-sm font-bold text-fc-neon-green">{match.date}</div>
               </div>
               <div className="text-center space-y-1 border-l border-white/5">
                 <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
@@ -1025,20 +1025,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         const val = parseInt(e.target.value);
                         addLogAndUpdate('matchNumber', isNaN(val) ? 1 : val, 'Match Number');
                       }}
-                      className="w-16 bg-black/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-blue-400 outline-none focus:border-blue-500 font-bold"
+                      className="w-16 bg-fc-purple-dark/40 border border-white/20 rounded px-2 py-1 text-center text-xs text-fc-neon-green outline-none focus:border-fc-neon-green/50 font-bold"
                     />
                   ) : (
-                    <span className="text-xs md:text-sm font-bold text-blue-400">#{match.matchNumber}</span>
+                    <span className="text-xs md:text-sm font-bold text-fc-neon-green">#{match.matchNumber}</span>
                   )}
                 </div>
               </div>
             </div>
 
             {match.evidenceUploadedBy && (
-              <div className="mt-4 p-4 bg-blue-500/5 border border-blue-500/10 rounded-2xl flex flex-col items-center gap-2">
+              <div className="mt-4 p-4 bg-fc-neon-green/5 border border-fc-neon-green/50/10 rounded-[8px] flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-blue-400">Result Verified by AI</span>
+                  <div className="w-2 h-2 bg-fc-neon-green text-black rounded-[4px] animate-pulse" />
+                  <span className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Result Verified by AI</span>
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Reporter: <span className="text-white">{match.evidenceUploadedBy}</span></p>
@@ -1052,7 +1052,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <div className="mt-8 flex flex-col items-center gap-4">
               <button 
                 onClick={onClose}
-                className="px-8 py-3 bg-blue-600 hover:bg-blue-500 text-white font-black uppercase text-xs tracking-[0.2em] rounded-xl transition-all shadow-lg shadow-blue-600/20"
+                className="px-8 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black font-black uppercase text-xs tracking-[0.2em] rounded-[6px] transition-all shadow-lg shadow-fc-neon-green/20"
               >
                 Close Details
               </button>
@@ -1065,7 +1065,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       onClose();
                     }
                   }}
-                  className="px-6 py-2 bg-red-600/10 hover:bg-red-600 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-xl transition-all flex items-center gap-2"
+                  className="px-6 py-2 bg-red-600/10 hover:bg-red-600 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-[6px] transition-all flex items-center gap-2"
                 >
                   <RotateCcw className="w-3 h-3" />
                   Admin: Reset Match Result
@@ -1144,23 +1144,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+          className="absolute inset-0 bg-fc-purple-dark/90 backdrop-blur-xl"
         />
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg bg-[#0a0a1a] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
+          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-[12px] overflow-hidden shadow-2xl"
         >
-          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-blue-600/10 to-transparent">
+          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
             <div className="flex justify-between items-start mb-4 md:mb-6">
               <div>
                 <h2 className="text-2xl md:text-3xl font-display font-black italic text-white tracking-tight uppercase leading-none mb-2">Edit Campaign Profile</h2>
-                <p className="text-blue-400/60 text-[10px] font-black uppercase tracking-[0.2em]">Update your tournament information</p>
+                <p className="text-fc-neon-green/60 text-[10px] font-black uppercase tracking-[0.2em]">Update your tournament information</p>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 md:p-3 hover:bg-white/5 rounded-2xl transition-colors text-white/40 hover:text-white"
+                className="p-2 md:p-3 hover:bg-white/5 rounded-[8px] transition-colors text-white/40 hover:text-white"
               >
                 <X className="w-5 md:w-6 h-5 md:h-6" />
               </button>
@@ -1176,7 +1176,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1186,7 +1186,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="number"
                   value={formData.age}
                   onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1196,7 +1196,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.fcUid}
                   onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1206,7 +1206,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.fcName}
                   onChange={(e) => setFormData({...formData, fcName: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1216,7 +1216,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="number"
                   value={formData.teamOvr}
                   onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
@@ -1226,7 +1226,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.goalkeeper}
                   onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
@@ -1236,15 +1236,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="text"
                   value={formData.experience}
                   onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
                 <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Logo Photo</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
-                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-xl p-8 cursor-pointer hover:bg-white/10 hover:border-blue-500/50 transition-all">
+                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-[6px] p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
                   {formData.logoUrl ? (
-                    <img src={formData.logoUrl} className="w-16 h-16 rounded-full object-cover border-2 border-blue-500" />
+                    <img src={formData.logoUrl} className="w-16 h-16 rounded-[4px] object-cover border-2 border-fc-neon-green/50" />
                   ) : <Plus className="w-6 h-6" />}
                 </label>
               </div>
@@ -1252,7 +1252,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <button 
                   type="submit" 
                   disabled={isSubmitting || isCompressing}
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-[8px] font-black uppercase text-xs tracking-widest transition-all"
                 >
                   {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Changes'}
                 </button>
@@ -1321,7 +1321,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               setIsOpen(true);
             }} 
             placeholder={placeholder}
-            className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none transition-all" 
+            className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none transition-all" 
           />
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
         </div>
@@ -1332,7 +1332,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
+              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-[6px] shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
             >
               {filteredTeams.length > 0 ? (
                 filteredTeams.map(team => (
@@ -1344,13 +1344,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       setSearch(displayValue);
                       setIsOpen(false);
                     }}
-                    className="w-full px-4 py-3 text-left hover:bg-blue-600/20 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
+                    className="w-full px-4 py-3 text-left hover:bg-fc-purple-light/30 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-[4px] bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                       {team.logoUrl ? (
-                        <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-lg" referrerPolicy="no-referrer" />
+                        <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-[4px]" referrerPolicy="no-referrer" />
                       ) : (
-                        <Star className="w-4 h-4 text-blue-400" />
+                        <Star className="w-4 h-4 text-fc-neon-green" />
                       )}
                     </div>
                     <div className="flex-1 truncate">
@@ -1378,24 +1378,24 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const [away, setAway] = useState(initialAway);
 
     return (
-      <div className="fixed inset-0 bg-black/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
+      <div className="fixed inset-0 bg-fc-purple-dark/90 backdrop-blur-xl z-[100] flex items-center justify-center p-4">
         <motion.div 
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="bg-zinc-900 border border-white/10 p-8 rounded-3xl w-full max-w-md shadow-2xl relative overflow-hidden"
+          className="bg-zinc-900 border border-white/10 p-8 rounded-[12px] w-full max-w-md shadow-2xl relative overflow-hidden"
         >
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-600 to-indigo-600" />
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fc-neon-green to-fc-purple-base" />
           
           <h2 className="text-2xl font-display font-black uppercase italic text-white mb-6">Add New Fixture</h2>
           
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1 block">Match Date</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1 block">Match Date</label>
               <input 
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 placeholder="YYYY-MM-DD or TBD"
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-[6px] px-4 py-3 text-white focus:outline-none focus:border-fc-neon-green/50 transition-colors"
               />
             </div>
 
@@ -1419,13 +1419,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="flex gap-4 mt-8">
             <button 
               onClick={onClose}
-              className="flex-1 py-4 rounded-xl font-black uppercase text-xs tracking-widest text-white/40 hover:text-white transition-colors"
+              className="flex-1 py-4 rounded-[6px] font-black uppercase text-xs tracking-widest text-white/40 hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button 
               onClick={() => onSave({ date, home, away })}
-              className="flex-1 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-blue-600/20"
+              className="flex-1 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-[6px] font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-fc-neon-green/20"
             >
               Add Match
             </button>
@@ -1504,23 +1504,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+          className="absolute inset-0 bg-fc-purple-dark/90 backdrop-blur-xl"
         />
         <motion.div
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg bg-[#0a0a1a] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl"
+          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-[12px] overflow-hidden shadow-2xl"
         >
-          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-blue-600/10 to-transparent">
+          <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
             <div className="flex justify-between items-start mb-4 md:mb-6">
               <div>
                 <h2 className="text-2xl md:text-3xl font-display font-black italic text-white tracking-tight uppercase leading-none mb-2">Tournament Registration</h2>
-                <p className="text-blue-400/60 text-[10px] font-black uppercase tracking-[0.2em]">Join the Elite Competition</p>
+                <p className="text-fc-neon-green/60 text-[10px] font-black uppercase tracking-[0.2em]">Join THE WORLD'S GAME</p>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 md:p-3 hover:bg-white/5 rounded-2xl transition-colors text-white/40 hover:text-white"
+                className="p-2 md:p-3 hover:bg-white/5 rounded-[8px] transition-colors text-white/40 hover:text-white"
               >
                 <X className="w-5 md:w-6 h-5 md:h-6" />
               </button>
@@ -1530,8 +1530,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] hide-scrollbar">
             {!user || user.isAnonymous ? (
               <div className="text-center py-12 space-y-6">
-                <div className="w-20 h-20 bg-blue-600/20 rounded-full flex items-center justify-center mx-auto">
-                  <LogIn className="w-10 h-10 text-blue-400" />
+                <div className="w-20 h-20 bg-fc-purple-light/30 rounded-[4px] flex items-center justify-center mx-auto">
+                  <LogIn className="w-10 h-10 text-fc-neon-green" />
                 </div>
                 <div className="space-y-2">
                   <h3 className="text-2xl font-display font-black text-white italic">Google Sign-In Required</h3>
@@ -1539,7 +1539,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 <button 
                   onClick={() => handleRegister({} as any)} 
-                  className="w-full py-4 bg-blue-600 hover:bg-blue-500 text-white rounded-2xl font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-blue-600/20"
+                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black rounded-[8px] font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-neon-green/20"
                 >
                   <LogIn className="w-4 h-4" />
                   Continue with Google
@@ -1547,14 +1547,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
             ) : hasRegistered ? (
               <div className="text-center py-12 space-y-4">
-                <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-20 h-20 bg-green-500/20 rounded-[4px] flex items-center justify-center mx-auto mb-6">
                   <Check className="w-10 h-10 text-green-500" />
                 </div>
                 <h3 className="text-2xl font-display font-black text-white italic">Already Registered!</h3>
                 <p className="text-white/40 text-sm">Your application has been received. Good luck!</p>
                 <button 
                   onClick={onClose}
-                  className="mt-6 w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-black uppercase text-xs tracking-widest transition-all"
+                  className="mt-6 w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-[8px] font-black uppercase text-xs tracking-widest transition-all"
                 >
                   Close
                 </button>
@@ -1569,7 +1569,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.name}
                     onChange={(e) => setFormData({...formData, name: e.target.value})}
                     placeholder="Enter your name"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1580,7 +1580,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.age}
                     onChange={(e) => setFormData({...formData, age: e.target.value})}
                     placeholder="21"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1591,7 +1591,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.fcUid}
                     onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
                     placeholder="Unique ID"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1602,7 +1602,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.fcName}
                     onChange={(e) => setFormData({...formData, fcName: e.target.value})}
                     placeholder="In-game name"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1613,7 +1613,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.teamOvr}
                     onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
                     placeholder="90"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1624,7 +1624,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.goalkeeper}
                     onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
                     placeholder="Enter Goalkeeper Name"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
@@ -1635,7 +1635,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.experience}
                     onChange={(e) => setFormData({...formData, experience: e.target.value})}
                     placeholder="e.g. 2 years, since FIFA 22"
-                    className="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-white focus:border-blue-500 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-[6px] p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
@@ -1650,16 +1650,16 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     />
                     <label 
                       htmlFor="logo-upload"
-                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-xl p-8 cursor-pointer hover:bg-white/10 hover:border-blue-500/50 transition-all group"
+                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-[6px] p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
                     >
                       {formData.logoUrl ? (
                         <div className="flex flex-col items-center gap-2">
-                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-full object-cover border-2 border-blue-500 shadow-lg" />
-                          <span className="text-[10px] font-black text-blue-400 uppercase tracking-widest">Photo Selected</span>
+                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-[4px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
+                          <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Photo Selected</span>
                         </div>
                       ) : (
                         <>
-                          <div className="p-3 bg-white/5 rounded-full group-hover:bg-blue-600/20 group-hover:text-blue-400 transition-all">
+                          <div className="p-3 bg-white/5 rounded-[4px] group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
                             {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
                           </div>
                           <div className="text-left">
@@ -1675,7 +1675,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <button 
                     type="submit"
                     disabled={isSubmitting || isCompressing}
-                    className="w-full py-5 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-blue-600/20"
+                    className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-[8px] font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
                   >
                     {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Registration"}
                   </button>
@@ -1769,7 +1769,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     }, [downloadingRegistration]);
 
     const DummyQRCode = () => (
-      <svg viewBox="0 0 100 100" width="100%" height="100%" className="bg-white p-2 rounded-xl text-black shadow-lg">
+      <svg viewBox="0 0 100 100" width="100%" height="100%" className="bg-white p-2 rounded-[6px] text-black shadow-lg">
          <rect x="10" y="10" width="20" height="20" fill="currentColor" />
          <rect x="15" y="15" width="10" height="10" fill="white" />
          <rect x="70" y="10" width="20" height="20" fill="currentColor" />
@@ -2000,9 +2000,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
 
       return (
-        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-xl border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-blue-600/20 border-blue-500/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
+        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-[6px] border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
           <div className="flex items-center gap-4">
-            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-lg transition-colors">
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-[4px] transition-colors">
               <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
             </div>
             <div className="flex flex-col gap-1">
@@ -2018,14 +2018,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="flex items-center gap-2">
             <button 
               onClick={() => toggleDateVisibility(date)}
-              className={`p-2 rounded-lg font-black text-xs uppercase transition-colors ${isHidden ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'}`}
+              className={`p-2 rounded-[4px] font-black text-xs uppercase transition-colors ${isHidden ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'}`}
             >
               {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
             <select 
               value={matchLabels[date] || 'scheduled'}
               onChange={(e) => updateMatchLabel(date, e.target.value)}
-              className="bg-black/40 border border-white/10 rounded-lg p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-blue-500"
+              className="bg-fc-purple-dark/40 border border-white/10 rounded-[4px] p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-fc-neon-green/50"
             >
               <option value="scheduled">Scheduled</option>
               <option value="ongoing">Ongoing</option>
@@ -2089,85 +2089,85 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[200] bg-[#00000a] text-white flex flex-col font-sans"
+        className="fixed inset-0 z-[200] bg-fc-purple-dark text-white flex flex-col font-sans"
       >
-        <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-black/40 backdrop-blur-md sticky top-0 z-20 gap-4">
+        <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-fc-purple-dark/40 backdrop-blur-md sticky top-0 z-20 gap-4">
           <div className="flex items-center gap-3 md:gap-6 w-full md:w-auto overflow-x-auto hide-scrollbar">
             <button 
               onClick={onClose}
-              className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-xl transition-all border border-white/5 shrink-0"
+              className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-[6px] transition-all border border-white/5 shrink-0"
             >
-              <ArrowLeft className="w-4 md:w-5 h-4 md:h-5 text-blue-400 group-hover:-translate-x-1 transition-transform" />
+              <ArrowLeft className="w-4 md:w-5 h-4 md:h-5 text-fc-neon-green group-hover:-translate-x-1 transition-transform" />
               <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Back</span>
             </button>
             <div className="h-6 md:h-8 w-[1px] bg-white/10 shrink-0" />
             <div className="min-w-0 text-left">
               <h2 className="text-lg md:text-2xl font-display font-black italic uppercase leading-none text-white tracking-tight truncate">Admin Terminal</h2>
-              <p className="text-blue-400/40 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] mt-0.5 md:mt-1 truncate max-w-[200px]">
+              <p className="text-fc-neon-green/40 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] mt-0.5 md:mt-1 truncate max-w-[200px]">
                 {user?.email || 'System'} | {isAdmin ? 'AUTHORIZED' : 'ACCESS DENIED'}
               </p>
             </div>
           </div>
 
-          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto hide-scrollbar">
+          <div className="flex bg-white/5 p-1 rounded-[8px] border border-white/5 w-full md:w-auto overflow-x-auto hide-scrollbar">
             <button 
               onClick={() => setIsEditingMode(!isEditingMode)}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
             >
               {isEditingMode ? 'Editing Enabled' : 'Editing Disabled'}
             </button>
             <div className="w-px bg-white/10 mx-2 flex-shrink-0" />
             <button 
               onClick={() => setActiveTab('bracket')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
             </button>
             <button 
               onClick={() => setActiveTab('registrations')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
             </button>
             <button 
               onClick={() => setActiveTab('label')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Label
             </button>
             <button 
               onClick={() => setActiveTab('visibility')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Visibility
             </button>
             <button 
               onClick={() => setActiveTab('reports')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Evidence
             </button>
             <button 
               onClick={() => setActiveTab('achievements')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Trophies
             </button>
             <button 
               onClick={() => setActiveTab('ai')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               AI Settings
             </button>
             <button 
               onClick={() => setActiveTab('backup')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Backup
             </button>
             <button 
               onClick={() => setActiveTab('edits')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-xl text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-[6px] text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Edits
             </button>
@@ -2176,14 +2176,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
         <div className="flex-1 overflow-y-auto hide-scrollbar p-4 md:p-8 lg:p-12">
           <div className="max-w-6xl mx-auto w-full">
-            <div className="mb-12 bg-blue-600/5 border border-blue-500/20 rounded-3xl p-6 md:p-8">
+            <div className="mb-12 bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[12px] p-6 md:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-blue-600/20 rounded-xl flex items-center justify-center border border-blue-500/30">
-                  <Star className="w-5 h-5 text-blue-400 animate-pulse" />
+                <div className="w-10 h-10 bg-fc-purple-light/30 rounded-[6px] flex items-center justify-center border border-fc-neon-green/50/30">
+                  <Star className="w-5 h-5 text-fc-neon-green animate-pulse" />
                 </div>
                 <div className="text-left">
                   <h3 className="text-lg font-display font-black italic uppercase text-white">AI Tournament Assistant</h3>
-                  <p className="text-blue-400/40 text-[9px] uppercase tracking-widest">
+                  <p className="text-fc-neon-green/40 text-[9px] uppercase tracking-widest">
                     Model: {config.geminiModel || 'gemini-3-flash-preview'}
                   </p>
                 </div>
@@ -2194,11 +2194,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   value={aiCommand}
                   onChange={e => setAiCommand(e.target.value)}
                   placeholder="e.g. 'Team A vs Team B ended 3-2. Scorers: John x2, Mike x1' or 'Reset all matches'"
-                  className="flex-1 bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all"
+                  className="flex-1 bg-fc-purple-dark/40 border border-white/10 rounded-[8px] px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all"
                 />
                 <button 
                   disabled={isAiLoading}
-                  className="px-8 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-blue-600/20 flex items-center gap-3 shrink-0"
+                  className="px-8 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 rounded-[8px] font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-fc-neon-green/20 flex items-center gap-3 shrink-0"
                 >
                   {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
                   Execute
@@ -2209,7 +2209,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                 <div className="space-y-12">
                   <div>
-                    <h3 className="text-xl font-display font-black italic uppercase text-blue-400 mb-6 flex items-center gap-3">
+                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
                       <Layout className="w-6 h-6" />
                       Live Bracket Editor
                     </h3>
@@ -2222,7 +2222,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                             <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 border-b border-white/5 pb-2">{round}</h4>
                             <div className="grid grid-cols-1 gap-3">
                               {roundMatches.map(match => (
-                                <div key={match.id} className={`p-4 md:p-5 rounded-2xl border transition-all ${editingMatchId === match.id ? 'bg-blue-600/10 border-blue-500' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+                                <div key={match.id} className={`p-4 md:p-5 rounded-[8px] border transition-all ${editingMatchId === match.id ? 'bg-fc-purple-light/20 border-fc-neon-green/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
                                   {editingMatchId === match.id ? (
                                     <div className="space-y-4">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2242,31 +2242,31 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                           <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
-                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
+                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="space-y-2">
                                           <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
-                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-black/40 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-blue-500 outline-none" />
+                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="flex items-end gap-2">
-                                          <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-green-400 transition-all">Save</button>
-                                          <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-xl hover:bg-white/20 transition-all">Cancel</button>
+                                          <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-black uppercase text-[10px] tracking-widest rounded-[6px] hover:bg-green-400 transition-all">Save</button>
+                                          <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-[6px] hover:bg-white/20 transition-all">Cancel</button>
                                         </div>
                                       </div>
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-between group">
                                       <div className="flex-1 space-y-2">
-                                        <div className="flex justify-between items-center bg-black/20 p-2 px-3 rounded-lg">
+                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-[4px]">
                                           <span className="text-xs font-bold text-white/90">{match.homeTeamName}</span>
-                                          <span className="text-lg font-display font-black italic text-blue-400">{match.homeScore}</span>
+                                          <span className="text-lg font-display font-black italic text-fc-neon-green">{match.homeScore}</span>
                                         </div>
-                                        <div className="flex justify-between items-center bg-black/20 p-2 px-3 rounded-lg">
+                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-[4px]">
                                           <span className="text-xs font-bold text-white/90">{match.awayTeamName}</span>
-                                          <span className="text-lg font-display font-black italic text-blue-400">{match.awayScore}</span>
+                                          <span className="text-lg font-display font-black italic text-fc-neon-green">{match.awayScore}</span>
                                         </div>
                                       </div>
-                                      <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-blue-400 hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
+                                      <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-[8px] bg-white/5 hover:bg-white/10 text-fc-neon-green hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
                                         <Edit3 className="w-4 md:w-5 h-4 md:h-5" />
                                       </button>
                                     </div>
@@ -2282,13 +2282,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
 
                 <div className="space-y-12">
-                  <div className="bg-white/5 border border-white/10 rounded-3xl p-8 sticky top-0">
-                    <h3 className="text-xl font-display font-black italic uppercase text-blue-400 mb-6 flex items-center gap-3">
+                  <div className="bg-white/5 border border-white/10 rounded-[12px] p-8 sticky top-0">
+                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
                       <Settings className="w-6 h-6" />
                       Global Config
                     </h3>
                     <div className="space-y-6">
-                      <div className="flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-2xl group">
+                      <div className="flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-[8px] group">
                         <div>
                           <p className="text-sm font-bold text-white mb-1">Registration Portal</p>
                           <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Enable or disable user applications</p>
@@ -2296,20 +2296,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         <button 
                           onClick={handleToggleRegistration}
                           disabled={isSavingAdmin}
-                          className={`w-14 h-8 rounded-full flex items-center p-1 transition-all ${config.registrationEnabled ? 'bg-green-500' : 'bg-white/10'}`}
+                          className={`w-14 h-8 rounded-[4px] flex items-center p-1 transition-all ${config.registrationEnabled ? 'bg-green-500' : 'bg-white/10'}`}
                         >
-                          <div className={`w-6 h-6 rounded-full bg-white shadow-md transition-all ${config.registrationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                          <div className={`w-6 h-6 rounded-[4px] bg-white shadow-md transition-all ${config.registrationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                         </button>
                       </div>
 
-                      <div className="p-6 bg-blue-600/10 border border-blue-500/20 rounded-2xl">
+                      <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-[8px]">
                         <div className="flex items-center gap-3 mb-3">
-                          <Users className="w-5 h-5 text-blue-400" />
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400">Total Applicants</h4>
+                          <Users className="w-5 h-5 text-fc-neon-green" />
+                          <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Total Applicants</h4>
                         </div>
                         <p className="text-5xl font-display font-black italic text-white">{registrations.length}</p>
                       </div>
-                    <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
+                    <div className="bg-red-500/5 border border-red-500/20 rounded-[8px] p-6">
                       <div className="flex items-center gap-3 mb-4 text-red-400">
                         <Trash2 className="w-5 h-5" />
                         <h4 className="text-[10px] font-black uppercase tracking-widest">Danger Zone</h4>
@@ -2326,7 +2326,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('matches');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'matches' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'matches' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'matches' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'matches' ? 'Confirm Reset Matches' : 'Reset Matches')}
                         </button>
@@ -2341,7 +2341,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('bracket');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'bracket' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'bracket' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'bracket' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'bracket' ? 'Confirm Reset Bracket' : 'Reset Bracket')}
                         </button>
@@ -2356,7 +2356,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('registrations');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'registrations' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'registrations' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'registrations' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'registrations' ? 'Confirm Reset Applicants' : 'Reset Applicants')}
                         </button>
@@ -2371,7 +2371,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('table');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'table' ? 'bg-orange-600 border-orange-600 text-white animate-pulse' : 'bg-orange-600/10 border-orange-500/20 text-orange-500 hover:bg-orange-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'table' ? 'bg-orange-600 border-orange-600 text-white animate-pulse' : 'bg-orange-600/10 border-orange-500/20 text-orange-500 hover:bg-orange-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'table' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'table' ? 'Confirm Reset All Scores' : 'Reset All Scores')}
                         </button>
@@ -2386,7 +2386,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('stats');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-xl text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'stats' ? 'bg-blue-600 border-blue-600 text-white animate-pulse' : 'bg-blue-600/10 border-blue-500/20 text-blue-400 hover:bg-blue-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'stats' ? 'bg-fc-neon-green text-black border-fc-neon-green text-black animate-pulse' : 'bg-fc-purple-light/20 border-fc-neon-green/30 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black'}`}
                         >
                           {isResetting && confirmReset === 'stats' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'stats' ? 'Confirm Reset Stats Tab' : 'Reset Stats Tab')}
                         </button>
@@ -2401,7 +2401,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('all');
                             }
                           }} 
-                          className={`relative px-4 py-3 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-900 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
+                          className={`relative px-4 py-3 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-900 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
                         >
                           {isResetting && confirmReset === 'all' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'all' ? 'Confirm TOTAL PURGE' : 'Purge All Data')}
                         </button>
@@ -2411,14 +2411,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       )}
                     </div>
                     
-                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-6">
+                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-[8px] p-6">
                       <div className="flex items-center gap-3 mb-4 text-yellow-500">
                         <BarChart2 className="w-5 h-5" />
                         <h4 className="text-[10px] font-black uppercase tracking-widest">Table Analysis</h4>
                       </div>
                       <button 
                         onClick={handleAnalyzeQualification}
-                        className="w-full px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-xl text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500/20 transition-all flex items-center justify-center gap-2"
+                        className="w-full px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-[6px] text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500/20 transition-all flex items-center justify-center gap-2"
                       >
                         <RotateCcw className="w-4 h-4" />
                         Calculate Q/E Statuses
@@ -2432,30 +2432,30 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
             {activeTab === 'registrations' && (
               <div className="space-y-8">
-                <div className="flex flex-col sm:flex-row items-center justify-between bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-white/5 border border-white/10 rounded-[12px] p-6 md:p-8 gap-4">
                    <div className="text-center sm:text-left">
                     <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Registered Users</h3>
-                    <p className="text-blue-400/40 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review applicant field data</p>
+                    <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review applicant field data</p>
                    </div>
-                   <div className="px-4 md:px-6 py-2 md:py-3 bg-blue-600/20 border border-blue-500/30 rounded-2xl flex items-center gap-3">
-                      <span className="text-[9px] md:text-[10px] font-black text-blue-400 uppercase tracking-widest">Active applicants:</span>
+                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-[8px] flex items-center gap-3">
+                      <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Active applicants:</span>
                       <span className="text-xl md:text-2xl font-display font-black italic text-white">{registrations.length}</span>
                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
                   {registrations.length === 0 ? (
-                    <div className="p-20 text-center bg-white/5 border border-white/5 rounded-3xl">
+                    <div className="p-20 text-center bg-white/5 border border-white/5 rounded-[12px]">
                       <Users className="w-16 h-16 text-white/10 mx-auto mb-4" />
                       <p className="text-white/40 font-bold">No registrations yet.</p>
                     </div>
                   ) : (
                     registrations.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(reg => (
-                      <div key={reg.id} className="bg-white/5 border border-white/10 rounded-2xl md:rounded-3xl p-4 md:p-6 hover:bg-white/10 transition-all group">
+                      <div key={reg.id} className="bg-white/5 border border-white/10 rounded-[8px] md:rounded-[12px] p-4 md:p-6 hover:bg-white/10 transition-all group">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-6 items-center">
                           <div className="flex items-center gap-2">
                              <div className="mr-2">
-                               <p className="text-[8px] font-black uppercase tracking-widest text-blue-400 mb-0.5">Status</p>
+                               <p className="text-[8px] font-black uppercase tracking-widest text-fc-neon-green mb-0.5">Status</p>
                                <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
                                  reg.status === 'approved' ? 'bg-green-500/20 text-green-400' :
                                  reg.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
@@ -2465,14 +2465,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              <div className="flex flex-col gap-1">
                                <button 
                                  onClick={() => handleApproveRegistration(reg.id)}
-                                 className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-xl"
+                                 className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-[6px]"
                                  title="Approve"
                                >
                                  <Check className="w-4 h-4" />
                                </button>
                                <button 
                                  onClick={() => handleRejectRegistration(reg.id)}
-                                 className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-xl"
+                                 className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-[6px]"
                                  title="Reject"
                                >
                                  <X className="w-4 h-4" />
@@ -2486,21 +2486,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                      setConfirmDeleteId(reg.id);
                                    }
                                  }}
-                                 className={`p-2 transition-all rounded-xl ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
+                                 className={`p-2 transition-all rounded-[6px] ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
                                  title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
                                >
                                  <Trash2 className="w-4 h-4" />
                                </button>
                                <button 
                                  onClick={() => setAdminEditingRegistration(reg)}
-                                 className="p-2 bg-blue-500/20 text-blue-400 hover:bg-blue-500 hover:text-white transition-all rounded-xl"
+                                 className="p-2 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black transition-all rounded-[6px]"
                                  title="Edit Registration"
                                >
                                  <Edit3 className="w-4 h-4" />
                                </button>
                                <button 
                                  onClick={() => setDownloadingRegistration(reg)}
-                                 className="p-2 bg-purple-500/20 text-purple-400 hover:bg-purple-500 hover:text-white transition-all rounded-xl"
+                                 className="p-2 bg-fc-purple-light/20 text-fc-neon-green hover:bg-fc-purple-light hover:text-white transition-all rounded-[6px]"
                                  title="Download ID Card"
                                >
                                  <IdCard className="w-4 h-4" />
@@ -2508,7 +2508,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              </div>
                           </div>
                           <div className="flex justify-center lg:justify-start">
-                             <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
+                             <div className="w-16 h-16 rounded-[8px] bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
                                {reg.logoUrl ? (
                                  <img src={reg.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                ) : (
@@ -2517,22 +2517,22 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              </div>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">FC Name</p>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">FC Name</p>
                              <p className="text-xs md:text-sm font-bold text-white">{reg.fcName}</p>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Age</p>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Age</p>
                              <p className="text-xs md:text-sm font-bold text-white">{reg.age} years</p>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Team OVR</p>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Team OVR</p>
                              <div className="flex items-center gap-2">
                                <span className="text-lg md:text-xl font-display font-black italic text-yellow-500">{reg.teamOvr}</span>
                                <span className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-widest">Rating</span>
                              </div>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-blue-400 mb-1">Experience</p>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Experience</p>
                              <p className="text-[9px] md:text-[10px] font-black text-white/60 uppercase">{reg.experience}</p>
                           </div>
                         </div>
@@ -2544,18 +2544,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'visibility' && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <div className="bg-white/5 border border-white/10 rounded-[12px] p-8">
                 <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Tab Visibility Management</h3>
                 <div className="space-y-4">
                   {['Fixtures', 'Table', 'Bracket', 'Registration', 'Stats', 'News', 'Campaign'].map(tab => (
-                    <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-xl border border-white/10">
+                    <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-[6px] border border-white/10">
                       <span className="text-sm font-bold text-white">{tab}</span>
                       <button 
                         onClick={() => {
                           const newTabs = { ...(config.tabVisibility || {}), [tab.toLowerCase()]: !(config.tabVisibility?.[tab.toLowerCase()] ?? true) };
                           handleUpdateConfig({ ...config, tabVisibility: newTabs });
                         }}
-                        className={`px-4 py-2 rounded-lg font-black text-xs uppercase ${!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}
+                        className={`px-4 py-2 rounded-[4px] font-black text-xs uppercase ${!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}
                       >
                         {!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'Disabled' : 'Enabled'}
                       </button>
@@ -2566,7 +2566,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'label' && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <div className="bg-white/5 border border-white/10 rounded-[12px] p-8">
                 <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Date Label Management (Drag to Reorder)</h3>
                 <div className="space-y-4">
                   <DndContext 
@@ -2600,18 +2600,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
                   <div className="text-left w-full">
                     <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Evidence Dashboard</h3>
-                    <p className="text-blue-400/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review AI analysis and match verification screenshots</p>
+                    <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review AI analysis and match verification screenshots</p>
                   </div>
                 </div>
 
                 {isReportsLoading ? (
                   <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <Loader2 className="w-8 h-8 text-blue-500 animate-spin" />
+                    <Loader2 className="w-8 h-8 text-fc-neon-green animate-spin" />
                     <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Loading reports from cloud...</p>
                   </div>
                 ) : reports.length === 0 ? (
-                  <div className="bg-white/5 border border-white/5 rounded-3xl p-12 text-center">
-                    <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mx-auto mb-4 border border-white/10">
+                  <div className="bg-white/5 border border-white/5 rounded-[12px] p-12 text-center">
+                    <div className="w-16 h-16 bg-white/5 rounded-[8px] flex items-center justify-center mx-auto mb-4 border border-white/10">
                       <BarChart2 className="w-8 h-8 text-white/20" />
                     </div>
                     <h4 className="text-lg font-display font-black italic uppercase text-white mb-2">No Reports Found</h4>
@@ -2620,23 +2620,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 ) : (
                   <div className="grid gap-6">
                     {reports.map((report) => (
-                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-3xl overflow-hidden group hover:border-blue-500/30 transition-all">
+                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-[12px] overflow-hidden group hover:border-fc-neon-green/50/30 transition-all">
                         <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
-                          <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-black relative flex items-center justify-center overflow-hidden">
+                          <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-fc-purple-dark relative flex items-center justify-center overflow-hidden">
                             {report.imageUrl ? (
                               <img src={report.imageUrl.startsWith('http') ? report.imageUrl : `data:${report.mimeType || 'image/png'};base64,${report.imageUrl}`} loading="lazy" alt="Evidence" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
                             ) : (
                               <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">No Image Available</span>
                             )}
                             <div className="absolute top-4 left-4">
-                              <span className="px-3 py-1.5 bg-blue-600 text-white text-[9px] font-black uppercase tracking-widest rounded-lg shadow-xl shadow-blue-900/40 border border-blue-400/20">Screenshot</span>
+                              <span className="px-3 py-1.5 bg-fc-neon-green text-black text-black text-[9px] font-black uppercase tracking-widest rounded-[4px] shadow-xl shadow-fc-neon-green/10 border border-fc-neon-green/40/20">Screenshot</span>
                             </div>
                           </div>
                           <div className="flex-1 p-6 md:p-8 space-y-6">
                             <div className="flex items-start justify-between gap-4">
                               <div>
                                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <div className="px-2 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[8px] font-black text-blue-400 uppercase tracking-tighter">Reporter</div>
+                                  <div className="px-2 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[8px] font-black text-fc-neon-green uppercase tracking-tighter">Reporter</div>
                                   <span className="text-[10px] font-black text-white uppercase tracking-widest">{report.reporterName || (report.matchData && report.matchData.reporterName) || 'Unknown Source'}</span>
                                 </div>
                                 <h4 className="text-lg font-display font-black italic uppercase text-white tracking-tight">
@@ -2652,7 +2652,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                     await deleteDoc(doc(db, 'reports', report.id));
                                   }
                                 }}
-                                className="p-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-xl transition-all border border-red-500/20"
+                                className="p-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-[6px] transition-all border border-red-500/20"
                                 title="Delete Report"
                               >
                                 <Trash2 className="w-4 h-4" />
@@ -2660,11 +2660,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                             </div>
 
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                              <div className="p-3 bg-white/5 rounded-[8px] border border-white/5">
                                 <span className="block text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">MOTM</span>
                                 <span className="text-[10px] font-black text-yellow-400 uppercase truncate block font-sans">{report.matchData.manOfTheMatch || 'N/A'}</span>
                               </div>
-                              <div className="p-3 bg-white/5 rounded-2xl border border-white/5">
+                              <div className="p-3 bg-white/5 rounded-[8px] border border-white/5">
                                 <span className="block text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Status</span>
                                 <span className="text-[10px] font-black text-green-400 uppercase block tracking-widest">Analyzed</span>
                               </div>
@@ -2672,13 +2672,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
                             <div className="space-y-3">
                               <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block font-sans">Goal Scorers (Extracted)</span>
-                              <div className="bg-black/20 rounded-2xl p-4 border border-white/5 space-y-2">
+                              <div className="bg-fc-purple-dark/20 rounded-[8px] p-4 border border-white/5 space-y-2">
                                 {report.matchData.scorers && report.matchData.scorers.length > 0 ? (
                                   report.matchData.scorers.map((s: any, idx: number) => (
                                     <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
                                       <span className="text-white/80 shrink-0">{s.name}</span>
                                       <div className="flex-1 border-b border-white/5 mx-2 border-dotted" />
-                                      <span className="text-blue-400">
+                                      <span className="text-fc-neon-green">
                                         {s.goals} G {s.time && `(${s.time})`}
                                       </span>
                                     </div>
@@ -2701,17 +2701,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
                  <div className="text-left w-full mb-8">
                    <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Manual Achievement Award</h3>
-                   <p className="text-blue-400/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
+                   <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
                  </div>
                  
-                 <div className="bg-white/5 border border-white/10 rounded-3xl p-6 md:p-8 space-y-6">
+                 <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 md:p-8 space-y-6">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60 mb-2 block">Select Registered Player</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60 mb-2 block">Select Registered Player</label>
                         <select 
                           value={awardUserId}
                           onChange={e => setAwardUserId(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 font-sans outline-none disabled:opacity-50"
+                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose User --</option>
                           {registrations.filter(r => r.status === 'approved' && r.userId).map(r => (
@@ -2721,11 +2721,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                       
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60 mb-2 block">Select Trophy / Achievement</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60 mb-2 block">Select Trophy / Achievement</label>
                         <select 
                           value={awardAchvId}
                           onChange={e => setAwardAchvId(e.target.value)}
-                          className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white text-sm focus:border-blue-500 font-sans outline-none disabled:opacity-50"
+                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[6px] px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose Achievement --</option>
                           {(ACHIEVEMENTS || []).map(a => (
@@ -2737,7 +2737,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <button 
                         onClick={handleAwardSubmit}
                         disabled={isAwarding || !awardAchvId || !awardUserId}
-                        className="w-full py-4 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-xl font-black uppercase tracking-widest text-xs hover:bg-yellow-600/30 transition-all shadow-xl shadow-yellow-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-[6px] font-black uppercase tracking-widest text-xs hover:bg-yellow-600/30 transition-all shadow-xl shadow-yellow-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                          {isAwarding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
                          Award Achievement
@@ -2748,14 +2748,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
 
             {activeTab === 'ai' && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <div className="bg-white/5 border border-white/10 rounded-[12px] p-8">
                 <div className="flex items-center justify-between mb-6">
                   <h3 className="text-xl font-display font-black italic uppercase text-white">AI Settings</h3>
                   <div className="flex items-center gap-3">
                     <button 
                       onClick={handleTestAi}
                       disabled={isTestingAi}
-                      className="flex items-center gap-2 px-6 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white border border-white/10 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all font-sans"
+                      className="flex items-center gap-2 px-6 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white border border-white/10 rounded-[6px] text-[10px] font-black uppercase tracking-widest transition-all font-sans"
                     >
                       {isTestingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
                       Test
@@ -2763,7 +2763,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <button 
                       onClick={handleSaveAiSettings}
                       disabled={isSavingAdmin}
-                      className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white rounded-xl text-[10px] font-black uppercase tracking-widest shadow-lg shadow-blue-600/20 transition-all font-sans"
+                      className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-[6px] text-[10px] font-black uppercase tracking-widest shadow-lg shadow-fc-neon-green/20 transition-all font-sans"
                     >
                       {isSavingAdmin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
                       Save
@@ -2772,14 +2772,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini API Key</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60">Gemini API Key</label>
                     <div className="relative">
                       <input 
                         type="password"
                         value={localApiKey}
                         onChange={(e) => setLocalApiKey(e.target.value)}
                         placeholder="Paste your Gemini API Key here..."
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all font-mono"
+                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[8px] px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all font-mono"
                       />
                       <Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
                     </div>
@@ -2787,12 +2787,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                   
                   <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-blue-400 opacity-60">Gemini Model</label>
+                    <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60">Gemini Model</label>
                     <div className="relative">
                       <select 
                         value={localModel || 'gemini-3-flash-preview'}
                         onChange={(e) => setLocalModel(e.target.value)}
-                        className="w-full bg-black/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer font-sans"
+                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-[8px] px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all appearance-none cursor-pointer font-sans"
                       >
                         <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Balanced)</option>
                         <option value="gemini-pro-latest">gemini-pro-latest (Smartest)</option>
@@ -2807,10 +2807,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     </div>
                   </div>
                   
-                  <div className="p-6 bg-blue-600/10 border border-blue-500/20 rounded-2xl flex items-start gap-4">
-                    <Info className="w-5 h-5 text-blue-400 shrink-0 mt-0.5" />
+                  <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-[8px] flex items-start gap-4">
+                    <Info className="w-5 h-5 text-fc-neon-green shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-blue-400 mb-1">Configuration Status</h4>
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Configuration Status</h4>
                       <p className="text-[10px] font-black uppercase text-white/40 leading-relaxed font-sans">
                         Changes are saved to Firestore and take effect immediately for all subsequent AI requests (Match Analysis & Admin Commands).
                       </p>
@@ -2821,23 +2821,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'backup' && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <div className="bg-white/5 border border-white/10 rounded-[12px] p-8">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-display font-black italic uppercase text-white">Database Backup & Recovery</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Export */}
-                  <div className="bg-black/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                    <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-blue-600/10 rounded-bl-full -z-10 group-hover:bg-blue-600/20 transition-all" />
-                    <Download className="w-8 h-8 text-blue-400 mb-4" />
+                  <div className="bg-fc-purple-dark/20 border border-white/5 rounded-[8px] p-6 relative overflow-hidden group">
+                    <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-fc-purple-light/20 rounded-bl-full -z-10 group-hover:bg-fc-purple-light/30 transition-all" />
+                    <Download className="w-8 h-8 text-fc-neon-green mb-4" />
                     <h4 className="font-black text-white uppercase text-sm mb-2">Export Data Backup</h4>
                     <p className="text-white/40 text-xs leading-relaxed mb-6">
                       Download a JSON backup of everything: registrations, bracket matches, historical matches, match labels, stats, users, and reports. Do this regularly.
                     </p>
                     <button 
                       onClick={handleExportBackup}
-                      className="w-full py-4 bg-blue-600 hover:bg-blue-500 rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all text-white flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-[6px] text-[10px] font-black tracking-[0.2em] uppercase transition-all text-black flex items-center justify-center gap-2"
                     >
                       <Download className="w-4 h-4" />
                       Save Complete Backup
@@ -2845,7 +2845,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
 
                   {/* Import */}
-                  <div className="bg-black/20 border border-red-500/20 rounded-2xl p-6 relative overflow-hidden group">
+                  <div className="bg-fc-purple-dark/20 border border-red-500/20 rounded-[8px] p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-red-600/5 rounded-bl-full -z-10 group-hover:bg-red-600/10 transition-all" />
                     <Upload className="w-8 h-8 text-red-400 mb-4" />
                     <h4 className="font-black text-white uppercase text-sm mb-2">Restore Backup</h4>
@@ -2861,7 +2861,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         title="Upload JSON Backup"
                       />
-                      <div className="w-full py-4 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 rounded-xl text-[10px] font-black tracking-[0.2em] uppercase transition-all text-red-100 flex items-center justify-center gap-2">
+                      <div className="w-full py-4 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 rounded-[6px] text-[10px] font-black tracking-[0.2em] uppercase transition-all text-red-100 flex items-center justify-center gap-2">
                         {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                         Restore JSON Backup
                       </div>
@@ -2872,7 +2872,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'edits' && (
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-8">
+              <div className="bg-white/5 border border-white/10 rounded-[12px] p-8">
                 <div className="flex items-center justify-between mb-8">
                   <h3 className="text-xl font-display font-black italic uppercase text-white">Recent Match Edits</h3>
                 </div>
@@ -2886,9 +2886,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       const homeTeam = teams.find(t => t.id === m.homeTeamId);
                       const awayTeam = teams.find(t => t.id === m.awayTeamId);
                       return (
-                        <div key={`${m.id}-${i}`} className="bg-black/20 border border-white/5 rounded-2xl p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                        <div key={`${m.id}-${i}`} className="bg-fc-purple-dark/20 border border-white/5 rounded-[8px] p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                           <div>
-                            <div className="text-[10px] font-black tracking-widest uppercase text-blue-400 mb-1">
+                            <div className="text-[10px] font-black tracking-widest uppercase text-fc-neon-green mb-1">
                               {new Date(log.editedAt).toLocaleString()}
                             </div>
                             <div className="text-sm font-bold text-white mb-1">
@@ -2898,7 +2898,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               <span className="font-bold text-orange-400">{log.editedBy}</span> - {log.changes}
                             </div>
                           </div>
-                          <div className="text-xs font-mono bg-white/5 border border-white/10 px-3 py-1.5 rounded-lg text-white/50">
+                          <div className="text-xs font-mono bg-white/5 border border-white/10 px-3 py-1.5 rounded-[4px] text-white/50">
                             {m.homeScore ?? 0} - {m.awayScore ?? 0}
                           </div>
                         </div>
@@ -2917,18 +2917,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="fixed top-0 left-[-9999px] pointer-events-none z-[-1] opacity-0 overflow-hidden">
             <div 
               ref={cardRef}
-              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-blue-500 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
+              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-fc-neon-green/50 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
               style={{ fontFamily: "'Inter', sans-serif" }}
             >
-              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-blue-600/30 rounded-full blur-[100px] -z-10" />
-              <div className="absolute bottom-0 left-0 p-32 w-[600px] h-[600px] bg-purple-600/30 rounded-full blur-[100px] -z-10" />
+              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-fc-neon-green/30 rounded-[4px] blur-[100px] -z-10" />
+              <div className="absolute bottom-0 left-0 p-32 w-[600px] h-[600px] bg-fc-purple-base/30 rounded-[4px] blur-[100px] -z-10" />
               
               <div className="flex justify-between items-start mb-12">
                  <div>
                    <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter shadow-sm w-[400px]">UXIT TOURNAMENT</h1>
-                   <p className="text-2xl font-bold uppercase text-blue-400 tracking-widest mt-2">{downloadingRegistration.fcName}</p>
+                   <p className="text-2xl font-bold uppercase text-fc-neon-green tracking-widest mt-2">{downloadingRegistration.fcName}</p>
                  </div>
-                 <div className="w-24 h-24 bg-white p-2 rounded-2xl text-black relative flex-shrink-0 shadow-lg">
+                 <div className="w-24 h-24 bg-white p-2 rounded-[8px] text-black relative flex-shrink-0 shadow-lg">
                    <div className="absolute inset-0 p-2">
                       <DummyQRCode />
                    </div>
@@ -2936,7 +2936,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
 
               <div className="flex-1 flex flex-col items-center justify-center -mt-8">
-                 <div className="w-64 h-64 rounded-full border-[10px] border-white/20 overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.4)] mb-8 flex items-center justify-center bg-[#0a0a1a]">
+                 <div className="w-64 h-64 rounded-[4px] border-[10px] border-white/20 overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.4)] mb-8 flex items-center justify-center bg-fc-purple-base">
                    {downloadingRegistration.logoUrl ? (
                       <img src={downloadingRegistration.logoUrl} alt="Logo" className="w-full h-full object-cover" crossOrigin="anonymous"/>
                    ) : (
@@ -2947,17 +2947,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                  <p className="text-2xl text-white/60 font-black uppercase tracking-widest mt-4">FC UID: {downloadingRegistration.fcUid}</p>
               </div>
 
-              <div className="grid grid-cols-2 gap-6 bg-black/40 backdrop-blur-2xl rounded-[2.5rem] p-8 border-2 border-white/10 relative z-10 shadow-2xl mt-8">
+              <div className="grid grid-cols-2 gap-6 bg-fc-purple-dark/40 backdrop-blur-2xl rounded-[12px] p-8 border-2 border-white/10 relative z-10 shadow-2xl mt-8">
                  <div className="text-center">
-                   <p className="text-sm font-black text-blue-400 uppercase tracking-widest mb-1">Team OVR</p>
+                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Team OVR</p>
                    <p className="text-5xl font-black text-white drop-shadow-md">{downloadingRegistration.teamOvr}</p>
                  </div>
                  <div className="text-center border-l-2 border-white/10">
-                   <p className="text-sm font-black text-blue-400 uppercase tracking-widest mb-1">Age</p>
+                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Age</p>
                    <p className="text-5xl font-black text-white drop-shadow-md">{downloadingRegistration.age}</p>
                  </div>
                  <div className="text-center md:col-span-2 border-t-2 border-white/10 pt-6 mt-2">
-                   <p className="text-sm font-black text-blue-400 uppercase tracking-widest mb-1">Goalkeeper</p>
+                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Goalkeeper</p>
                    <p className="text-2xl font-bold text-white capitalize drop-shadow-md">{downloadingRegistration.goalkeeper || 'N/A'}</p>
                  </div>
               </div>
@@ -2987,7 +2987,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           initial={{ x: "100%", opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "100%", opacity: 0 }}
-          className="w-80 bg-[#0a0a2a] border-2 border-yellow-500/50 p-4 rounded-xl shadow-[0_0_20px_rgba(234,179,8,0.2)] flex items-center gap-4 relative overflow-hidden"
+          className="w-80 bg-[#0a0a2a] border-2 border-yellow-500/50 p-4 rounded-[6px] shadow-[0_0_20px_rgba(234,179,8,0.2)] flex items-center gap-4 relative overflow-hidden"
         >
           <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none" />
           <div className="text-3xl">🏆</div>
@@ -3022,11 +3022,11 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
             <img 
               src={team.logoUrl} 
               alt={team.name} 
-              className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-lg object-cover border border-white/10 shadow-lg ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}
+              className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-[4px] object-cover border border-white/10 shadow-lg ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-lg bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
+            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-[4px] bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-fc-neon-green font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
               {team.name[0]}
             </div>
           )}
@@ -3040,7 +3040,7 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
               e.stopPropagation();
               copyToClipboard(team.uid);
             }}
-            className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
+            className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
             title="Click to copy UID"
           >
             {copiedId === team.uid ? (
@@ -3102,7 +3102,7 @@ const parseTourneyDate = (dStr: string) => {
 
 const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: any[], isAdmin?: boolean, isEditingMode?: boolean, onDelete?: (id: string) => void }) => {
   if (!articles || articles.length === 0) return (
-    <div className="p-8 text-center text-white/40 bg-white/5 rounded-3xl border border-white/10 uppercase tracking-widest font-black text-xs">
+    <div className="p-8 text-center text-white/40 bg-white/5 rounded-[12px] border border-white/10 uppercase tracking-widest font-black text-xs">
       No recent news
     </div>
   );
@@ -3111,9 +3111,9 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
     switch(category) {
       case 'SPICY': return 'bg-red-500/20 text-red-400 border-red-500/30';
       case 'BANTER': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-      case 'ANALYSIS': return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
+      case 'ANALYSIS': return 'bg-fc-neon-green/20 text-fc-neon-green border-fc-neon-green/50/30';
       case 'PREDICTION': return 'bg-orange-500/20 text-orange-400 border-orange-500/30';
-      case 'MATCHDAY': return 'bg-purple-500/20 text-purple-400 border-purple-500/30';
+      case 'MATCHDAY': return 'bg-fc-purple-light/20 text-fc-neon-green border-fc-purple-light/30';
       case 'FORM': return 'bg-green-500/20 text-green-400 border-green-500/30';
       default: return 'bg-white/10 text-white/50 border-white/20';
     }
@@ -3143,7 +3143,7 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
   return (
     <div className="w-full space-y-4 mb-12">
       <div className="flex items-center gap-3 mb-6">
-        <Sparkles className="w-5 h-5 text-blue-400" />
+        <Sparkles className="w-5 h-5 text-fc-neon-green" />
         <h2 className="font-display font-black text-xl italic uppercase tracking-widest text-white">UXL News Network</h2>
       </div>
       <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
@@ -3152,19 +3152,19 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             key={article.id} 
-            className="flex-none w-80 md:w-96 bg-black/40 border border-white/10 rounded-2xl p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
+            className="flex-none w-80 md:w-96 bg-fc-purple-dark/40 border border-white/10 rounded-[8px] p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
           >
             {isAdmin && isEditingMode && onDelete && (
               <button 
                 onClick={() => onDelete(article.id)}
-                className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center bg-red-500/20 text-red-500 rounded-full hover:bg-red-500 hover:text-white transition-colors"
+                className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center bg-red-500/20 text-red-500 rounded-[4px] hover:bg-red-500 hover:text-white transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/5 rounded-bl-[100px] pointer-events-none group-hover:bg-blue-500/10 transition-colors" />
+            <div className="absolute top-0 right-0 w-32 h-32 bg-fc-neon-green/5 rounded-bl-[100px] pointer-events-none group-hover:bg-fc-purple-light/20 transition-colors" />
             <div className="flex items-start justify-between mb-3 relative z-10">
-              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
+              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-[4px] border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
                 <span>{getCategoryIcon(article.category)}</span> {article.category}
               </span>
               <span className="text-[10px] uppercase font-black tracking-widest text-white/30">
@@ -3650,8 +3650,8 @@ export default function App() {
       return (
         <div className={`relative group ${className}`}>
           <img src={src} alt={alt} referrerPolicy="no-referrer" className={`w-full h-full object-cover`} />
-          <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-             <label className="bg-blue-600 px-4 py-2 rounded-xl text-white text-xs font-black uppercase cursor-pointer hover:bg-blue-500 transition-colors">
+          <div className="absolute inset-0 bg-fc-purple-dark/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
+             <label className="bg-fc-neon-green text-black px-4 py-2 rounded-[6px] text-black text-xs font-black uppercase cursor-pointer hover:bg-fc-neon-green text-black transition-colors">
                Change Image
                <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
              </label>
@@ -3705,7 +3705,7 @@ export default function App() {
             type="text"
             value={tempContent || ''}
             onChange={(e) => setTempContent(e.target.value)}
-            className="bg-white/20 border border-blue-500 rounded p-1 outline-none text-white text-xs font-sans"
+            className="bg-white/20 border border-fc-neon-green/50 rounded p-1 outline-none text-white text-xs font-sans"
             autoFocus
             placeholder={isImage ? "Image URL" : "Text"}
             onKeyDown={(e) => {
@@ -3740,7 +3740,7 @@ export default function App() {
               setTempContent(isImage ? imageUrl : text);
               setIsEditing(true);
             }}
-            className="p-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg text-white transition-all scale-75 absolute -right-8 top-1/2 -translate-y-1/2 z-[100] shadow-xl border border-blue-400"
+            className="p-1.5 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-[4px] text-black transition-all scale-75 absolute -right-8 top-1/2 -translate-y-1/2 z-[100] shadow-xl border border-fc-neon-green/40"
             title={isImage ? "Edit Image" : "Edit Text"}
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -5178,7 +5178,7 @@ export default function App() {
 
   return (
     <>
-      <div className="min-h-screen bg-[#000030] text-white font-sans selection:bg-blue-500/30 relative overflow-hidden">
+      <div className="min-h-screen bg-fc-purple-dark text-white font-sans selection:bg-fc-neon-green/30 relative overflow-hidden">
       {hasQuotaError && (
         <div className="bg-red-500/20 border-b border-red-500/50 p-4 text-center z-50 relative backdrop-blur-sm">
           <p className="text-red-200 font-bold max-w-4xl mx-auto">
@@ -5190,13 +5190,13 @@ export default function App() {
       {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#000030] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-fc-purple-dark via-transparent to-transparent" />
       </div>
 
       {/* Header */}
       <header className="relative h-48 md:h-64 flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
         <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-blue-900/20 to-[#000030]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-fc-purple-base/20 to-[#000030]" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-10">
             <div className="grid grid-cols-8 gap-4 p-4">
               {Array.from({ length: 32 }).map((_, i) => (
@@ -5216,11 +5216,11 @@ export default function App() {
               <div className="flex items-center gap-2">
                 <div className="hidden sm:block text-right">
                   <p className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">Logged In</p>
-                  <p className="text-xs font-bold text-blue-400 truncate max-w-[100px]">{user.displayName || user.email}</p>
+                  <p className="text-xs font-bold text-fc-neon-green truncate max-w-[100px]">{user.displayName || user.email}</p>
                 </div>
                 <button 
                   onClick={() => logout()}
-                  className="p-2 rounded-xl bg-white/5 border border-white/10 text-white/40 hover:text-red-400 transition-colors"
+                  className="p-2 rounded-[6px] bg-white/5 border border-white/10 text-white/40 hover:text-red-400 transition-colors"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
@@ -5228,7 +5228,7 @@ export default function App() {
                 {isAdmin && (
                   <button
                     onClick={() => setIsAdminModalOpen(true)}
-                    className="px-3 py-2 bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-yellow-600/30 transition-all flex items-center gap-2"
+                    className="px-3 py-2 bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 rounded-[6px] text-[10px] font-black uppercase tracking-widest hover:bg-yellow-600/30 transition-all flex items-center gap-2"
                   >
                     <Settings className="w-3.5 h-3.5" />
                     Terminal
@@ -5238,7 +5238,7 @@ export default function App() {
             ) : (
               <button 
                 onClick={() => signIn()}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600/20 border border-blue-500/30 text-blue-400 hover:bg-blue-600/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
+                className="flex items-center gap-2 px-4 py-2 rounded-[6px] bg-fc-purple-light/30 border border-fc-neon-green/50/30 text-fc-neon-green hover:bg-fc-neon-green-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
               >
                 <LogIn className="w-3.5 h-3.5" />
                 Login
@@ -5246,20 +5246,20 @@ export default function App() {
             )}
           </div>
 
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-blue-400 drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
+          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-fc-neon-green drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
           <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none pr-2">
             <EditableText id="hero_title_main" defaultText="UXI Tournament" />
           </h1>
-          <p className="text-blue-200/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">
-            <EditableText id="hero_subtitle" defaultText="Elite Competition" />
+          <p className="text-fc-neon-green/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">
+            <EditableText id="hero_subtitle" defaultText="THE WORLD'S GAME" />
           </p>
         </motion.div>
       </header>
 
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-[#000030]/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
+      <nav className="sticky top-0 z-50 bg-fc-purple-dark/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
         <div className="max-w-xl mx-auto px-4">
-          <div className="relative flex p-1.5 bg-white/5 rounded-2xl border border-white/10 shadow-2xl overflow-x-auto hide-scrollbar">
+          <div className="relative flex p-1.5 bg-white/5 rounded-[8px] border border-white/10 shadow-2xl overflow-x-auto hide-scrollbar">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
               { id: 'table', label: 'Table', icon: TableIcon },
@@ -5279,14 +5279,14 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 md:py-4 rounded-xl transition-all duration-500 z-10 ${
+                className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 md:py-4 rounded-[6px] transition-all duration-500 z-10 ${
                   activeTab === tab.id ? 'text-white' : 'text-white/40 hover:text-white/70'
                 }`}
               >
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+                    className="absolute inset-0 bg-gradient-to-br from-fc-neon-green to-fc-purple-light rounded-[6px] shadow-[0_0_20px_rgba(37,99,235,0.4)]"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
@@ -5313,12 +5313,12 @@ export default function App() {
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30 shrink-0">
-                    <UserIcon className="w-6 h-6 text-blue-400" />
+                  <div className="p-3 bg-fc-purple-light/30 rounded-[8px] border border-fc-neon-green/50/30 shrink-0">
+                    <UserIcon className="w-6 h-6 text-fc-neon-green" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none truncate" />
-                    <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1 truncate">
+                    <p className="text-fc-neon-green/40 text-xs uppercase tracking-widest mt-1 truncate">
                       <EditableText id="campaign_sub" defaultText="Player Portal & Performance" />
                     </p>
                   </div>
@@ -5326,33 +5326,33 @@ export default function App() {
                 <div className="flex flex-row md:flex-row items-center gap-2 w-full md:w-auto">
                   <button 
                     onClick={() => setIsEditingProfile(true)}
-                    className="flex justify-center items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group shrink-0 h-full"
+                    className="flex justify-center items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-[8px] transition-all group shrink-0 h-full"
                   >
-                    <Edit3 className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <Edit3 className="w-4 h-4 text-fc-neon-green group-hover:scale-110 transition-transform" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-white hidden md:inline">Edit</span>
                   </button>
-                  <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl md:ml-auto overflow-x-auto hide-scrollbar w-full">
+                  <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-[8px] md:ml-auto overflow-x-auto hide-scrollbar w-full">
                     <button 
                       onClick={() => setCampaignTab('stats')}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Stats
                     </button>
                     <button 
                       onClick={() => setCampaignTab('history')}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Results
                     </button>
                     <button 
                       onClick={() => setCampaignTab('achievements')}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Achievements
                     </button>
                     <button 
                       onClick={() => setCampaignTab('edit')}
-                      className={`px-4 py-2 rounded-xl text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-[6px] text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Edit
                     </button>
@@ -5361,33 +5361,33 @@ export default function App() {
               </div>
 
               {!user ? (
-                <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
+                <div className="p-12 text-center bg-white/5 rounded-[12px] border border-white/10">
                   <p className="text-white/40 mb-6">Please login to access your campaign portal.</p>
-                  <button onClick={() => signIn()} className="px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all">Login Now</button>
+                  <button onClick={() => signIn()} className="px-8 py-4 bg-fc-neon-green text-black rounded-[8px] font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
                 </div>
               ) : (
                 (() => {
                   const myRegistration = myRegistrationData;
                   if (isDataLoading) {
                     return (
-                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-6">
-                        <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[12px] flex flex-col items-center justify-center gap-6">
+                        <Loader2 className="w-12 h-12 text-fc-neon-green animate-spin" />
                         <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold animate-pulse">Loading Campaign Data...</p>
                       </div>
                     );
                   }
                   if (!myRegistration) {
                      return (
-                        <div className="p-12 text-center bg-white/5 rounded-3xl border border-white/10">
+                        <div className="p-12 text-center bg-white/5 rounded-[12px] border border-white/10">
                           <p className="text-white/40 mb-6 font-bold">You are not registered for the tournament.</p>
-                          <button onClick={() => setActiveTab('registration')} className="px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-blue-700 transition-all">Register Now</button>
+                          <button onClick={() => setActiveTab('registration')} className="px-8 py-4 bg-fc-neon-green text-black rounded-[8px] font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Register Now</button>
                         </div>
                      );
                   }
 
                   if (myRegistration.status === 'pending') {
                     return (
-                      <div className="p-12 text-center bg-yellow-500/5 rounded-3xl border border-yellow-500/20">
+                      <div className="p-12 text-center bg-yellow-500/5 rounded-[12px] border border-yellow-500/20">
                         <Loader2 className="w-12 h-12 text-yellow-500/40 mx-auto mb-6 animate-spin" />
                         <h3 className="text-xl font-display font-black text-yellow-500 uppercase italic">Waiting for Verification</h3>
                         <p className="text-white/40 text-sm mt-2">Admin is currently reviewing your registration details.</p>
@@ -5397,7 +5397,7 @@ export default function App() {
 
                   if (myRegistration.status === 'rejected') {
                     return (
-                      <div className="p-12 text-center bg-red-500/5 rounded-3xl border border-red-500/20">
+                      <div className="p-12 text-center bg-red-500/5 rounded-[12px] border border-red-500/20">
                         <X className="w-12 h-12 text-red-500/40 mx-auto mb-6" />
                         <h3 className="text-xl font-display font-black text-red-500 uppercase italic">Registration Rejected</h3>
                         <p className="text-white/40 text-sm mt-2">Your application was not approved for this tournament.</p>
@@ -5412,9 +5412,9 @@ export default function App() {
                   
                   if (myMatches.length === 0) {
                     return (
-                      <div className="p-12 text-center bg-blue-600/5 rounded-3xl border border-blue-500/20">
-                        <Calendar className="w-12 h-12 text-blue-500/40 mx-auto mb-6" />
-                        <h3 className="text-xl font-display font-black text-blue-400 uppercase italic">Waiting for Fixture Update</h3>
+                      <div className="p-12 text-center bg-fc-neon-green/5 rounded-[12px] border border-fc-neon-green/30">
+                        <Calendar className="w-12 h-12 text-fc-neon-green/40 mx-auto mb-6" />
+                        <h3 className="text-xl font-display font-black text-fc-neon-green uppercase italic">Waiting for Fixture Update</h3>
                         <p className="text-white/40 text-sm mt-2">You are registered and approved! Matches will appear here once the schedule is released.</p>
                       </div>
                     );
@@ -5428,7 +5428,7 @@ export default function App() {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/5 border border-white/10 rounded-[2.5rem] p-8 md:p-12"
+                          className="bg-white/5 border border-white/10 rounded-[12px] p-8 md:p-12"
                         >
                           <div className="max-w-4xl mx-auto space-y-12">
                              <div className="text-center space-y-4">
@@ -5440,12 +5440,12 @@ export default function App() {
                         </motion.div>
                       ) : campaignTab === 'edit' ? (
                          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 text-center">
-                            <Shield className="w-16 h-16 text-blue-400/20 mx-auto mb-6" />
+                            <Shield className="w-16 h-16 text-fc-neon-green/20 mx-auto mb-6" />
                             <h3 className="text-xl font-display font-black text-white uppercase italic">Security Shield Active</h3>
                             <p className="text-white/40 text-sm max-w-sm mx-auto mt-2">Use the "Edit Info" button in the header to modify your tournament registration details.</p>
                             <button 
                               onClick={() => setIsEditingProfile(true)}
-                              className="mt-8 px-8 py-4 bg-blue-600 rounded-2xl font-black uppercase text-xs tracking-widest text-white hover:bg-blue-700 transition-all shadow-xl shadow-blue-600/20"
+                              className="mt-8 px-8 py-4 bg-fc-neon-green text-black rounded-[8px] font-black uppercase text-xs tracking-widest text-black hover:bg-fc-purple-light transition-all shadow-xl shadow-fc-neon-green/20"
                             >
                               Launch Editor
                             </button>
@@ -5459,7 +5459,7 @@ export default function App() {
                              ))}
                            </div>
                            {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').length === 0 && (
-                               <div className="p-8 text-center text-white/40 bg-white/5 rounded-2xl border border-white/10 mt-4">
+                               <div className="p-8 text-center text-white/40 bg-white/5 rounded-[8px] border border-white/10 mt-4">
                                   No previous results yet.
                                </div>
                            )}
@@ -5469,21 +5469,21 @@ export default function App() {
                           {/* Performance Snapshot */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">
+                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">
                                 <EditableText id="stats_status_label" defaultText="Status" />
                               </p>
                               <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">OVR</p>
+                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">OVR</p>
                               <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Goals</p>
+                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">Goals</p>
                               <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-blue-400 uppercase tracking-widest mb-1">Played</p>
+                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">Played</p>
                               <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
                             </div>
                           </div>
@@ -5496,9 +5496,9 @@ export default function App() {
                                 <p className="text-white/20 text-center py-4 text-sm uppercase font-black tracking-widest">No goals recorded yet</p>
                               ) : (
                                 myStats.map(s => (
-                                  <div key={s.playerName} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/5">
+                                  <div key={s.playerName} className="flex items-center justify-between p-4 bg-white/5 rounded-[8px] border border-white/5">
                                     <span className="font-bold text-white">{s.playerName}</span>
-                                    <span className="font-display font-black text-blue-400 text-xl italic">{s.goals}</span>
+                                    <span className="font-display font-black text-fc-neon-green text-xl italic">{s.goals}</span>
                                   </div>
                                 ))
                               )}
@@ -5506,9 +5506,9 @@ export default function App() {
                           </div>
 
                           {/* Result Submission AI */}
-                          <div className="bg-blue-600/5 border border-blue-500/20 rounded-[2rem] p-8 relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 blur-[60px] pointer-events-none" />
-                            <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-blue-400 mb-2" />
+                          <div className="bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-32 h-32 bg-fc-purple-light/20 blur-[60px] pointer-events-none" />
+                            <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-fc-neon-green mb-2" />
                             <p className="text-white/40 text-[10px] uppercase tracking-widest mb-6">
                               <EditableText id="ai_verify_sub" defaultText="AI-Powered Verification" />
                             </p>
@@ -5525,20 +5525,20 @@ export default function App() {
 
                                 if (myOngoingMatches.length === 0) {
                                   return (
-                                    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center gap-3 text-center">
-                                      <div className="w-10 h-10 bg-blue-500/10 rounded-full flex items-center justify-center">
-                                        <AlertCircle className="w-5 h-5 text-blue-400/60" />
+                                    <div className="p-6 bg-white/5 border border-white/10 rounded-[8px] flex flex-col items-center gap-3 text-center">
+                                      <div className="w-10 h-10 bg-fc-purple-light/20 rounded-[4px] flex items-center justify-center">
+                                        <AlertCircle className="w-5 h-5 text-fc-neon-green/60" />
                                       </div>
                                       <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/40">
                                         No Ongoing Matches Found<br/>
-                                        <span className="text-blue-400/60 lowercase font-bold tracking-normal italic mt-1 block">Analysis is only enabled when your match is marked as "Ongoing" by an admin</span>
+                                        <span className="text-fc-neon-green/60 lowercase font-bold tracking-normal italic mt-1 block">Analysis is only enabled when your match is marked as "Ongoing" by an admin</span>
                                       </p>
                                     </div>
                                   );
                                 }
 
                                 return (
-                                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-blue-500/50 transition-all group cursor-pointer relative">
+                                  <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-[8px] hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
                                     <input 
                                       type="file" 
                                       accept="image/*"
@@ -5555,21 +5555,21 @@ export default function App() {
                                       }}
                                       className="absolute inset-0 opacity-0 cursor-pointer"
                                     />
-                                    <Plus className="w-8 h-8 text-blue-400/40 mb-3 group-hover:text-blue-400 transition-colors" />
+                                    <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
                                     <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
                                   </div>
                                 );
                               })()}
 
                               {isSubmittingImg && (
-                                 <div className="flex items-center justify-center gap-3 text-blue-400">
+                                 <div className="flex items-center justify-center gap-3 text-fc-neon-green">
                                    <Loader2 className="w-4 h-4 animate-spin" />
                                    <span className="text-[10px] font-black uppercase tracking-widest">AI Analyzing Photo...</span>
                                  </div>
                               )}
 
                               {aiAnalysisResult && (
-                                <div className={`p-4 rounded-xl text-[10px] font-black uppercase tracking-widest ${
+                                <div className={`p-4 rounded-[6px] text-[10px] font-black uppercase tracking-widest ${
                                   aiAnalysisResult.startsWith('SUCCESS') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
                                 }`}>
                                   {aiAnalysisResult}
@@ -5595,20 +5595,20 @@ export default function App() {
                                    return (
                                      <div key={m.id} className="group relative bg-white/5 border border-white/10 p-4 md:p-6 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all hover:bg-white/10 overflow-hidden">
                                        {/* Background glow based on Home/Away */}
-                                       <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-blue-500' : 'bg-orange-500'}`}></div>
+                                       <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-fc-neon-green text-black' : 'bg-orange-500'}`}></div>
                                        
                                        <div className="flex items-center gap-4 relative z-10 w-full">
-                                         <div className={`w-14 items-center justify-center flex py-2 rounded-xl text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
+                                         <div className={`w-14 items-center justify-center flex py-2 rounded-[6px] text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-fc-purple-light/30 text-fc-neon-green border border-fc-neon-green/50/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
                                            {isHome ? 'Home' : 'Away'}
                                          </div>
                                         <div className="flex-1">
                                           <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
                                           <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
                                             <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
-                                              <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-blue-400 font-bold" />
+                                              <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-fc-neon-green font-bold" />
                                               <div className="w-[1px] h-3 bg-white/10 mx-1" />
-                                              <Calendar className="w-3.5 h-3.5 text-blue-400" />
-                                              <span className="text-blue-300">{m.date || 'TBD'}</span>
+                                              <Calendar className="w-3.5 h-3.5 text-fc-neon-green" />
+                                              <span className="text-fc-neon-green">{m.date || 'TBD'}</span>
                                             </div>
                                           </div>
                                          </div>
@@ -5616,7 +5616,7 @@ export default function App() {
                                        <div className="relative z-10 md:w-auto w-full">
                                           <button 
                                             onClick={() => setSelectedMatch(m)} 
-                                            className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl text-white text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
+                                            className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-[6px] text-white text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
                                           >
                                             View Details
                                           </button>
@@ -5658,21 +5658,21 @@ export default function App() {
             >
               {/* Top Scorers Section */}
               <div className="flex items-center gap-4 mb-4 mt-2">
-                <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
-                  <BarChart2 className="w-6 h-6 text-blue-400" />
+                <div className="p-3 bg-fc-purple-light/30 rounded-[8px] border border-fc-neon-green/50/30">
+                  <BarChart2 className="w-6 h-6 text-fc-neon-green" />
                 </div>
                 <div>
                   <EditableText id="scorers_header" defaultText="Top Scorers" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none" />
-                  <p className="text-blue-200/40 text-xs uppercase tracking-widest mt-1">
+                  <p className="text-fc-neon-green/40 text-xs uppercase tracking-widest mt-1">
                     <EditableText id="individual_stats_sub" defaultText="Individual Player Statistics" />
                   </p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
+              <div className="overflow-x-auto rounded-[8px] border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-white/5 text-blue-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
+                    <tr className="bg-white/5 text-fc-neon-green/50 text-[10px] uppercase tracking-[0.2em] font-bold">
                       <th className="px-6 py-4">Rank</th>
                       <th className="px-6 py-4">Football Player</th>
                       <th className="px-6 py-4">Gamer</th>
@@ -5684,7 +5684,7 @@ export default function App() {
                     {stats.length > 0 ? stats.map((stat, index) => (
                       <tr key={`${stat.playerName}-${stat.teamId}`} className="hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          <div className={`w-8 h-8 rounded-[4px] flex items-center justify-center font-bold text-sm ${
                             index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
                             index === 1 ? 'bg-gray-400/20 text-gray-300' : 
                             index === 2 ? 'bg-orange-500/20 text-orange-400' : 
@@ -5699,7 +5699,7 @@ export default function App() {
                         <td className="px-6 py-4">
                           <div className="flex flex-col">
                             <span className="text-xs font-bold text-white/80">{stat.gamerFullName}</span>
-                            <span className="text-[10px] font-black text-blue-400/60 uppercase tracking-widest">{stat.gamerName}</span>
+                            <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">{stat.gamerName}</span>
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">
@@ -5708,7 +5708,7 @@ export default function App() {
                               const team = teams.find(t => t.name === stat.gamerName);
                               if (team) copyToClipboard(team.uid);
                             }}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 transition-all border border-white/5"
+                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green transition-all border border-white/5"
                             title="Copy UID"
                           >
                             {copiedId === teams.find(t => t.name === stat.gamerName)?.uid ? (
@@ -5719,7 +5719,7 @@ export default function App() {
                           </button>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <span className="text-lg font-black text-blue-400">{stat.goals}</span>
+                          <span className="text-lg font-black text-fc-neon-green">{stat.goals}</span>
                         </td>
                       </tr>
                     )) : (
@@ -5738,7 +5738,7 @@ export default function App() {
 
               {/* Clean Sheets Section */}
               <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-green-600/20 rounded-2xl border border-green-500/30">
+                <div className="p-3 bg-green-600/20 rounded-[8px] border border-green-500/30">
                   <Shield className="w-6 h-6 text-green-400" />
                 </div>
                 <div>
@@ -5747,7 +5747,7 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
+              <div className="overflow-x-auto rounded-[8px] border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-white/5 text-green-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
@@ -5762,7 +5762,7 @@ export default function App() {
                     {cleanSheets.length > 0 ? cleanSheets.map((stat, index) => (
                       <tr key={stat.teamId} className="hover:bg-white/5 transition-colors">
                         <td className="px-6 py-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                          <div className={`w-8 h-8 rounded-[4px] flex items-center justify-center font-bold text-sm ${
                             index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
                             index === 1 ? 'bg-gray-400/20 text-gray-300' : 
                             index === 2 ? 'bg-orange-500/20 text-orange-400' : 
@@ -5816,7 +5816,7 @@ export default function App() {
 
               {/* Man of the Match Leaders */}
               <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-yellow-500/20 rounded-2xl border border-yellow-500/30">
+                <div className="p-3 bg-yellow-500/20 rounded-[8px] border border-yellow-500/30">
                   <Award className="w-6 h-6 text-yellow-400" />
                 </div>
                 <div>
@@ -5825,13 +5825,13 @@ export default function App() {
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-3xl p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
+              <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-yellow-500/10 rounded-bl-full pointer-events-none" />
                 
                 <div className="space-y-4 relative z-10 max-w-2xl">
                   {motmLeaders.length > 0 ? (
                     motmLeaders.map((leader, index) => (
-                      <div key={leader.playerName} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 bg-black/40 rounded-2xl border border-white/5">
+                      <div key={leader.playerName} className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 bg-fc-purple-dark/40 rounded-[8px] border border-white/5">
                         <div className="flex items-center gap-4">
                           <span className="text-lg font-bold text-white/40">{index + 1}.</span>
                           <span className="text-base font-black uppercase tracking-widest text-white">{leader.playerName}</span>
@@ -5852,8 +5852,8 @@ export default function App() {
 
               {/* Team Statistics Grid */}
               <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-indigo-600/20 rounded-2xl border border-indigo-500/30">
-                  <BarChart2 className="w-6 h-6 text-indigo-400" />
+                <div className="p-3 bg-fc-purple-base/20 rounded-[8px] border border-fc-purple-light/30">
+                  <BarChart2 className="w-6 h-6 text-fc-neon-green" />
                 </div>
                 <div>
                   <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Team Overview</h2>
@@ -5862,45 +5862,45 @@ export default function App() {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-blue-400/60 tracking-widest mb-1">Highest Average Possession</span>
+                <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-fc-neon-green/60 tracking-widest mb-1">Highest Average Possession</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-400 font-bold text-sm">
+                  <div className="px-3 py-1 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-[4px] text-fc-neon-green font-bold text-sm">
                     {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 flex flex-col justify-between items-center text-center">
                   <span className="text-[10px] font-black uppercase text-green-400/60 tracking-widest mb-1">Most Goals Scored</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-lg text-green-400 font-bold text-sm">
+                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-[4px] text-green-400 font-bold text-sm">
                     {hofStats.mostGoals?.value || 0} Goals
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-cyan-400/60 tracking-widest mb-1">Best Defense</span>
+                <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-black uppercase text-fc-neon-green/60 tracking-widest mb-1">Best Defense</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.leastConceded?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-cyan-500/10 border border-cyan-500/20 rounded-lg text-cyan-400 font-bold text-sm">
+                  <div className="px-3 py-1 bg-fc-purple-light/10 border border-fc-purple-light/20 rounded-[4px] text-fc-neon-green font-bold text-sm">
                     {hofStats.leastConceded?.value || 0} Goals Conceded
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center">
+                <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 flex flex-col justify-between items-center text-center">
                   <span className="text-[10px] font-black uppercase text-orange-400/60 tracking-widest mb-1">Most Shots Taken</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-lg text-orange-400 font-bold text-sm">
+                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-[4px] text-orange-400 font-bold text-sm">
                     {hofStats.mostShots?.value || 0} Shots
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
+                <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
                   <span className="text-[10px] font-black uppercase text-yellow-400/60 tracking-widest mb-1">Most Early Goals (1-30')</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostEarlyGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-400 font-bold text-sm">
+                  <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-[4px] text-yellow-400 font-bold text-sm">
                     {hofStats.mostEarlyGoals?.value || 0} Early Goals
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-3xl p-6 flex flex-col justify-between items-center text-center border-red-500/30">
+                <div className="bg-white/5 border border-white/10 rounded-[12px] p-6 flex flex-col justify-between items-center text-center border-red-500/30">
                   <span className="text-[10px] font-black uppercase text-red-400/60 tracking-widest mb-1">Most Late Goals (60-90+')</span>
                   <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostLateGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-lg text-red-400 font-bold text-sm">
+                  <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-[4px] text-red-400 font-bold text-sm">
                     {hofStats.mostLateGoals?.value || 0} Late Goals
                   </div>
                 </div>
@@ -5914,18 +5914,18 @@ export default function App() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm"
+              className="overflow-x-auto rounded-[8px] border border-white/10 bg-white/5 backdrop-blur-sm"
             >
               <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-4">
                   <h2 className="text-xl font-black uppercase italic tracking-tighter">
-                    <EditableText id="league_table_header" defaultText="League" /> <span className="text-blue-400">
+                    <EditableText id="league_table_header" defaultText="League" /> <span className="text-fc-neon-green">
                       <EditableText id="league_table_header_bold" defaultText="Table" />
                     </span>
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500" />
+                  <div className="w-2 h-2 rounded-[4px] bg-fc-neon-green text-black" />
                   <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
                     <EditableText id="tournament_season_label" defaultText="Tournament Season" />
                   </span>
@@ -5933,7 +5933,7 @@ export default function App() {
               </div>
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-white/5 text-blue-200/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
+                  <tr className="bg-white/5 text-fc-neon-green/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
                     <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
                     <th className="px-3 md:px-6 py-3 md:py-4">Player</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell">FC Name</th>
@@ -5964,7 +5964,7 @@ export default function App() {
                       return (
                         <tr key={team.id} className={`${rowClass} relative group/row cursor-pointer`} onClick={() => setSelectedTeam(team)}>
                           <td className="px-3 md:px-6 py-3 md:py-4 relative text-center">
-                            <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto rounded-full flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
+                            <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto rounded-[4px] flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
                               index < 4 ? 'bg-green-600/20 text-green-400 ring-1 ring-green-500/30' : 
                               index >= 4 && index < 8 ? 'bg-yellow-600/20 text-yellow-400 ring-1 ring-yellow-500/30' :
                               index >= 16 ? 'bg-red-600/20 text-red-400 ring-1 ring-red-500/30' :
@@ -5975,7 +5975,7 @@ export default function App() {
                           </td>
                           <td className="px-3 md:px-6 py-3 md:py-4">
                             <div className="flex items-center min-w-0 gap-3">
-                              <div className="w-8 h-8 rounded-lg overflow-hidden border border-white/10 shrink-0 bg-white/5 flex items-center justify-center">
+                              <div className="w-8 h-8 rounded-[4px] overflow-hidden border border-white/10 shrink-0 bg-white/5 flex items-center justify-center">
                                 {team.logoUrl ? (
                                   <img src={team.logoUrl} alt={team.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
@@ -6002,7 +6002,7 @@ export default function App() {
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                           <button 
                             onClick={() => copyToClipboard(team.uid)}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-blue-400/80 hover:text-blue-400 transition-all border border-white/5"
+                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green transition-all border border-white/5"
                             title="Copy UID"
                           >
                             {copiedId === team.uid ? (
@@ -6013,7 +6013,7 @@ export default function App() {
                           </button>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                          <span className="px-1.5 py-0.5 bg-blue-500/10 border border-blue-500/20 rounded text-[9px] md:text-[10px] font-black text-blue-400">{team.ovr}</span>
+                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] md:text-[10px] font-black text-fc-neon-green">{team.ovr}</span>
                         </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.played}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.won}</td>
@@ -6022,7 +6022,7 @@ export default function App() {
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gf}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.ga}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-xs md:text-sm text-blue-400">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-xs md:text-sm text-fc-neon-green">{team.points}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                           <div className="flex items-center justify-center gap-1">
                             {team.form.map((result, i) => (
@@ -6070,18 +6070,18 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="max-w-2xl mx-auto px-4 py-8 space-y-6"
             >
-              <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between w-full bg-white/5 p-6 rounded-3xl border border-white/10 backdrop-blur-sm">
+              <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between w-full bg-white/5 p-6 rounded-[12px] border border-white/10 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-blue-600/20 rounded-2xl border border-blue-500/30">
-                    <Calendar className="w-6 h-6 text-blue-400" />
+                  <div className="p-3 bg-fc-purple-light/30 rounded-[8px] border border-fc-neon-green/50/30">
+                    <Calendar className="w-6 h-6 text-fc-neon-green" />
                   </div>
                   <div>
                     <h2 className="text-2xl font-black uppercase italic tracking-tighter">
-                      <EditableText id="fixtures_header" defaultText="Tournament" isAdmin={isAdmin} /> <span className="text-blue-400">
+                      <EditableText id="fixtures_header" defaultText="Tournament" isAdmin={isAdmin} /> <span className="text-fc-neon-green">
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
-                    <p className="text-blue-200/40 text-[10px] uppercase font-black tracking-widest">
+                    <p className="text-fc-neon-green/40 text-[10px] uppercase font-black tracking-widest">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
                     </p>
                   </div>
@@ -6091,7 +6091,7 @@ export default function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleAddNewFixture()}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-full transition-all shadow-xl shadow-blue-600/30 border border-white/20 whitespace-nowrap"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-fc-neon-green to-fc-purple-base hover:from-fc-neon-green hover:to-fc-purple-light text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-[4px] transition-all shadow-xl shadow-fc-neon-green/30 border border-white/20 whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />
                     Add Fixture
@@ -6124,8 +6124,8 @@ export default function App() {
                       
                       if (isDataLoading) {
                         return (
-                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center justify-center gap-6">
-                            <Loader2 className="w-12 h-12 text-blue-500 animate-spin" />
+                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[12px] flex flex-col items-center justify-center gap-6">
+                            <Loader2 className="w-12 h-12 text-fc-neon-green animate-spin" />
                             <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold animate-pulse">Syncing matches & teams...</p>
                           </div>
                         );
@@ -6133,9 +6133,9 @@ export default function App() {
 
                       if (orderedDays.length === 0) {
                         return (
-                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[2.5rem] flex flex-col items-center gap-6">
-                            <div className="w-20 h-20 bg-blue-600/10 rounded-full flex items-center justify-center border border-blue-500/20">
-                              <Calendar className="w-10 h-10 text-blue-400" />
+                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-[12px] flex flex-col items-center gap-6">
+                            <div className="w-20 h-20 bg-fc-purple-light/20 rounded-[4px] flex items-center justify-center border border-fc-neon-green/30">
+                              <Calendar className="w-10 h-10 text-fc-neon-green" />
                             </div>
                             <div>
                               <EditableText id="loading_fixtures_title" defaultText="No Fixtures Scheduled" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
@@ -6146,7 +6146,7 @@ export default function App() {
                             {isAdmin && isEditingMode && (
                               <button 
                                 onClick={() => handleAddNewFixture()}
-                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-widest rounded-full transition-all shadow-xl shadow-blue-600/30"
+                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black text-xs font-black uppercase tracking-widest rounded-[4px] transition-all shadow-xl shadow-fc-neon-green/30"
                               >
                                 <Plus className="w-4 h-4" />
                                 Add First Fixture
@@ -6159,8 +6159,8 @@ export default function App() {
                       return orderedDays.map(day => (
                         <div key={day} className="space-y-6">
                           <div className="flex items-center gap-4">
-                            <div className="px-4 py-2 bg-blue-600/20 border border-blue-500/30 rounded-xl">
-                              <span className="text-xs font-black text-blue-400 uppercase tracking-widest">{day}</span>
+                            <div className="px-4 py-2 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-[6px]">
+                              <span className="text-xs font-black text-fc-neon-green uppercase tracking-widest">{day}</span>
                             </div>
                             <div className="h-[1px] flex-1 bg-white/10" />
                           </div>
@@ -6180,7 +6180,7 @@ export default function App() {
                             {isAdmin && isEditingMode && (
                               <button
                                 onClick={() => handleAddNewFixture(day)}
-                                className="flex items-center justify-center gap-2 p-6 bg-blue-500/10 border border-dashed border-blue-500/30 rounded-3xl text-blue-400 hover:bg-blue-500/20 hover:border-blue-500 transition-all font-black uppercase text-xs tracking-widest"
+                                className="flex items-center justify-center gap-2 p-6 bg-fc-purple-light/20 border border-dashed border-fc-neon-green/50/30 rounded-[12px] text-fc-neon-green hover:bg-fc-neon-green-dark/20 hover:border-fc-neon-green/50 transition-all font-black uppercase text-xs tracking-widest"
                               >
                                 <Plus className="w-5 h-5" /> Add Fixture
                               </button>
@@ -6203,20 +6203,20 @@ export default function App() {
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
-                  <h3 className="text-cyan-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-cyan-400/10 py-1 rounded border border-cyan-400/20">Qualifier Round</h3>
+                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qual-${i}`;
                     const match = getBracketMatch(matchId);
                     return (
                       <div key={`hub-qual-${i}`} className="relative">
-                        <div className="w-fit min-w-[160px] bg-white/5 border border-cyan-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
-                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-blue-500/10' : ''} relative z-10 gap-6`}>
-                            <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-cyan-400">{match.homeScore ?? '-'}</span>
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-[4px] overflow-hidden shadow-lg transition-all group/match relative">
+                          <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-fc-purple-light/20' : ''} relative z-10 gap-6`}>
+                            <span className="font-display font-black text-fc-neon-green/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
-                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-blue-500/10' : ''} gap-6`}>
-                            <span className="font-display font-black text-cyan-400/70 uppercase italic whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-cyan-400">{match.awayScore ?? '-'}</span>
+                          <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-fc-purple-light/20' : ''} gap-6`}>
+                            <span className="font-display font-black text-fc-neon-green/70 uppercase italic whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line - Straight to Quarterfinal */}
@@ -6228,25 +6228,25 @@ export default function App() {
 
                 {/* Quarter Finals */}
                 <div className="flex flex-col justify-center gap-16">
-                  <h3 className="text-indigo-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-indigo-400/10 py-1 rounded border border-indigo-400/20">Quarter-Finals</h3>
+                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qf-${i}`;
                     const match = getBracketMatch(matchId);
                     const isDashed = i === 1 || i === 3;
                     return (
                       <div key={`hub-qf-${i}`} className="relative">
-                        <div className="w-fit min-w-[160px] bg-white/5 border border-indigo-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-[4px] overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
+                            <span className="font-display font-black uppercase italic transition-colors text-fc-neon-green/70 whitespace-nowrap">
                               {match.homeTeamName || 'TBD'}
                             </span>
-                            <span className="font-mono font-bold text-indigo-400">{match.homeScore ?? '-'}</span>
+                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-black uppercase italic transition-colors text-indigo-400/70 whitespace-nowrap">
+                            <span className="font-display font-black uppercase italic transition-colors text-fc-neon-green/70 whitespace-nowrap">
                               {match.awayTeamName || 'TBD'}
                             </span>
-                            <span className="font-mono font-bold text-indigo-400">{match.awayScore ?? '-'}</span>
+                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -6263,21 +6263,21 @@ export default function App() {
 
                 {/* Semi Finals */}
                 <div className="flex flex-col justify-center gap-32">
-                  <h3 className="text-purple-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-purple-400/10 py-1 rounded border border-purple-400/20">Semi-Finals</h3>
+                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => {
                     const matchId = `sf-${i}`;
                     const match = getBracketMatch(matchId);
                     const isDashed = i === 1;
                     return (
                       <div key={`hub-sf-${i}`} className="relative">
-                        <div className="w-fit min-w-[160px] bg-white/5 border border-purple-400/30 rounded-lg overflow-hidden shadow-lg transition-all group/match relative">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-[4px] overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-purple-400">{match.homeScore ?? '-'}</span>
+                            <span className="font-display font-black uppercase italic text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-black uppercase italic text-purple-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-purple-400">{match.awayScore ?? '-'}</span>
+                            <span className="font-display font-black uppercase italic text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -6302,8 +6302,8 @@ export default function App() {
                     {(() => {
                       const match = getBracketMatch('final');
                       return (
-                        <div className="w-fit min-w-[200px] bg-gradient-to-br from-blue-600/20 to-purple-600/20 border border-yellow-500/50 rounded-xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
-                          <div className="bg-[#000030] rounded-lg overflow-hidden relative z-10">
+                        <div className="w-fit min-w-[200px] bg-gradient-to-br from-fc-neon-green/20 to-fc-purple-base/20 border border-yellow-500/50 rounded-[6px] overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
+                          <div className="bg-fc-purple-dark rounded-[4px] overflow-hidden relative z-10">
                             <div className="p-4 flex justify-between items-center gap-8">
                               <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                               <span className="font-mono font-black text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
@@ -6323,8 +6323,8 @@ export default function App() {
                     {(() => {
                       const match = getBracketMatch('third-place');
                       return (
-                        <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
-                          <div className="bg-[#000020] rounded-lg overflow-hidden relative z-10">
+                        <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-[6px] overflow-hidden shadow-lg p-1 transition-all group/match relative">
+                          <div className="bg-[#000020] rounded-[4px] overflow-hidden relative z-10">
                             <div className="p-3 flex justify-between items-center gap-8">
                               <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                               <span className="font-mono font-bold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
@@ -6348,7 +6348,7 @@ export default function App() {
               
               {/* Legend */}
               <div className="mt-12 flex flex-col items-center gap-4">
-                <div className="flex flex-wrap justify-center gap-8 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
+                <div className="flex flex-wrap justify-center gap-8 px-6 py-4 bg-white/5 border border-white/10 rounded-[8px] backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-[1px] bg-white/40" />
                     <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Straight Line = 1st Leg Home</span>
@@ -6358,7 +6358,7 @@ export default function App() {
                     <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Cutted Line = 2nd Leg Home</span>
                   </div>
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-blue-400/40 italic">Note: Seeding benefit allows play second leg at home</p>
+                <p className="text-[9px] font-black uppercase tracking-widest text-fc-neon-green/40 italic">Note: Seeding benefit allows play second leg at home</p>
               </div>
             </motion.div>
           )}
@@ -6370,7 +6370,7 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-8"
             >
-              <div className="relative h-80 rounded-[2.5rem] overflow-hidden group shadow-2xl">
+              <div className="relative h-80 rounded-[12px] overflow-hidden group shadow-2xl">
                 <EditableImage 
                   id="reg_hero_image" 
                   defaultSrc="https://picsum.photos/seed/tournament/1920/1080" 
@@ -6380,7 +6380,7 @@ export default function App() {
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-[#000020] via-[#000020]/40 to-transparent pointer-events-none" />
                 <div className="absolute inset-x-8 bottom-8 pointer-events-none">
-                  <span className="px-3 py-1 bg-blue-600 text-white text-[10px] font-black rounded-full uppercase tracking-widest mb-3 inline-block pointer-events-auto">
+                  <span className="px-3 py-1 bg-fc-neon-green text-black text-black text-[10px] font-black rounded-[4px] uppercase tracking-widest mb-3 inline-block pointer-events-auto">
                     <EditableText id="apps_live_status" defaultText="Applications Live" isAdmin={isAdmin} />
                   </span>
                   <div className="pointer-events-auto inline-block relative">
@@ -6394,8 +6394,8 @@ export default function App() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
-                   <div className="w-12 h-12 bg-blue-600/20 rounded-2xl flex items-center justify-center mb-6 border border-blue-500/30">
-                     <Users className="w-6 h-6 text-blue-400" />
+                   <div className="w-12 h-12 bg-fc-purple-light/30 rounded-[8px] flex items-center justify-center mb-6 border border-fc-neon-green/50/30">
+                     <Users className="w-6 h-6 text-fc-neon-green" />
                    </div>
                    <EditableText id="player_reg_title" defaultText="Player Registration" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
                    <p className="text-white/40 text-sm mb-8">
@@ -6403,7 +6403,7 @@ export default function App() {
                    </p>
                    
                    {hasRegistered ? (
-                     <div className="p-6 bg-green-600/10 border border-green-500/20 rounded-2xl flex items-center gap-3">
+                     <div className="p-6 bg-green-600/10 border border-green-500/20 rounded-[8px] flex items-center gap-3">
                        <Check className="w-5 h-5 text-green-400" />
                        <span className="text-sm font-bold text-green-400">Successfully Registered</span>
                      </div>
@@ -6420,7 +6420,7 @@ export default function App() {
                           }
                           setIsRegistrationModalOpen(true);
                         }}
-                       className="w-full py-5 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-blue-600/20"
+                       className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-[8px] font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
                      >
                        Register Now
                      </button>
@@ -6428,7 +6428,7 @@ export default function App() {
                  </div>
 
                  <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
-                   <div className="w-12 h-12 bg-yellow-500/20 rounded-2xl flex items-center justify-center mb-6 border border-yellow-500/30">
+                   <div className="w-12 h-12 bg-yellow-500/20 rounded-[8px] flex items-center justify-center mb-6 border border-yellow-500/30">
                      <Shield className="w-6 h-6 text-yellow-400" />
                    </div>
                    <EditableText id="requirements_title" defaultText="Requirements" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
@@ -6440,7 +6440,7 @@ export default function App() {
                        { id: 'req_4', text: "Fair Play Commitment" }
                      ].map(req => (
                        <li key={req.id} className="flex items-center gap-3 text-xs font-bold text-white/60">
-                         <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+                         <div className="w-1.5 h-1.5 bg-fc-neon-green text-black rounded-[4px]" />
                          <EditableText id={req.id} defaultText={req.text} isAdmin={isAdmin} />
                        </li>
                      ))}
@@ -6465,7 +6465,7 @@ export default function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => { setActiveTab('registration'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="flex items-center gap-3 px-6 py-4 bg-blue-600 rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-blue-400/30 group relative overflow-hidden"
+              className="flex items-center gap-3 px-6 py-4 bg-fc-neon-green text-black rounded-[8px] shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-fc-neon-green/40/30 group relative overflow-hidden"
             >
               <div className="relative z-10 flex items-center gap-3">
                 <Layout className="w-5 h-5 text-white" />
@@ -6577,29 +6577,29 @@ export default function App() {
       </AnimatePresence>
 
       {/* Footer */}
-      <footer className="mt-20 py-8 md:py-12 border-t border-white/10 bg-black/20">
+      <footer className="mt-20 py-8 md:py-12 border-t border-white/10 bg-fc-purple-dark/20">
         <div className="max-w-5xl mx-auto px-4 text-center">
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
                     TOTAL MATCHES
                   </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{matches.length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
                     TEAMS
                   </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{teams.length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
                     MATCHDAYS
                   </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{Object.keys(matchesByDay).length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-blue-400/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
                     <EditableText id="footer_visits_label" defaultText="Total Visits" isAdmin={isAdmin} />
                   </p>
                   <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{visitCount}</p>

@@ -1,0 +1,33 @@
+const fs = require('fs');
+const file = 'src/App.tsx';
+let data = fs.readFileSync(file, 'utf8');
+
+data = data.replace(/bg-slate-950/g, 'bg-fc-purple-dark');
+data = data.replace(/bg-black/g, 'bg-fc-purple-dark');
+data = data.replace(/from-black/g, 'from-fc-purple-dark');
+data = data.replace(/to-black/g, 'to-fc-purple-dark');
+data = data.replace(/from-slate-900/g, 'from-fc-purple-base');
+data = data.replace(/via-blue-900/g, 'via-fc-purple-base');
+data = data.replace(/via-blue-950/g, 'via-fc-purple-dark');
+data = data.replace(/to-slate-950/g, 'to-fc-purple-dark');
+data = data.replace(/to-blue-950/g, 'to-fc-purple-dark');
+data = data.replace(/bg-blue-600\/10/g, 'bg-fc-purple-light/20');
+data = data.replace(/bg-blue-500\/10/g, 'bg-fc-purple-light/20');
+data = data.replace(/bg-blue-600\/20/g, 'bg-fc-purple-light/30');
+data = data.replace(/bg-blue-600([^/])/g, 'bg-fc-neon-green text-black$1');
+data = data.replace(/bg-blue-500([^/])/g, 'bg-fc-neon-green text-black$1');
+data = data.replace(/text-blue-400/g, 'text-fc-neon-green');
+data = data.replace(/text-blue-500/g, 'text-fc-neon-green');
+data = data.replace(/border-blue-500\/20/g, 'border-fc-neon-green/30');
+data = data.replace(/border-blue-500/g, 'border-fc-neon-green/50');
+data = data.replace(/border-blue-400/g, 'border-fc-neon-green/40');
+data = data.replace(/hover:bg-blue-500/g, 'hover:bg-fc-neon-green-dark');
+data = data.replace(/hover:bg-blue-600/g, 'hover:bg-fc-neon-green-dark');
+data = data.replace(/hover:text-blue-400/g, 'hover:text-fc-neon-green');
+data = data.replace(/shadow-blue-500\/20/g, 'shadow-fc-neon-green/20');
+data = data.replace(/shadow-blue-600\/20/g, 'shadow-fc-neon-green/20');
+data = data.replace(/shadow-blue-900\/40/g, 'shadow-fc-neon-green/10');
+data = data.replace(/Elite Competition/g, "THE WORLD'S GAME");
+
+fs.writeFileSync(file, data);
+console.log('done');
