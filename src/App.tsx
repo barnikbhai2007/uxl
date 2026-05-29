@@ -1547,18 +1547,41 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </button>
               </div>
             ) : hasRegistered ? (
-              <div className="text-center py-12 space-y-4">
-                <div className="w-20 h-20 bg-green-500/20 rounded-sm flex items-center justify-center mx-auto mb-6">
-                  <Check className="w-10 h-10 text-green-500" />
+              <div className="text-center py-8 space-y-6">
+                <div className="w-16 h-16 bg-green-500/20 rounded-sm flex items-center justify-center mx-auto">
+                  <Check className="w-8 h-8 text-green-500" />
                 </div>
-                <h3 className="text-2xl font-display font-black text-white italic">Already Registered!</h3>
-                <p className="text-white/40 text-sm">Your application has been received. Good luck!</p>
-                <button 
-                  onClick={onClose}
-                  className="mt-6 w-full py-4 bg-white/5 hover:bg-white/10 text-white rounded-sm font-black uppercase text-xs tracking-widest transition-all"
-                >
-                  Close
-                </button>
+                <div className="space-y-2">
+                  <h3 className="text-2xl font-display font-black text-white italic uppercase tracking-tight">Registration Submitted!</h3>
+                  <p className="text-white/60 text-sm px-4">Your application has been received successfully.</p>
+                </div>
+
+                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-sm p-5 space-y-4 mx-4">
+                  <p className="text-[11px] font-black uppercase text-emerald-400 tracking-wider flex items-center justify-center gap-1.5 animate-pulse">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400" />
+                    Mandatory Next Step
+                  </p>
+                  <p className="text-white/80 text-xs leading-relaxed">
+                    You <span className="text-emerald-300 font-extrabold underline">MUST</span> join the official WhatsApp Community to finalize your registration, coordinate with opponents, and view schedules.
+                  </p>
+                  <a 
+                    href="https://chat.whatsapp.com/Hc4mGIatJYkI1myUbAWiv7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-black rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transform duration-150"
+                  >
+                    Join WhatsApp Community
+                  </a>
+                </div>
+
+                <div className="px-4">
+                  <button 
+                    onClick={onClose}
+                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-sm font-black uppercase text-xs tracking-widest transition-all"
+                  >
+                    Keep Browsing
+                  </button>
+                </div>
               </div>
             ) : (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -6545,9 +6568,28 @@ export default function App() {
                    </p>
                    
                    {hasRegistered ? (
-                     <div className="p-6 bg-green-600/10 border border-green-500/20 rounded-sm flex items-center gap-3">
-                       <Check className="w-5 h-5 text-green-400" />
-                       <span className="text-sm font-bold text-green-400">Successfully Registered</span>
+                     <div className="space-y-4">
+                       <div className="p-5 bg-green-600/10 border border-green-500/20 rounded-sm flex items-center gap-3">
+                         <Check className="w-5 h-5 text-green-400" />
+                         <span className="text-sm font-bold text-green-400">Successfully Registered</span>
+                       </div>
+                       <div className="bg-[#25D366]/10 border border-[#25D366]/20 rounded-sm p-4 space-y-3">
+                         <p className="text-[10px] font-black uppercase text-[#25D366] tracking-wider flex items-center gap-1.5 animate-pulse">
+                           <span className="w-2 h-2 rounded-full bg-[#25D366]" />
+                           Action Required
+                         </p>
+                         <p className="text-white/80 text-xs leading-relaxed">
+                           To finalize your registration and secure your spot, you <span className="text-[#25D366] font-extrabold underline">MUST</span> join our WhatsApp Community.
+                         </p>
+                         <a 
+                           href="https://chat.whatsapp.com/Hc4mGIatJYkI1myUbAWiv7"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           className="w-full py-3 bg-[#25D366] hover:bg-[#20ba5a] text-black rounded-sm font-black uppercase text-[10px] tracking-widest transition-all shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] transform duration-150"
+                         >
+                           Join WhatsApp Community
+                         </a>
+                       </div>
                      </div>
                    ) : (
                      <button
