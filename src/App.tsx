@@ -2207,15 +2207,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </form>
             </div>
             {activeTab === 'bracket' && (
-              <>
-                <div className="mb-12">
-                  <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
-                    <Calendar className="w-6 h-6" />
-                    Schedule Randomizer
-                  </h3>
-                  <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} />
-                </div>
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                   <div className="space-y-12">
                     <div>
                       <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
@@ -2437,7 +2429,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
               </div>
             </div>
-            </>
           )}
 
             {activeTab === 'registrations' && (
@@ -6226,7 +6217,7 @@ export default function App() {
                 )}
               </div>
 
-              {isAdmin && (
+              {isAdmin && isEditingMode && (
                 <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} />
               )}
 
@@ -6331,17 +6322,6 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="w-full overflow-x-auto pb-8"
             >
-              {isAdmin && (
-                <div className="max-w-6xl mx-auto px-4 mt-6">
-                  <div className="flex items-center gap-3 mb-2">
-                    <Calendar className="w-5 h-5 text-fc-neon-green" />
-                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green">
-                      Schedule Randomizer
-                    </h3>
-                  </div>
-                  <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} />
-                </div>
-              )}
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
