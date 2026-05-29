@@ -1742,7 +1742,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     teams: Team[],
     matches?: Match[]
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup' | 'edits'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup' | 'edits' | 'schedule'>('bracket');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -2129,6 +2129,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
+            </button>
+            <button 
+              onClick={() => setActiveTab('schedule')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'schedule' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Schedule Generator
             </button>
             <button 
               onClick={() => setActiveTab('label')}
@@ -2540,6 +2546,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                     ))
                   )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'schedule' && (
+              <div className="space-y-8">
+                <div className="bg-white/5 border border-white/10 rounded-sm p-6 md:p-8">
+                  <div className="flex items-center gap-3 mb-6">
+                    <Calendar className="w-6 h-6 text-fc-neon-green" />
+                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green">
+                      Schedule Generator
+                    </h3>
+                  </div>
+                  <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} />
                 </div>
               </div>
             )}
