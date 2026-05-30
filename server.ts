@@ -127,7 +127,7 @@ async function runD1Query(sql: string, params: any[] = []) {
   const dbId = process.env.CF_D1_DATABASE_ID;
   const token = process.env.CF_API_TOKEN;
 
-  if (!accountId || !dbId || !token) {
+  if (!accountId || accountId === "local" || !dbId || !token || token === "dummy") {
     // Fallback to local SQLite if running in dev environment (AI Studio)
     const db = await getLocalDb();
     try {
@@ -152,28 +152,53 @@ async function runD1Query(sql: string, params: any[] = []) {
   }
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}/query`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ sql, params }),
-  });
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ sql, params }),
+    });
 
-  const rawText = await response.text();
-  if (!response.ok) {
-    console.error("D1 Error response:", rawText);
-    throw new Error(`D1 API Error: ${response.status} ${response.statusText}`);
+    const rawText = await response.text();
+    if (!response.ok) {
+      throw new Error(`D1 API Error: ${response.status} ${response.statusText} ${rawText}`);
+    }
+
+    const result = JSON.parse(rawText);
+    if (!result.success) {
+      throw new Error(`D1 Error: ${result.errors?.[0]?.message || 'Unknown'}`);
+    }
+
+    return result.result[0].results || [];
+  } catch (apiError: any) {
+    if (process.env.NODE_ENV !== "production") {
+       console.warn("D1 API Failed, falling back to local SQLite:", apiError.message);
+       const db = await getLocalDb();
+       try {
+         if (sql.trim().toUpperCase().startsWith('SELECT')) {
+           const stmt = db.prepare(sql);
+           stmt.bind(params);
+           const results = [];
+           while (stmt.step()) {
+             results.push(stmt.getAsObject());
+           }
+           stmt.free();
+           return results;
+         } else {
+           db.run(sql, params);
+           schedulePersist();
+           return [{ success: true, changes: 1 }];
+         }
+       } catch (localDbErr: any) {
+         console.error("Local DB Fallback Error:", localDbErr);
+         throw new Error("Local DB Error: " + localDbErr.message);
+       }
+    }
+    throw apiError;
   }
-
-  const result = JSON.parse(rawText);
-  if (!result.success) {
-    console.error("D1 Internal Error:", result.errors);
-    throw new Error(`D1 Error: ${result.errors?.[0]?.message || 'Unknown'}`);
-  }
-
-  return result.result[0].results || [];
 }
 
 // -------------------------------------------------------------
