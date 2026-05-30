@@ -190,7 +190,19 @@ export function limit(value: number) {
 
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
-const lastSeenMeta: Record<string, number> = {};
+// Load persisted timestamps from localStorage
+const lastSeenMeta: Record<string, number> = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('sb_meta_timestamps') || '{}');
+  } catch { return {}; }
+})();
+
+function persistMetaTimestamp(collectionName: string, ts: number) {
+  lastSeenMeta[collectionName] = ts;
+  try {
+    localStorage.setItem('sb_meta_timestamps', JSON.stringify(lastSeenMeta));
+  } catch {}
+}
 
 function initCache(collection: string) {
   if (!globalCache[collection]) {
@@ -586,7 +598,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         }
         
         const initialMeta = await getCollectionMeta(collectionName);
-        lastSeenMeta[collectionName] = initialMeta;
+        persistMetaTimestamp(collectionName, initialMeta);
       }
     } catch (err) {
       if (errorCb) errorCb(err);
@@ -620,7 +632,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         // Something changed — fetch fresh data
         const snap = await getDocs(ref);
         if (_mounted) {
-          lastSeenMeta[collectionName] = serverMeta; // Update our timestamp
+          persistMetaTimestamp(collectionName, serverMeta); // Update our timestamp
           if (!(ref instanceof Query) || ref.filters.length === 0) {
             // For full collection fetches, we can confidently wipe deleted records
             globalCache[collectionName] = {};
