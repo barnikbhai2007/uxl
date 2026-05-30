@@ -590,14 +590,37 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
       } else {
         initCache(collectionName);
         const hasCache = globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0;
-        if (hasCache) {
+
+        // Check server timestamp first (only 100 bytes)
+        const initialMeta = await getCollectionMeta(collectionName);
+        const lastSeen = lastSeenMeta[collectionName] ?? 0;
+        const dataIsStale = initialMeta > lastSeen;
+
+        if (hasCache && !dataIsStale) {
+          // Cache is fresh - show instantly, zero full download
           callback(applyQueryLocally(ref));
         } else {
+          // No cache OR data changed since last visit - fetch fresh
           const snap = await getDocs(ref);
-          if (_mounted) callback(snap);
+          if (_mounted) {
+            if (!(ref instanceof Query) || ref.filters.length === 0) {
+              globalCache[collectionName] = {};
+              snap.forEach((doc: any) => {
+                globalCache[collectionName][doc.id] = doc.data();
+              });
+              persistCache(collectionName);
+              callback(applyQueryLocally(ref));
+            } else {
+              const freshDocs = snap.docs.map((d: any) => ({
+                id: d.id,
+                data: () => d.data(),
+                exists: () => true,
+              }));
+              callback({ docs: freshDocs, empty: freshDocs.length === 0, forEach: (cb: any) => freshDocs.forEach(cb) });
+            }
+          }
         }
-        
-        const initialMeta = await getCollectionMeta(collectionName);
+
         persistMetaTimestamp(collectionName, initialMeta);
       }
     } catch (err) {
