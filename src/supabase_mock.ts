@@ -16,7 +16,7 @@ async function bumpCollectionMeta(collectionName: string) {
   }
 }
 
-async function getCollectionMeta(collectionName: string): Promise<number> {
+export async function getCollectionMeta(collectionName: string): Promise<number> {
   try {
     const { data } = await supabase
       .from('collection_meta')

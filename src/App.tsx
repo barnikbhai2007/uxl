@@ -22,7 +22,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { auth, db, signIn, logout, handleFirestoreError, OperationType } from './supabase_mock';
+import { auth, db, signIn, logout, handleFirestoreError, OperationType, getCollectionMeta } from './supabase_mock';
 import { onAuthStateChanged, User, supabase } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ACHIEVEMENTS } from './achievements';
@@ -3120,11 +3120,32 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
 const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 2000) => {
   const cached = localStorage.getItem(cacheKey);
   const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
+  const cacheKeyMeta = `${cacheKey}_meta`;
   
+  let shouldFetch = true;
+
   if (cached && cachedTimeStr) {
     if (Date.now() - Number(cachedTimeStr) < ttlMs) {
-      return JSON.parse(cached);
+      // Cache is physically within TTL, check server timestamp to be safe (only 100 bytes)
+      let serverBusted = false;
+      if (!isDoc && queryRef.collectionName) {
+         try {
+           const serverMeta = await getCollectionMeta(queryRef.collectionName);
+           const localMetaStr = localStorage.getItem(cacheKeyMeta);
+           const localMeta = localMetaStr ? Number(localMetaStr) : 0;
+           if (serverMeta > localMeta) {
+             serverBusted = true;
+           }
+         } catch(e) {}
+      }
+      if (!serverBusted) {
+         shouldFetch = false;
+      }
     }
+  }
+  
+  if (!shouldFetch && cached) {
+    return JSON.parse(cached);
   }
   
   try {
@@ -3141,6 +3162,10 @@ const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = 
     try {
       localStorage.setItem(cacheKey, JSON.stringify(data));
       localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
+      if (!isDoc && queryRef.collectionName) {
+         const currentMeta = await getCollectionMeta(queryRef.collectionName);
+         localStorage.setItem(cacheKeyMeta, currentMeta.toString());
+      }
     } catch(e) {}
     
     return data;
