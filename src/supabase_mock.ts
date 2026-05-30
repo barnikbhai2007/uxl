@@ -1,4 +1,5 @@
-const VITE_API_URL = (import.meta as any).env?.VITE_API_URL || "";
+const rawApiUrl = (import.meta as any).env?.VITE_API_URL || "";
+const VITE_API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
 // Dummy supabase object for backwards compatibility
 export const supabase = {

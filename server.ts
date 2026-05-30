@@ -5,7 +5,9 @@ import Groq from "groq-sdk";
 import cors from "cors";
 import crypto from "crypto";
 import jwt from "jsonwebtoken";
+import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
+import Database from "better-sqlite3";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,14 +25,18 @@ const JWT_SECRET = process.env.JWT_SECRET || "some_random_secret_string";
 // -------------------------------------------------------------
 const r2Client = new S3Client({
   region: "auto",
-  endpoint: `https://${process.env.CF_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+  endpoint: `https://${process.env.CF_ACCOUNT_ID || "local"}.r2.cloudflarestorage.com`,
   credentials: {
-    accessKeyId: process.env.CF_R2_ACCESS_KEY_ID || "",
-    secretAccessKey: process.env.CF_R2_SECRET_ACCESS_KEY || "",
+    accessKeyId: process.env.CF_R2_ACCESS_KEY_ID || "local",
+    secretAccessKey: process.env.CF_R2_SECRET_ACCESS_KEY || "local",
   },
 });
 
 async function uploadToR2(base64Data: string, mimeType: string, filename: string) {
+  if (!process.env.CF_R2_ACCESS_KEY_ID) {
+    console.log("No CF_R2 mock upload returning dummy URL");
+    return `https://dummy-image-url.com/${filename}`;
+  }
   const buffer = Buffer.from(base64Data, "base64");
   const command = new PutObjectCommand({
     Bucket: "match-evidence",
@@ -43,15 +49,63 @@ async function uploadToR2(base64Data: string, mimeType: string, filename: string
 }
 
 // -------------------------------------------------------------
-// Cloudflare D1 Database Helper
+// SQLite / Cloudflare D1 Database Helper
 // -------------------------------------------------------------
+let localDb: any = null;
+function getLocalDb() {
+  if (!localDb) {
+    const dbPath = path.join(__dirname, 'local.db');
+    localDb = new Database(dbPath);
+    localDb.pragma('journal_mode = WAL');
+    
+    // Initialize tables if not exist
+    localDb.exec(`
+      CREATE TABLE IF NOT EXISTS documents (
+        collection TEXT,
+        id TEXT,
+        data TEXT,
+        PRIMARY KEY (collection, id)
+      );
+      CREATE TABLE IF NOT EXISTS collection_meta (
+        collection TEXT PRIMARY KEY,
+        updated_at INTEGER
+      );
+      CREATE TABLE IF NOT EXISTS news (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        content TEXT,
+        category TEXT,
+        matchday INTEGER,
+        triggered_by TEXT,
+        created_at TEXT
+      );
+    `);
+  }
+  return localDb;
+}
+
 async function runD1Query(sql: string, params: any[] = []) {
   const accountId = process.env.CF_ACCOUNT_ID;
   const dbId = process.env.CF_D1_DATABASE_ID;
   const token = process.env.CF_API_TOKEN;
 
   if (!accountId || !dbId || !token) {
-    throw new Error("Missing D1 environment variables");
+    // Fallback to local SQLite if running in dev environment (AI Studio)
+    const db = getLocalDb();
+    try {
+      if (sql.trim().toUpperCase().startsWith('SELECT')) {
+        const stmt = db.prepare(sql);
+        const results = stmt.all(...params);
+        return results;
+      } else {
+        const stmt = db.prepare(sql);
+        const info = stmt.run(...params);
+        return [{ success: true, changes: info.changes }];
+      }
+    } catch (localDbErr: any) {
+      console.error("Local DB Error:", localDbErr);
+      throw new Error("Local DB Error: " + localDbErr.message);
+    }
   }
 
   const url = `https://api.cloudflare.com/client/v4/accounts/${accountId}/d1/database/${dbId}/query`;
