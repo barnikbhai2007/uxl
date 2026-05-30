@@ -8,6 +8,26 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import initSqlJs from "sql.js";
+import * as admin from 'firebase-admin';
+
+let firebaseAdminApp: admin.app.App | null = null;
+function getFirebaseAdmin() {
+  if (!firebaseAdminApp) {
+    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
+    if (serviceAccountJson) {
+      try {
+        const serviceAccount = JSON.parse(serviceAccountJson);
+        firebaseAdminApp = admin.initializeApp({
+          credential: admin.credential.cert(serviceAccount)
+        });
+      } catch (e) {
+        // Just silent warn if configuration is invalid
+      }
+    }
+  }
+  return firebaseAdminApp;
+}
+
 
 const __dirname = process.cwd();
 
@@ -263,6 +283,24 @@ app.post("/api/db/bump_meta", async (req, res) => {
 // -------------------------------------------------------------
 // Auth Routes
 // -------------------------------------------------------------
+app.post("/api/auth/google", async (req, res) => {
+  try {
+    const { idToken } = req.body;
+    const adminApp = getFirebaseAdmin();
+    if (!adminApp) {
+      return res.status(500).json({ success: false, error: "Firebase Admin is not configured" });
+    }
+    const decodedToken = await adminApp.auth().verifyIdToken(idToken);
+    const email = decodedToken.email;
+    const uid = decodedToken.uid;
+    const token = jwt.sign({ uid, email, role: "user" }, JWT_SECRET, { expiresIn: '30d' });
+    res.json({ success: true, token, user: { uid, email, role: "user" } });
+  } catch (e: any) {
+    console.error("Google verify error:", e);
+    res.status(401).json({ success: false, error: e.message });
+  }
+});
+
 app.post("/api/auth/login", (req, res) => {
   const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
   const { email, password, isAnonymous } = req.body;

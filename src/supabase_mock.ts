@@ -1,7 +1,10 @@
 const rawApiUrl = (import.meta as any).env?.VITE_API_URL || "";
 const VITE_API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
-// Dummy supabase object for backwards compatibility
+import { auth as firebaseAuth, googleProvider, signInWithPopup, firebaseSignOut } from './firebase';
+
+export { firebaseAuth as firebaseAuthImpl }; // Just optionally
+
 export const supabase = {
   removeChannel: (channel: any) => {},
 };
@@ -87,16 +90,19 @@ export function getAuth(app: any) {
 
 export class GoogleAuthProvider {}
 
-export async function signIn(email?: string, password?: string) {
+export async function signIn() {
   try {
-    const res = await apiFetch("/api/auth/login", {
+    const result = await signInWithPopup(firebaseAuth, googleProvider);
+    const idToken = await result.user.getIdToken();
+
+    const res = await apiFetch("/api/auth/google", {
       method: "POST",
-      body: JSON.stringify({ email: email || "admin@uxl.com", password: password || "admin123" }),
+      body: JSON.stringify({ idToken }),
     });
+
     localStorage.setItem("auth_token", res.token);
     
-    const userRes = await apiFetch("/api/auth/me");
-    authInstance.currentUser = userRes.user as User;
+    authInstance.currentUser = res.user as User;
     authInstance.notifyListeners();
 
     // Check if user exists in Firestore, if not create
@@ -107,16 +113,18 @@ export async function signIn(email?: string, password?: string) {
       await setDoc(userRef, {
         uid: authInstance.currentUser.uid,
         email: authInstance.currentUser.email,
-        role: 'user'
+        role: 'user',
+        createdAt: new Date().toISOString()
       });
     }
 
     return authInstance.currentUser;
   } catch (error) {
-    console.error("Error signing in:", error);
+    console.error("Error signing in with Google:", error);
     throw error;
   }
 }
+
 
 export async function signInAnon() {
   try {
@@ -136,6 +144,11 @@ export async function signInAnon() {
 }
 
 export async function signOut(authObj: any = null) {
+  try {
+    await firebaseSignOut(firebaseAuth);
+  } catch (e) {
+    console.warn("Firebase signout error:", e);
+  }
   localStorage.removeItem("auth_token");
   authInstance.currentUser = null;
   authInstance.notifyListeners();
