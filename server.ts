@@ -7,10 +7,9 @@ import crypto from "crypto";
 import jwt from "jsonwebtoken";
 import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import Database from "better-sqlite3";
+import initSqlJs from "sql.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const __dirname = process.cwd();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -52,36 +51,55 @@ async function uploadToR2(base64Data: string, mimeType: string, filename: string
 // SQLite / Cloudflare D1 Database Helper
 // -------------------------------------------------------------
 let localDb: any = null;
-function getLocalDb() {
+let saveDbTimeout: any = null;
+
+async function getLocalDb() {
   if (!localDb) {
-    const dbPath = path.join(__dirname, 'local.db');
-    localDb = new Database(dbPath);
-    localDb.pragma('journal_mode = WAL');
-    
-    // Initialize tables if not exist
-    localDb.exec(`
-      CREATE TABLE IF NOT EXISTS documents (
-        collection TEXT,
-        id TEXT,
-        data TEXT,
-        PRIMARY KEY (collection, id)
-      );
-      CREATE TABLE IF NOT EXISTS collection_meta (
-        collection TEXT PRIMARY KEY,
-        updated_at INTEGER
-      );
-      CREATE TABLE IF NOT EXISTS news (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        content TEXT,
-        category TEXT,
-        matchday INTEGER,
-        triggered_by TEXT,
-        created_at TEXT
-      );
-    `);
+    const SQL = await initSqlJs();
+    const dbPath = path.join(__dirname, 'local.sqlite');
+    if (fs.existsSync(dbPath)) {
+      const filebuffer = fs.readFileSync(dbPath);
+      localDb = new SQL.Database(filebuffer);
+    } else {
+      localDb = new SQL.Database();
+      localDb.run(`
+        CREATE TABLE IF NOT EXISTS documents (
+          collection TEXT,
+          id TEXT,
+          data TEXT,
+          PRIMARY KEY (collection, id)
+        );
+        CREATE TABLE IF NOT EXISTS collection_meta (
+          collection TEXT PRIMARY KEY,
+          updated_at INTEGER
+        );
+        CREATE TABLE IF NOT EXISTS news (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          title TEXT,
+          content TEXT,
+          category TEXT,
+          matchday INTEGER,
+          triggered_by TEXT,
+          created_at TEXT
+        );
+      `);
+      persistLocalDb();
+    }
   }
   return localDb;
+}
+
+function persistLocalDb() {
+  if (localDb) {
+    const data = localDb.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(path.join(__dirname, 'local.sqlite'), buffer);
+  }
+}
+
+function schedulePersist() {
+  if (saveDbTimeout) clearTimeout(saveDbTimeout);
+  saveDbTimeout = setTimeout(persistLocalDb, 1000);
 }
 
 async function runD1Query(sql: string, params: any[] = []) {
@@ -91,16 +109,21 @@ async function runD1Query(sql: string, params: any[] = []) {
 
   if (!accountId || !dbId || !token) {
     // Fallback to local SQLite if running in dev environment (AI Studio)
-    const db = getLocalDb();
+    const db = await getLocalDb();
     try {
       if (sql.trim().toUpperCase().startsWith('SELECT')) {
         const stmt = db.prepare(sql);
-        const results = stmt.all(...params);
+        stmt.bind(params);
+        const results = [];
+        while (stmt.step()) {
+          results.push(stmt.getAsObject());
+        }
+        stmt.free();
         return results;
       } else {
-        const stmt = db.prepare(sql);
-        const info = stmt.run(...params);
-        return [{ success: true, changes: info.changes }];
+        db.run(sql, params);
+        schedulePersist();
+        return [{ success: true, changes: 1 }];
       }
     } catch (localDbErr: any) {
       console.error("Local DB Error:", localDbErr);
@@ -844,52 +867,56 @@ app.get("/api/cron-news", async (req, res) => {
   }
 });
 
-// Vite middleware for development
-if (process.env.NODE_ENV !== "production") {
-  const { createServer: createViteServer } = await import("vite");
-  const vite = await createViteServer({
-    server: { middlewareMode: true },
-    appType: "spa",
-  });
-  app.use(vite.middlewares);
-} else {
-  const distPath = path.join(process.cwd(), 'dist');
-  app.use(express.static(distPath));
-  app.get('*', (req, res) => {
-    res.sendFile(path.join(distPath, 'index.html'));
-  });
-}
+async function startServer() {
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const { createServer: createViteServer } = await import("vite");
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
 
-if (!process.env.VERCEL) {
-  const server = app.listen(Number(PORT), "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
+  if (!process.env.VERCEL) {
+    const server = app.listen(Number(PORT), "0.0.0.0", () => {
+      console.log(`Server running on http://localhost:${PORT}`);
+    });
 
-  const scheduleNewsGeneration = () => {
-    setInterval(async () => {
-      try {
-        const istHour = new Date(
-          new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
-        ).getHours();
+    const scheduleNewsGeneration = () => {
+      setInterval(async () => {
+        try {
+          const istHour = new Date(
+            new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" })
+          ).getHours();
 
-        if (istHour >= 2 && istHour < 13) return;
-        
-        const rows = await runD1Query(
-          "SELECT data FROM documents WHERE collection = 'matches' AND json_extract(data, '$.status') = 'finished'"
-        );
-        const matchDatas = rows.map((r: any) => JSON.parse(r.data));
-        const latestMatch = matchDatas.sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
+          if (istHour >= 2 && istHour < 13) return;
+          
+          const rows = await runD1Query(
+            "SELECT data FROM documents WHERE collection = 'matches' AND json_extract(data, '$.status') = 'finished'"
+          );
+          const matchDatas = rows.map((r: any) => JSON.parse(r.data));
+          const latestMatch = matchDatas.sort((a: any, b: any) => (b.matchNumber || 0) - (a.matchNumber || 0))[0];
 
-        if (latestMatch) {
-          await handleNewsGeneration(latestMatch, null, 'scheduler');
+          if (latestMatch) {
+            await handleNewsGeneration(latestMatch, null, 'scheduler');
+          }
+        } catch (err) {
+          console.error("[News Scheduler] Error:", err);
         }
-      } catch (err) {
-        console.error("[News Scheduler] Error:", err);
-      }
-    }, 2 * 60 * 60 * 1000); // Every 2 hours
-  };
+      }, 2 * 60 * 60 * 1000); // Every 2 hours
+    };
 
-  scheduleNewsGeneration();
+    scheduleNewsGeneration();
+  }
 }
+
+startServer();
 
 export default app;
