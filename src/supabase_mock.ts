@@ -22,10 +22,15 @@ async function apiFetch(path: string, options: any = {}) {
   if (!res.ok) {
     let errText = `HTTP Error ${res.status}`;
     try {
-      const errJson = await res.json();
-      errText = errJson.error || errText;
+      const text = await res.text();
+      try {
+        const errJson = JSON.parse(text);
+        errText = errJson.error || errText;
+      } catch {
+        errText = text || errText;
+      }
     } catch {
-      errText = await res.text() || errText;
+      // Ignore
     }
     throw new Error(errText);
   }
