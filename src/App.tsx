@@ -3616,7 +3616,7 @@ export default function App() {
     setIsSubmittingRegistration(true);
     try {
       await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
-      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 30000);
+      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
         name: data.fcName,
@@ -4014,7 +4014,7 @@ export default function App() {
         const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 30000);
         setDbMatches(data);
       } else if (type === 'teams') {
-        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 30000);
+        const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
         const teamsList: Team[] = teamsData.map((data: any) => ({
           id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
           fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.fcUid,
@@ -4142,7 +4142,7 @@ export default function App() {
     setIsSubmittingRegistration(true);
     try {
       await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
-      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 30000);
+      const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
         name: data.fcName,

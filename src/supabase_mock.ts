@@ -564,18 +564,18 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   fetchAndNotify();
 
   // ✅ Poll with smart jitter to avoid thundering herd database timeouts
-  const BASE_INTERVAL = 2 * 60 * 1000; // 2 minutes
-  const JITTER = Math.floor(Math.random() * 45000); // Up to 45s of jitter
+  const BASE_INTERVAL = 8 * 60 * 1000; // 8 minutes
+  const JITTER = Math.floor(Math.random() * 120000); // Up to 120s of jitter
   
   const timer = setInterval(async () => {
     if (!_mounted) return;
+    if (document.hidden) return; // Zero DB calls when tab is not visible
     try {
       if (isDoc) {
         const d = await getDoc(ref);
         if (_mounted && d.exists()) callback(d);
       } else {
         const snap = await getDocs(ref);
-        // Only if successful do we replace the cache to handle document deletions
         if (_mounted) {
           if (!(ref instanceof Query) || ref.filters.length === 0) {
             // For full collection fetches, we can confidently wipe deleted records
@@ -584,8 +584,17 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
                 globalCache[collectionName][doc.id] = doc.data();
             });
             persistCache(collectionName);
+            callback(applyQueryLocally(ref));
+          } else {
+            // Filtered fetch (e.g. where status == approved):
+            // Bypass stale cache entirely, use fresh DB results directly
+            const freshDocs = snap.docs.map((d: any) => ({
+              id: d.id,
+              data: () => d.data(),
+              exists: () => true,
+            }));
+            callback({ docs: freshDocs, empty: freshDocs.length === 0, forEach: (cb: any) => freshDocs.forEach(cb) });
           }
-          callback(applyQueryLocally(ref));
         }
       }
     } catch (err) {
@@ -610,10 +619,20 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   };
   localEmitter.addEventListener('db_change', localHandler);
 
+  // When user returns to the tab, fetch fresh data immediately
+  const onVisible = () => {
+    if (!_mounted) return;
+    if (document.visibilityState === 'visible') {
+      fetchAndNotify();
+    }
+  };
+  document.addEventListener('visibilitychange', onVisible);
+
   return () => {
     _mounted = false;
     clearInterval(timer);
     localEmitter.removeEventListener('db_change', localHandler);
+    document.removeEventListener('visibilitychange', onVisible);
     // No supabase.removeChannel needed — no channel opened!
   };
 }
