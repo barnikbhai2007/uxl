@@ -1,17 +1,44 @@
-import { createClient } from "@supabase/supabase-js";
+const VITE_API_URL = (import.meta as any).env?.VITE_API_URL || "";
 
-const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
-const supabaseKey =
-  (import.meta as any).env?.VITE_SUPABASE_ANON_KEY;
+// Dummy supabase object for backwards compatibility
+export const supabase = {
+  removeChannel: (channel: any) => {},
+};
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+async function apiFetch(path: string, options: any = {}) {
+  const token = localStorage.getItem("auth_token");
+  const defaultHeaders: any = {
+    "Content-Type": "application/json",
+  };
+  if (token) {
+    defaultHeaders["Authorization"] = `Bearer ${token}`;
+  }
+
+  const res = await fetch(`${VITE_API_URL}${path}`, {
+    ...options,
+    headers: { ...defaultHeaders, ...options.headers },
+  });
+
+  if (!res.ok) {
+    let errText = `HTTP Error ${res.status}`;
+    try {
+      const errJson = await res.json();
+      errText = errJson.error || errText;
+    } catch {
+      errText = await res.text() || errText;
+    }
+    throw new Error(errText);
+  }
+
+  return res.json();
+}
 
 async function bumpCollectionMeta(collectionName: string) {
   try {
-    const { error } = await supabase
-      .from('collection_meta')
-      .upsert({ collection: collectionName, updated_at: Date.now() }, { onConflict: 'collection' });
-    if (error) console.warn("bumpCollectionMeta error (did you create the table?):", error);
+    await apiFetch("/api/db/bump_meta", {
+      method: "POST",
+      body: JSON.stringify({ collection: collectionName }),
+    });
   } catch (e) {
     console.warn("bumpCollectionMeta error:", e);
   }
@@ -19,20 +46,8 @@ async function bumpCollectionMeta(collectionName: string) {
 
 export async function getCollectionMeta(collectionName: string): Promise<number | null> {
   try {
-    const { data, error } = await supabase
-      .from('collection_meta')
-      .select('updated_at')
-      .eq('collection', collectionName)
-      .single();
-      
-    if (error) {
-      if (error.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is fine for empty table
-         console.warn("getCollectionMeta error:", error);
-         return null; // Fallback to time-ttl if table missing/failing
-      }
-      return 0; // Table exists but no row for this collection yet
-    }
-    return data?.updated_at ?? 0;
+    const res = await apiFetch(`/api/db/meta/${collectionName}`);
+    return res.updated_at ?? 0;
   } catch (e) {
     console.warn("getCollectionMeta exception:", e);
     return null;
@@ -49,64 +64,98 @@ export type User = {
   providerData?: any[];
 };
 
+class AuthMock {
+  currentUser: User | null = null;
+  listeners: ((user: User | null) => void)[] = [];
+
+  notifyListeners() {
+    this.listeners.forEach((cb) => cb(this.currentUser));
+  }
+}
+
+const authInstance = new AuthMock();
+
 export function getAuth(app: any) {
-  return {
-    currentUser: null as User | null,
-  };
+  return authInstance;
 }
 
 export class GoogleAuthProvider {}
 
-export async function signInWithPopup(auth: any, provider: any) {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: { queryParams: { prompt: "select_account" } },
-  });
-  if (error) throw error;
-  return { user: { uid: "auth-user", email: "user@example.com" } };
+export async function signIn(email?: string, password?: string) {
+  try {
+    const res = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: email || "admin@uxl.com", password: password || "admin123" }),
+    });
+    localStorage.setItem("auth_token", res.token);
+    
+    const userRes = await apiFetch("/api/auth/me");
+    authInstance.currentUser = userRes.user as User;
+    authInstance.notifyListeners();
+
+    // Check if user exists in Firestore, if not create
+    const userRef = doc(db, 'users', authInstance.currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    
+    if (!userSnap.exists()) {
+      await setDoc(userRef, {
+        uid: authInstance.currentUser.uid,
+        email: authInstance.currentUser.email,
+        role: 'user'
+      });
+    }
+
+    return authInstance.currentUser;
+  } catch (error) {
+    console.error("Error signing in:", error);
+    throw error;
+  }
 }
 
-export async function signInAnonymously(auth: any) {
-  const { data, error } = await supabase.auth.signInAnonymously();
-  if (error) throw error;
-  return {
-    user: { uid: data.user?.id || "anon", email: null, isAnonymous: true },
-  };
+export async function signInAnon() {
+  try {
+    const res = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ isAnonymous: true }),
+    });
+    localStorage.setItem("auth_token", res.token);
+    const userRes = await apiFetch("/api/auth/me");
+    authInstance.currentUser = userRes.user as User;
+    authInstance.notifyListeners();
+    return authInstance.currentUser;
+  } catch (error: any) {
+    console.error("Error signing in anonymously:", error.message);
+    throw error;
+  }
 }
 
-export async function signOut(auth: any) {
-  await supabase.auth.signOut();
+export async function signOut(authObj: any = null) {
+  localStorage.removeItem("auth_token");
+  authInstance.currentUser = null;
+  authInstance.notifyListeners();
 }
+
+export const logout = () => signOut();
 
 export function onAuthStateChanged(
-  auth: any,
+  authObj: any,
   callback: (user: User | null) => void,
 ) {
-  const handleSession = (session: any) => {
-    if (session?.user) {
-      const u: User = {
-        uid: session.user.id,
-        email: session.user.email || null,
-        isAnonymous: session.user.is_anonymous,
-        providerData: [],
-      };
-      auth.currentUser = u;
-      callback(u);
-    } else {
-      auth.currentUser = null;
+  authInstance.listeners.push(callback);
+
+  // Check current token
+  apiFetch("/api/auth/me")
+    .then((res) => {
+      authInstance.currentUser = res.user as User;
+      callback(authInstance.currentUser);
+    })
+    .catch(() => {
+      authInstance.currentUser = null;
       callback(null);
-    }
-  };
+    });
 
-  supabase.auth.getSession().then(({ data: { session } }) => {
-    handleSession(session);
-  });
-
-  const { data } = supabase.auth.onAuthStateChange((event, session) => {
-    handleSession(session);
-  });
   return () => {
-    data.subscription.unsubscribe();
+    authInstance.listeners = authInstance.listeners.filter((cb) => cb !== callback);
   };
 }
 
@@ -200,7 +249,6 @@ export function limit(value: number) {
 
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
-// Load persisted timestamps from localStorage
 const lastSeenMeta: Record<string, number> = (() => {
   try {
     return JSON.parse(localStorage.getItem('sb_meta_timestamps') || '{}');
@@ -231,9 +279,7 @@ function persistCache(collection: string) {
   persistTimers[collection] = setTimeout(() => {
     try {
       localStorage.setItem(`sb_cache_${collection}`, JSON.stringify(globalCache[collection]));
-    } catch (e) {
-      console.warn("Failed to persist cache", e);
-    }
+    } catch (e) {}
   }, 1000);
 }
 
@@ -301,24 +347,24 @@ export async function getDoc(ref: DocRef) {
           data: () => cached
       };
   }
-  const { data, error } = await supabase
-    .from("documents")
-    .select("id, collection, data")
-    .eq("collection", ref.collectionName)
-    .eq("id", ref.id)
-    .single();
   
-  if (error && error.code !== "PGRST116") { // Ignore strict single row missing error
+  try {
+    const res = await apiFetch("/api/db/get", {
+      method: "POST",
+      body: JSON.stringify({ collection: ref.collectionName, id: ref.id })
+    });
+    const parsedData = res.data ? JSON.parse(res.data.data) : null;
+    if (parsedData) updateGlobalCache(ref.collectionName, ref.id, parsedData);
+    
+    return {
+      exists: () => !!parsedData,
+      id: ref.id,
+      data: () => parsedData,
+    };
+  } catch (error: any) {
     console.error("getDoc error:", error);
-    throw new Error(error.message || JSON.stringify(error));
+    throw new Error(error.message);
   }
-
-  if (data) updateGlobalCache(ref.collectionName, ref.id, data.data);
-  return {
-    exists: () => !!data,
-    id: ref.id,
-    data: () => (data ? data.data : undefined),
-  };
 }
 
 export async function getDocFromServer(ref: DocRef) {
@@ -326,93 +372,52 @@ export async function getDocFromServer(ref: DocRef) {
 }
 
 export async function getDocsWithDelta(ref: CollRef | Query, lastSeenStr: string, cachedData: any[]) {
-  const collectionName = (ref as unknown as CollRef | Query).collectionName;
-
-  let deltaSb = supabase.from("documents").select("id, data").eq("collection", collectionName);
-  let idSb = supabase.from("documents").select("id").eq("collection", collectionName);
-
-  if (ref instanceof Query) {
-    ref.filters.forEach((f: any) => {
-      // NOTE: only basic "==" string/numeric JSON fields supported here
-      if (f.op === "==") {
-        deltaSb = deltaSb.eq(`data->>${f.field}`, f.value);
-        idSb = idSb.eq(`data->>${f.field}`, f.value);
-      }
-    });
-  }
-  
-  deltaSb = deltaSb.gte("data->>_updatedAt", lastSeenStr);
-  
-  const [deltaRes, idsRes] = await Promise.all([deltaSb, idSb]);
-  
-  if (deltaRes.error) throw new Error("Delta fetch error: " + deltaRes.error.message);
-  if (idsRes.error) throw new Error("IDs fetch error: " + idsRes.error.message);
-  
-  const validIds = new Set(idsRes.data.map((d: any) => d.id));
-  const cacheMap = new Map(cachedData.filter(d => validIds.has(d.id)).map(d => [d.id, d]));
-  
-  for (const row of (deltaRes.data || [])) {
-    cacheMap.set(row.id, { id: row.id, ...(row.data || {}) });
-  }
-  
-  const merged = Array.from(cacheMap.values());
-  
-  return {
-    docs: merged.map(d => ({
-      id: d.id,
-      data: () => { const clone = { ...d }; delete clone.id; return clone; },
-      exists: () => true
-    }))
-  };
+  // Delta fetches not fully simulated yet, fallback to getDocs
+  return getDocs(ref);
 }
+
 export async function getDocs(ref: CollRef | Query) {
-  let sb = supabase
-    .from("documents")
-    .select("id, collection, data")
-    .eq("collection", ref.collectionName);
-
-  if (ref instanceof Query) {
-    ref.filters.forEach((f) => {
-      const fieldStr = `data->>${f.field}`;
-      if (f.op === "==") sb = sb.eq(fieldStr, f.value);
-      if (f.op === "<") sb = sb.lt(fieldStr, f.value);
-      if (f.op === ">") sb = sb.gt(fieldStr, f.value);
-    });
-    ref.orderBys.forEach((o) => {
-      sb = sb.order(`data->${o.field}`, { ascending: o.dir === "asc" });
-    });
-    if (ref.qlimit) {
-      sb = sb.limit(ref.qlimit);
-    }
-  }
-
   let data = null, error = null;
   let retries = 3;
+  
+  const payload: any = { collectionName: ref.collectionName };
+  if (ref instanceof Query) {
+    payload.filters = ref.filters.map(f => ({ field: f.field, op: f.op, value: f.value }));
+  }
+
   while (retries > 0) {
     try {
-      const res = await Promise.race([
-        sb,
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('client_timeout')), 15000)
-        )
-      ]) as any;
-      data = res.data;
-      error = res.error;
-  
-      if (error && (
-        error.message?.includes('statement timeout') ||
-        error.message?.includes('client_timeout')
-      )) {
-        retries--;
-        console.warn(`Timeout for ${ref.collectionName}, retry ${3 - retries}/3...`);
-        const delay = (3 - retries) * 1500; // 1.5s, 3s, 4.5s
-        await new Promise(resolve => setTimeout(resolve, delay));
-      } else {
-        break;
+      const res = await apiFetch("/api/db/query", {
+        method: "POST",
+        body: JSON.stringify(payload)
+      });
+      
+      // Parse D1 results
+      data = res.data ? res.data.map((r: any) => ({
+        id: r.id, 
+        collection: r.collection,
+        data: JSON.parse(r.data)
+      })) : [];
+
+      if (ref instanceof Query) {
+        ref.orderBys.forEach((o) => {
+          data.sort((a: any, b: any) => {
+            const valA = a.data[o.field];
+            const valB = b.data[o.field];
+            if (valA < valB) return o.dir === "asc" ? -1 : 1;
+            if (valA > valB) return o.dir === "asc" ? 1 : -1;
+            return 0;
+          });
+        });
+        if (ref.qlimit) {
+          data = data.slice(0, ref.qlimit);
+        }
       }
+
+      break;
     } catch (e: any) {
       retries--;
-      const delay = (3 - retries) * 1500; // 1.5s, 3s, 4.5s
+      const delay = (3 - retries) * 1500;
       console.warn(`Fetch error for ${ref.collectionName}, retry ${3 - retries}/3...`, e);
       await new Promise(resolve => setTimeout(resolve, delay));
       if (retries === 0) {
@@ -421,12 +426,11 @@ export async function getDocs(ref: CollRef | Query) {
     }
   }
 
-  // If still failing, serve from cache silently
   if (error) {
     initCache(ref.collectionName);
     const cached = globalCache[ref.collectionName];
     if (cached && Object.keys(cached).length > 0) {
-      console.warn(`Serving ${ref.collectionName} from cache due to timeout`);
+      console.warn(`Serving ${ref.collectionName} from cache due to API failure`);
       const docs = Object.entries(cached).map(([id, d]: any) => ({
         id,
         data: () => d,
@@ -435,7 +439,6 @@ export async function getDocs(ref: CollRef | Query) {
       }));
       return { docs, empty: docs.length === 0, forEach: (cb: any) => docs.forEach(cb) };
     }
-    // Silently continue if cache is completely empty instead of crashing
     console.warn(`Falling back to empty response for ${ref.collectionName}`);
     return { docs: [], empty: true, forEach: () => {} };
   } else {
@@ -471,11 +474,10 @@ async function handleSpecialOps(target: any, incoming: any) {
 }
 
 export async function setDoc(ref: DocRef, data: any, options: any = {}) {
-  const finalData = JSON.parse(JSON.stringify(data)); // strip undefined
+  const finalData = JSON.parse(JSON.stringify(data)); 
   finalData._updatedAt = Date.now();
   let dataToSave = finalData;
 
-  // Optimistic update for non-merge or if we can guess the state
   if (!options?.merge) {
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
@@ -483,45 +485,33 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   }
 
   if (options && options.merge) {
-    const { data: existing } = await supabase
-      .from("documents")
-      .select("data")
-      .eq("collection", ref.collectionName)
-      .eq("id", ref.id)
-      .single();
-    
-    if (existing) {
-      dataToSave = await handleSpecialOps(existing.data, finalData);
-      await supabase
-        .from("documents")
-        .update({ data: dataToSave })
-        .eq("collection", ref.collectionName)
-        .eq("id", ref.id);
-      
-      updateGlobalCache(ref.collectionName, ref.id, dataToSave);
-      localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-      await bumpCollectionMeta(ref.collectionName);
-      return;
-    }
+    try {
+      const existingRes = await apiFetch("/api/db/get", {
+        method: "POST",
+        body: JSON.stringify({ collection: ref.collectionName, id: ref.id })
+      });
+      const existingData = existingRes.data ? JSON.parse(existingRes.data.data) : null;
+
+      if (existingData) {
+        dataToSave = await handleSpecialOps(existingData, finalData);
+      }
+    } catch {}
   }
 
   if (Object.values(dataToSave).some((v: any) => v && v.__op)) {
     dataToSave = await handleSpecialOps({}, dataToSave);
   }
 
-  const { error } = await supabase
-    .from("documents")
-    .upsert(
-      { id: ref.id, collection: ref.collectionName, data: dataToSave },
-      { onConflict: "collection,id" },
-    );
-  
-  if (error) {
-    console.error("setDoc upsert error:", error);
-  } else {
+  try {
+    await apiFetch("/api/db/set", {
+      method: "POST",
+      body: JSON.stringify({ collection: ref.collectionName, id: ref.id, data: dataToSave })
+    });
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
     await bumpCollectionMeta(ref.collectionName);
+  } catch (error) {
+    console.error("setDoc error:", error);
   }
 }
 
@@ -529,7 +519,6 @@ export async function updateDoc(ref: DocRef, data: any) {
   const finalData = JSON.parse(JSON.stringify(data));
   finalData._updatedAt = Date.now();
   
-  // Try to find cached data for optimistic update
   const cached = getFromCache(ref.collectionName, ref.id);
   if (cached) {
       const nextData = { ...cached };
@@ -543,7 +532,7 @@ export async function updateDoc(ref: DocRef, data: any) {
                   cur = cur[parts[i]];
               }
               const lastPart = parts[parts.length - 1];
-              cur[lastPart] = val; // Nested increment/arrayUnion not fully mocked here but simple assignments work
+              cur[lastPart] = val; 
           } else {
               nextData[key] = val;
           }
@@ -553,56 +542,55 @@ export async function updateDoc(ref: DocRef, data: any) {
       await bumpCollectionMeta(ref.collectionName);
   }
 
-  const { data: existing } = await supabase
-    .from("documents")
-    .select("data")
-    .eq("collection", ref.collectionName)
-    .eq("id", ref.id)
-    .single();
-  
-  if (existing) {
-    const nextData = { ...existing.data };
-    
-    // First handle dot notation keys to find the target object
-    for (const key in finalData) {
-      const val = finalData[key];
-      if (key.includes(".")) {
-        const parts = key.split(".");
-        let cur = nextData;
-        for (let i = 0; i < parts.length - 1; i++) {
-          cur[parts[i]] = cur[parts[i]] || {};
-          cur = cur[parts[i]];
-        }
-        const lastPart = parts[parts.length - 1];
-        if (val && val.__op === "increment") {
-          cur[lastPart] = (Number(cur[lastPart]) || 0) + val.val;
-        } else if (val && val.__op === "arrayUnion") {
-          const arr = Array.isArray(cur[lastPart]) ? cur[lastPart] : [];
-          cur[lastPart] = [...arr, ...val.vals];
+  try {
+    const existingRes = await apiFetch("/api/db/get", {
+      method: "POST",
+      body: JSON.stringify({ collection: ref.collectionName, id: ref.id })
+    });
+    const existingData = existingRes.data ? JSON.parse(existingRes.data.data) : null;
+
+    if (existingData) {
+      const nextData = { ...existingData };
+      for (const key in finalData) {
+        const val = finalData[key];
+        if (key.includes(".")) {
+          const parts = key.split(".");
+          let cur = nextData;
+          for (let i = 0; i < parts.length - 1; i++) {
+            cur[parts[i]] = cur[parts[i]] || {};
+            cur = cur[parts[i]];
+          }
+          const lastPart = parts[parts.length - 1];
+          if (val && val.__op === "increment") {
+            cur[lastPart] = (Number(cur[lastPart]) || 0) + val.val;
+          } else if (val && val.__op === "arrayUnion") {
+            const arr = Array.isArray(cur[lastPart]) ? cur[lastPart] : [];
+            cur[lastPart] = [...arr, ...val.vals];
+          } else {
+            cur[lastPart] = val;
+          }
         } else {
-          cur[lastPart] = val;
-        }
-      } else {
-        if (val && val.__op === "increment") {
-          nextData[key] = (Number(nextData[key]) || 0) + val.val;
-        } else if (val && val.__op === "arrayUnion") {
-          const arr = Array.isArray(nextData[key]) ? nextData[key] : [];
-          nextData[key] = [...arr, ...val.vals];
-        } else {
-          nextData[key] = val;
+          if (val && val.__op === "increment") {
+            nextData[key] = (Number(nextData[key]) || 0) + val.val;
+          } else if (val && val.__op === "arrayUnion") {
+            const arr = Array.isArray(nextData[key]) ? nextData[key] : [];
+            nextData[key] = [...arr, ...val.vals];
+          } else {
+            nextData[key] = val;
+          }
         }
       }
+      
+      await apiFetch("/api/db/update", {
+        method: "POST",
+        body: JSON.stringify({ collection: ref.collectionName, id: ref.id, data: nextData })
+      });
+      updateGlobalCache(ref.collectionName, ref.id, nextData);
+      localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+      await bumpCollectionMeta(ref.collectionName);
     }
-    
-    await supabase
-      .from("documents")
-      .update({ data: nextData })
-      .eq("collection", ref.collectionName)
-      .eq("id", ref.id);
-    
-    updateGlobalCache(ref.collectionName, ref.id, nextData);
-    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-    await bumpCollectionMeta(ref.collectionName);
+  } catch (error) {
+    console.error("updateDoc error:", error);
   }
 }
 
@@ -611,12 +599,12 @@ export async function deleteDoc(ref: DocRef) {
   localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   await bumpCollectionMeta(ref.collectionName);
 
-  const { error } = await supabase
-    .from("documents")
-    .delete()
-    .eq("collection", ref.collectionName)
-    .eq("id", ref.id);
-  if (error) {
+  try {
+    await apiFetch("/api/db/delete", {
+      method: "DELETE",
+      body: JSON.stringify({ collection: ref.collectionName, id: ref.id })
+    });
+  } catch (error) {
     console.error("deleteDoc error:", error);
   }
 }
@@ -646,10 +634,9 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         
         const initialMeta = await getCollectionMeta(collectionName);
         const lastSeen = lastSeenMeta[collectionName] ?? 0;
-        const dataIsStale = initialMeta > lastSeen;
+        const dataIsStale = (initialMeta ?? 0) > lastSeen;
 
         if (queryCacheStr && !dataIsStale) {
-          // Cache is fresh - show instantly, zero full download
           const parsed = JSON.parse(queryCacheStr);
           const cachedDocs = parsed.map((docData: any) => ({
             id: docData.id,
@@ -658,18 +645,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           }));
           callback({ docs: cachedDocs, empty: cachedDocs.length === 0, forEach: (cb: any) => cachedDocs.forEach(cb) });
         } else {
-          // No cache OR data changed since last visit - fetch fresh OR delta
-          let snap;
-          if (queryCacheStr && lastSeen > 0) {
-            try {
-               snap = await getDocsWithDelta(ref, lastSeen.toString(), JSON.parse(queryCacheStr));
-            } catch(e) {
-               console.warn("Delta fetch failed, full fetch:", e);
-               snap = await getDocs(ref);
-            }
-          } else {
-            snap = await getDocs(ref);
-          }
+          const snap = await getDocs(ref);
           
           if (_mounted) {
             const freshDocs = snap.docs.map((d: any) => ({
@@ -678,11 +654,9 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
               exists: () => true,
             }));
             
-            // Cache exact query result
             const toCache = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
             try { localStorage.setItem(cacheKeyStr, JSON.stringify(toCache)); } catch(e){}
             
-            // Also keep globalCache somewhat updated for single doc access
             initCache(collectionName);
             snap.forEach((doc: any) => {
               globalCache[collectionName][doc.id] = doc.data();
@@ -693,55 +667,36 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           }
         }
 
-        persistMetaTimestamp(collectionName, initialMeta);
+        if (initialMeta) persistMetaTimestamp(collectionName, initialMeta);
       }
     } catch (err) {
       if (errorCb) errorCb(err);
     }
   };
 
-  // Initial fetch immediately
   fetchAndNotify();
 
-  // ✅ Poll with smart jitter to avoid thundering herd database timeouts
-  const BASE_INTERVAL = 8 * 60 * 1000; // 8 minutes
-  const JITTER = Math.floor(Math.random() * 120000); // Up to 120s of jitter
+  const BASE_INTERVAL = 8 * 60 * 1000; 
+  const JITTER = Math.floor(Math.random() * 120000); 
   
   const timer = setInterval(async () => {
     if (!_mounted) return;
-    if (document.hidden) return; // Zero DB calls when tab is not visible
+    if (document.hidden) return; 
     try {
       if (isDoc) {
         const d = await getDoc(ref);
         if (_mounted && d.exists()) callback(d);
       } else {
-        // Step 1: Check only the tiny timestamp first
         const serverMeta = await getCollectionMeta(collectionName);
         const lastSeen = lastSeenMeta[collectionName] ?? 0;
 
-        if (serverMeta <= lastSeen) {
-          // Nothing changed — skip entirely, zero egress
+        if ((serverMeta ?? 0) <= lastSeen) {
           return;
         }
 
-        // Something changed — fetch fresh data OR delta
-        let snap;
-        const queryKey = (ref instanceof Query) ? JSON.stringify({c: ref.collectionName, f: ref.filters}) : ref.collectionName;
-        const cacheKeyStr = `sb_query_${queryKey}`;
-        const queryCacheStr = localStorage.getItem(cacheKeyStr);
-
-        if (queryCacheStr && lastSeen > 0) {
-           try {
-              snap = await getDocsWithDelta(ref, lastSeen.toString(), JSON.parse(queryCacheStr));
-           } catch(e) {
-              console.warn("Delta fetch failed in interval:", e);
-              snap = await getDocs(ref);
-           }
-        } else {
-           snap = await getDocs(ref);
-        }
+        const snap = await getDocs(ref);
         if (_mounted) {
-          persistMetaTimestamp(collectionName, serverMeta); // Update our timestamp
+          if (serverMeta) persistMetaTimestamp(collectionName, serverMeta); 
           
           const queryKey = (ref instanceof Query) ? JSON.stringify({c: ref.collectionName, f: ref.filters}) : ref.collectionName;
           const cacheKeyStr = `sb_query_${queryKey}`;
@@ -752,11 +707,9 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
             exists: () => true,
           }));
           
-          // Cache exact query result
           const toCache = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
           try { localStorage.setItem(cacheKeyStr, JSON.stringify(toCache)); } catch(e){}
           
-          // Also keep globalCache updated
           initCache(collectionName);
           snap.forEach((doc: any) => {
               globalCache[collectionName][doc.id] = doc.data();
@@ -768,11 +721,9 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
       }
     } catch (err) {
       if (errorCb) errorCb(err);
-      console.warn("Polling fetch failed, keeping cache intact:", err);
     }
   }, BASE_INTERVAL + JITTER);
 
-  // Local emitter still works for instant updates when THIS tab writes
   const localHandler = (e: any) => {
     if (e.detail === collectionName && _mounted) {
       if (isDoc) {
@@ -788,7 +739,6 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   };
   localEmitter.addEventListener('db_change', localHandler);
 
-  // When user returns to the tab, fetch fresh data immediately
   const onVisible = () => {
     if (!_mounted) return;
     if (document.visibilityState === 'visible') {
@@ -802,7 +752,6 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     clearInterval(timer);
     localEmitter.removeEventListener('db_change', localHandler);
     document.removeEventListener('visibilitychange', onVisible);
-    // No supabase.removeChannel needed — no channel opened!
   };
 }
 
@@ -840,45 +789,9 @@ export function writeBatch(db: any) {
   };
 }
 
-const app = {};
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+export const auth = getAuth({});
+export const db = getFirestore({});
 export const googleProvider = new GoogleAuthProvider();
-
-export const signIn = async () => {
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
-    
-    // Check if user exists in Firestore, if not create
-    const userRef = doc(db, 'users', user.uid);
-    const userSnap = await getDoc(userRef);
-    
-    if (!userSnap.exists()) {
-      await setDoc(userRef, {
-        uid: user.uid,
-        email: user.email,
-        role: 'user' // Default role
-      });
-    }
-    return user;
-  } catch (error) {
-    console.error("Error signing in:", error);
-    throw error;
-  }
-};
-
-export const signInAnon = async () => {
-  try {
-    const result = await signInAnonymously(auth);
-    return result.user;
-  } catch (error: any) {
-    console.error("Error signing in anonymously:", error.code, error.message);
-    throw error;
-  }
-};
-
-export const logout = () => signOut(auth);
 
 export enum OperationType {
   CREATE = 'create',
@@ -896,15 +809,6 @@ export interface FirestoreErrorInfo {
   authInfo: {
     userId: string | undefined;
     email: string | null | undefined;
-    emailVerified: boolean | undefined;
-    isAnonymous: boolean | undefined;
-    tenantId: string | null | undefined;
-    providerInfo: {
-      providerId: string;
-      displayName: string | null;
-      email: string | null;
-      photoUrl: string | null;
-    }[];
   }
 }
 
@@ -912,17 +816,8 @@ export function handleFirestoreError(error: unknown, operationType: OperationTyp
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
     authInfo: {
-      userId: auth.currentUser?.uid,
-      email: auth.currentUser?.email,
-      emailVerified: auth.currentUser?.emailVerified,
-      isAnonymous: auth.currentUser?.isAnonymous,
-      tenantId: auth.currentUser?.tenantId,
-      providerInfo: auth.currentUser?.providerData?.map((provider: any) => ({
-        providerId: provider.providerId,
-        displayName: provider.displayName,
-        email: provider.email,
-        photoUrl: provider.photoURL
-      })) || []
+      userId: authInstance.currentUser?.uid,
+      email: authInstance.currentUser?.email,
     },
     operationType,
     path

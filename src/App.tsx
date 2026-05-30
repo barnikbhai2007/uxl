@@ -3374,41 +3374,25 @@ export default function App() {
 
   useEffect(() => {
     const fetchNews = async () => {
-      const { data, error } = await supabase
-        .from('news')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(20);
-      if (error) {
+      try {
+        const response = await fetch('/api/news');
+        const { data, success } = await response.json();
+        if (success && data) {
+          console.log("[News] Fetched news data length:", data.length, data);
+          setNewsFeed(data);
+        } else {
+          console.log("[News] Fetched news data is null/undefined or failed");
+        }
+      } catch (error) {
         console.error("Error fetching news:", error);
-      }
-      if (data) {
-        console.log("[News] Fetched news data length:", data.length, data);
-        setNewsFeed(data);
-      } else {
-        console.log("[News] Fetched news data is null/undefined");
       }
     };
 
     fetchNews();
-
-    const channel = supabase
-      .channel('public:news')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'news' }, (payload) => {
-        console.log("[News] Realtime payload received:", payload);
-        if (payload.eventType === 'INSERT') {
-          setNewsFeed(prev => [payload.new, ...prev].slice(0, 20));
-        } else {
-           fetchNews();
-        }
-      })
-      .subscribe((status) => {
-        console.log("[News] Realtime subscription status:", status);
-      });
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    
+    // Simulate realtime updates by polling every 30 seconds since we removed websockets
+    const interval = setInterval(fetchNews, 30000);
+    return () => clearInterval(interval);
   }, []);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
