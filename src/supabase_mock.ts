@@ -438,7 +438,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   if (!options?.merge) {
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-    bumpCollectionMeta(ref.collectionName);
+    await bumpCollectionMeta(ref.collectionName);
   }
 
   if (options && options.merge) {
@@ -459,7 +459,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       
       updateGlobalCache(ref.collectionName, ref.id, dataToSave);
       localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-      bumpCollectionMeta(ref.collectionName);
+      await bumpCollectionMeta(ref.collectionName);
       return;
     }
   }
@@ -480,7 +480,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   } else {
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-    bumpCollectionMeta(ref.collectionName);
+    await bumpCollectionMeta(ref.collectionName);
   }
 }
 
@@ -508,7 +508,7 @@ export async function updateDoc(ref: DocRef, data: any) {
       }
       updateGlobalCache(ref.collectionName, ref.id, nextData);
       localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-      bumpCollectionMeta(ref.collectionName);
+      await bumpCollectionMeta(ref.collectionName);
   }
 
   const { data: existing } = await supabase
@@ -560,14 +560,14 @@ export async function updateDoc(ref: DocRef, data: any) {
     
     updateGlobalCache(ref.collectionName, ref.id, nextData);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-    bumpCollectionMeta(ref.collectionName);
+    await bumpCollectionMeta(ref.collectionName);
   }
 }
 
 export async function deleteDoc(ref: DocRef) {
   updateGlobalCache(ref.collectionName, ref.id, null, true);
   localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
-  bumpCollectionMeta(ref.collectionName);
+  await bumpCollectionMeta(ref.collectionName);
 
   const { error } = await supabase
     .from("documents")
@@ -598,36 +598,45 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           if (_mounted && d.exists()) callback(d);
         }
       } else {
-        initCache(collectionName);
-        const hasCache = globalCache[collectionName] && Object.keys(globalCache[collectionName]).length > 0;
-
-        // Check server timestamp first (only 100 bytes)
+        const queryKey = (ref instanceof Query) ? JSON.stringify({c: ref.collectionName, f: ref.filters}) : ref.collectionName;
+        const cacheKeyStr = `sb_query_${queryKey}`;
+        const queryCacheStr = localStorage.getItem(cacheKeyStr);
+        
         const initialMeta = await getCollectionMeta(collectionName);
         const lastSeen = lastSeenMeta[collectionName] ?? 0;
         const dataIsStale = initialMeta > lastSeen;
 
-        if (hasCache && !dataIsStale) {
+        if (queryCacheStr && !dataIsStale) {
           // Cache is fresh - show instantly, zero full download
-          callback(applyQueryLocally(ref));
+          const parsed = JSON.parse(queryCacheStr);
+          const cachedDocs = parsed.map((docData: any) => ({
+            id: docData.id,
+            data: () => docData,
+            exists: () => true,
+          }));
+          callback({ docs: cachedDocs, empty: cachedDocs.length === 0, forEach: (cb: any) => cachedDocs.forEach(cb) });
         } else {
           // No cache OR data changed since last visit - fetch fresh
           const snap = await getDocs(ref);
           if (_mounted) {
-            if (!(ref instanceof Query) || ref.filters.length === 0) {
-              globalCache[collectionName] = {};
-              snap.forEach((doc: any) => {
-                globalCache[collectionName][doc.id] = doc.data();
-              });
-              persistCache(collectionName);
-              callback(applyQueryLocally(ref));
-            } else {
-              const freshDocs = snap.docs.map((d: any) => ({
-                id: d.id,
-                data: () => d.data(),
-                exists: () => true,
-              }));
-              callback({ docs: freshDocs, empty: freshDocs.length === 0, forEach: (cb: any) => freshDocs.forEach(cb) });
-            }
+            const freshDocs = snap.docs.map((d: any) => ({
+              id: d.id,
+              data: () => d.data(),
+              exists: () => true,
+            }));
+            
+            // Cache exact query result
+            const toCache = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+            try { localStorage.setItem(cacheKeyStr, JSON.stringify(toCache)); } catch(e){}
+            
+            // Also keep globalCache somewhat updated for single doc access
+            initCache(collectionName);
+            snap.forEach((doc: any) => {
+              globalCache[collectionName][doc.id] = doc.data();
+            });
+            persistCache(collectionName);
+
+            callback({ docs: freshDocs, empty: freshDocs.length === 0, forEach: (cb: any) => freshDocs.forEach(cb) });
           }
         }
 
@@ -666,24 +675,28 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         const snap = await getDocs(ref);
         if (_mounted) {
           persistMetaTimestamp(collectionName, serverMeta); // Update our timestamp
-          if (!(ref instanceof Query) || ref.filters.length === 0) {
-            // For full collection fetches, we can confidently wipe deleted records
-            globalCache[collectionName] = {};
-            snap.forEach((doc: any) => {
-                globalCache[collectionName][doc.id] = doc.data();
-            });
-            persistCache(collectionName);
-            callback(applyQueryLocally(ref));
-          } else {
-            // Filtered fetch (e.g. where status == approved):
-            // Bypass stale cache entirely, use fresh DB results directly
-            const freshDocs = snap.docs.map((d: any) => ({
-              id: d.id,
-              data: () => d.data(),
-              exists: () => true,
-            }));
-            callback({ docs: freshDocs, empty: freshDocs.length === 0, forEach: (cb: any) => freshDocs.forEach(cb) });
-          }
+          
+          const queryKey = (ref instanceof Query) ? JSON.stringify({c: ref.collectionName, f: ref.filters}) : ref.collectionName;
+          const cacheKeyStr = `sb_query_${queryKey}`;
+          
+          const freshDocs = snap.docs.map((d: any) => ({
+            id: d.id,
+            data: () => d.data(),
+            exists: () => true,
+          }));
+          
+          // Cache exact query result
+          const toCache = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+          try { localStorage.setItem(cacheKeyStr, JSON.stringify(toCache)); } catch(e){}
+          
+          // Also keep globalCache updated
+          initCache(collectionName);
+          snap.forEach((doc: any) => {
+              globalCache[collectionName][doc.id] = doc.data();
+          });
+          persistCache(collectionName);
+
+          callback({ docs: freshDocs, empty: freshDocs.length === 0, forEach: (cb: any) => freshDocs.forEach(cb) });
         }
       }
     } catch (err) {

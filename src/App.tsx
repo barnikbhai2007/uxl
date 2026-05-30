@@ -3119,28 +3119,31 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
 
 const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = false, ttlMs: number = 2000) => {
   const cached = localStorage.getItem(cacheKey);
-  const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
   const cacheKeyMeta = `${cacheKey}_meta`;
   
   let shouldFetch = true;
 
-  if (cached && cachedTimeStr) {
-    if (Date.now() - Number(cachedTimeStr) < ttlMs) {
-      // Cache is physically within TTL, check server timestamp to be safe (only 100 bytes)
-      let serverBusted = false;
-      if (!isDoc && queryRef.collectionName) {
-         try {
-           const serverMeta = await getCollectionMeta(queryRef.collectionName);
-           const localMetaStr = localStorage.getItem(cacheKeyMeta);
-           const localMeta = localMetaStr ? Number(localMetaStr) : 0;
-           if (serverMeta > localMeta) {
-             serverBusted = true;
-           }
-         } catch(e) {}
-      }
-      if (!serverBusted) {
-         shouldFetch = false;
-      }
+  if (cached) {
+    let serverBusted = false;
+    if (!isDoc && queryRef.collectionName) {
+       try {
+         const serverMeta = await getCollectionMeta(queryRef.collectionName);
+         const localMetaStr = localStorage.getItem(cacheKeyMeta);
+         const localMeta = localMetaStr ? Number(localMetaStr) : 0;
+         if (serverMeta > localMeta) {
+           serverBusted = true;
+         }
+       } catch(e) {
+         serverBusted = true;
+       }
+    } else {
+       const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
+       if (!cachedTimeStr || Date.now() - Number(cachedTimeStr) > ttlMs) {
+         serverBusted = true;
+       }
+    }
+    if (!serverBusted) {
+       shouldFetch = false;
     }
   }
   
@@ -4904,32 +4907,20 @@ export default function App() {
         }
       };
 
-      // Teams Sync
-      unsubTeams = onSnapshot(query(collection(db, 'registrations'), where('status', '==', 'approved')), (snapshot) => {
-        const teamsList: Team[] = snapshot.docs.map(docSnap => {
-          const data = docSnap.data();
-          return {
-            id: docSnap.id,
-            name: data.fcName,
-            shortName: (data.fcName || '').substring(0, 3).toUpperCase(),
-            fullName: data.name,
-            fcName: data.fcName,
-            ovr: data.teamOvr,
-            uid: data.fcUid,
-            logoUrl: data.logoUrl,
-            goalkeeper: data.goalkeeper,
-            played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
-          };
-        });
+      // Teams Sync (Filtered so we use fetchWithCache which handles filtered cache perfectly)
+      const loadTeams = async () => {
+        try {
+          await refreshCache('teams');
+        } catch (e) {
+          console.error("Teams sync error:", e);
+        }
         if (_mounted) {
-          setDbTeams(teamsList);
           teamsLoaded = true;
           checkLoaded();
         }
-      }, (error) => {
-        console.error("Teams sync error:", error);
-        if (_mounted) { teamsLoaded = true; checkLoaded(); }
-      });
+      };
+      loadTeams();
+      unsubTeams = setInterval(loadTeams, 30000); // Check every 30s (will only do 100byte meta query)
 
       // Matches Sync
       unsubMatches = onSnapshot(collection(db, 'matches'), (snapshot) => {
@@ -4949,7 +4940,7 @@ export default function App() {
 
     return () => {
       _mounted = false;
-      if (unsubTeams) unsubTeams();
+      if (unsubTeams) clearInterval(unsubTeams);
       if (unsubMatches) unsubMatches();
     };
   }, []);
