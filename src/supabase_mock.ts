@@ -17,7 +17,7 @@ async function bumpCollectionMeta(collectionName: string) {
   }
 }
 
-export async function getCollectionMeta(collectionName: string): Promise<number> {
+export async function getCollectionMeta(collectionName: string): Promise<number | null> {
   try {
     const { data, error } = await supabase
       .from('collection_meta')
@@ -28,14 +28,14 @@ export async function getCollectionMeta(collectionName: string): Promise<number>
     if (error) {
       if (error.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is fine for empty table
          console.warn("getCollectionMeta error:", error);
-         return Date.now(); // Fallback to always fetch if table missing/failing
+         return null; // Fallback to time-ttl if table missing/failing
       }
       return 0; // Table exists but no row for this collection yet
     }
     return data?.updated_at ?? 0;
   } catch (e) {
     console.warn("getCollectionMeta exception:", e);
-    return Date.now();
+    return null;
   }
 }
 
@@ -325,6 +325,46 @@ export async function getDocFromServer(ref: DocRef) {
   return getDoc(ref);
 }
 
+export async function getDocsWithDelta(ref: CollRef | Query, lastSeenStr: string, cachedData: any[]) {
+  const collectionName = (ref as unknown as CollRef | Query).collectionName;
+
+  let deltaSb = supabase.from("documents").select("id, data").eq("collection", collectionName);
+  let idSb = supabase.from("documents").select("id").eq("collection", collectionName);
+
+  if (ref instanceof Query) {
+    ref.filters.forEach((f: any) => {
+      // NOTE: only basic "==" string/numeric JSON fields supported here
+      if (f.op === "==") {
+        deltaSb = deltaSb.eq(`data->>${f.field}`, f.value);
+        idSb = idSb.eq(`data->>${f.field}`, f.value);
+      }
+    });
+  }
+  
+  deltaSb = deltaSb.gte("data->>_updatedAt", lastSeenStr);
+  
+  const [deltaRes, idsRes] = await Promise.all([deltaSb, idSb]);
+  
+  if (deltaRes.error) throw new Error("Delta fetch error: " + deltaRes.error.message);
+  if (idsRes.error) throw new Error("IDs fetch error: " + idsRes.error.message);
+  
+  const validIds = new Set(idsRes.data.map((d: any) => d.id));
+  const cacheMap = new Map(cachedData.filter(d => validIds.has(d.id)).map(d => [d.id, d]));
+  
+  for (const row of (deltaRes.data || [])) {
+    cacheMap.set(row.id, { id: row.id, ...(row.data || {}) });
+  }
+  
+  const merged = Array.from(cacheMap.values());
+  
+  return {
+    docs: merged.map(d => ({
+      id: d.id,
+      data: () => { const clone = { ...d }; delete clone.id; return clone; },
+      exists: () => true
+    }))
+  };
+}
 export async function getDocs(ref: CollRef | Query) {
   let sb = supabase
     .from("documents")
@@ -432,6 +472,7 @@ async function handleSpecialOps(target: any, incoming: any) {
 
 export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   const finalData = JSON.parse(JSON.stringify(data)); // strip undefined
+  finalData._updatedAt = Date.now();
   let dataToSave = finalData;
 
   // Optimistic update for non-merge or if we can guess the state
@@ -486,6 +527,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
 
 export async function updateDoc(ref: DocRef, data: any) {
   const finalData = JSON.parse(JSON.stringify(data));
+  finalData._updatedAt = Date.now();
   
   // Try to find cached data for optimistic update
   const cached = getFromCache(ref.collectionName, ref.id);
@@ -616,8 +658,19 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           }));
           callback({ docs: cachedDocs, empty: cachedDocs.length === 0, forEach: (cb: any) => cachedDocs.forEach(cb) });
         } else {
-          // No cache OR data changed since last visit - fetch fresh
-          const snap = await getDocs(ref);
+          // No cache OR data changed since last visit - fetch fresh OR delta
+          let snap;
+          if (queryCacheStr && lastSeen > 0) {
+            try {
+               snap = await getDocsWithDelta(ref, lastSeen.toString(), JSON.parse(queryCacheStr));
+            } catch(e) {
+               console.warn("Delta fetch failed, full fetch:", e);
+               snap = await getDocs(ref);
+            }
+          } else {
+            snap = await getDocs(ref);
+          }
+          
           if (_mounted) {
             const freshDocs = snap.docs.map((d: any) => ({
               id: d.id,
@@ -671,8 +724,22 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           return;
         }
 
-        // Something changed — fetch fresh data
-        const snap = await getDocs(ref);
+        // Something changed — fetch fresh data OR delta
+        let snap;
+        const queryKey = (ref instanceof Query) ? JSON.stringify({c: ref.collectionName, f: ref.filters}) : ref.collectionName;
+        const cacheKeyStr = `sb_query_${queryKey}`;
+        const queryCacheStr = localStorage.getItem(cacheKeyStr);
+
+        if (queryCacheStr && lastSeen > 0) {
+           try {
+              snap = await getDocsWithDelta(ref, lastSeen.toString(), JSON.parse(queryCacheStr));
+           } catch(e) {
+              console.warn("Delta fetch failed in interval:", e);
+              snap = await getDocs(ref);
+           }
+        } else {
+           snap = await getDocs(ref);
+        }
         if (_mounted) {
           persistMetaTimestamp(collectionName, serverMeta); // Update our timestamp
           

@@ -24,7 +24,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, getCollectionMeta } from './supabase_mock';
 import { onAuthStateChanged, User, supabase } from './supabase_mock';
-import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
+import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, getDocsWithDelta, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ACHIEVEMENTS } from './achievements';
 import { evaluateAchievements } from './utils/achievementEngine';
 import { AchievementsList, AchievementPopup } from './components/AchievementSystem';
@@ -3128,13 +3128,25 @@ const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = 
     if (!isDoc && queryRef.collectionName) {
        try {
          const serverMeta = await getCollectionMeta(queryRef.collectionName);
-         const localMetaStr = localStorage.getItem(cacheKeyMeta);
-         const localMeta = localMetaStr ? Number(localMetaStr) : 0;
-         if (serverMeta > localMeta) {
-           serverBusted = true;
+         if (serverMeta !== null) {
+           const localMetaStr = localStorage.getItem(cacheKeyMeta);
+           const localMeta = localMetaStr ? Number(localMetaStr) : 0;
+           if (serverMeta > localMeta) {
+             serverBusted = true;
+           }
+         } else {
+           // Fallback to TTL if meta fails
+           const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
+           if (!cachedTimeStr || Date.now() - Number(cachedTimeStr) > ttlMs) {
+             serverBusted = true;
+           }
          }
        } catch(e) {
-         serverBusted = true;
+         // Fallback to TTL if meta fails
+         const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
+         if (!cachedTimeStr || Date.now() - Number(cachedTimeStr) > ttlMs) {
+           serverBusted = true;
+         }
        }
     } else {
        const cachedTimeStr = localStorage.getItem(`${cacheKey}_time`);
@@ -3158,7 +3170,22 @@ const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = 
       if (snap.exists()) data = { id: snap.id, ...(snap.data() as any) };
       else data = null;
     } else {
-      const snap = await getDocs(queryRef);
+      let snap;
+      if (cached && queryRef.collectionName) {
+        try {
+           const cacheMetaStr = localStorage.getItem(`${cacheKey}_meta`);
+           if (cacheMetaStr && Number(cacheMetaStr) > 0) {
+              snap = await getDocsWithDelta(queryRef, cacheMetaStr, JSON.parse(cached));
+           } else {
+              snap = await getDocs(queryRef);
+           }
+        } catch(e) {
+           console.warn("Delta fetch issue:", e);
+           snap = await getDocs(queryRef);
+        }
+      } else {
+        snap = await getDocs(queryRef);
+      }
       data = snap.docs.map((doc: any) => ({ id: doc.id, ...(doc.data() as any) }));
     }
     
@@ -3167,7 +3194,9 @@ const fetchWithCache = async (cacheKey: string, queryRef: any, isDoc: boolean = 
       localStorage.setItem(`${cacheKey}_time`, Date.now().toString());
       if (!isDoc && queryRef.collectionName) {
          const currentMeta = await getCollectionMeta(queryRef.collectionName);
-         localStorage.setItem(cacheKeyMeta, currentMeta.toString());
+         if (currentMeta !== null) {
+           localStorage.setItem(cacheKeyMeta, currentMeta.toString());
+         }
       }
     } catch(e) {}
     
