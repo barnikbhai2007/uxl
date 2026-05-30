@@ -8,24 +8,34 @@ export const supabase = createClient(supabaseUrl, supabaseKey);
 
 async function bumpCollectionMeta(collectionName: string) {
   try {
-    await supabase
+    const { error } = await supabase
       .from('collection_meta')
       .upsert({ collection: collectionName, updated_at: Date.now() }, { onConflict: 'collection' });
+    if (error) console.warn("bumpCollectionMeta error (did you create the table?):", error);
   } catch (e) {
-    // Non-critical, ignore silently
+    console.warn("bumpCollectionMeta error:", e);
   }
 }
 
 export async function getCollectionMeta(collectionName: string): Promise<number> {
   try {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('collection_meta')
       .select('updated_at')
       .eq('collection', collectionName)
       .single();
+      
+    if (error) {
+      if (error.code !== 'PGRST116') { // PGRST116 is "no rows returned" which is fine for empty table
+         console.warn("getCollectionMeta error:", error);
+         return Date.now(); // Fallback to always fetch if table missing/failing
+      }
+      return 0; // Table exists but no row for this collection yet
+    }
     return data?.updated_at ?? 0;
   } catch (e) {
-    return 0;
+    console.warn("getCollectionMeta exception:", e);
+    return Date.now();
   }
 }
 
