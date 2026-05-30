@@ -6,6 +6,29 @@ const supabaseKey =
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
+async function bumpCollectionMeta(collectionName: string) {
+  try {
+    await supabase
+      .from('collection_meta')
+      .upsert({ collection: collectionName, updated_at: Date.now() }, { onConflict: 'collection' });
+  } catch (e) {
+    // Non-critical, ignore silently
+  }
+}
+
+async function getCollectionMeta(collectionName: string): Promise<number> {
+  try {
+    const { data } = await supabase
+      .from('collection_meta')
+      .select('updated_at')
+      .eq('collection', collectionName)
+      .single();
+    return data?.updated_at ?? 0;
+  } catch (e) {
+    return 0;
+  }
+}
+
 // --- Auth Mock ---
 export type User = {
   uid: string;
@@ -167,6 +190,7 @@ export function limit(value: number) {
 
 const localEmitter = new EventTarget();
 const globalCache: Record<string, Record<string, any>> = {};
+const lastSeenMeta: Record<string, number> = {};
 
 function initCache(collection: string) {
   if (!globalCache[collection]) {
@@ -392,6 +416,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   if (!options?.merge) {
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+    bumpCollectionMeta(ref.collectionName);
   }
 
   if (options && options.merge) {
@@ -412,6 +437,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       
       updateGlobalCache(ref.collectionName, ref.id, dataToSave);
       localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+      bumpCollectionMeta(ref.collectionName);
       return;
     }
   }
@@ -432,6 +458,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
   } else {
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+    bumpCollectionMeta(ref.collectionName);
   }
 }
 
@@ -459,6 +486,7 @@ export async function updateDoc(ref: DocRef, data: any) {
       }
       updateGlobalCache(ref.collectionName, ref.id, nextData);
       localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+      bumpCollectionMeta(ref.collectionName);
   }
 
   const { data: existing } = await supabase
@@ -510,12 +538,14 @@ export async function updateDoc(ref: DocRef, data: any) {
     
     updateGlobalCache(ref.collectionName, ref.id, nextData);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+    bumpCollectionMeta(ref.collectionName);
   }
 }
 
 export async function deleteDoc(ref: DocRef) {
   updateGlobalCache(ref.collectionName, ref.id, null, true);
   localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
+  bumpCollectionMeta(ref.collectionName);
 
   const { error } = await supabase
     .from("documents")
@@ -554,6 +584,9 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           const snap = await getDocs(ref);
           if (_mounted) callback(snap);
         }
+        
+        const initialMeta = await getCollectionMeta(collectionName);
+        lastSeenMeta[collectionName] = initialMeta;
       }
     } catch (err) {
       if (errorCb) errorCb(err);
@@ -575,8 +608,19 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         const d = await getDoc(ref);
         if (_mounted && d.exists()) callback(d);
       } else {
+        // Step 1: Check only the tiny timestamp first
+        const serverMeta = await getCollectionMeta(collectionName);
+        const lastSeen = lastSeenMeta[collectionName] ?? 0;
+
+        if (serverMeta <= lastSeen) {
+          // Nothing changed — skip entirely, zero egress
+          return;
+        }
+
+        // Something changed — fetch fresh data
         const snap = await getDocs(ref);
         if (_mounted) {
+          lastSeenMeta[collectionName] = serverMeta; // Update our timestamp
           if (!(ref instanceof Query) || ref.filters.length === 0) {
             // For full collection fetches, we can confidently wipe deleted records
             globalCache[collectionName] = {};

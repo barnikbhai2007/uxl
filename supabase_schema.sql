@@ -23,8 +23,12 @@ CREATE POLICY "Allow authenticated update" ON public.documents
 CREATE POLICY "Allow authenticated delete" ON public.documents
   FOR DELETE TO authenticated USING (true);
 
+CREATE TABLE IF NOT EXISTS public.collection_meta (
+  collection text PRIMARY KEY,
+  updated_at bigint NOT NULL DEFAULT 0
+);
+
 CREATE TABLE news (
-  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   title TEXT,
   content TEXT,
   category TEXT,
