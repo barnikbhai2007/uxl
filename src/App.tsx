@@ -1154,13 +1154,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     onClose, 
     handleUpdateRegistration, 
     isSubmitting,
-    config
+    config,
+    registrations = []
   }: { 
     registration: Registration,
     onClose: () => void, 
     handleUpdateRegistration: (data: Registration) => Promise<void>, 
     isSubmitting: boolean,
-    config?: Config
+    config?: Config,
+    registrations?: Registration[]
   }) => {
     const [formData, setFormData] = useState({
       ...registration,
@@ -1170,7 +1172,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       teamOvr: (registration.teamOvr || '').toString(),
       experience: registration.experience || '',
       goalkeeper: registration.goalkeeper || '',
-      logoUrl: registration.logoUrl || ''
+      logoUrl: registration.logoUrl || '',
+      country: registration.country || ''
     });
     const [isCompressing, setIsCompressing] = useState(false);
 
@@ -1312,6 +1315,43 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-bold tracking-normal text-white/40">World Cup Country / Flag</label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-2 hide-scrollbar">
+                  {(() => {
+                    const takenCountries = registrations
+                      ? registrations
+                          .filter(r => r.id !== registration.id)
+                          .map(r => r.country)
+                          .filter(Boolean) as string[]
+                      : [];
+                    return WORLD_CUP_TEAMS.map((team) => {
+                      const isTaken = takenCountries.includes(team.name);
+                      const isSelected = formData.country === team.name;
+                      return (
+                        <button
+                          key={team.name}
+                          type="button"
+                          disabled={isTaken && !isSelected}
+                          onClick={() => setFormData({...formData, country: team.name})}
+                          className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
+                            isSelected 
+                              ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)] font-bold' 
+                              : isTaken
+                                ? 'bg-white/5 border-transparent text-white/30 cursor-not-allowed opacity-50'
+                                : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
+                          }`}
+                        >
+                          <span className="text-xl">{team.flag}</span>
+                          <span className="text-xs font-bold truncate">{team.name}</span>
+                          {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
+                        </button>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+
+              <div className="md:col-span-2 space-y-2">
                 <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
                 <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
@@ -1341,31 +1381,38 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const [search, setSearch] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
 
-    // Initial search should be based on the current value if it's already a team name
-    useEffect(() => {
+    // Get current team full name/fcName/name
+    const currentSelectedName = useMemo(() => {
       const safeTeams = teams || [];
       const team = safeTeams.find(t => t.id === value);
-      if (team) {
-        setSearch(team.fullName || team.fcName || team.name || '');
-      } else {
-        setSearch(value || '');
-      }
+      return team ? (team.fullName || team.fcName || team.name || '') : (value || '');
     }, [value, teams]);
+
+    // Initial search should be based on the current value if it's already a team name
+    useEffect(() => {
+      setSearch(currentSelectedName);
+    }, [currentSelectedName]);
 
     useEffect(() => {
       const handleClickOutside = (event: MouseEvent) => {
         if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
           setIsOpen(false);
+          // Revert search input back to selected name if closed without selecting
+          setSearch(currentSelectedName);
         }
       };
       document.addEventListener('mousedown', handleClickOutside);
       return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [currentSelectedName]);
 
     const filteredTeams = useMemo(() => {
       const safeTeams = teams || [];
       const lowerSearch = (search || '').toLowerCase();
-      const filtered = search ? safeTeams.filter(t => 
+      
+      // If search text is exactly the currently selected name, do NOT filter (show all options so they see who is selected)
+      const isUserSearching = search.trim().toLowerCase() !== currentSelectedName.trim().toLowerCase();
+      
+      const filtered = (search && isUserSearching) ? safeTeams.filter(t => 
         (t.fcName?.toLowerCase() || '').includes(lowerSearch) || 
         (t.name?.toLowerCase() || '').includes(lowerSearch) ||
         (t.fullName?.toLowerCase() || '').includes(lowerSearch)
@@ -1377,7 +1424,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         const nameB = b.fullName || b.fcName || b.name || '';
         return nameA.localeCompare(nameB);
       });
-    }, [search, teams]);
+    }, [search, teams, currentSelectedName]);
 
     return (
       <div className="space-y-2 relative" ref={dropdownRef}>
@@ -1386,10 +1433,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <input 
             type="text" 
             value={search}
-            onFocus={() => setIsOpen(true)}
+            onFocus={() => {
+              setIsOpen(true);
+            }}
             onChange={e => {
               setSearch(e.target.value);
-              onChange(e.target.value);
+              if (e.target.value === '') {
+                onChange('');
+              }
               setIsOpen(true);
             }} 
             placeholder={placeholder}
@@ -1404,34 +1455,53 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
+              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto w-full"
             >
               {filteredTeams.length > 0 ? (
-                filteredTeams.map(team => (
-                  <button
-                    key={team.id}
-                    onClick={() => {
-                      const displayValue = team.fullName || team.fcName || team.name;
-                      onChange(team.id);
-                      setSearch(displayValue);
-                      setIsOpen(false);
-                    }}
-                    className="w-full px-4 py-3 text-left hover:bg-fc-purple-light/30 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
-                  >
-                    <div className="w-8 h-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
-                      {team.logoUrl ? (
-                        <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-2xl" referrerPolicy="no-referrer" />
-                      ) : (
-                        <Star className="w-4 h-4 text-fc-neon-green" />
+                filteredTeams.map(team => {
+                  const isSelected = team.id === value;
+                  return (
+                    <button
+                      key={team.id}
+                      type="button"
+                      onClick={() => {
+                        const displayValue = team.fullName || team.fcName || team.name;
+                        onChange(team.id);
+                        setSearch(displayValue);
+                        setIsOpen(false);
+                      }}
+                      className={`w-full px-4 py-3 text-left flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors cursor-pointer ${
+                        isSelected 
+                          ? 'bg-fc-neon-green/20 text-white font-bold border-l-2 border-l-fc-neon-green' 
+                          : 'hover:bg-fc-purple-light/30 text-white/80'
+                      }`}
+                    >
+                      <div className="w-8 h-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                        {team.logoUrl ? (
+                          <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-2xl" referrerPolicy="no-referrer" />
+                        ) : (
+                          <Star className={`w-4 h-4 ${isSelected ? 'text-fc-neon-green animate-pulse' : 'text-fc-neon-green/40'}`} />
+                        )}
+                      </div>
+                      <div className="flex-1 truncate">
+                        <p className={`text-xs truncate ${isSelected ? 'text-fc-neon-green font-bold' : 'text-white font-bold'}`}>
+                          {team.fullName || team.fcName || team.name}
+                        </p>
+                        {team.country && (
+                          <div className="flex items-center gap-1 mt-0.5">
+                            <span className="text-xs">{WORLD_CUP_FLAGS.get(team.country) || '🌍'}</span>
+                            <span className="text-[9px] text-white/40">{team.country}</span>
+                          </div>
+                        )}
+                      </div>
+                      {isSelected && (
+                        <div className="px-2 py-0.5 bg-fc-neon-green text-black text-[9px] uppercase tracking-wider font-extrabold rounded-md shrink-0 shadow-md">
+                          Selected
+                        </div>
                       )}
-                    </div>
-                    <div className="flex-1 truncate">
-                      <p className="text-xs font-bold text-white truncate">
-                        {team.fullName || team.fcName || team.name}
-                      </p>
-                    </div>
-                  </button>
-                ))
+                    </button>
+                  );
+                })
               ) : (
                 <div className="p-4 text-center">
                   <p className="text-[10px] font-bold tracking-normal text-white/20 ">No matching players</p>
@@ -7673,6 +7743,7 @@ export default function App() {
             handleUpdateRegistration={handleUpdateRegistration}
             isSubmitting={isSubmittingRegistration}
             config={config}
+            registrations={registrations}
           />
         )}
         {adminEditingRegistration && (
@@ -7682,6 +7753,7 @@ export default function App() {
             handleUpdateRegistration={handleAdminUpdateUserRegistration}
             isSubmitting={isSubmittingRegistration}
             config={config}
+            registrations={registrations}
           />
         )}
         {isAdminModalOpen && (
