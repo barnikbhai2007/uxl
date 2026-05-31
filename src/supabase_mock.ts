@@ -324,6 +324,19 @@ function getFromCache(collection: string, id: string) {
   return globalCache[collection]?.[id];
 }
 
+function invalidateQueryCache(collectionName: string) {
+  try {
+    for (let i = localStorage.length - 1; i >= 0; i--) {
+      const key = localStorage.key(i);
+      if (key && (key === `sb_query_${collectionName}` || key.startsWith(`sb_query_` + JSON.stringify({c: collectionName}).slice(0, -1)))) {
+        localStorage.removeItem(key);
+      }
+    }
+  } catch (e) {
+    console.error("Failed to invalidate query cache :", e);
+  }
+}
+
 function applyQueryLocally(ref: CollRef | Query) {
   const collectionName = ref.collectionName;
   initCache(collectionName);
@@ -365,22 +378,17 @@ function applyQueryLocally(ref: CollRef | Query) {
 }
 
 export async function getDoc(ref: DocRef) {
-  const cached = getFromCache(ref.collectionName, ref.id);
-  if (cached) {
-      return {
-          exists: () => true,
-          id: ref.id,
-          data: () => cached
-      };
-  }
-  
   try {
     const res = await apiFetch("/api/db/get", {
       method: "POST",
       body: JSON.stringify({ collection: ref.collectionName, id: ref.id })
     });
     const parsedData = res.data ? JSON.parse(res.data.data) : null;
-    if (parsedData) updateGlobalCache(ref.collectionName, ref.id, parsedData);
+    if (parsedData) {
+      updateGlobalCache(ref.collectionName, ref.id, parsedData);
+    } else {
+      updateGlobalCache(ref.collectionName, ref.id, null, true);
+    }
     
     return {
       exists: () => !!parsedData,
@@ -388,8 +396,13 @@ export async function getDoc(ref: DocRef) {
       data: () => parsedData,
     };
   } catch (error: any) {
-    console.error("getDoc error:", error);
-    throw new Error(error.message);
+    console.warn("getDoc server query failed, falling back to local cache:", error);
+    const cached = getFromCache(ref.collectionName, ref.id);
+    return {
+      exists: () => !!cached,
+      id: ref.id,
+      data: () => cached,
+    };
   }
 }
 
@@ -506,6 +519,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
 
   if (!options?.merge) {
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
+    invalidateQueryCache(ref.collectionName);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
     await bumpCollectionMeta(ref.collectionName);
   }
@@ -534,6 +548,7 @@ export async function setDoc(ref: DocRef, data: any, options: any = {}) {
       body: JSON.stringify({ collection: ref.collectionName, id: ref.id, data: dataToSave })
     });
     updateGlobalCache(ref.collectionName, ref.id, dataToSave);
+    invalidateQueryCache(ref.collectionName);
     localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
     await bumpCollectionMeta(ref.collectionName);
   } catch (error) {
@@ -612,6 +627,7 @@ export async function updateDoc(ref: DocRef, data: any) {
         body: JSON.stringify({ collection: ref.collectionName, id: ref.id, data: nextData })
       });
       updateGlobalCache(ref.collectionName, ref.id, nextData);
+      invalidateQueryCache(ref.collectionName);
       localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
       await bumpCollectionMeta(ref.collectionName);
     }
@@ -622,6 +638,7 @@ export async function updateDoc(ref: DocRef, data: any) {
 
 export async function deleteDoc(ref: DocRef) {
   updateGlobalCache(ref.collectionName, ref.id, null, true);
+  invalidateQueryCache(ref.collectionName);
   localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: ref.collectionName }));
   await bumpCollectionMeta(ref.collectionName);
 
@@ -702,8 +719,8 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
 
   fetchAndNotify();
 
-  const BASE_INTERVAL = 8 * 60 * 1000; 
-  const JITTER = Math.floor(Math.random() * 120000); 
+  const BASE_INTERVAL = 15 * 1000; 
+  const JITTER = Math.floor(Math.random() * 5000);  
   
   const timer = setInterval(async () => {
     if (!_mounted) return;

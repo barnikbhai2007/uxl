@@ -1839,6 +1839,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleApproveRegistration,
     handleRejectRegistration,
     handleDeleteRegistration,
+    handleResetAllRegistrations,
     isEditingMode,
     setIsEditingMode,
     matchLabels,
@@ -1865,6 +1866,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleApproveRegistration: (id: string) => Promise<void>,
     handleRejectRegistration: (id: string) => Promise<void>,
     handleDeleteRegistration: (id: string) => Promise<void>,
+    handleResetAllRegistrations: () => Promise<void>,
     isEditingMode: boolean,
     setIsEditingMode: (mode: boolean) => void,
     matchLabels: Record<string, string>,
@@ -2577,9 +2579,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <h3 className="text-xl md:text-2xl font-display font-bold  text-white tracking-tight">Registered Users</h3>
                     <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-bold tracking-[0.2em] mt-1">Review applicant field data</p>
                    </div>
-                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-2xl flex items-center gap-3">
-                      <span className="text-[9px] md:text-[10px] font-bold text-fc-neon-green tracking-normal">Active applicants:</span>
-                      <span className="text-xl md:text-2xl font-display font-bold  text-white">{registrations.length}</span>
+                   <div className="flex flex-wrap items-center gap-3">
+                     <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-2xl flex items-center gap-3">
+                        <span className="text-[9px] md:text-[10px] font-bold text-fc-neon-green tracking-normal">Active applicants:</span>
+                        <span className="text-xl md:text-2xl font-display font-bold  text-white">{registrations.length}</span>
+                     </div>
+                     <button
+                       id="btn-admin-full-reset-players"
+                       onClick={handleResetAllRegistrations}
+                       className="px-4 py-2 bg-red-500/10 hover:bg-red-500/35 text-red-400 hover:text-white border border-red-500/30 hover:border-red-500/60 rounded-2xl flex items-center gap-2 text-xs font-bold transition duration-200 cursor-pointer shadow-sm tracking-wide py-2 md:py-3 h-full"
+                       title="Full reset all players and registrations"
+                     >
+                       <RotateCcw className="w-3.5 h-3.5 animate-pulse" />
+                       <span>Full Reset Players</span>
+                     </button>
                    </div>
                 </div>
 
@@ -4296,6 +4309,66 @@ export default function App() {
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Delete failed. Check console.");
+    }
+  };
+
+  const handleResetAllRegistrations = async () => {
+    if (!isAdmin) {
+      alert("Permission denied");
+      return;
+    }
+    const confirmFirst = window.confirm("Are you absolutely sure you want to perform a FULL RESET? This will delete all players, teams, and user registration accounts from the tournament data. This action cannot be undone!");
+    if (!confirmFirst) return;
+    
+    const confirmSecond = window.confirm("WARNING: Doing this will wipe the registration list clean so players can register afresh. Click OK to confirm the permanent wipe.");
+    if (!confirmSecond) return;
+
+    try {
+      // Fetch all registrations from server directly
+      const colRef = collection(db, 'registrations');
+      const snap = await getDocs(colRef);
+      
+      const promises: Promise<void>[] = [];
+      snap.forEach((docSnap: any) => {
+        promises.push(deleteDoc(doc(db, 'registrations', docSnap.id)));
+        const data = docSnap.data();
+        if (data && data.userId) {
+          promises.push(deleteDoc(doc(db, 'users', data.userId)).catch(() => {}));
+        }
+      });
+      
+      // Also fetch and clean users who registered but might not have entries
+      const usersCol = collection(db, 'users');
+      const usersSnap = await getDocs(usersCol);
+      usersSnap.forEach((userDoc: any) => {
+        const u = userDoc.data();
+        if (u && u.role !== 'admin' && userDoc.id !== user?.uid) {
+          promises.push(deleteDoc(doc(db, 'users', userDoc.id)).catch(() => {}));
+        }
+      });
+
+      await Promise.all(promises);
+
+      // Clear local caches
+      localStorage.removeItem('cache_teams');
+      localStorage.removeItem('cache_matches');
+      localStorage.removeItem('cache_bracket');
+
+      const qKey = 'registrations';
+      localStorage.removeItem(`sb_query_${qKey}`);
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('sb_query_') || key.startsWith('sb_cache_'))) {
+          localStorage.removeItem(key);
+        }
+      }
+
+      await refreshCache('teams');
+      alert("All registrations and user accounts have been successfully wiped and reset!");
+      window.location.reload();
+    } catch (error) {
+      console.error("Full reset failed:", error);
+      alert(`Wipe failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   };
 
@@ -6843,6 +6916,7 @@ export default function App() {
             handleApproveRegistration={handleApproveRegistration}
             handleRejectRegistration={handleRejectRegistration}
             handleDeleteRegistration={handleDeleteRegistration}
+            handleResetAllRegistrations={handleResetAllRegistrations}
             isEditingMode={isEditingMode}
             setIsEditingMode={setIsEditingMode}
             matchLabels={matchLabels}
