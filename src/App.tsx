@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft } from 'lucide-react';
-import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS } from './constants';
+import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -322,7 +322,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
         initial={{ opacity: 0, scale: 0.95, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 20 }}
-        className="relative w-full max-w-4xl bg-gradient-to-b from-fc-purple-dark to-fc-purple-base/50 border border-white/10 rounded-sm p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
+        className="relative w-full max-w-4xl bg-gradient-to-b from-fc-purple-dark to-fc-purple-base/50 border border-white/10 rounded-2xl p-6 md:p-10 shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto hide-scrollbar"
       >
         <div className="absolute top-6 right-6 flex gap-2 z-20">
           {isAdmin && resetPlayer && (
@@ -334,71 +334,78 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
                   setConfirmReset(true);
                 }
               }} 
-              className={`p-2 rounded-sm transition-colors flex items-center gap-2 px-4 text-xs font-black uppercase tracking-widest ${confirmReset ? 'bg-red-600 text-white animate-pulse' : 'bg-red-600/20 text-red-400 hover:bg-red-600/40'}`}
+              className={`p-2 rounded-2xl transition-colors flex items-center gap-2 px-4 text-xs font-bold tracking-normal ${confirmReset ? 'bg-red-600 text-white animate-pulse' : 'bg-red-600/20 text-red-400 hover:bg-red-600/40'}`}
             >
               <RotateCcw className="w-4 h-4" />
               {confirmReset ? 'Confirm Reset' : 'Reset Player Data'}
             </button>
           )}
-          <button onClick={onClose} className="p-2 rounded-sm bg-white/5 hover:bg-white/10 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-2xl bg-white/5 hover:bg-white/10 transition-colors">
             <X className="w-5 h-5 text-white/60" />
           </button>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10 mt-8 md:mt-0">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-4xl md:text-5xl font-black shrink-0 shadow-lg overflow-hidden">
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-4xl md:text-5xl font-bold shrink-0 shadow-lg overflow-hidden">
             {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : team.name[0]}
           </div>
           <div className="flex-1 space-y-2">
-            <h2 className="text-3xl md:text-5xl font-display font-black uppercase italic tracking-tighter leading-none">{team.fullName}</h2>
+            <h2 className="text-3xl md:text-5xl font-display font-bold  tracking-tight leading-none flex items-center gap-3">
+              {team.fullName}
+              {team.country && (
+                <span className="text-3xl md:text-4xl shadow-sm" title={team.country}>
+                  {WORLD_CUP_TEAMS.find(t => t.name === team.country)?.flag || '🌍'}
+                </span>
+              )}
+            </h2>
             <div className="flex flex-wrap items-center gap-3">
-              <span className="px-3 py-1 bg-white/10 rounded-sm text-xs font-black uppercase tracking-widest text-white/60">FC: {team.fcName}</span>
-              <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-sm text-xs font-black uppercase tracking-widest text-fc-neon-green">OVR {team.ovr}</span>
+              <span className="px-3 py-1 bg-white/10 rounded-2xl text-xs font-bold tracking-normal text-white/60">FC: {team.fcName}</span>
+              <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-2xl text-xs font-bold tracking-normal text-fc-neon-green">OVR {team.ovr}</span>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          <div className="bg-white/5 border border-white/10 rounded-sm p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Total Goals</span>
-            <span className="text-2xl font-black text-green-400">{totalGoalsScored}</span>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold tracking-normal text-white/30 mb-1">Total Goals</span>
+            <span className="text-2xl font-bold text-green-400">{totalGoalsScored}</span>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-sm p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Goals Conceded</span>
-            <span className="text-2xl font-black text-red-400">{totalGoalsConceded}</span>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold tracking-normal text-white/30 mb-1">Goals Conceded</span>
+            <span className="text-2xl font-bold text-red-400">{totalGoalsConceded}</span>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-sm p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Avg Possession</span>
-            <span className="text-2xl font-black text-fc-neon-green">{avgPossession}%</span>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold tracking-normal text-white/30 mb-1">Avg Possession</span>
+            <span className="text-2xl font-bold text-fc-neon-green">{avgPossession}%</span>
           </div>
-          <div className="bg-white/5 border border-white/10 rounded-sm p-4 flex flex-col justify-center items-center text-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-white/30 mb-1">Top Scorer</span>
-            <span className="text-lg font-black text-orange-400 truncate w-full px-2" title={topScorerInfo[0] as string}>{topScorerInfo[0]}</span>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col justify-center items-center text-center">
+            <span className="text-[10px] font-bold tracking-normal text-white/30 mb-1">Top Scorer</span>
+            <span className="text-lg font-bold text-orange-400 truncate w-full px-2" title={topScorerInfo[0] as string}>{topScorerInfo[0]}</span>
             <span className="text-[10px] font-bold text-orange-400/50">{topScorerInfo[1]} Goals</span>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Upcoming Matches</h3>
+            <h3 className="text-sm font-bold tracking-normal text-white/60 mb-2 border-b border-white/10 pb-2">Upcoming Matches</h3>
             {upcomingMatches.length > 0 ? upcomingMatches.slice(0, 3).map(m => {
               const opp = m.homeTeamId === team.id ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
               return (
-                                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-sm border border-white/10">
+                                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-3">
-                    <EditableMatchBadge match={m} isAdmin={isAdmin} className="bg-fc-purple-light/30 px-1.5 py-0.5 rounded border border-fc-neon-green/30" textClassName="text-fc-neon-green text-[8px] font-black" />
-                    <span className="text-xs font-bold uppercase">{opp?.name || 'TBD'}</span>
+                    <EditableMatchBadge match={m} isAdmin={isAdmin} className="bg-fc-purple-light/30 px-1.5 py-0.5 rounded border border-fc-neon-green/30" textClassName="text-fc-neon-green text-[8px] font-bold" />
+                    <span className="text-xs font-bold">{opp?.name || 'TBD'}</span>
                   </div>
-                  <span className="text-[10px] uppercase font-black text-white/30 tracking-widest">{m.date}</span>
+                  <span className="text-[10px] font-bold text-white/30 tracking-normal">{m.date}</span>
                 </div>
               );
             }) : (
-               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-sm border border-white/10">No upcoming matches</div>
+               <div className="p-4 text-center text-white/20 text-xs font-bold tracking-normal bg-white/5 rounded-2xl border border-white/10">No upcoming matches</div>
             )}
           </div>
 
           <div className="space-y-4">
-            <h3 className="text-sm font-black uppercase tracking-widest text-white/60 mb-2 border-b border-white/10 pb-2">Recent Form</h3>
+            <h3 className="text-sm font-bold tracking-normal text-white/60 mb-2 border-b border-white/10 pb-2">Recent Form</h3>
             {recentMatches.length > 0 ? recentMatches.map(m => {
               const isHome = m.homeTeamId === team.id;
               const opp = isHome ? teams.find(t => t.id === m.awayTeamId) : teams.find(t => t.id === m.homeTeamId);
@@ -407,10 +414,10 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
               const isWin = myScore > oppScore;
               const isDraw = myScore === oppScore;
               return (
-                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-sm border border-white/10">
+                <div key={m.id} className="flex items-center justify-between p-3 bg-white/5 rounded-2xl border border-white/10">
                   <div className="flex items-center gap-3">
-                    <span className={`w-2 h-2 rounded-sm ${isWin ? 'bg-green-500' : isDraw ? 'bg-gray-400' : 'bg-red-500'}`} />
-                    <span className="text-xs font-bold uppercase">{opp?.name || 'Unknown'}</span>
+                    <span className={`w-2 h-2 rounded-2xl ${isWin ? 'bg-green-500' : isDraw ? 'bg-gray-400' : 'bg-red-500'}`} />
+                    <span className="text-xs font-bold">{opp?.name || 'Unknown'}</span>
                   </div>
                   <div className="flex items-center gap-3 font-mono font-bold">
                     <span className={isWin ? 'text-green-400' : (isDraw ? 'text-gray-400' : 'text-white/40')}>{myScore}</span>
@@ -420,7 +427,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
                 </div>
               );
             }) : (
-               <div className="p-4 text-center text-white/20 text-xs uppercase font-black tracking-widest bg-white/5 rounded-sm border border-white/10">No recent matches</div>
+               <div className="p-4 text-center text-white/20 text-xs font-bold tracking-normal bg-white/5 rounded-2xl border border-white/10">No recent matches</div>
             )}
           </div>
         </div>
@@ -484,7 +491,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const displayStatus = match.status === 'finished' ? 'finished' : (overrideStatus || match.status);
 
     const TeamLogo = ({ team }: { team: Team | undefined }) => (
-      <div className="w-14 h-14 rounded-sm bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-black shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10">
+      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10">
         {team?.logoUrl ? (
           <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
         ) : (
@@ -497,7 +504,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       if (isAdmin && isEditingMode && onUpdateMatch) {
         return (
           <select
-            className="mt-2 bg-fc-purple-dark/80 border border-fc-neon-green/50/50 rounded-sm text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
+            className="mt-2 bg-fc-purple-dark/80 border border-fc-neon-green/50/50 rounded-2xl text-white text-[10px] p-1 font-bold outline-none max-w-[120px]"
             value={team?.id || ''}
             onClick={(e) => e.stopPropagation()}
             onChange={(e) => {
@@ -522,8 +529,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         );
       }
       return (
-        <div className="text-center max-w-[140px]">
-          <div className="text-[10px] font-black text-white uppercase tracking-tight truncate">
+        <div className="text-center max-w-[140px] mt-2">
+          <div className="text-lg md:text-xl font-display text-white tracking-normal truncate px-2">
             {team?.fullName || team?.fcName || team?.name || 'TBD'}
           </div>
         </div>
@@ -534,10 +541,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       <motion.div
         whileHover={{ scale: 1.01, y: -2 }}
         onClick={onClick}
-        className="bg-white/5 border border-white/10 rounded-sm p-6 cursor-pointer hover:bg-white/10 transition-all group relative overflow-visible backdrop-blur-sm"
+        className="bg-white/[0.04] backdrop-blur-xl border border-white/5 relative p-6 cursor-pointer hover:brightness-110 transition-all group overflow-visible rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
       >
         <div className="absolute top-0 right-0 p-4 opacity-[0.08] pointer-events-none select-none">
-           <span className="text-6xl font-black italic text-white tracking-tighter">
+           <span className="text-6xl font-display font-bold  text-white tracking-tight">
              {match.matchNumber}
            </span>
         </div>
@@ -548,32 +555,32 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {renderTeamName('home', homeTeam)}
           </div>
 
-          <div className="flex flex-col items-center gap-3 px-6 py-2 bg-fc-purple-dark/20 rounded-sm border border-white/5">
+          <div className="flex flex-col items-center gap-3 px-6 py-4 bg-[#0A0A0A] border border-white/5 rounded-2xl shadow-[inset_0_2px_10px_rgb(0,0,0,0.5)]">
             <EditableMatchBadge 
               match={match} 
               isAdmin={isAdmin} 
               onUpdateMatch={onUpdateMatch}
-              className="absolute -top-2 left-1/2 -translate-x-1/2 bg-fc-neon-green text-black px-2 py-0.5 rounded shadow-lg"
-              textClassName="text-[8px] font-black text-black uppercase tracking-widest placeholder-black/50"
+              className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#3B82F6] px-3 py-1 rounded-full shadow-md"
+              textClassName="text-[10px] font-sans font-bold text-white tracking-[0.1em] placeholder-white/50"
             />
             <div className="flex items-center gap-4">
-              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+              <span className={`text-4xl font-display tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
                 {match.homeScore ?? '-'}
               </span>
               <div className="flex flex-col items-center">
-                 <span className="text-[10px] font-black text-white/20">VS</span>
-                 <div className="h-4 w-[1px] bg-white/10 my-1" />
+                 <span className="text-[10px] font-sans font-bold text-[#A0A0A0]">VS</span>
+                 <div className="h-4 w-[1px] bg-white/[0.08] backdrop-blur-xl my-1" />
               </div>
-              <span className={`text-3xl font-black tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-green-400' : 'text-white/40') : 'text-white'}`}>
+              <span className={`text-4xl font-display tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
                 {match.awayScore ?? '-'}
               </span>
             </div>
-            <div className={`px-3 py-1 rounded-sm text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
-              displayStatus === 'finished' ? 'bg-green-500/10 text-green-400 border border-green-500/20' :
-              displayStatus === 'ongoing' || displayStatus === 'live' ? 'bg-red-500/10 text-red-100 animate-pulse border border-red-500/20' :
-              'bg-fc-purple-light/20 text-white border border-fc-neon-green/30'
+            <div className={`px-4 py-1 text-[10px] font-sans font-bold tracking-[0.1em] rounded-full shadow-sm ${
+              displayStatus === 'finished' ? 'bg-[#3B82F6] text-white' :
+              displayStatus === 'ongoing' || displayStatus === 'live' ? 'bg-[#EF4444] text-white animate-pulse' :
+              'bg-white/[0.08] backdrop-blur-xl text-[#A0A0A0]'
             }`}>
-              {displayStatus === 'finished' ? 'Final' : displayStatus === 'ongoing' || displayStatus === 'live' ? 'Live' : 'Upcoming'}
+              {displayStatus === 'finished' ? 'FT' : displayStatus === 'ongoing' || displayStatus === 'live' ? 'LIVE' : 'UPCOMING'}
             </div>
           </div>
 
@@ -679,12 +686,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
       return (
         <div className="space-y-1.5">
-          <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+          <div className="flex justify-between items-center text-[10px] font-bold tracking-normal">
             <span className="text-white w-12 text-left">{home}{suffix}</span>
             <span className="text-fc-neon-green/40 text-[9px]">{label}</span>
             <span className="text-white w-12 text-right">{away}{suffix}</span>
           </div>
-          <div className="h-1 bg-white/5 rounded-sm overflow-hidden flex">
+          <div className="h-1 bg-white/5 rounded-2xl overflow-hidden flex">
             <div className="h-full bg-fc-neon-green text-black transition-all duration-700" style={{ width: `${homePercent}%` }} />
             <div className="h-full bg-white/10 transition-all duration-700" style={{ width: `${100 - homePercent}%` }} />
           </div>
@@ -706,7 +713,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           animate={{ scale: 1, opacity: 1 }}
           exit={{ scale: 0.98, opacity: 0 }}
           transition={{ duration: 0.15, ease: "easeOut" }}
-          className="w-full max-w-2xl bg-fc-purple-base border border-white/10 rounded-sm overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default will-change-transform"
+          className="w-full max-w-2xl bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl relative max-h-[90vh] overflow-y-auto cursor-default will-change-transform"
           onClick={e => e.stopPropagation()}
         >
           <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-fc-neon-green/20 to-transparent pointer-events-none" />
@@ -723,46 +730,46 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       setConfirmDelete(true);
                     }
                   }}
-                  className={`px-4 py-2 border rounded-sm text-xs font-black uppercase transition-all ${confirmDelete ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/20 hover:bg-red-600/40 border-red-500/50 text-red-400'}`}
+                  className={`px-4 py-2 border rounded-2xl text-xs font-bold transition-all ${confirmDelete ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/20 hover:bg-red-600/40 border-red-500/50 text-red-400'}`}
                 >
                   {confirmDelete ? 'Click to Confirm Delete' : 'Delete Match'}
                 </button>
               </div>
             )}
             
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] md:text-[20rem] font-black text-white/[0.02] italic select-none pointer-events-none">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[15rem] md:text-[20rem] font-bold text-white/[0.02]  select-none pointer-events-none">
               {match.matchNumber}
             </div>
             
             <div className="flex justify-between items-center mb-12 relative z-10">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-yellow-500" />
-                <span className="text-xs font-black uppercase tracking-[0.3em] text-fc-neon-green">Match Details</span>
+                <span className="text-xs font-bold tracking-[0.3em] text-fc-neon-green">Match Details</span>
               </div>
               <button 
                 onClick={onClose}
-                className="w-10 h-10 rounded-sm bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
+                className="w-10 h-10 rounded-2xl bg-white/5 hover:bg-white/10 flex items-center justify-center transition-colors"
               >
                 <span className="text-2xl">&times;</span>
               </button>
             </div>
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
-              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-sm transition-colors">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-2xl transition-colors">
                 <div 
                   className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
                 >
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
                     {homeTeam?.logoUrl ? <img src={homeTeam.logoUrl} className="w-full h-full object-cover" /> : (homeTeam?.name[0] || '?')}
                   </div>
                   <div className="space-y-1">
-                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{homeTeam?.fullName || 'TBD'}</h2>
+                    <h2 className="font-display font-bold text-lg md:text-xl  tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{homeTeam?.fullName || 'TBD'}</h2>
                     {homeTeam && (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">FC: {homeTeam.fcName}</span>
+                        <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal">FC: {homeTeam.fcName}</span>
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-black text-fc-neon-green">OVR {homeTeam.ovr}</span>
+                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-bold text-fc-neon-green">OVR {homeTeam.ovr}</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
@@ -770,7 +777,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                             }}
                             className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-fc-neon-green transition-colors group/uid"
                           >
-                            <span className="font-mono font-bold tracking-wider uppercase">
+                            <span className="font-mono font-bold tracking-wider">
                               {copiedId === homeTeam.uid ? 'Copied!' : 'Copy UID'}
                             </span>
                             {copiedId === homeTeam.uid ? (
@@ -786,9 +793,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 {isEditingMode ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
-                    <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
+                    <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Edit Scorers</span>
                     {localHomeScorers.map((s, i) => (
-                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-sm w-full border border-white/5">
+                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-2xl w-full border border-white/5">
                         <input type="text" value={s.playerName} onChange={e => { const newS = [...localHomeScorers]; newS[i].playerName = e.target.value; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
                           <input type="number" value={s.goals} onChange={e => { const newS = [...localHomeScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalHomeScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
@@ -806,15 +813,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
-                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalHomeScorers([...localHomeScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-2xl font-bold tracking-normal hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-2xl font-bold tracking-normal hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.homeScorers && match.homeScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
                     {match.homeScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-white/40 italic">
-                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)} {s.time && `(${s.time})`}
+                        <span className="text-[10px] font-sans font-bold text-[#A0A0A0] tracking-normal">
+                          {s.playerName} <span className="text-[#3B82F6] ml-1">{Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>[G] </span>)}</span> {s.time && `(${s.time})`}
                         </span>
                       </div>
                     ))}
@@ -823,58 +830,58 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
 
               <div className="flex flex-col items-center gap-2 md:gap-4">
-                <div className="text-[10px] md:text-xs font-black text-fc-neon-green/50 uppercase tracking-widest">Score</div>
+                <div className="text-[10px] md:text-xs font-bold text-fc-neon-green/50 tracking-normal">Score</div>
                 <div className="flex items-center gap-4 md:gap-6">
                   {match.isDNF ? (
-                    <span className="text-4xl md:text-6xl font-black text-red-500 tracking-tighter">DNF</span>
+                    <span className="text-4xl md:text-6xl font-bold text-red-500 tracking-tight">DNF</span>
                   ) : isEditingMode && isAdmin ? (
                     <div className="flex items-center gap-2">
                       <input type="number" min="0" defaultValue={match.homeScore ?? 0} onBlur={(e) => {
                           const val = parseInt(e.target.value);
                           addLogAndUpdate('homeScore', isNaN(val) ? 0 : val, 'Home Score');
-                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-sm text-center text-4xl md:text-6xl font-black text-white" />
+                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-bold text-white" />
                       <span className="text-2xl text-white/20">VS</span>
                       <input type="number" min="0" defaultValue={match.awayScore ?? 0} onBlur={(e) => {
                           const val = parseInt(e.target.value);
                           addLogAndUpdate('awayScore', isNaN(val) ? 0 : val, 'Away Score');
-                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-sm text-center text-4xl md:text-6xl font-black text-white" />
+                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-bold text-white" />
                     </div>
                   ) : (
                     <>
-                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.homeScore ?? '-'}</span>
-                      <span className="text-white/10 font-black text-xl md:text-2xl">VS</span>
-                      <span className="text-4xl md:text-6xl font-black tabular-nums">{match.awayScore ?? '-'}</span>
+                      <motion.span key={match.homeScore} initial={{ scale: 1.5, color: '#F0C040' }} animate={{ scale: 1, color: '#ffffff' }} transition={{ duration: 0.5 }} className="text-4xl md:text-6xl font-bold tabular-nums inline-block origin-center">{match.homeScore ?? '-'}</motion.span>
+                      <span className="text-white/10 font-bold text-xl md:text-2xl">VS</span>
+                      <motion.span key={match.awayScore} initial={{ scale: 1.5, color: '#F0C040' }} animate={{ scale: 1, color: '#ffffff' }} transition={{ duration: 0.5 }} className="text-4xl md:text-6xl font-bold tabular-nums inline-block origin-center">{match.awayScore ?? '-'}</motion.span>
                     </>
                   )}
                 </div>
                 {match.rescheduled && displayStatus !== 'rescheduled' && (
-                  <div className="text-[8px] md:text-[10px] font-black uppercase tracking-[0.2em] text-orange-400 mb-2">
+                  <div className="text-[8px] md:text-[10px] font-bold tracking-[0.2em] text-orange-400 mb-2">
                     Rescheduled Match
                   </div>
                 )}
-                <div className={`px-3 md:px-4 py-1 md:py-1.5 rounded-sm text-[8px] md:text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${
-                  displayStatus === 'finished' ? 'bg-green-500/20 text-green-400' : 
-                  displayStatus === 'rescheduled' ? 'bg-orange-500/20 text-orange-400' :
-                  displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-red-500/20 text-red-400' : 'bg-fc-purple-light/30 text-fc-neon-green'
+                <div className={`px-3 md:px-4 py-1 md:py-1.5 text-[10px] font-sans font-bold tracking-[0.1em] flex items-center gap-2 ${
+                  displayStatus === 'finished' ? 'bg-[#3B82F6] text-[#080808]' : 
+                  displayStatus === 'rescheduled' ? 'bg-white/[0.08] backdrop-blur-xl text-[#3B82F6]' :
+                  displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-[#EF4444] text-white' : 'bg-white/[0.08] backdrop-blur-xl text-[#555555]'
                 }`}>
                   {(displayStatus === 'live' || displayStatus === 'ongoing') && (
                     <span className="relative flex h-2 w-2">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-sm bg-red-400 opacity-75"></span>
-                      <span className="relative inline-flex rounded-sm h-2 w-2 bg-red-500"></span>
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-2xl bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-2xl h-2 w-2 bg-white"></span>
                     </span>
                   )}
-                  {displayStatus === 'finished' ? 'Final Result' : 
-                   displayStatus === 'rescheduled' ? 'Rescheduled' :
-                   (displayStatus === 'live' || displayStatus === 'ongoing') ? 'Ongoing' : 'Match Scheduled'}
+                  {displayStatus === 'finished' ? 'FINAL RESULT' : 
+                   displayStatus === 'rescheduled' ? 'rescheduled' :
+                   (displayStatus === 'live' || displayStatus === 'ongoing') ? 'LIVE' : 'UPCOMING'}
                 </div>
 
                 {isEditingMode && isAdmin && (
                   <div className="mt-4 flex flex-col items-center gap-2">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Edit Status</p>
+                    <p className="text-[10px] font-bold tracking-normal text-white/40">Edit Status</p>
                     <select 
                       value={match.status}
                       onChange={(e) => addLogAndUpdate('status', e.target.value as any, 'Match Status')}
-                      className="bg-white/5 border border-white/10 rounded-sm px-4 py-2 text-xs font-black uppercase tracking-widest text-white outline-none focus:border-fc-neon-green/50 transition-all hover:bg-white/10"
+                      className="bg-white/5 border border-white/10 rounded-2xl px-4 py-2 text-xs font-bold tracking-normal text-white outline-none focus:border-fc-neon-green/50 transition-all hover:bg-white/10"
                     >
                       <option value="scheduled" className="bg-fc-purple-dark">Scheduled</option>
                       <option value="ongoing" className="bg-fc-purple-dark">Ongoing</option>
@@ -885,21 +892,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 )}
               </div>
 
-              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-sm transition-colors">
+              <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-2xl transition-colors">
                 <div 
                   className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
                 >
-                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-3xl md:text-4xl shadow-lg overflow-hidden">
                     {awayTeam?.logoUrl ? <img src={awayTeam.logoUrl} className="w-full h-full object-cover" /> : (awayTeam?.name[0] || '?')}
                   </div>
                   <div className="space-y-1">
-                    <h2 className="font-display font-black text-lg md:text-xl uppercase italic tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{awayTeam?.fullName || 'TBD'}</h2>
+                    <h2 className="font-display font-bold text-lg md:text-xl  tracking-tight pr-1 hover:text-fc-neon-green transition-colors">{awayTeam?.fullName || 'TBD'}</h2>
                     {awayTeam && (
                       <div className="flex flex-col items-center gap-1">
-                        <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">FC: {awayTeam.fcName}</span>
+                        <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal">FC: {awayTeam.fcName}</span>
                         <div className="flex items-center gap-2">
-                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-black text-fc-neon-green">OVR {awayTeam.ovr}</span>
+                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] font-bold text-fc-neon-green">OVR {awayTeam.ovr}</span>
                           <button 
                             onClick={(e) => {
                               e.stopPropagation();
@@ -907,7 +914,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                             }}
                             className="flex items-center gap-1.5 text-[9px] md:text-[10px] text-white/40 hover:text-fc-neon-green transition-colors group/uid"
                           >
-                            <span className="font-mono font-bold tracking-wider uppercase">
+                            <span className="font-mono font-bold tracking-wider">
                               {copiedId === awayTeam.uid ? 'Copied!' : 'Copy UID'}
                             </span>
                             {copiedId === awayTeam.uid ? (
@@ -923,9 +930,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
                 {isEditingMode ? (
                   <div className="mt-4 flex flex-col items-center gap-2 w-full md:max-w-[250px]">
-                    <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Edit Scorers</span>
+                    <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Edit Scorers</span>
                     {localAwayScorers.map((s, i) => (
-                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-sm w-full border border-white/5">
+                      <div key={i} className="flex flex-col gap-1 bg-fc-purple-dark/20 p-2 rounded-2xl w-full border border-white/5">
                         <input type="text" value={s.playerName} onChange={e => { const newS = [...localAwayScorers]; newS[i].playerName = e.target.value; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Player Name" />
                         <div className="flex gap-1 items-center">
                           <input type="number" value={s.goals} onChange={e => { const newS = [...localAwayScorers]; newS[i].goals = parseInt(e.target.value)||0; setLocalAwayScorers(newS); }} className="bg-white/5 border border-white/10 rounded px-2 py-1.5 w-12 text-xs text-white outline-none focus:border-fc-neon-green/50" placeholder="Goals" min="0" />
@@ -943,15 +950,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         </div>
                       </div>
                     ))}
-                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
-                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-sm font-black uppercase tracking-widest hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
+                    <button onClick={(e) => { e.stopPropagation(); setLocalAwayScorers([...localAwayScorers, { playerName: '', goals: 1 }]); }} className="text-[9px] bg-fc-purple-light/20 border border-fc-neon-green/50/30 text-fc-neon-green px-3 py-2 rounded-2xl font-bold tracking-normal hover:bg-fc-neon-green text-black hover:text-black transition-colors w-full">+ Add Scorer</button>
+                    <button onClick={handleSaveScorers} disabled={isSavingScorers} className="mt-2 text-[10px] bg-green-500 text-white px-3 py-2 rounded-2xl font-bold tracking-normal hover:bg-green-600 transition-colors w-full">{isSavingScorers ? 'Saving...' : 'Save Scorers'}</button>
                   </div>
                 ) : match.awayScorers && match.awayScorers.length > 0 ? (
                   <div className="mt-4 flex flex-col items-center gap-1">
                     {match.awayScorers.map((s, i) => (
                       <div key={i} className="flex items-center gap-2">
-                        <span className="text-[10px] font-bold text-white/40 italic">
-                          {s.playerName} {Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>⚽</span>)} {s.time && `(${s.time})`}
+                        <span className="text-[10px] font-sans font-bold text-[#A0A0A0] tracking-normal">
+                          {s.playerName} <span className="text-[#3B82F6] ml-1">{Array.from({ length: s.goals }).map((_, idx) => <span key={idx}>[G] </span>)}</span> {s.time && `(${s.time})`}
                         </span>
                       </div>
                     ))}
@@ -963,10 +970,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {displayStatus === 'finished' && (
               <>
                 {match.manOfTheMatch || (isEditingMode && isAdmin) ? (
-                  <div className="mt-6 flex flex-col items-center gap-2 bg-yellow-500/10 py-3 px-4 rounded-sm border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)]">
+                  <div className="mt-6 flex flex-col items-center gap-2 bg-yellow-500/10 py-3 px-4 rounded-2xl border border-yellow-500/20 shadow-[0_0_20px_rgba(234,179,8,0.05)]">
                     <div className="flex items-center justify-center gap-2">
                       <Trophy className="w-4 h-4 text-yellow-500" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-yellow-500/80">Man of the Match: </span>
+                      <span className="text-[10px] font-bold tracking-normal text-yellow-500/80">Man of the Match: </span>
                     </div>
                     {isEditingMode && isAdmin ? (
                       <input 
@@ -974,18 +981,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         defaultValue={match.manOfTheMatch || ''} 
                         placeholder="Player Name"
                         onBlur={(e) => addLogAndUpdate('manOfTheMatch', e.target.value, 'MOTM')}
-                        className="bg-fc-purple-dark/40 border border-yellow-500/30 rounded-sm px-3 py-1.5 text-xs font-black uppercase tracking-widest text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
+                        className="bg-fc-purple-dark/40 border border-yellow-500/30 rounded-2xl px-3 py-1.5 text-xs font-bold tracking-normal text-yellow-400 outline-none focus:border-yellow-500 w-full max-w-[200px] text-center"
                       />
                     ) : (
-                      <span className="text-sm font-display font-black italic uppercase text-yellow-400">{match.manOfTheMatch}</span>
+                      <span className="text-sm font-display font-bold  text-yellow-400">{match.manOfTheMatch}</span>
                     )}
                   </div>
                 ) : null}
 
                 {match.homeStats && match.awayStats && (
-                  <div className="mt-4 md:mt-6 space-y-4 p-4 md:p-6 bg-white/5 rounded-sm border border-white/5">
+                  <div className="mt-4 md:mt-6 space-y-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
                     <div className="text-center mb-1 md:mb-2">
-                      <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
+                      <span className="text-[9px] md:text-[10px] font-bold text-fc-neon-green tracking-[0.2em] md:tracking-[0.3em]">Match Statistics</span>
                     </div>
                     <div className="grid gap-3 md:gap-4">
                       <StatRow 
@@ -1006,13 +1013,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </>
             )}
 
-            <div className="grid grid-cols-2 gap-3 md:gap-4 p-4 md:p-6 bg-white/5 rounded-sm border border-white/5">
+            <div className="grid grid-cols-2 gap-3 md:gap-4 p-4 md:p-6 bg-white/5 rounded-2xl border border-white/5">
               <div className="text-center space-y-1">
-                <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match Date</div>
+                <div className="text-[9px] md:text-[10px] font-bold text-white/30 tracking-normal">Match Date</div>
                 <div className="text-xs md:text-sm font-bold text-fc-neon-green">{match.date}</div>
               </div>
               <div className="text-center space-y-1 border-l border-white/5">
-                <div className="text-[9px] md:text-[10px] font-black text-white/30 uppercase tracking-widest">Match No.</div>
+                <div className="text-[9px] md:text-[10px] font-bold text-white/30 tracking-normal">Match No.</div>
                 <div className="flex items-center justify-center gap-2">
                   {isEditingMode && isAdmin ? (
                     <input 
@@ -1033,15 +1040,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             </div>
 
             {match.evidenceUploadedBy && (
-              <div className="mt-4 p-4 bg-fc-neon-green/5 border border-fc-neon-green/50/10 rounded-sm flex flex-col items-center gap-2">
+              <div className="mt-4 p-4 bg-fc-neon-green/5 border border-fc-neon-green/50/10 rounded-2xl flex flex-col items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-fc-neon-green text-black rounded-sm animate-pulse" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Result Verified by AI</span>
+                  <div className="w-2 h-2 bg-fc-neon-green text-black rounded-2xl animate-pulse" />
+                  <span className="text-[10px] font-bold tracking-normal text-fc-neon-green">Result Verified by AI</span>
                 </div>
                 <div className="text-center">
-                  <p className="text-[9px] font-black text-white/40 uppercase tracking-widest">Reporter: <span className="text-white">{match.evidenceUploadedBy}</span></p>
+                  <p className="text-[9px] font-bold text-white/40 tracking-normal">Reporter: <span className="text-white">{match.evidenceUploadedBy}</span></p>
                   {match.evidenceTimestamp && (
-                    <p className="text-[8px] font-bold text-white/20 uppercase tracking-tighter mt-0.5">Time: {formatTimestamp(match.evidenceTimestamp)}</p>
+                    <p className="text-[8px] font-bold text-white/20 tracking-tight mt-0.5">Time: {formatTimestamp(match.evidenceTimestamp)}</p>
                   )}
                 </div>
               </div>
@@ -1050,7 +1057,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <div className="mt-8 flex flex-col items-center gap-4">
               <button 
                 onClick={onClose}
-                className="px-8 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black font-black uppercase text-xs tracking-[0.2em] rounded-sm transition-all shadow-lg shadow-fc-neon-green/20"
+                className="px-8 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black font-bold text-xs tracking-[0.2em] rounded-2xl transition-all shadow-lg shadow-fc-neon-green/20"
               >
                 Close Details
               </button>
@@ -1063,7 +1070,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       onClose();
                     }
                   }}
-                  className="px-6 py-2 bg-red-600/10 hover:bg-red-600 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-black uppercase text-[10px] tracking-widest rounded-sm transition-all flex items-center gap-2"
+                  className="px-6 py-2 bg-red-600/10 hover:bg-red-600 border border-red-500/20 hover:border-red-500 text-red-500 hover:text-white font-bold text-[10px] tracking-normal rounded-2xl transition-all flex items-center gap-2"
                 >
                   <RotateCcw className="w-3 h-3" />
                   Admin: Reset Match Result
@@ -1080,12 +1087,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     registration,
     onClose, 
     handleUpdateRegistration, 
-    isSubmitting
+    isSubmitting,
+    config
   }: { 
     registration: Registration,
     onClose: () => void, 
     handleUpdateRegistration: (data: Registration) => Promise<void>, 
-    isSubmitting: boolean
+    isSubmitting: boolean,
+    config?: Config
   }) => {
     const [formData, setFormData] = useState({
       ...registration,
@@ -1147,17 +1156,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-sm overflow-hidden shadow-2xl"
+          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
         >
           <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
             <div className="flex justify-between items-start mb-4 md:mb-6">
               <div>
-                <h2 className="text-2xl md:text-3xl font-display font-black italic text-white tracking-tight uppercase leading-none mb-2">Edit Campaign Profile</h2>
-                <p className="text-fc-neon-green/60 text-[10px] font-black uppercase tracking-[0.2em]">Update your tournament information</p>
+                <h2 className="text-2xl md:text-3xl font-display font-bold  text-white tracking-tight leading-none mb-2">Edit Campaign Profile</h2>
+                <p className="text-fc-neon-green/60 text-[10px] font-bold tracking-[0.2em]">Update your tournament information</p>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 md:p-3 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white"
+                className="p-2 md:p-3 hover:bg-white/5 rounded-2xl transition-colors text-white/40 hover:text-white"
               >
                 <X className="w-5 md:w-6 h-5 md:h-6" />
               </button>
@@ -1167,71 +1176,89 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] hide-scrollbar">
             <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Full Name</label>
-                <input 
-                  required
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
-                />
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Full Name</label>
+                {config?.allowedNames && config.allowedNames.length > 0 ? (
+                  <select
+                    required
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm appearance-none cursor-pointer"
+                  >
+                    <option value="">Select your name</option>
+                    {config.allowedNames.map(name => (
+                      <option key={name} value={name}>{name}</option>
+                    ))}
+                    {/* Add current name if not in allowed list */}
+                    {formData.name && !config.allowedNames.includes(formData.name) && (
+                      <option value={formData.name}>{formData.name}</option>
+                    )}
+                  </select>
+                ) : (
+                  <input 
+                    required
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({...formData, name: e.target.value})}
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                  />
+                )}
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Age</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Age</label>
                 <input 
                   required
                   type="number"
                   value={formData.age}
                   onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC Name</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">FC Name</label>
                 <input 
                   required
                   type="text"
                   value={formData.fcName}
                   onChange={(e) => setFormData({...formData, fcName: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Team OVR</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Team OVR</label>
                 <input 
                   required
                   type="number"
                   value={formData.teamOvr}
                   onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Goalkeeper Name</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Goalkeeper Name</label>
                 <input 
                   required
                   type="text"
                   value={formData.goalkeeper}
                   onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="space-y-2 md:col-span-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Experience</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Experience</label>
                 <input 
                   required
                   type="text"
                   value={formData.experience}
                   onChange={(e) => setFormData({...formData, experience: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Logo Photo</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
-                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-sm p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
+                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
                   {formData.logoUrl ? (
-                    <img src={formData.logoUrl} className="w-16 h-16 rounded-sm object-cover border-2 border-fc-neon-green/50" />
+                    <img src={formData.logoUrl} className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
                   ) : <Plus className="w-6 h-6" />}
                 </label>
               </div>
@@ -1239,7 +1266,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <button 
                   type="submit" 
                   disabled={isSubmitting || isCompressing}
-                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-sm font-black uppercase text-xs tracking-widest transition-all"
+                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black disabled:opacity-50 disabled:cursor-not-allowed text-black rounded-2xl font-bold text-xs tracking-normal transition-all"
                 >
                   {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : 'Save Changes'}
                 </button>
@@ -1296,7 +1323,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     return (
       <div className="space-y-2 relative" ref={dropdownRef}>
-        <label className="text-[10px] font-black uppercase text-white/40 tracking-widest">{label}</label>
+        <label className="text-[10px] font-bold text-white/40 tracking-normal">{label}</label>
         <div className="relative">
           <input 
             type="text" 
@@ -1308,7 +1335,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               setIsOpen(true);
             }} 
             placeholder={placeholder}
-            className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none transition-all" 
+            className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none transition-all" 
           />
           <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20 pointer-events-none" />
         </div>
@@ -1319,7 +1346,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-sm shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
+              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto"
             >
               {filteredTeams.length > 0 ? (
                 filteredTeams.map(team => (
@@ -1333,9 +1360,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     }}
                     className="w-full px-4 py-3 text-left hover:bg-fc-purple-light/30 flex items-center gap-3 border-b border-white/5 last:border-0 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-sm bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
                       {team.logoUrl ? (
-                        <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-sm" referrerPolicy="no-referrer" />
+                        <img src={team.logoUrl} alt="" className="w-full h-full object-cover rounded-2xl" referrerPolicy="no-referrer" />
                       ) : (
                         <Star className="w-4 h-4 text-fc-neon-green" />
                       )}
@@ -1349,7 +1376,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 ))
               ) : (
                 <div className="p-4 text-center">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-white/20 italic">No matching players</p>
+                  <p className="text-[10px] font-bold tracking-normal text-white/20 ">No matching players</p>
                 </div>
               )}
             </motion.div>
@@ -1369,20 +1396,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         <motion.div 
           initial={{ opacity: 0, scale: 0.9, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
-          className="bg-zinc-900 border border-white/10 p-8 rounded-sm w-full max-w-md shadow-2xl relative overflow-hidden"
+          className="bg-zinc-900 border border-white/10 p-8 rounded-2xl w-full max-w-md shadow-2xl relative overflow-hidden"
         >
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-fc-neon-green to-fc-purple-base" />
           
-          <h2 className="text-2xl font-display font-black uppercase italic text-white mb-6">Add New Fixture</h2>
+          <h2 className="text-2xl font-display font-bold  text-white mb-6">Add New Fixture</h2>
           
           <div className="space-y-4">
             <div>
-              <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1 block">Match Date</label>
+              <label className="text-[10px] font-bold tracking-normal text-fc-neon-green mb-1 block">Match Date</label>
               <input 
                 value={date}
                 onChange={e => setDate(e.target.value)}
                 placeholder="YYYY-MM-DD or TBD"
-                className="w-full bg-white/5 border border-white/10 rounded-sm px-4 py-3 text-white focus:outline-none focus:border-fc-neon-green/50 transition-colors"
+                className="w-full bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-white focus:outline-none focus:border-fc-neon-green/50 transition-colors"
               />
             </div>
 
@@ -1406,13 +1433,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="flex gap-4 mt-8">
             <button 
               onClick={onClose}
-              className="flex-1 py-4 rounded-sm font-black uppercase text-xs tracking-widest text-white/40 hover:text-white transition-colors"
+              className="flex-1 py-4 rounded-2xl font-bold text-xs tracking-normal text-white/40 hover:text-white transition-colors"
             >
               Cancel
             </button>
             <button 
               onClick={() => onSave({ date, home, away })}
-              className="flex-1 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-lg shadow-fc-neon-green/20"
+              className="flex-1 py-4 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-2xl font-bold text-xs tracking-normal transition-all shadow-lg shadow-fc-neon-green/20"
             >
               Add Match
             </button>
@@ -1430,14 +1457,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleRegister, 
     isSubmitting, 
     hasRegistered,
-    user
+    user,
+    existingRegistrations,
+    config
   }: { 
     onClose: () => void, 
     handleRegister: (data: any) => void, 
     isSubmitting: boolean,
     hasRegistered: boolean,
-    user: User | null
+    user: User | null,
+    existingRegistrations: Registration[],
+    config: Config
   }) => {
+    const takenCountries = useMemo(() => {
+      if (!existingRegistrations) return [];
+      return existingRegistrations.map(r => r.country).filter(Boolean) as string[];
+    }, [existingRegistrations]);
+
     const [formData, setFormData] = useState({
       name: '',
       age: '',
@@ -1445,7 +1481,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       teamOvr: '',
       experience: '',
       goalkeeper: '',
-      logoUrl: ''
+      logoUrl: '',
+      country: ''
     });
     const [isCompressing, setIsCompressing] = useState(false);
 
@@ -1473,6 +1510,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      if (!formData.country) {
+        alert("Please select a World Cup country.");
+        return;
+      }
       if (!formData.logoUrl) {
         alert("Please upload a logo/photo before submitting.");
         return;
@@ -1500,17 +1541,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-sm overflow-hidden shadow-2xl"
+          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
         >
           <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
             <div className="flex justify-between items-start mb-4 md:mb-6">
               <div>
-                <h2 className="text-2xl md:text-3xl font-display font-black italic text-white tracking-tight uppercase leading-none mb-2">Tournament Registration</h2>
-                <p className="text-fc-neon-green/60 text-[10px] font-black uppercase tracking-[0.2em]">Join THE WORLD'S GAME</p>
+                <h2 className="text-2xl md:text-3xl font-display font-bold  text-white tracking-tight leading-none mb-2">Tournament Registration</h2>
+                <p className="text-fc-neon-green/60 text-[10px] font-bold tracking-[0.2em]">Join THE WORLD'S GAME</p>
               </div>
               <button 
                 onClick={onClose}
-                className="p-2 md:p-3 hover:bg-white/5 rounded-sm transition-colors text-white/40 hover:text-white"
+                className="p-2 md:p-3 hover:bg-white/5 rounded-2xl transition-colors text-white/40 hover:text-white"
               >
                 <X className="w-5 md:w-6 h-5 md:h-6" />
               </button>
@@ -1520,16 +1561,16 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] hide-scrollbar">
             {!user || user.isAnonymous ? (
               <div className="text-center py-12 space-y-6">
-                <div className="w-20 h-20 bg-fc-purple-light/30 rounded-sm flex items-center justify-center mx-auto">
+                <div className="w-20 h-20 bg-fc-purple-light/30 rounded-2xl flex items-center justify-center mx-auto">
                   <LogIn className="w-10 h-10 text-fc-neon-green" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-display font-black text-white italic">Google Sign-In Required</h3>
+                  <h3 className="text-2xl font-display font-bold text-white ">Google Sign-In Required</h3>
                   <p className="text-white/40 text-sm max-w-xs mx-auto">To ensure secure registration and verify your identity, please sign in with your Google account.</p>
                 </div>
                 <button 
                   onClick={() => handleRegister({} as any)} 
-                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black rounded-sm font-black uppercase text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-neon-green/20"
+                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black rounded-2xl font-bold text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-neon-green/20"
                 >
                   <LogIn className="w-4 h-4" />
                   Continue with Google
@@ -1537,16 +1578,16 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
             ) : hasRegistered ? (
               <div className="text-center py-8 space-y-6">
-                <div className="w-16 h-16 bg-green-500/20 rounded-sm flex items-center justify-center mx-auto">
+                <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto">
                   <Check className="w-8 h-8 text-green-500" />
                 </div>
                 <div className="space-y-2">
-                  <h3 className="text-2xl font-display font-black text-white italic uppercase tracking-tight">Registration Submitted!</h3>
+                  <h3 className="text-2xl font-display font-bold text-white  tracking-tight">Registration Submitted!</h3>
                   <p className="text-white/60 text-sm px-4">Your application has been received successfully.</p>
                 </div>
 
-                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-sm p-5 space-y-4 mx-4">
-                  <p className="text-[11px] font-black uppercase text-emerald-400 tracking-wider flex items-center justify-center gap-1.5 animate-pulse">
+                <div className="bg-emerald-950/40 border border-emerald-500/30 rounded-2xl p-5 space-y-4 mx-4">
+                  <p className="text-[11px] font-bold text-emerald-400 tracking-wider flex items-center justify-center gap-1.5 animate-pulse">
                     <span className="w-2 h-2 rounded-full bg-emerald-400" />
                     Mandatory Next Step
                   </p>
@@ -1557,7 +1598,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     href="https://chat.whatsapp.com/Hc4mGIatJYkI1myUbAWiv7"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="w-full py-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-black rounded-sm font-black uppercase text-xs tracking-widest transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transform duration-150"
+                    className="w-full py-3.5 bg-[#25D366] hover:bg-[#20ba5a] text-black rounded-2xl font-bold text-xs tracking-normal transition-all shadow-lg flex items-center justify-center gap-2 hover:scale-[1.02] transform duration-150"
                   >
                     Join WhatsApp Community
                   </a>
@@ -1566,7 +1607,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <div className="px-4">
                   <button 
                     onClick={onClose}
-                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-sm font-black uppercase text-xs tracking-widest transition-all"
+                    className="w-full py-3 bg-white/5 hover:bg-white/10 text-white rounded-2xl font-bold text-xs tracking-normal transition-all"
                   >
                     Keep Browsing
                   </button>
@@ -1575,73 +1616,116 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             ) : (
               <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Full Name</label>
-                  <input 
-                    required
-                    type="text"
-                    value={formData.name}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                    placeholder="Enter your name"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
-                  />
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Full Name</label>
+                  {config?.allowedNames && config.allowedNames.length > 0 ? (
+                    <select
+                      required
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    >
+                      <option value="">-- Select Your Name --</option>
+                      {config.allowedNames.map(name => (
+                        <option key={name} value={name}>{name}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input 
+                      required
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      placeholder="Enter your name"
+                      className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    />
+                  )}
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Age</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Age</label>
                   <input 
                     required
                     type="number"
                     value={formData.age}
                     onChange={(e) => setFormData({...formData, age: e.target.value})}
                     placeholder="21"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC Name</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">FC Name</label>
                   <input 
                     required
                     type="text"
                     value={formData.fcName}
                     onChange={(e) => setFormData({...formData, fcName: e.target.value})}
                     placeholder="In-game name"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Team OVR</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team OVR</label>
                   <input 
                     required
                     type="number"
                     value={formData.teamOvr}
                     onChange={(e) => setFormData({...formData, teamOvr: e.target.value})}
                     placeholder="90"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Goalkeeper Name</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Goalkeeper Name</label>
                   <input 
                     required
                     type="text"
                     value={formData.goalkeeper}
                     onChange={(e) => setFormData({...formData, goalkeeper: e.target.value})}
                     placeholder="Enter Goalkeeper Name"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Play Time / Experience</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Play Time / Experience</label>
                   <input 
                     required
                     type="text"
                     value={formData.experience}
                     onChange={(e) => setFormData({...formData, experience: e.target.value})}
                     placeholder="e.g. 2 years, since FIFA 22"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
+                    className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">Team Logo / Photo (Optional, under 5MB)</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">World Cup Country</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
+                    {WORLD_CUP_TEAMS.map((team) => {
+                      const isTaken = takenCountries.includes(team.name);
+                      const isSelected = formData.country === team.name;
+                      return (
+                        <button
+                          key={team.name}
+                          type="button"
+                          disabled={isTaken && !isSelected}
+                          onClick={() => setFormData({...formData, country: team.name})}
+                          className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
+                            isSelected 
+                              ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)]' 
+                              : isTaken
+                                ? 'bg-white/5 border-transparent text-white/30 cursor-not-allowed opacity-50'
+                                : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
+                          }`}
+                        >
+                          <span className="text-xl">{team.flag}</span>
+                          <span className="text-xs font-bold truncate">{team.name}</span>
+                          {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional, under 5MB)</label>
                   <div className="relative">
                     <input 
                       type="file"
@@ -1652,21 +1736,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     />
                     <label 
                       htmlFor="logo-upload"
-                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-sm p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
+                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
                     >
                       {formData.logoUrl ? (
                         <div className="flex flex-col items-center gap-2">
-                          <img src={formData.logoUrl} alt="Preview" className="w-16 h-16 rounded-sm object-cover border-2 border-fc-neon-green/50 shadow-lg" />
-                          <span className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Photo Selected</span>
+                          <img src={formData.logoUrl} alt="Preview" className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
+                          <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Photo Selected</span>
                         </div>
                       ) : (
                         <>
-                          <div className="p-3 bg-white/5 rounded-sm group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
+                          <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
                             {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
                           </div>
                           <div className="text-left">
                             <p className="text-sm font-bold text-white">Click to Upload Photo</p>
-                            <p className="text-[10px] text-white/30 uppercase font-black">PNG, JPG up to 5MB</p>
+                            <p className="text-[10px] text-white/30 font-bold">PNG, JPG up to 5MB</p>
                           </div>
                         </>
                       )}
@@ -1677,7 +1761,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <button 
                     type="submit"
                     disabled={isSubmitting || isCompressing}
-                    className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-sm font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
+                    className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-2xl font-bold text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
                   >
                     {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin mx-auto" /> : "Submit Registration"}
                   </button>
@@ -1782,7 +1866,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     }, [downloadingRegistration]);
 
     const DummyQRCode = () => (
-      <svg viewBox="0 0 100 100" width="100%" height="100%" className="bg-white p-2 rounded-sm text-black shadow-lg">
+      <svg viewBox="0 0 100 100" width="100%" height="100%" className="bg-white p-2 rounded-2xl text-black shadow-lg">
          <rect x="10" y="10" width="20" height="20" fill="currentColor" />
          <rect x="15" y="15" width="10" height="10" fill="white" />
          <rect x="70" y="10" width="20" height="20" fill="currentColor" />
@@ -2013,9 +2097,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
 
       return (
-        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-sm border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
+        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
           <div className="flex items-center gap-4">
-            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-sm transition-colors">
+            <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-2xl transition-colors">
               <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
             </div>
             <div className="flex flex-col gap-1">
@@ -2026,19 +2110,19 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
             </div>
-            <span className="text-sm font-bold text-white uppercase italic">{date} {isHidden && '(Hidden)'}</span>
+            <span className="text-sm font-bold text-white ">{date} {isHidden && '(Hidden)'}</span>
           </div>
           <div className="flex items-center gap-2">
             <button 
               onClick={() => toggleDateVisibility(date)}
-              className={`p-2 rounded-sm font-black text-xs uppercase transition-colors ${isHidden ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'}`}
+              className={`p-2 rounded-2xl font-bold text-xs transition-colors ${isHidden ? 'bg-red-500/20 text-red-500 hover:bg-red-500/30' : 'bg-green-500/20 text-green-500 hover:bg-green-500/30'}`}
             >
               {isHidden ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
             <select 
               value={matchLabels[date] || 'scheduled'}
               onChange={(e) => updateMatchLabel(date, e.target.value)}
-              className="bg-fc-purple-dark/40 border border-white/10 rounded-sm p-2 text-white text-xs font-black uppercase tracking-widest outline-none focus:border-fc-neon-green/50"
+              className="bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-2 text-white text-xs font-bold tracking-normal outline-none focus:border-fc-neon-green/50"
             >
               <option value="scheduled">Scheduled</option>
               <option value="ongoing">Ongoing</option>
@@ -2108,101 +2192,89 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           <div className="flex items-center gap-3 md:gap-6 w-full md:w-auto overflow-x-auto hide-scrollbar">
             <button 
               onClick={onClose}
-              className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-sm transition-all border border-white/5 shrink-0"
+              className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 shrink-0"
             >
               <ArrowLeft className="w-4 md:w-5 h-4 md:h-5 text-fc-neon-green group-hover:-translate-x-1 transition-transform" />
-              <span className="text-[9px] md:text-[10px] font-black uppercase tracking-widest whitespace-nowrap">Back</span>
+              <span className="text-[9px] md:text-[10px] font-bold tracking-normal whitespace-nowrap">Back</span>
             </button>
             <div className="h-6 md:h-8 w-[1px] bg-white/10 shrink-0" />
             <div className="min-w-0 text-left">
-              <h2 className="text-lg md:text-2xl font-display font-black italic uppercase leading-none text-white tracking-tight truncate">Admin Terminal</h2>
-              <p className="text-fc-neon-green/40 text-[8px] md:text-[9px] font-black uppercase tracking-[0.2em] mt-0.5 md:mt-1 truncate max-w-[200px]">
+              <h2 className="text-lg md:text-2xl font-display font-bold  leading-none text-white tracking-tight truncate">Admin Terminal</h2>
+              <p className="text-fc-neon-green/40 text-[8px] md:text-[9px] font-bold tracking-[0.2em] mt-0.5 md:mt-1 truncate max-w-[200px]">
                 {user?.email || 'System'} | {isAdmin ? 'AUTHORIZED' : 'ACCESS DENIED'}
               </p>
             </div>
           </div>
 
-          <div className="flex bg-white/5 p-1 rounded-sm border border-white/5 w-full md:w-auto overflow-x-auto hide-scrollbar">
+          <div className="flex bg-white/5 p-1 rounded-2xl border border-white/5 w-full md:w-auto overflow-x-auto hide-scrollbar">
             <button 
               onClick={() => setIsEditingMode(!isEditingMode)}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${isEditingMode ? 'bg-red-600 text-white shadow-lg shadow-red-600/20' : 'bg-green-600 text-white shadow-lg shadow-green-600/20'}`}
             >
               {isEditingMode ? 'Editing Enabled' : 'Editing Disabled'}
             </button>
             <div className="w-px bg-white/10 mx-2 flex-shrink-0" />
             <button 
               onClick={() => setActiveTab('bracket')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Bracket
             </button>
             <button 
               onClick={() => setActiveTab('registrations')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
             </button>
             <button 
               onClick={() => setActiveTab('schedule')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'schedule' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'schedule' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Schedule Generator
             </button>
             <button 
               onClick={() => setActiveTab('label')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'label' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'label' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Label
             </button>
             <button 
               onClick={() => setActiveTab('visibility')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'visibility' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Visibility
             </button>
             <button 
-              onClick={() => setActiveTab('reports')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'reports' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              onClick={() => setActiveTab('names')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'names' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
-              Evidence
+              Allowed Names
             </button>
             <button 
               onClick={() => setActiveTab('achievements')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Trophies
             </button>
             <button 
-              onClick={() => setActiveTab('ai')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'ai' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
-            >
-              AI Settings
-            </button>
-            <button 
               onClick={() => setActiveTab('backup')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Backup
-            </button>
-            <button 
-              onClick={() => setActiveTab('edits')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-sm text-[9px] md:text-[10px] font-black uppercase tracking-nowrap tracking-widest transition-all min-w-fit ${activeTab === 'edits' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Edits
             </button>
           </div>
         </div>
 
         <div className="flex-1 overflow-y-auto hide-scrollbar p-4 md:p-8 lg:p-12">
           <div className="max-w-6xl mx-auto w-full">
-            <div className="mb-12 bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-sm p-6 md:p-8">
+            <div className="mb-12 bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-2xl p-6 md:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-10 h-10 bg-fc-purple-light/30 rounded-sm flex items-center justify-center border border-fc-neon-green/50/30">
+                <div className="w-10 h-10 bg-fc-purple-light/30 rounded-2xl flex items-center justify-center border border-fc-neon-green/50/30">
                   <Star className="w-5 h-5 text-fc-neon-green animate-pulse" />
                 </div>
                 <div className="text-left">
-                  <h3 className="text-lg font-display font-black italic uppercase text-white">AI Tournament Assistant</h3>
-                  <p className="text-fc-neon-green/40 text-[9px] uppercase tracking-widest">
+                  <h3 className="text-lg font-display font-bold  text-white">AI Tournament Assistant</h3>
+                  <p className="text-fc-neon-green/40 text-[9px] tracking-normal">
                     Model: {config.geminiModel || 'gemini-3-flash-preview'}
                   </p>
                 </div>
@@ -2213,11 +2285,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   value={aiCommand}
                   onChange={e => setAiCommand(e.target.value)}
                   placeholder="e.g. 'Team A vs Team B ended 3-2. Scorers: John x2, Mike x1' or 'Reset all matches'"
-                  className="flex-1 bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all"
+                  className="flex-1 bg-fc-purple-dark/40 border border-white/10 rounded-2xl px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all"
                 />
                 <button 
                   disabled={isAiLoading}
-                  className="px-8 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 rounded-sm font-black uppercase text-[10px] tracking-widest transition-all shadow-xl shadow-fc-neon-green/20 flex items-center gap-3 shrink-0"
+                  className="px-8 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 rounded-2xl font-bold text-[10px] tracking-normal transition-all shadow-xl shadow-fc-neon-green/20 flex items-center gap-3 shrink-0"
                 >
                   {isAiLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ChevronRight className="w-4 h-4" />}
                   Execute
@@ -2228,7 +2300,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                   <div className="space-y-12">
                     <div>
-                      <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
+                      <h3 className="text-xl font-display font-bold  text-fc-neon-green mb-6 flex items-center gap-3">
                         <Layout className="w-6 h-6" />
                         Live Bracket Editor
                       </h3>
@@ -2238,10 +2310,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         if (roundMatches.length === 0) return null;
                         return (
                           <div key={round} className="space-y-4">
-                            <h4 className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-2 border-b border-white/5 pb-2">{round}</h4>
+                            <h4 className="text-[10px] font-bold tracking-normal text-white/40 mb-2 border-b border-white/5 pb-2">{round}</h4>
                             <div className="grid grid-cols-1 gap-3">
                               {roundMatches.map(match => (
-                                <div key={match.id} className={`p-4 md:p-5 rounded-sm border transition-all ${editingMatchId === match.id ? 'bg-fc-purple-light/20 border-fc-neon-green/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
+                                <div key={match.id} className={`p-4 md:p-5 rounded-2xl border transition-all ${editingMatchId === match.id ? 'bg-fc-purple-light/20 border-fc-neon-green/50' : 'bg-white/5 border-white/5 hover:border-white/20'}`}>
                                   {editingMatchId === match.id ? (
                                     <div className="space-y-4">
                                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -2260,32 +2332,32 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
-                                          <label className="text-[9px] font-black uppercase text-white/40">Home Score</label>
-                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
+                                          <label className="text-[9px] font-bold text-white/40">Home Score</label>
+                                          <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="space-y-2">
-                                          <label className="text-[9px] font-black uppercase text-white/40">Away Score</label>
-                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
+                                          <label className="text-[9px] font-bold text-white/40">Away Score</label>
+                                          <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="flex items-end gap-2">
-                                          <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-black uppercase text-[10px] tracking-widest rounded-sm hover:bg-green-400 transition-all">Save</button>
-                                          <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-black uppercase text-[10px] tracking-widest rounded-sm hover:bg-white/20 transition-all">Cancel</button>
+                                          <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-bold text-[10px] tracking-normal rounded-2xl hover:bg-green-400 transition-all">Save</button>
+                                          <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-bold text-[10px] tracking-normal rounded-2xl hover:bg-white/20 transition-all">Cancel</button>
                                         </div>
                                       </div>
                                     </div>
                                   ) : (
                                     <div className="flex items-center justify-between group">
                                       <div className="flex-1 space-y-2">
-                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-sm">
+                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-2xl">
                                           <span className="text-xs font-bold text-white/90">{match.homeTeamName}</span>
-                                          <span className="text-lg font-display font-black italic text-fc-neon-green">{match.homeScore}</span>
+                                          <span className="text-lg font-display font-bold  text-fc-neon-green">{match.homeScore}</span>
                                         </div>
-                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-sm">
+                                        <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-2xl">
                                           <span className="text-xs font-bold text-white/90">{match.awayTeamName}</span>
-                                          <span className="text-lg font-display font-black italic text-fc-neon-green">{match.awayScore}</span>
+                                          <span className="text-lg font-display font-bold  text-fc-neon-green">{match.awayScore}</span>
                                         </div>
                                       </div>
-                                      <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-sm bg-white/5 hover:bg-white/10 text-fc-neon-green hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
+                                      <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-fc-neon-green hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
                                         <Edit3 className="w-4 md:w-5 h-4 md:h-5" />
                                       </button>
                                     </div>
@@ -2301,37 +2373,37 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
 
                 <div className="space-y-12">
-                  <div className="bg-white/5 border border-white/10 rounded-sm p-8 sticky top-0">
-                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green mb-6 flex items-center gap-3">
+                  <div className="bg-white/5 border border-white/10 rounded-2xl p-8 sticky top-0">
+                    <h3 className="text-xl font-display font-bold  text-fc-neon-green mb-6 flex items-center gap-3">
                       <Settings className="w-6 h-6" />
                       Global Config
                     </h3>
                     <div className="space-y-6">
-                      <div className="flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-sm group">
+                      <div className="flex items-center justify-between p-6 bg-white/5 border border-white/5 rounded-2xl group">
                         <div>
                           <p className="text-sm font-bold text-white mb-1">Registration Portal</p>
-                          <p className="text-[10px] font-black uppercase tracking-widest text-white/30">Enable or disable user applications</p>
+                          <p className="text-[10px] font-bold tracking-normal text-white/30">Enable or disable user applications</p>
                         </div>
                         <button 
                           onClick={handleToggleRegistration}
                           disabled={isSavingAdmin}
-                          className={`w-14 h-8 rounded-sm flex items-center p-1 transition-all ${config.registrationEnabled ? 'bg-green-500' : 'bg-white/10'}`}
+                          className={`w-14 h-8 rounded-2xl flex items-center p-1 transition-all ${config.registrationEnabled ? 'bg-green-500' : 'bg-white/10'}`}
                         >
-                          <div className={`w-6 h-6 rounded-sm bg-white shadow-md transition-all ${config.registrationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
+                          <div className={`w-6 h-6 rounded-2xl bg-white shadow-md transition-all ${config.registrationEnabled ? 'translate-x-6' : 'translate-x-0'}`} />
                         </button>
                       </div>
 
-                      <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-sm">
+                      <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-2xl">
                         <div className="flex items-center gap-3 mb-3">
                           <Users className="w-5 h-5 text-fc-neon-green" />
-                          <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green">Total Applicants</h4>
+                          <h4 className="text-[10px] font-bold tracking-normal text-fc-neon-green">Total Applicants</h4>
                         </div>
-                        <p className="text-5xl font-display font-black italic text-white">{registrations.length}</p>
+                        <p className="text-5xl font-display font-bold  text-white">{registrations.length}</p>
                       </div>
-                    <div className="bg-red-500/5 border border-red-500/20 rounded-sm p-6">
+                    <div className="bg-red-500/5 border border-red-500/20 rounded-2xl p-6">
                       <div className="flex items-center gap-3 mb-4 text-red-400">
                         <Trash2 className="w-5 h-5" />
-                        <h4 className="text-[10px] font-black uppercase tracking-widest">Danger Zone</h4>
+                        <h4 className="text-[10px] font-bold tracking-normal">Danger Zone</h4>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <button 
@@ -2345,7 +2417,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('matches');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'matches' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-2xl text-[9px] font-bold tracking-normal transition-all ${confirmReset === 'matches' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'matches' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'matches' ? 'Confirm Reset Matches' : 'Reset Matches')}
                         </button>
@@ -2360,7 +2432,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('bracket');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'bracket' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-2xl text-[9px] font-bold tracking-normal transition-all ${confirmReset === 'bracket' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'bracket' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'bracket' ? 'Confirm Reset Bracket' : 'Reset Bracket')}
                         </button>
@@ -2375,7 +2447,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('registrations');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'registrations' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-2xl text-[9px] font-bold tracking-normal transition-all ${confirmReset === 'registrations' ? 'bg-red-600 border-red-600 text-white animate-pulse' : 'bg-red-600/10 border-red-500/20 text-red-500 hover:bg-red-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'registrations' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'registrations' ? 'Confirm Reset Applicants' : 'Reset Applicants')}
                         </button>
@@ -2390,7 +2462,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('table');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'table' ? 'bg-orange-600 border-orange-600 text-white animate-pulse' : 'bg-orange-600/10 border-orange-500/20 text-orange-500 hover:bg-orange-600 hover:text-white'}`}
+                          className={`relative px-4 py-3 border rounded-2xl text-[9px] font-bold tracking-normal transition-all ${confirmReset === 'table' ? 'bg-orange-600 border-orange-600 text-white animate-pulse' : 'bg-orange-600/10 border-orange-500/20 text-orange-500 hover:bg-orange-600 hover:text-white'}`}
                         >
                           {isResetting && confirmReset === 'table' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'table' ? 'Confirm Reset All Scores' : 'Reset All Scores')}
                         </button>
@@ -2405,7 +2477,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('stats');
                             }
                           }} 
-                          className={`relative px-4 py-3 border rounded-sm text-[9px] font-black uppercase tracking-widest transition-all ${confirmReset === 'stats' ? 'bg-fc-neon-green text-black border-fc-neon-green text-black animate-pulse' : 'bg-fc-purple-light/20 border-fc-neon-green/30 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black'}`}
+                          className={`relative px-4 py-3 border rounded-2xl text-[9px] font-bold tracking-normal transition-all ${confirmReset === 'stats' ? 'bg-fc-neon-green text-black border-fc-neon-green text-black animate-pulse' : 'bg-fc-purple-light/20 border-fc-neon-green/30 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black'}`}
                         >
                           {isResetting && confirmReset === 'stats' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'stats' ? 'Confirm Reset Stats Tab' : 'Reset Stats Tab')}
                         </button>
@@ -2420,24 +2492,24 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                               setConfirmReset('all');
                             }
                           }} 
-                          className={`relative px-4 py-3 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-900 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
+                          className={`relative px-4 py-3 rounded-2xl text-[9px] font-bold tracking-normal transition-all shadow-lg ${confirmReset === 'all' ? 'bg-red-900 text-white animate-pulse scale-105' : 'bg-red-600 text-white hover:bg-red-700 shadow-red-600/20'}`}
                         >
                           {isResetting && confirmReset === 'all' ? <Loader2 className="w-3 h-3 animate-spin mx-auto" /> : (confirmReset === 'all' ? 'Confirm TOTAL PURGE' : 'Purge All Data')}
                         </button>
                       </div>
                       {confirmReset && (
-                        <p className="mt-4 text-[9px] font-black uppercase text-red-400/60 text-center animate-bounce">Click again to confirm action</p>
+                        <p className="mt-4 text-[9px] font-bold text-red-400/60 text-center animate-bounce">Click again to confirm action</p>
                       )}
                     </div>
                     
-                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-sm p-6">
+                    <div className="bg-yellow-500/5 border border-yellow-500/20 rounded-2xl p-6">
                       <div className="flex items-center gap-3 mb-4 text-yellow-500">
                         <BarChart2 className="w-5 h-5" />
-                        <h4 className="text-[10px] font-black uppercase tracking-widest">Table Analysis</h4>
+                        <h4 className="text-[10px] font-bold tracking-normal">Table Analysis</h4>
                       </div>
                       <button 
                         onClick={handleAnalyzeQualification}
-                        className="w-full px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-sm text-[9px] font-black uppercase tracking-widest hover:bg-yellow-500/20 transition-all flex items-center justify-center gap-2"
+                        className="w-full px-4 py-3 bg-yellow-500/10 border border-yellow-500/20 text-yellow-500 rounded-2xl text-[9px] font-bold tracking-normal hover:bg-yellow-500/20 transition-all flex items-center justify-center gap-2"
                       >
                         <RotateCcw className="w-4 h-4" />
                         Calculate Q/E Statuses
@@ -2451,20 +2523,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
             {activeTab === 'registrations' && (
               <div className="space-y-8">
-                <div className="flex flex-col sm:flex-row items-center justify-between bg-white/5 border border-white/10 rounded-sm p-6 md:p-8 gap-4">
+                <div className="flex flex-col sm:flex-row items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 gap-4">
                    <div className="text-center sm:text-left">
-                    <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Registered Users</h3>
-                    <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review applicant field data</p>
+                    <h3 className="text-xl md:text-2xl font-display font-bold  text-white tracking-tight">Registered Users</h3>
+                    <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-bold tracking-[0.2em] mt-1">Review applicant field data</p>
                    </div>
-                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-sm flex items-center gap-3">
-                      <span className="text-[9px] md:text-[10px] font-black text-fc-neon-green uppercase tracking-widest">Active applicants:</span>
-                      <span className="text-xl md:text-2xl font-display font-black italic text-white">{registrations.length}</span>
+                   <div className="px-4 md:px-6 py-2 md:py-3 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-2xl flex items-center gap-3">
+                      <span className="text-[9px] md:text-[10px] font-bold text-fc-neon-green tracking-normal">Active applicants:</span>
+                      <span className="text-xl md:text-2xl font-display font-bold  text-white">{registrations.length}</span>
                    </div>
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
                   {adminUsers.length === 0 ? (
-                    <div className="p-20 text-center bg-white/5 border border-white/5 rounded-sm">
+                    <div className="p-20 text-center bg-white/5 border border-white/5 rounded-2xl">
                       <Users className="w-16 h-16 text-white/10 mx-auto mb-4" />
                       <p className="text-white/40 font-bold">No registrations yet.</p>
                     </div>
@@ -2478,23 +2550,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       if (!reg) {
                         // User has logged in but not submitted registration
                         return (
-                          <div key={user.id} className="bg-white/5 border border-white/10 rounded-sm p-4 md:p-6 hover:bg-white/10 transition-all flex items-center justify-between">
+                          <div key={user.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all flex items-center justify-between">
                             <div>
                                <p className="text-sm font-bold text-white mb-1"><span className="text-fc-neon-green/60 mr-2">Gamer:</span>{user.displayName || user.name || 'Unknown'}</p>
-                               <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
+                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
                             </div>
                             <button 
                                onClick={async () => {
                                  if (window.confirm('Delete this user? Name spot will be freed.')) {
                                    try {
                                      await deleteDoc(doc(db, 'users', user.id));
-                                     setAdminUsers(prev => prev.filter(u => u.id !== user.id));
                                    } catch (e) {
-                                     console.error(e);
+                                     console.warn("Could not delete shadow user doc:", e);
                                    }
+                                   setAdminUsers(prev => prev.filter(u => u.id !== user.id));
                                  }
                                }}
-                               className="p-3 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-sm flex items-center gap-2 text-xs font-black uppercase tracking-widest"
+                               className="p-3 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-2xl flex items-center gap-2 text-xs font-bold tracking-normal"
                             >
                               <Trash2 className="w-4 h-4" /> Reset Name
                             </button>
@@ -2503,12 +2575,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       }
                       
                       return (
-                      <div key={reg.id} className="bg-white/5 border border-white/10 rounded-sm md:rounded-sm p-4 md:p-6 hover:bg-white/10 transition-all group">
+                      <div key={reg.id} className="bg-white/5 border border-white/10 rounded-2xl md:rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all group">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-6 items-center">
                           <div className="flex items-center gap-2">
                              <div className="mr-2">
-                               <p className="text-[8px] font-black uppercase tracking-widest text-fc-neon-green mb-0.5">Status</p>
-                               <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded ${
+                               <p className="text-[8px] font-bold tracking-normal text-fc-neon-green mb-0.5">Status</p>
+                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
                                  reg.status === 'approved' ? 'bg-green-500/20 text-green-400' :
                                  reg.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
                                  'bg-yellow-500/20 text-yellow-500'
@@ -2517,14 +2589,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              <div className="flex flex-col gap-1">
                                <button 
                                  onClick={() => handleApproveRegistration(reg.id)}
-                                 className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-sm"
+                                 className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-2xl"
                                  title="Approve"
                                >
                                  <Check className="w-4 h-4" />
                                </button>
                                <button 
                                  onClick={() => handleRejectRegistration(reg.id)}
-                                 className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-sm"
+                                 className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-2xl"
                                  title="Reject"
                                >
                                  <X className="w-4 h-4" />
@@ -2539,21 +2611,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                      setConfirmDeleteId(reg.id);
                                    }
                                  }}
-                                 className={`p-2 transition-all rounded-sm ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
+                                 className={`p-2 transition-all rounded-2xl ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
                                  title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
                                >
                                  <Trash2 className="w-4 h-4" />
                                </button>
                                <button 
                                  onClick={() => setAdminEditingRegistration(reg)}
-                                 className="p-2 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black transition-all rounded-sm"
+                                 className="p-2 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black transition-all rounded-2xl"
                                  title="Edit Registration"
                                >
                                  <Edit3 className="w-4 h-4" />
                                </button>
                                <button 
                                  onClick={() => setDownloadingRegistration(reg)}
-                                 className="p-2 bg-fc-purple-light/20 text-fc-neon-green hover:bg-fc-purple-light hover:text-white transition-all rounded-sm"
+                                 className="p-2 bg-fc-purple-light/20 text-fc-neon-green hover:bg-fc-purple-light hover:text-white transition-all rounded-2xl"
                                  title="Download ID Card"
                                >
                                  <IdCard className="w-4 h-4" />
@@ -2561,7 +2633,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              </div>
                           </div>
                           <div className="flex justify-center lg:justify-start">
-                             <div className="w-16 h-16 rounded-sm bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
+                             <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
                                {reg.logoUrl ? (
                                  <img src={reg.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                ) : (
@@ -2570,24 +2642,24 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              </div>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Gamer / FC Name</p>
+                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Gamer / FC Name</p>
                              <p className="text-xs md:text-sm font-bold text-white mb-0.5">{user.displayName || reg.name}</p>
                              <p className="text-[10px] text-white/60 font-mono">{reg.fcName}</p>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Age</p>
+                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Age</p>
                              <p className="text-xs md:text-sm font-bold text-white">{reg.age} years</p>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Team OVR</p>
+                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Team OVR</p>
                              <div className="flex items-center gap-2">
-                               <span className="text-lg md:text-xl font-display font-black italic text-yellow-500">{reg.teamOvr}</span>
-                               <span className="text-[8px] md:text-[10px] font-black text-white/20 uppercase tracking-widest">Rating</span>
+                               <span className="text-lg md:text-xl font-display font-bold  text-yellow-500">{reg.teamOvr}</span>
+                               <span className="text-[8px] md:text-[10px] font-bold text-white/20 tracking-normal">Rating</span>
                              </div>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Experience</p>
-                             <p className="text-[9px] md:text-[10px] font-black text-white/60 uppercase">{reg.experience}</p>
+                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Experience</p>
+                             <p className="text-[9px] md:text-[10px] font-bold text-white/60">{reg.experience}</p>
                           </div>
                         </div>
                       </div>
@@ -2600,10 +2672,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
             {activeTab === 'schedule' && (
               <div className="space-y-8">
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 md:p-8">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
                   <div className="flex items-center gap-3 mb-6">
                     <Calendar className="w-6 h-6 text-fc-neon-green" />
-                    <h3 className="text-xl font-display font-black italic uppercase text-fc-neon-green">
+                    <h3 className="text-xl font-display font-bold  text-fc-neon-green">
                       Schedule Generator
                     </h3>
                   </div>
@@ -2613,18 +2685,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'visibility' && (
-              <div className="bg-white/5 border border-white/10 rounded-sm p-8">
-                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Tab Visibility Management</h3>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+                <h3 className="text-xl font-display font-bold  text-white mb-6">Tab Visibility Management</h3>
                 <div className="space-y-4">
                   {['Fixtures', 'Table', 'Bracket', 'Registration', 'Stats', 'News', 'Campaign'].map(tab => (
-                    <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-sm border border-white/10">
+                    <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
                       <span className="text-sm font-bold text-white">{tab}</span>
                       <button 
                         onClick={() => {
                           const newTabs = { ...(config.tabVisibility || {}), [tab.toLowerCase()]: !(config.tabVisibility?.[tab.toLowerCase()] ?? true) };
                           handleUpdateConfig({ ...config, tabVisibility: newTabs });
                         }}
-                        className={`px-4 py-2 rounded-sm font-black text-xs uppercase ${!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}
+                        className={`px-4 py-2 rounded-2xl font-bold text-xs ${!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}
                       >
                         {!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'Disabled' : 'Enabled'}
                       </button>
@@ -2635,8 +2707,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'label' && (
-              <div className="bg-white/5 border border-white/10 rounded-sm p-8">
-                <h3 className="text-xl font-display font-black italic uppercase text-white mb-6">Date Label Management (Drag to Reorder)</h3>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+                <h3 className="text-xl font-display font-bold  text-white mb-6">Date Label Management (Drag to Reorder)</h3>
                 <div className="space-y-4">
                   <DndContext 
                     sensors={sensors}
@@ -2664,139 +2736,89 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
             )}
 
-            {activeTab === 'reports' && (
-              <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-                <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
-                  <div className="text-left w-full">
-                    <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Evidence Dashboard</h3>
-                    <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Review AI analysis and match verification screenshots</p>
-                  </div>
+            
+            {activeTab === 'names' && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-display font-bold text-white">Allowed Registration Names</h3>
                 </div>
-
-                {isReportsLoading ? (
-                  <div className="flex flex-col items-center justify-center py-20 gap-4">
-                    <Loader2 className="w-8 h-8 text-fc-neon-green animate-spin" />
-                    <p className="text-[10px] font-black uppercase tracking-widest text-white/40">Loading reports from cloud...</p>
+                <div className="space-y-4">
+                  <p className="text-xs text-white/50">Add predefined names that users can select during registration. If this list is empty, users can type any name.</p>
+                  
+                  <div className="flex gap-2">
+                    <input 
+                      type="text"
+                      id="newAllowedName"
+                      placeholder="Add a new name (e.g. Ayush)"
+                      className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                      onKeyDown={async (e) => {
+                        if (e.key === 'Enter') {
+                          const input = e.currentTarget;
+                          const name = input.value.trim();
+                          if (name) {
+                            const newNames = [...(config.allowedNames || []), name];
+                            await handleUpdateConfig({ ...config, allowedNames: newNames });
+                            input.value = '';
+                          }
+                        }
+                      }}
+                    />
+                    <button 
+                      onClick={async () => {
+                        const input = document.getElementById('newAllowedName') as HTMLInputElement;
+                        const name = input?.value.trim();
+                        if (name) {
+                          const newNames = [...(config.allowedNames || []), name];
+                          await handleUpdateConfig({ ...config, allowedNames: newNames });
+                          if (input) input.value = '';
+                        }
+                      }}
+                      className="px-4 py-2 bg-fc-neon-green text-black rounded-xl font-bold text-sm hover:bg-fc-purple-light transition-all cursor-pointer"
+                    >
+                      Add
+                    </button>
                   </div>
-                ) : reports.length === 0 ? (
-                  <div className="bg-white/5 border border-white/5 rounded-sm p-12 text-center">
-                    <div className="w-16 h-16 bg-white/5 rounded-sm flex items-center justify-center mx-auto mb-4 border border-white/10">
-                      <BarChart2 className="w-8 h-8 text-white/20" />
-                    </div>
-                    <h4 className="text-lg font-display font-black italic uppercase text-white mb-2">No Reports Found</h4>
-                    <p className="text-xs text-white/40 font-bold uppercase tracking-widest max-w-[240px] mx-auto leading-relaxed">Evidence will appear here when users submit match results via AI analysis.</p>
-                  </div>
-                ) : (
-                  <div className="grid gap-6">
-                    {reports.map((report) => (
-                      <div key={report.id} className="bg-white/5 border border-white/10 rounded-sm overflow-hidden group hover:border-fc-neon-green/50/30 transition-all">
-                        <div className="flex flex-col lg:flex-row divide-y lg:divide-y-0 lg:divide-x divide-white/10">
-                          <div className="lg:w-1/3 aspect-[4/3] lg:aspect-auto bg-fc-purple-dark relative flex items-center justify-center overflow-hidden">
-                            {report.imageUrl ? (
-                              <img src={report.imageUrl.startsWith('http') ? report.imageUrl : `data:${report.mimeType || 'image/png'};base64,${report.imageUrl}`} loading="lazy" alt="Evidence" className="w-full h-full object-contain" referrerPolicy="no-referrer" />
-                            ) : (
-                              <span className="text-[10px] font-black text-white/20 uppercase tracking-widest">No Image Available</span>
-                            )}
-                            <div className="absolute top-4 left-4">
-                              <span className="px-3 py-1.5 bg-fc-neon-green text-black text-black text-[9px] font-black uppercase tracking-widest rounded-sm shadow-xl shadow-fc-neon-green/10 border border-fc-neon-green/40/20">Screenshot</span>
-                            </div>
-                          </div>
-                          <div className="flex-1 p-6 md:p-8 space-y-6">
-                            <div className="flex items-start justify-between gap-4">
-                              <div>
-                                <div className="flex flex-wrap items-center gap-2 mb-2">
-                                  <div className="px-2 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[8px] font-black text-fc-neon-green uppercase tracking-tighter">Reporter</div>
-                                  <span className="text-[10px] font-black text-white uppercase tracking-widest">{report.reporterName || (report.matchData && report.matchData.reporterName) || 'Unknown Source'}</span>
-                                </div>
-                                <h4 className="text-lg font-display font-black italic uppercase text-white tracking-tight">
-                                  {report.matchData.homeTeam} {report.matchData.homeScore} - {report.matchData.awayScore} {report.matchData.awayTeam}
-                                </h4>
-                                {report.motm && (
-                                  <div className="mt-2">
-                                    <span className="text-[10px] font-black text-yellow-500 uppercase tracking-widest block flex items-center gap-1"><Trophy className="w-3 h-3"/> MAN OF THE MATCH</span>
-                                    <span className="text-lg md:text-xl font-black text-yellow-400 block">{report.motm.fcName}</span>
-                                  </div>
-                                )}
-                                <div className="text-[9px] font-black text-white/40 uppercase tracking-widest mt-1">
-                                  {report.timestamp ? formatTimestamp(report.timestamp) : 'Time Pending...'}
-                                </div>
-                              </div>
-                              <button 
-                                onClick={async () => {
-                                  if (window.confirm("Are you sure you want to delete this report?")) {
-                                    await deleteDoc(doc(db, 'reports', report.id));
-                                    if (report.motm) {
-                                      try {
-                                        const leaderboardRef = doc(db, 'motm_leaderboard', 'global');
-                                        await updateDoc(leaderboardRef, {
-                                          [`players.${report.motm.fcName}`]: increment(-1)
-                                        });
-                                      } catch(e) {
-                                        console.error("Failed to decrement MOTM leaderboard: ", e);
-                                      }
-                                    }
-                                  }
-                                }}
-                                className="p-2 bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white rounded-sm transition-all border border-red-500/20"
-                                title="Delete Report"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="p-3 bg-white/5 rounded-sm border border-white/5">
-                                <span className="block text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">MOTM</span>
-                                <span className="text-[10px] font-black text-yellow-400 uppercase truncate block font-sans">{report.matchData.manOfTheMatch || 'N/A'}</span>
-                              </div>
-                              <div className="p-3 bg-white/5 rounded-sm border border-white/5">
-                                <span className="block text-[8px] font-black text-white/30 uppercase tracking-widest mb-1">Status</span>
-                                <span className="text-[10px] font-black text-green-400 uppercase block tracking-widest">Analyzed</span>
-                              </div>
-                            </div>
-
-                            <div className="space-y-3">
-                              <span className="text-[10px] font-black text-white/40 uppercase tracking-widest block font-sans">Goal Scorers (Extracted)</span>
-                              <div className="bg-fc-purple-dark/20 rounded-sm p-4 border border-white/5 space-y-2">
-                                {report.matchData.scorers && report.matchData.scorers.length > 0 ? (
-                                  report.matchData.scorers.map((s: any, idx: number) => (
-                                    <div key={idx} className="flex items-center justify-between text-[10px] font-black uppercase tracking-widest">
-                                      <span className="text-white/80 shrink-0">{s.name}</span>
-                                      <div className="flex-1 border-b border-white/5 mx-2 border-dotted" />
-                                      <span className="text-fc-neon-green">
-                                        {s.goals} G {s.time && `(${s.time})`}
-                                      </span>
-                                    </div>
-                                  ))
-                                ) : (
-                                  <span className="text-[9px] font-black text-white/20 uppercase tracking-widest block text-center italic">No scorers detected</span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                  
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
+                    {(config.allowedNames || []).map((name, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
+                        <span className="text-sm text-white font-bold">{name}</span>
+                        <button 
+                          onClick={async () => {
+                            const newNames = (config.allowedNames || []).filter((_, i) => i !== idx);
+                            await handleUpdateConfig({ ...config, allowedNames: newNames });
+                          }}
+                          className="p-1 hover:bg-red-500/20 text-white/40 hover:text-red-400 rounded transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                       </div>
                     ))}
+                    {(!config.allowedNames || config.allowedNames.length === 0) && (
+                      <div className="col-span-full p-4 border border-dashed border-white/20 rounded-xl text-center text-white/40 text-xs">
+                        No allowed names set. Users can currently enter any full name.
+                      </div>
+                    )}
                   </div>
-                )}
+                </div>
               </div>
             )}
 
             {activeTab === 'achievements' && (
               <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
                  <div className="text-left w-full mb-8">
-                   <h3 className="text-xl md:text-2xl font-display font-black italic uppercase text-white tracking-tight">Manual Achievement Award</h3>
-                   <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-black uppercase tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
+                   <h3 className="text-xl md:text-2xl font-display font-bold  text-white tracking-tight">Manual Achievement Award</h3>
+                   <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-bold tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
                  </div>
                  
-                 <div className="bg-white/5 border border-white/10 rounded-sm p-6 md:p-8 space-y-6">
+                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-6">
                     <div className="space-y-4">
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60 mb-2 block">Select Registered Player</label>
+                        <label className="text-[10px] font-bold tracking-normal text-fc-neon-green opacity-60 mb-2 block">Select Registered Player</label>
                         <select 
                           value={awardUserId}
                           onChange={e => setAwardUserId(e.target.value)}
-                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
+                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose User --</option>
                           {registrations.filter(r => r.status === 'approved' && r.userId).map(r => (
@@ -2806,15 +2828,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                       
                       <div>
-                        <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60 mb-2 block">Select Trophy / Achievement</label>
+                        <label className="text-[10px] font-bold tracking-normal text-fc-neon-green opacity-60 mb-2 block">Select Trophy / Achievement</label>
                         <select 
                           value={awardAchvId}
                           onChange={e => setAwardAchvId(e.target.value)}
-                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
+                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
                         >
                           <option value="">-- Choose Achievement --</option>
                           {(ACHIEVEMENTS || []).map(a => (
-                             <option key={a.id} value={a.id}>{a.icon || '🏆'} {a.title} ({a.category})</option>
+                             <option key={a.id} value={a.id}>{a.title} ({a.category})</option>
                           ))}
                         </select>
                       </div>
@@ -2822,7 +2844,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <button 
                         onClick={handleAwardSubmit}
                         disabled={isAwarding || !awardAchvId || !awardUserId}
-                        className="w-full py-4 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-sm font-black uppercase tracking-widest text-xs hover:bg-yellow-600/30 transition-all shadow-xl shadow-yellow-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
+                        className="w-full py-4 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-2xl font-bold tracking-normal text-xs hover:bg-yellow-600/30 transition-all shadow-xl shadow-yellow-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
                       >
                          {isAwarding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
                          Award Achievement
@@ -2832,97 +2854,24 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
             )}
 
-            {activeTab === 'ai' && (
-              <div className="bg-white/5 border border-white/10 rounded-sm p-8">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-display font-black italic uppercase text-white">AI Settings</h3>
-                  <div className="flex items-center gap-3">
-                    <button 
-                      onClick={handleTestAi}
-                      disabled={isTestingAi}
-                      className="flex items-center gap-2 px-6 py-2 bg-white/5 hover:bg-white/10 disabled:opacity-50 text-white border border-white/10 rounded-sm text-[10px] font-black uppercase tracking-widest transition-all font-sans"
-                    >
-                      {isTestingAi ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      Test
-                    </button>
-                    <button 
-                      onClick={handleSaveAiSettings}
-                      disabled={isSavingAdmin}
-                      className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black hover:bg-fc-purple-light disabled:opacity-50 text-black rounded-sm text-[10px] font-black uppercase tracking-widest shadow-lg shadow-fc-neon-green/20 transition-all font-sans"
-                    >
-                      {isSavingAdmin ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
-                      Save
-                    </button>
-                  </div>
-                </div>
-                <div className="space-y-6">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60">Gemini API Key</label>
-                    <div className="relative">
-                      <input 
-                        type="password"
-                        value={localApiKey}
-                        onChange={(e) => setLocalApiKey(e.target.value)}
-                        placeholder="Paste your Gemini API Key here..."
-                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all font-mono"
-                      />
-                      <Shield className="absolute right-6 top-1/2 -translate-y-1/2 w-4 h-4 text-white/20" />
-                    </div>
-                    <p className="text-[8px] font-black uppercase tracking-widest text-white/20 px-1">If blank, the system default key will be used.</p>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green opacity-60">Gemini Model</label>
-                    <div className="relative">
-                      <select 
-                        value={localModel || 'gemini-3-flash-preview'}
-                        onChange={(e) => setLocalModel(e.target.value)}
-                        className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-sm px-6 py-4 text-sm outline-none focus:border-fc-neon-green/50 transition-all appearance-none cursor-pointer font-sans"
-                      >
-                        <option value="gemini-1.5-flash">gemini-1.5-flash (Fast & Balanced)</option>
-                        <option value="gemini-pro-latest">gemini-pro-latest (Smartest)</option>
-                        <option value="gemini-1.5-pro-latest">gemini-1.5-pro-latest (Pro)</option>
-                        <option value="gemini-3-flash-preview">gemini-3-flash-preview (Balanced / Default)</option>
-                        <option value="gemini-3.1-flash-lite-preview">gemini-3.1-flash-lite-preview (Fastest / Lightweight)</option>
-                        <option value="gemini-flash-latest">gemini-flash-latest (Stable Flash)</option>
-                      </select>
-                      <div className="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none opacity-40">
-                         ▼
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-sm flex items-start gap-4">
-                    <Info className="w-5 h-5 text-fc-neon-green shrink-0 mt-0.5" />
-                    <div>
-                      <h4 className="text-[10px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Configuration Status</h4>
-                      <p className="text-[10px] font-black uppercase text-white/40 leading-relaxed font-sans">
-                        Changes are saved to Firestore and take effect immediately for all subsequent AI requests (Match Analysis & Admin Commands).
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-            
             {activeTab === 'backup' && (
-              <div className="bg-white/5 border border-white/10 rounded-sm p-8">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-display font-black italic uppercase text-white">Database Backup & Recovery</h3>
+                  <h3 className="text-xl font-display font-bold  text-white">Database Backup & Recovery</h3>
                 </div>
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* Export */}
-                  <div className="bg-fc-purple-dark/20 border border-white/5 rounded-sm p-6 relative overflow-hidden group">
+                  <div className="bg-fc-purple-dark/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-fc-purple-light/20 rounded-bl-full -z-10 group-hover:bg-fc-purple-light/30 transition-all" />
                     <Download className="w-8 h-8 text-fc-neon-green mb-4" />
-                    <h4 className="font-black text-white uppercase text-sm mb-2">Export Data Backup</h4>
+                    <h4 className="font-bold text-white text-sm mb-2">Export Data Backup</h4>
                     <p className="text-white/40 text-xs leading-relaxed mb-6">
                       Download a JSON backup of everything: registrations, bracket matches, historical matches, match labels, stats, users, and reports. Do this regularly.
                     </p>
                     <button 
                       onClick={handleExportBackup}
-                      className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-sm text-[10px] font-black tracking-[0.2em] uppercase transition-all text-black flex items-center justify-center gap-2"
+                      className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all text-black flex items-center justify-center gap-2"
                     >
                       <Download className="w-4 h-4" />
                       Save Complete Backup
@@ -2930,10 +2879,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
 
                   {/* Import */}
-                  <div className="bg-fc-purple-dark/20 border border-red-500/20 rounded-sm p-6 relative overflow-hidden group">
+                  <div className="bg-fc-purple-dark/20 border border-red-500/20 rounded-2xl p-6 relative overflow-hidden group">
                     <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-red-600/5 rounded-bl-full -z-10 group-hover:bg-red-600/10 transition-all" />
                     <Upload className="w-8 h-8 text-red-400 mb-4" />
-                    <h4 className="font-black text-white uppercase text-sm mb-2">Restore Backup</h4>
+                    <h4 className="font-bold text-white text-sm mb-2">Restore Backup</h4>
                     <p className="text-red-400/60 text-xs leading-relaxed mb-6 font-bold">
                       DANGER: Restoring a backup will overwrite your current live database with the data contained in the file.
                     </p>
@@ -2946,7 +2895,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                         title="Upload JSON Backup"
                       />
-                      <div className="w-full py-4 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 rounded-sm text-[10px] font-black tracking-[0.2em] uppercase transition-all text-red-100 flex items-center justify-center gap-2">
+                      <div className="w-full py-4 bg-red-600/20 hover:bg-red-600/40 border border-red-500/30 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all text-red-100 flex items-center justify-center gap-2">
                         {isResetting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                         Restore JSON Backup
                       </div>
@@ -2955,146 +2904,19 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
               </div>
             )}
-            
-            {activeTab === 'edits' && (
-              <div className="bg-white/5 border border-white/10 rounded-sm p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-display font-black italic uppercase text-white">Recent Match Edits</h3>
-                </div>
-
-                <div className="grid gap-4">
-                  {matches?.flatMap(m => (m.editLogs || []).map(log => ({ match: m, log })))
-                    .sort((a, b) => new Date(b.log.editedAt).getTime() - new Date(a.log.editedAt).getTime())
-                    .map((item, i) => {
-                      const m = item.match;
-                      const log = item.log;
-                      const homeTeam = teams.find(t => t.id === m.homeTeamId);
-                      const awayTeam = teams.find(t => t.id === m.awayTeamId);
-                      return (
-                        <div key={`${m.id}-${i}`} className="bg-fc-purple-dark/20 border border-white/5 rounded-sm p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                          <div>
-                            <div className="text-[10px] font-black tracking-widest uppercase text-fc-neon-green mb-1">
-                              {new Date(log.editedAt).toLocaleString()}
-                            </div>
-                            <div className="text-sm font-bold text-white mb-1">
-                              Match #{m.matchNumber}: {homeTeam?.name || m.homeTeamId} <span className="text-white/40 text-xs px-2">vs</span> {awayTeam?.name || m.awayTeamId}
-                            </div>
-                            <div className="text-xs text-white/60">
-                              <span className="font-bold text-orange-400">{log.editedBy}</span> - {log.changes}
-                            </div>
-                          </div>
-                          <div className="text-xs font-mono bg-white/5 border border-white/10 px-3 py-1.5 rounded-sm text-white/50">
-                            {m.homeScore ?? 0} - {m.awayScore ?? 0}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  {(!matches || matches.length === 0 || matches.every(m => !m.editLogs || m.editLogs.length === 0)) && (
-                    <div className="text-center py-12 text-white/40 font-bold uppercase tracking-widest text-sm">No edits found</div>
-                  )}
-                </div>
-              </div>
-            )}
-            
           </div>
         </div>
-        {downloadingRegistration && (
-          <div className="fixed top-0 left-[-9999px] pointer-events-none z-[-1] opacity-0 overflow-hidden">
-            <div 
-              ref={cardRef}
-              className="w-[600px] h-[900px] bg-gradient-to-br from-[#0a0a1a] via-[#1a1a3a] to-[#0a0a1a] border-[8px] border-fc-neon-green/50 rounded-[3rem] p-10 flex flex-col relative overflow-hidden backdrop-blur-3xl shadow-[0_0_100px_rgba(37,99,235,0.2)]"
-              style={{ fontFamily: "'Inter', sans-serif" }}
-            >
-              <div className="absolute top-0 right-0 p-32 w-[600px] h-[600px] bg-fc-neon-green/30 rounded-sm blur-[100px] -z-10" />
-              <div className="absolute bottom-0 left-0 p-32 w-[600px] h-[600px] bg-fc-purple-base/30 rounded-sm blur-[100px] -z-10" />
-              
-              <div className="flex justify-between items-start mb-12">
-                 <div>
-                   <h1 className="text-5xl font-black italic uppercase text-white tracking-tighter shadow-sm w-[400px]">UXIT TOURNAMENT</h1>
-                   <p className="text-2xl font-bold uppercase text-fc-neon-green tracking-widest mt-2">{downloadingRegistration.fcName}</p>
-                 </div>
-                 <div className="w-24 h-24 bg-white p-2 rounded-sm text-black relative flex-shrink-0 shadow-lg">
-                   <div className="absolute inset-0 p-2">
-                      <DummyQRCode />
-                   </div>
-                 </div>
-              </div>
-
-              <div className="flex-1 flex flex-col items-center justify-center -mt-8">
-                 <div className="w-64 h-64 rounded-sm border-[10px] border-white/20 overflow-hidden shadow-[0_0_50px_rgba(37,99,235,0.4)] mb-8 flex items-center justify-center bg-fc-purple-base">
-                   {downloadingRegistration.logoUrl ? (
-                      <img src={downloadingRegistration.logoUrl} alt="Logo" className="w-full h-full object-cover" crossOrigin="anonymous"/>
-                   ) : (
-                      <span className="text-8xl font-black text-white/20">{downloadingRegistration.name[0]}</span>
-                   )}
-                 </div>
-                 <h2 className="text-5xl font-black text-white uppercase text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-tight">{downloadingRegistration.name}</h2>
-              </div>
-
-              <div className="grid grid-cols-2 gap-6 bg-fc-purple-dark/40 backdrop-blur-2xl rounded-sm p-8 border-2 border-white/10 relative z-10 shadow-2xl mt-8">
-                 <div className="text-center">
-                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Team OVR</p>
-                   <p className="text-5xl font-black text-white drop-shadow-md">{downloadingRegistration.teamOvr}</p>
-                 </div>
-                 <div className="text-center border-l-2 border-white/10">
-                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Age</p>
-                   <p className="text-5xl font-black text-white drop-shadow-md">{downloadingRegistration.age}</p>
-                 </div>
-                 <div className="text-center md:col-span-2 border-t-2 border-white/10 pt-6 mt-2">
-                   <p className="text-sm font-black text-fc-neon-green uppercase tracking-widest mb-1">Goalkeeper</p>
-                   <p className="text-2xl font-bold text-white capitalize drop-shadow-md">{downloadingRegistration.goalkeeper || 'N/A'}</p>
-                 </div>
-              </div>
-            </div>
-          </div>
-        )}
       </motion.div>
     );
   };
 
-  const AchievementNotification = ({ achievements, onClose }: { achievements: string[], onClose: () => void }) => {
-  useEffect(() => {
-    const audio = new Audio("https://assets.mixkit.co/active_storage/sfx/2000/2000-preview.mp3");
-    audio.volume = 0.5;
-    audio.play().catch(e => console.log("Audio play blocked", e));
-    
-    // Auto-dismiss after 5 seconds
-    const timer = setTimeout(onClose, 5000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className="fixed top-20 right-4 z-[100] flex flex-col gap-3">
-      {achievements.map((id, index) => (
-        <motion.div
-          key={`${id}-${index}`}
-          initial={{ x: "100%", opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          exit={{ x: "100%", opacity: 0 }}
-          className="w-80 bg-[#0a0a2a] border-2 border-yellow-500/50 p-4 rounded-sm shadow-[0_0_20px_rgba(234,179,8,0.2)] flex items-center gap-4 relative overflow-hidden"
-        >
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 to-transparent pointer-events-none" />
-          <div className="text-3xl">🏆</div>
-          <div className="flex-1 min-w-0">
-            <div className="text-[10px] font-black text-yellow-500 uppercase tracking-widest">Unlocked</div>
-            <div className="text-sm font-bold text-white truncate">{ACHIEVEMENTS.find(a => a.id === id)?.title}</div>
-          </div>
-          <button onClick={onClose} className="text-white/50 hover:text-white">
-            <X className="w-4 h-4" />
-          </button>
-        </motion.div>
-      ))}
-    </div>
-  );
-};
-
 const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true, copiedId, copyToClipboard }: { team: Team | undefined, size?: 'sm' | 'lg', reverse?: boolean, showCopy?: boolean, copiedId: string | null, copyToClipboard: (uid: string) => void }) => {
     if (!team) return (
       <div className={`flex items-center ${reverse ? 'flex-row-reverse' : ''} min-w-0 opacity-20`}>
-        <div className={`${size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'} rounded bg-white/10 flex items-center justify-center text-[10px] font-black uppercase text-white/40 shrink-0 ${reverse ? 'ml-2' : 'mr-2'}`}>
+        <div className={`${size === 'lg' ? 'w-8 h-8' : 'w-6 h-6'} rounded bg-white/10 flex items-center justify-center text-[10px] font-bold text-white/40 shrink-0 ${reverse ? 'ml-2' : 'mr-2'}`}>
           ?
         </div>
-        <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
+        <span className={`font-display font-bold tracking-tight whitespace-nowrap  truncate pr-1 ${
           size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
         }`}>TBD</span>
       </div>
@@ -3106,16 +2928,16 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
             <img 
               src={team.logoUrl} 
               alt={team.name} 
-              className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-sm object-cover border border-white/10 shadow-lg ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}
+              className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-2xl object-cover border border-fc-neon-green/50 shadow-[0_0_10px_rgba(201,168,76,0.3)] ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}
               referrerPolicy="no-referrer"
             />
           ) : (
-            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-fc-neon-green font-display font-black italic uppercase ${size === 'lg' ? 'text-sm md:text-lg' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
-              {team.name[0]}
+            <div className={`${size === 'lg' ? 'w-8 h-8 md:w-10 md:h-10' : 'w-6 h-6 md:w-8 md:h-8'} rounded-2xl bg-black border border-fc-neon-green flex items-center justify-center text-fc-neon-green font-sans font-bold shadow-[0_0_10px_rgba(201,168,76,0.3)] ${size === 'lg' ? 'text-sm md:text-base' : 'text-[10px] md:text-xs'} ${reverse ? 'ml-2 md:ml-3' : 'mr-2 md:mr-3'}`}>
+              {team.name.substring(0, 2)}
             </div>
           )}
-          <span className={`font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 ${
-            size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
+          <span className={`font-sans font-bold tracking-normal whitespace-nowrap truncate pr-1 ${
+            size === 'lg' ? 'text-sm md:text-xl' : 'text-xs md:text-sm'
           }`}>{team.name}</span>
         </div>
       </div>
@@ -3226,7 +3048,7 @@ const parseTourneyDate = (dStr: string) => {
 
 const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: any[], isAdmin?: boolean, isEditingMode?: boolean, onDelete?: (id: string) => void }) => {
   if (!articles || articles.length === 0) return (
-    <div className="p-8 text-center text-white/40 bg-white/5 rounded-sm border border-white/10 uppercase tracking-widest font-black text-xs">
+    <div className="p-8 text-center text-white/40 bg-white/5 rounded-2xl border border-white/10 tracking-normal font-bold text-xs">
       No recent news
     </div>
   );
@@ -3268,7 +3090,7 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
     <div className="w-full space-y-4 mb-12">
       <div className="flex items-center gap-3 mb-6">
         <Sparkles className="w-5 h-5 text-fc-neon-green" />
-        <h2 className="font-display font-black text-xl italic uppercase tracking-widest text-white">UXL News Network</h2>
+        <h2 className="font-display font-bold text-xl  tracking-normal text-white">UXL News Network</h2>
       </div>
       <div className="flex overflow-x-auto pb-4 gap-4 snap-x snap-mandatory scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
         {articles.map((article: any) => (
@@ -3276,27 +3098,27 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             key={article.id} 
-            className="flex-none w-80 md:w-96 bg-fc-purple-dark/40 border border-white/10 rounded-sm p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
+            className="flex-none w-80 md:w-96 bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-5 snap-start relative overflow-hidden group hover:bg-white/5 transition-colors"
           >
             {isAdmin && isEditingMode && onDelete && (
               <button 
                 onClick={() => onDelete(article.id)}
-                className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center bg-red-500/20 text-red-500 rounded-sm hover:bg-red-500 hover:text-white transition-colors"
+                className="absolute top-2 right-2 z-20 w-8 h-8 flex items-center justify-center bg-red-500/20 text-red-500 rounded-2xl hover:bg-red-500 hover:text-white transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
             )}
             <div className="absolute top-0 right-0 w-32 h-32 bg-fc-neon-green/5 rounded-bl-[100px] pointer-events-none group-hover:bg-fc-purple-light/20 transition-colors" />
             <div className="flex items-start justify-between mb-3 relative z-10">
-              <span className={`text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-sm border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
+              <span className={`text-[10px] font-bold tracking-normal px-2.5 py-1 rounded-2xl border ${getCategoryColor(article.category)} flex items-center gap-1.5`}>
                 <span>{getCategoryIcon(article.category)}</span> {article.category}
               </span>
-              <span className="text-[10px] uppercase font-black tracking-widest text-white/30">
+              <span className="text-[10px] font-bold tracking-normal text-white/30">
                 {article.created_at ? getTimeAgo(article.created_at) : 'Just now'}
               </span>
             </div>
             
-            <h3 className="text-lg font-display font-black leading-tight text-white mb-2 relative z-10">{article.title}</h3>
+            <h3 className="text-lg font-display font-bold leading-tight text-white mb-2 relative z-10">{article.title}</h3>
             <p className="text-sm text-white/60 leading-relaxed font-medium relative z-10">{article.content}</p>
           </motion.div>
         ))}
@@ -3379,24 +3201,24 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-fc-purple-dark border border-fc-neon-green/30 p-8 rounded-sm max-w-sm w-full font-mono text-white shadow-2xl"
+        className="relative bg-fc-purple-dark border border-fc-neon-green/30 p-8 rounded-2xl max-w-sm w-full font-mono text-white shadow-2xl"
       >
         <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white">
           <X className="w-5 h-5" />
         </button>
-        <h2 className="text-xl font-black uppercase tracking-widest text-fc-neon-green mb-6 text-center">Login</h2>
+        <h2 className="text-xl font-bold tracking-normal text-fc-neon-green mb-6 text-center">Login</h2>
         
         <div className="flex gap-4 mb-6">
           <button 
             type="button"
-            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${tab === 'player' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
+            className={`flex-1 py-2 text-xs font-bold tracking-wider border-b-2 transition-colors ${tab === 'player' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
             onClick={() => setTab('player')}
           >
             Player
           </button>
           <button 
             type="button"
-            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${tab === 'admin' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
+            className={`flex-1 py-2 text-xs font-bold tracking-wider border-b-2 transition-colors ${tab === 'admin' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
             onClick={() => setTab('admin')}
           >
             Admin
@@ -3406,7 +3228,7 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
         <form onSubmit={handleLogin} className="space-y-6">
           {tab === 'player' && (
             <div>
-              <label className="block text-[10px] uppercase text-white/50 mb-2">Select Player Name</label>
+              <label className="block text-[10px] text-white/50 mb-2">Select Player Name</label>
               {isLoading ? (
                 <div className="text-xs text-white/50">Loading available spots...</div>
               ) : availablePlayers.length === 0 ? (
@@ -3415,7 +3237,7 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
                 <select 
                   value={selectedPlayer}
                   onChange={(e) => setSelectedPlayer(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                  className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
                 >
                   {availablePlayers.map(p => (
                     <option key={p} value={p}>{p}</option>
@@ -3427,12 +3249,12 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
 
           {tab === 'admin' && (
             <div>
-              <label className="block text-[10px] uppercase text-white/50 mb-2">Admin Password (Default: Broken@2000)</label>
+              <label className="block text-[10px] text-white/50 mb-2">Admin Password</label>
               <input 
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
                 placeholder="Enter admin password"
               />
             </div>
@@ -3443,7 +3265,7 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           <button 
             type="submit"
             disabled={tab === 'player' && availablePlayers.length === 0}
-            className="w-full py-4 bg-fc-neon-green text-black uppercase tracking-widest font-black text-xs hover:bg-fc-purple-light transition-colors rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full py-4 bg-fc-neon-green text-black tracking-normal font-bold text-xs hover:bg-fc-purple-light transition-colors rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Proceed
           </button>
@@ -3452,6 +3274,36 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
     </div>
   );
 }
+
+const FLAGS = ['🇧🇷', '🇫🇷', '🇩🇪', '🇪🇸', '🇵🇹', '🇦🇷', '🇮🇹', '🇳🇱', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🇧🇪', '🇺🇾', '🇭🇷'];
+
+const RotatingFlag = () => {
+  const [index, setIndex] = useState(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % FLAGS.length);
+    }, 2000);
+    return () => clearInterval(timer);
+  }, []);
+
+  return (
+    <div className="relative inline-block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 ml-3 md:ml-4 align-middle">
+      <AnimatePresence mode="popLayout">
+        <motion.span
+          key={index}
+          initial={{ opacity: 0, y: 20, scale: 0.8, rotate: -20 }}
+          animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
+          exit={{ opacity: 0, y: -20, scale: 0.8, rotate: 20 }}
+          transition={{ duration: 0.4, type: "spring", bounce: 0.4 }}
+          className="absolute inset-0 flex items-center justify-center text-5xl sm:text-6xl md:text-8xl drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+        >
+          {FLAGS[index]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export default function App() {
   const [hasQuotaError, setHasQuotaError] = useState(false);
@@ -3824,6 +3676,7 @@ export default function App() {
         uid: data.id,
         logoUrl: data.logoUrl,
         goalkeeper: data.goalkeeper,
+        country: data.country,
         played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
       }));
       setDbTeams(teamsList);
@@ -3926,7 +3779,7 @@ export default function App() {
         <div className={`relative group ${className}`}>
           <img src={src} alt={alt} referrerPolicy="no-referrer" className={`w-full h-full object-cover`} />
           <div className="absolute inset-0 bg-fc-purple-dark/50 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity cursor-pointer">
-             <label className="bg-fc-neon-green text-black px-4 py-2 rounded-sm text-black text-xs font-black uppercase cursor-pointer hover:bg-fc-neon-green text-black transition-colors">
+             <label className="bg-fc-neon-green text-black px-4 py-2 rounded-2xl text-black text-xs font-bold cursor-pointer hover:bg-fc-neon-green text-black transition-colors">
                Change Image
                <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
              </label>
@@ -4015,7 +3868,7 @@ export default function App() {
               setTempContent(isImage ? imageUrl : text);
               setIsEditing(true);
             }}
-            className="p-1.5 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-sm text-black transition-all scale-75 absolute -right-8 top-1/2 -translate-y-1/2 z-[100] shadow-xl border border-fc-neon-green/40"
+            className="p-1.5 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black rounded-2xl text-black transition-all scale-75 absolute -right-8 top-1/2 -translate-y-1/2 z-[100] shadow-xl border border-fc-neon-green/40"
             title={isImage ? "Edit Image" : "Edit Text"}
           >
             <Edit3 className="w-3.5 h-3.5" />
@@ -4213,7 +4066,7 @@ export default function App() {
         const teamsList: Team[] = teamsData.map((data: any) => ({
           id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
           fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.id,
-          logoUrl: data.logoUrl, goalkeeper: data.goalkeeper, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+          logoUrl: data.logoUrl, goalkeeper: data.goalkeeper, country: data.country, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
         }));
         setDbTeams(teamsList);
       } else if (type === 'bracket') {
@@ -4321,10 +4174,16 @@ export default function App() {
       const reg = registrations.find(r => r.id === id);
       await deleteDoc(doc(db, 'registrations', id));
       if (reg && reg.userId) {
-        await deleteDoc(doc(db, 'users', reg.userId));
+        try {
+          await deleteDoc(doc(db, 'users', reg.userId));
+        } catch (ignored) {
+          console.warn("Could not delete user shadow document, it might be protected.");
+        }
       }
+      await refreshCache('teams');
     } catch (error) {
       console.error("Delete failed:", error);
+      alert("Delete failed. Check console.");
     }
   };
 
@@ -4335,6 +4194,18 @@ export default function App() {
     } catch (error) {
       console.error("Rejection failed:", error);
     }
+  };
+
+  const AchievementNotification = ({ achievements, onClose }: { achievements: Achievement[], onClose: () => void }) => {
+    return (
+      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
+        {achievements.map((achievement, i) => (
+          <div key={i}>
+            <AchievementPopup achievement={achievement} onClose={onClose} />
+          </div>
+        ))}
+      </div>
+    );
   };
 
   const handleUpdateRegistration = async (reg: Registration) => {
@@ -4353,6 +4224,7 @@ export default function App() {
         uid: data.id,
         logoUrl: data.logoUrl,
         goalkeeper: data.goalkeeper,
+        country: data.country,
         played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
       }));
       setDbTeams(teamsList);
@@ -5474,7 +5346,7 @@ export default function App() {
       {hasQuotaError && (
         <div className="bg-red-500/20 border-b border-red-500/50 p-4 text-center z-50 relative backdrop-blur-sm">
           <p className="text-red-200 font-bold max-w-4xl mx-auto">
-            <span className="uppercase tracking-widest text-xs block mb-1">Database Error / Quota Exceeded</span>
+            <span className="tracking-normal text-xs block mb-1">Database Error / Quota Exceeded</span>
             Firestore daily read limit has been reached, or the connection is offline. Latest data will not load properly unless cached. Quota resets at 12:00 AM PT.
           </p>
         </div>
@@ -5482,76 +5354,81 @@ export default function App() {
       {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-fc-purple-dark via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent" />
       </div>
 
       {/* Header */}
-      <header className="relative h-48 md:h-64 flex flex-col items-center justify-center overflow-hidden border-b border-white/10">
-        <div className="absolute inset-0 z-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-fc-purple-base/20 to-[#000030]" />
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full opacity-10">
-            <div className="grid grid-cols-8 gap-4 p-4">
-              {Array.from({ length: 32 }).map((_, i) => (
-                <Star key={i} className="w-4 h-4 text-white animate-pulse" style={{ animationDelay: `${i * 0.1}s` }} />
-              ))}
+      <header className="relative w-full bg-gradient-to-br from-[#050505] to-[#111] py-16 md:py-24 md:rounded-b-3xl border-b border-white/5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] mb-8 overflow-hidden">
+        {/* Soft Modern BG glow elements instead of emojis */}
+        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiPjwvcmVjdD4KPHBhdGggZD0iTTAgMEw4IDhaTThgMGwtOCA4IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC4yIj48L3BhdGg+Cjwvc3ZnPg==')] opacity-30 mask-image-[radial-gradient(ellipse_at_center,black_10%,transparent_70%)] pointer-events-none"></div>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#3B82F6] blur-[150px] opacity-[0.10] pointer-events-none rounded-full transform translate-x-1/3 -translate-y-1/3"></div>
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-[#10B981] blur-[120px] opacity-[0.08] rounded-full pointer-events-none z-0"></div>
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="text-left w-full relative max-w-3xl"
+          >
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#3B82F6]/10 border border-[#3B82F6]/20 rounded-full mb-6 max-w-full overflow-hidden">
+              <span className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse shrink-0"></span>
+              <span className="text-[#3B82F6] font-sans font-bold text-[10px] tracking-widest uppercase truncate">
+                <EditableText id="hero_status" defaultText="GLOBAL LEAGUE ACTIVE" />
+              </span>
             </div>
-          </div>
-        </div>
-        
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="z-10 text-center px-4 w-full"
-        >
-          <div className="absolute top-4 right-4 z-50 flex items-center gap-3">
+            
+            <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-black text-white leading-[1.05] tracking-tight mb-6 drop-shadow-sm flex items-center flex-wrap">
+              <EditableText id="hero_title_main" defaultText="UXI: World's Game" />
+              <RotatingFlag />
+            </h1>
+            
+            <p className="text-white/50 font-sans text-sm md:text-base lg:text-lg max-w-xl leading-relaxed">
+              <EditableText id="hero_desc" defaultText="The ultimate competitive e-sports football tournament. Track fixtures, live leaderboards, and detailed player statistics in real-time." />
+            </p>
+          </motion.div>
+
+          {/* Top Right Auth */}
+          <div className="absolute top-0 right-4 md:relative md:-top-4 z-[100] flex items-center justify-end w-full md:w-auto">
             {user && !user.isAnonymous ? (
-              <div className="flex items-center gap-2">
-                <div className="hidden sm:block text-right">
-                  <p className="text-[10px] font-black text-white/40 uppercase tracking-widest leading-none">Logged In</p>
-                  <p className="text-xs font-bold text-fc-neon-green truncate max-w-[100px]">{user.displayName || user.email}</p>
+              <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] border border-white/5 rounded-2xl backdrop-blur-xl shadow-lg">
+                <div className="hidden sm:block text-right px-3 py-1">
+                  <p className="text-[10px] text-white/50 tracking-widest uppercase leading-none font-sans font-bold mb-0.5">Session Active</p>
+                  <p className="text-xs font-bold text-white truncate max-w-[120px] font-sans">{user.displayName || user.email}</p>
                 </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => setIsAdminModalOpen(true)}
+                    className="px-3 py-2 bg-white/10 hover:bg-[#3B82F6] text-white font-sans font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 border border-white/5 shadow-sm"
+                  >
+                    <Settings className="w-4 h-4" />
+                    <span className="hidden sm:inline">Admin</span>
+                  </button>
+                )}
                 <button 
                   onClick={() => logout()}
-                  className="p-2 rounded-sm bg-white/5 border border-white/10 text-white/40 hover:text-red-400 transition-colors"
+                  className="p-2.5 bg-white/[0.05] hover:bg-[#EF4444] text-white/80 hover:text-white rounded-xl transition-colors border border-transparent hover:border-white/20 shadow-sm ml-1"
                   title="Logout"
                 >
                   <LogOut className="w-4 h-4" />
                 </button>
-                {isAdmin && (
-                  <button
-                    onClick={() => setIsAdminModalOpen(true)}
-                    className="px-3 py-2 bg-yellow-600/20 border border-yellow-500/30 text-yellow-400 rounded-sm text-[10px] font-black uppercase tracking-widest hover:bg-yellow-600/30 transition-all flex items-center gap-2"
-                  >
-                    <Settings className="w-3.5 h-3.5" />
-                    Terminal
-                  </button>
-                )}
               </div>
             ) : (
               <button 
                 onClick={() => setShowLoginModal(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 text-fc-neon-green hover:bg-fc-neon-green-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
+                className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.05] hover:bg-[#3B82F6] border border-white/10 text-white font-sans font-bold rounded-2xl transition-all text-xs tracking-widest shadow-lg hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:-translate-y-0.5 uppercase"
               >
-                <LogIn className="w-3.5 h-3.5" />
-                Login
+                <LogIn className="w-4 h-4" />
+                Player Login
               </button>
             )}
           </div>
-
-          <Trophy className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 text-fc-neon-green drop-shadow-[0_0_15px_rgba(96,165,250,0.5)]" />
-          <h1 className="font-display text-3xl md:text-6xl font-black tracking-tighter uppercase italic leading-none pr-2">
-            <EditableText id="hero_title_main" defaultText="UXI Tournament" />
-          </h1>
-          <p className="text-fc-neon-green/60 mt-2 font-mono text-[10px] md:text-sm tracking-[0.2em] md:tracking-[0.4em] uppercase">
-            <EditableText id="hero_subtitle" defaultText="THE WORLD'S GAME" />
-          </p>
-        </motion.div>
+        </div>
       </header>
 
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-fc-purple-dark/90 backdrop-blur-2xl border-b border-white/10 py-4 md:py-6">
-        <div className="max-w-xl mx-auto px-4">
-          <div className="relative flex p-1.5 bg-white/5 rounded-sm border border-white/10 shadow-2xl overflow-x-auto hide-scrollbar">
+      <nav className="sticky top-0 z-50 py-4 mb-4 md:mb-8 pointer-events-none">
+        <div className="max-w-7xl mx-auto px-4 overflow-visible flex justify-center">
+          <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 pointer-events-auto w-full md:w-auto overflow-x-auto hide-scrollbar pb-4 md:pb-0">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
               { id: 'table', label: 'Table', icon: TableIcon },
@@ -5571,19 +5448,26 @@ export default function App() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`relative flex-1 flex flex-col items-center justify-center gap-1.5 py-3 md:py-4 rounded-sm transition-all duration-500 z-10 ${
-                  activeTab === tab.id ? 'text-white' : 'text-white/40 hover:text-white/70'
+                className={`group relative px-4 py-2.5 md:px-6 md:py-3 flex items-center justify-center gap-2 transition-all duration-300 rounded-2xl text-xs md:text-sm font-sans font-bold whitespace-nowrap overflow-hidden border ${
+                  activeTab === tab.id 
+                    ? 'text-[#3B82F6] border-[#3B82F6]/50 bg-[#3B82F6]/10 shadow-[0_4px_20px_rgba(59,130,246,0.2)]' 
+                    : 'text-white/60 border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:text-white hover:border-white/20 hover:shadow-[0_4px_20px_rgba(255,255,255,0.05)]'
                 }`}
               >
                 {activeTab === tab.id && (
                   <motion.div
-                    layoutId="activeTab"
-                    className="absolute inset-0 bg-gradient-to-br from-fc-neon-green to-fc-purple-light rounded-sm shadow-[0_0_20px_rgba(37,99,235,0.4)]"
+                    layoutId="activeTabGlow"
+                    className="absolute inset-0 bg-gradient-to-tr from-[#3B82F6]/20 to-transparent z-0 blur-md"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
-                <tab.icon className={`w-4 h-4 md:w-5 md:h-5 relative z-20 transition-transform duration-500 ${activeTab === tab.id ? 'scale-110' : 'scale-100'}`} />
-                <span className="relative z-20 font-black uppercase text-[9px] md:text-[10px] tracking-[0.15em] md:tracking-[0.2em]">
+                
+                <div className={`relative flex items-center justify-center w-6 h-6 rounded-lg transition-transform duration-300 ${
+                  activeTab === tab.id ? 'bg-[#3B82F6] text-white scale-110 shadow-lg' : 'bg-white/10 text-white/60 group-hover:bg-white/20'
+                }`}>
+                  <tab.icon className="w-3.5 h-3.5 relative z-20" />
+                </div>
+                <span className="relative z-20 tracking-wide">
                   {tab.label}
                 </span>
               </button>
@@ -5605,12 +5489,12 @@ export default function App() {
             >
               <div className="flex flex-col md:flex-row md:items-center gap-4 mb-4">
                 <div className="flex items-center gap-4 flex-1">
-                  <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-neon-green/50/30 shrink-0">
+                  <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30 shrink-0">
                     <UserIcon className="w-6 h-6 text-fc-neon-green" />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none truncate" />
-                    <p className="text-fc-neon-green/40 text-xs uppercase tracking-widest mt-1 truncate">
+                    <EditableText id="campaign_header" defaultText="My Campaign" as="h2" className="font-display text-2xl font-bold  tracking-tight leading-none truncate" />
+                    <p className="text-fc-neon-green/40 text-xs tracking-normal mt-1 truncate">
                       <EditableText id="campaign_sub" defaultText="Player Portal & Performance" />
                     </p>
                   </div>
@@ -5618,33 +5502,33 @@ export default function App() {
                 <div className="flex flex-row md:flex-row items-center gap-2 w-full md:w-auto">
                   <button 
                     onClick={() => setIsEditingProfile(true)}
-                    className="flex justify-center items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-sm transition-all group shrink-0 h-full"
+                    className="flex justify-center items-center gap-2 px-4 md:px-6 py-2 md:py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group shrink-0 h-full"
                   >
                     <Edit3 className="w-4 h-4 text-fc-neon-green group-hover:scale-110 transition-transform" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white hidden md:inline">Edit</span>
+                    <span className="text-[10px] font-bold tracking-normal text-white hidden md:inline">Edit</span>
                   </button>
-                  <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-sm md:ml-auto overflow-x-auto hide-scrollbar w-full">
+                  <div className="flex items-center gap-2 p-1 bg-white/5 border border-white/10 rounded-2xl md:ml-auto overflow-x-auto hide-scrollbar w-full">
                     <button 
                       onClick={() => setCampaignTab('stats')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'stats' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Stats
                     </button>
                     <button 
                       onClick={() => setCampaignTab('history')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Results
                     </button>
                     <button 
                       onClick={() => setCampaignTab('achievements')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Achievements
                     </button>
                     <button 
                       onClick={() => setCampaignTab('edit')}
-                      className={`px-4 py-2 rounded-sm text-[9px] font-black uppercase tracking-widest transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
+                      className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
                     >
                       Edit
                     </button>
@@ -5653,35 +5537,35 @@ export default function App() {
               </div>
 
               {!user ? (
-                <div className="p-12 text-center bg-white/5 rounded-sm border border-white/10">
+                <div className="p-12 text-center bg-white/5 rounded-2xl border border-white/10">
                   <p className="text-white/40 mb-6">Please login to access your campaign portal.</p>
-                  <button onClick={() => setShowLoginModal(true)} className="px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
+                  <button onClick={() => setShowLoginModal(true)} className="px-8 py-4 bg-fc-neon-green text-black rounded-2xl font-bold tracking-normal text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
                 </div>
               ) : (
                 (() => {
                   const myRegistration = myRegistrationData;
                   if (isDataLoading) {
                     return (
-                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-sm flex flex-col items-center justify-center gap-6">
+                      <div className="py-24 text-center bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-6">
                         <Loader2 className="w-12 h-12 text-fc-neon-green animate-spin" />
-                        <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold animate-pulse">Loading Campaign Data...</p>
+                        <p className="text-white/40 text-xs tracking-[0.3em] font-bold animate-pulse">Loading Campaign Data...</p>
                       </div>
                     );
                   }
                   if (!myRegistration) {
                      return (
-                        <div className="p-12 text-center bg-white/5 rounded-sm border border-white/10">
+                        <div className="p-12 text-center bg-white/5 rounded-2xl border border-white/10">
                           <p className="text-white/40 mb-6 font-bold">You are not registered for the tournament.</p>
-                          <button onClick={() => setActiveTab('registration')} className="px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Register Now</button>
+                          <button onClick={() => setActiveTab('registration')} className="px-8 py-4 bg-fc-neon-green text-black rounded-2xl font-bold tracking-normal text-xs hover:bg-fc-purple-light transition-all">Register Now</button>
                         </div>
                      );
                   }
 
                   if (myRegistration.status === 'pending') {
                     return (
-                      <div className="p-12 text-center bg-yellow-500/5 rounded-sm border border-yellow-500/20">
+                      <div className="p-12 text-center bg-yellow-500/5 rounded-2xl border border-yellow-500/20">
                         <Loader2 className="w-12 h-12 text-yellow-500/40 mx-auto mb-6 animate-spin" />
-                        <h3 className="text-xl font-display font-black text-yellow-500 uppercase italic">Waiting for Verification</h3>
+                        <h3 className="text-xl font-display font-bold text-yellow-500 ">Waiting for Verification</h3>
                         <p className="text-white/40 text-sm mt-2">Admin is currently reviewing your registration details.</p>
                       </div>
                     );
@@ -5689,9 +5573,9 @@ export default function App() {
 
                   if (myRegistration.status === 'rejected') {
                     return (
-                      <div className="p-12 text-center bg-red-500/5 rounded-sm border border-red-500/20">
+                      <div className="p-12 text-center bg-red-500/5 rounded-2xl border border-red-500/20">
                         <X className="w-12 h-12 text-red-500/40 mx-auto mb-6" />
-                        <h3 className="text-xl font-display font-black text-red-500 uppercase italic">Registration Rejected</h3>
+                        <h3 className="text-xl font-display font-bold text-red-500 ">Registration Rejected</h3>
                         <p className="text-white/40 text-sm mt-2">Your application was not approved for this tournament.</p>
                       </div>
                     );
@@ -5704,9 +5588,9 @@ export default function App() {
                   
                   if (myMatches.length === 0) {
                     return (
-                      <div className="p-12 text-center bg-fc-neon-green/5 rounded-sm border border-fc-neon-green/30">
+                      <div className="p-12 text-center bg-fc-neon-green/5 rounded-2xl border border-fc-neon-green/30">
                         <Calendar className="w-12 h-12 text-fc-neon-green/40 mx-auto mb-6" />
-                        <h3 className="text-xl font-display font-black text-fc-neon-green uppercase italic">Waiting for Fixture Update</h3>
+                        <h3 className="text-xl font-display font-bold text-fc-neon-green ">Waiting for Fixture Update</h3>
                         <p className="text-white/40 text-sm mt-2">You are registered and approved! Matches will appear here once the schedule is released.</p>
                       </div>
                     );
@@ -5720,12 +5604,12 @@ export default function App() {
                         <motion.div
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/5 border border-white/10 rounded-sm p-8 md:p-12"
+                          className="bg-white/5 border border-white/10 rounded-2xl p-8 md:p-12"
                         >
                           <div className="max-w-4xl mx-auto space-y-12">
                              <div className="text-center space-y-4">
-                               <h2 className="text-4xl md:text-5xl font-display font-black uppercase italic text-white tracking-tighter">My Trophy Room</h2>
-                               <p className="text-white/40 text-xs font-black uppercase tracking-[0.3em]">Showcasing your tournament exploits</p>
+                               <h2 className="text-4xl md:text-5xl font-display font-bold  text-white tracking-tight">My Trophy Room</h2>
+                               <p className="text-white/40 text-xs font-bold tracking-[0.3em]">Showcasing your tournament exploits</p>
                              </div>
                              <AchievementsList userAchievements={userProfile?.achievements || {}} />
                           </div>
@@ -5733,25 +5617,25 @@ export default function App() {
                       ) : campaignTab === 'edit' ? (
                          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 text-center">
                             <Shield className="w-16 h-16 text-fc-neon-green/20 mx-auto mb-6" />
-                            <h3 className="text-xl font-display font-black text-white uppercase italic">Security Shield Active</h3>
+                            <h3 className="text-xl font-display font-bold text-white ">Security Shield Active</h3>
                             <p className="text-white/40 text-sm max-w-sm mx-auto mt-2">Use the "Edit Info" button in the header to modify your tournament registration details.</p>
                             <button 
                               onClick={() => setIsEditingProfile(true)}
-                              className="mt-8 px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase text-xs tracking-widest text-black hover:bg-fc-purple-light transition-all shadow-xl shadow-fc-neon-green/20"
+                              className="mt-8 px-8 py-4 bg-fc-neon-green text-black rounded-2xl font-bold text-xs tracking-normal text-black hover:bg-fc-purple-light transition-all shadow-xl shadow-fc-neon-green/20"
                             >
                               Launch Editor
                             </button>
                          </div>
                       ) : campaignTab === 'history' ? (
                         <div className="space-y-6">
-                           <h3 className="text-lg font-display font-black uppercase italic text-white px-4">All Match Results</h3>
+                           <h3 className="text-lg font-display font-bold  text-white px-4">All Match Results</h3>
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                              {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').map(m => (
                                <MatchCard key={m.id} match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
                              ))}
                            </div>
                            {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').length === 0 && (
-                               <div className="p-8 text-center text-white/40 bg-white/5 rounded-sm border border-white/10 mt-4">
+                               <div className="p-8 text-center text-white/40 bg-white/5 rounded-2xl border border-white/10 mt-4">
                                   No previous results yet.
                                </div>
                            )}
@@ -5761,38 +5645,48 @@ export default function App() {
                           {/* Performance Snapshot */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">
+                              <p className="text-[10px] font-bold text-fc-neon-green tracking-normal mb-1">
                                 <EditableText id="stats_status_label" defaultText="Status" />
                               </p>
-                              <p className="text-xl font-display font-black italic text-white uppercase">{myRegistration.status}</p>
+                              <p className="text-xl font-display font-bold  text-white">{myRegistration.status}</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">OVR</p>
-                              <p className="text-xl font-display font-black italic text-yellow-500">{myRegistration.teamOvr}</p>
+                              <p className="text-[10px] font-bold text-fc-neon-green tracking-normal mb-1">OVR</p>
+                              <p className="text-xl font-display font-bold  text-yellow-500">{myRegistration.teamOvr}</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">Goals</p>
-                              <p className="text-xl font-display font-black italic text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
+                              <p className="text-[10px] font-bold text-fc-neon-green tracking-normal mb-1">Goals</p>
+                              <p className="text-xl font-display font-bold  text-white">{myStats.reduce((acc, s) => acc + s.goals, 0)}</p>
                             </div>
                             <div className="bg-white/5 border border-white/10 p-6 rounded-[2rem] text-center">
-                              <p className="text-[10px] font-black text-fc-neon-green uppercase tracking-widest mb-1">Played</p>
-                              <p className="text-xl font-display font-black italic text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
+                              <p className="text-[10px] font-bold text-fc-neon-green tracking-normal mb-1">Played</p>
+                              <p className="text-xl font-display font-bold  text-white">{myMatches.filter(m => m.status === 'finished').length}</p>
                             </div>
                           </div>
 
                           {/* Goal Scorers */}
                           <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                            <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Top Scorers</h3>
+                            <h3 className="text-lg font-display font-bold  text-white mb-6">Top Scorers</h3>
                             <div className="space-y-4">
                               {myStats.length === 0 ? (
-                                <p className="text-white/20 text-center py-4 text-sm uppercase font-black tracking-widest">No goals recorded yet</p>
+                                <p className="text-[#555555] text-center py-4 text-xs font-sans font-bold tracking-normal">No goals recorded yet</p>
                               ) : (
-                                myStats.map(s => (
-                                  <div key={s.playerName} className="flex items-center justify-between p-4 bg-white/5 rounded-sm border border-white/5">
-                                    <span className="font-bold text-white">{s.playerName}</span>
-                                    <span className="font-display font-black text-fc-neon-green text-xl italic">{s.goals}</span>
-                                  </div>
-                                ))
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  {myStats.map(s => (
+                                    <div key={s.playerName} className="p-4 bg-white/[0.03] backdrop-blur-xl border-t-2 border-[#3B82F6] border border-x-[#1E1E1E] border-b-[#1E1E1E]">
+                                      <div className="flex flex-col mb-4">
+                                        <span className="font-display text-white text-2xl">{s.playerName}</span>
+                                        <div className="text-[#3B82F6] font-sans text-[10px] small-caps font-bold tracking-[0.1em] mt-0.5">FORWARD</div>
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-3 mt-auto">
+                                        <div className="flex flex-col">
+                                          <span className="text-[#555555] font-sans text-[10px] font-bold tracking-normal">GOALS</span>
+                                          <span className="font-display text-white text-3xl">{s.goals}</span>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           </div>
@@ -5800,8 +5694,8 @@ export default function App() {
                           {/* Result Submission AI */}
                           <div className="bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-fc-purple-light/20 blur-[60px] pointer-events-none" />
-                            <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-black uppercase italic text-fc-neon-green mb-2" />
-                            <p className="text-white/40 text-[10px] uppercase tracking-widest mb-6">
+                            <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-bold  text-fc-neon-green mb-2" />
+                            <p className="text-white/40 text-[10px] tracking-normal mb-6">
                               <EditableText id="ai_verify_sub" defaultText="AI-Powered Verification" />
                             </p>
                             
@@ -5817,13 +5711,13 @@ export default function App() {
 
                                 if (myOngoingMatches.length === 0) {
                                   return (
-                                    <div className="p-6 bg-white/5 border border-white/10 rounded-sm flex flex-col items-center gap-3 text-center">
-                                      <div className="w-10 h-10 bg-fc-purple-light/20 rounded-sm flex items-center justify-center">
+                                    <div className="p-6 bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center gap-3 text-center">
+                                      <div className="w-10 h-10 bg-fc-purple-light/20 rounded-2xl flex items-center justify-center">
                                         <AlertCircle className="w-5 h-5 text-fc-neon-green/60" />
                                       </div>
-                                      <p className="text-[10px] font-black uppercase tracking-[0.15em] text-white/40">
+                                      <p className="text-[10px] font-bold tracking-[0.15em] text-white/40">
                                         No Ongoing Matches Found<br/>
-                                        <span className="text-fc-neon-green/60 lowercase font-bold tracking-normal italic mt-1 block">Analysis is only enabled when your match is marked as "Ongoing" by an admin</span>
+                                        <span className="text-fc-neon-green/60 lowercase font-bold tracking-normal  mt-1 block">Analysis is only enabled when your match is marked as "Ongoing" by an admin</span>
                                       </p>
                                     </div>
                                   );
@@ -5831,7 +5725,7 @@ export default function App() {
 
                                 return (
                                   <div className="flex gap-4 w-full">
-                                    <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-sm hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
+                                    <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
                                       <input 
                                         type="file" 
                                         accept="image/*"
@@ -5849,12 +5743,12 @@ export default function App() {
                                         className="absolute inset-0 opacity-0 cursor-pointer"
                                       />
                                       <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
-                                      <span className="text-[10px] font-black uppercase text-white/40 tracking-widest text-center">Upload FC Result<br/>(Max 2MB)</span>
+                                      <span className="text-[10px] font-bold text-white/40 tracking-normal text-center">Upload FC Result<br/>(Max 2MB)</span>
                                     </div>
-                                    <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-sm bg-white/5 relative">
-                                        <label className="text-[10px] font-black uppercase tracking-widest text-white/40 mb-4 block text-center">Man of the Match (Optional)</label>
+                                    <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-2xl bg-white/5 relative">
+                                        <label className="text-[10px] font-bold tracking-normal text-white/40 mb-4 block text-center">Man of the Match (Optional)</label>
                                         {selectedMotm ? (
-                                           <div className="flex items-center justify-center gap-2 bg-yellow-500/20 text-yellow-500 rounded-sm px-4 py-2 border border-yellow-500/30 mx-auto w-fit">
+                                           <div className="flex items-center justify-center gap-2 bg-yellow-500/20 text-yellow-500 rounded-2xl px-4 py-2 border border-yellow-500/30 mx-auto w-fit">
                                              <Star className="w-4 h-4 fill-current" />
                                              <span className="text-sm font-bold">{selectedMotm.fcName}</span>
                                              <button onClick={() => setSelectedMotm(null)} className="ml-2 hover:text-white z-10 relative"><X className="w-4 h-4" /></button>
@@ -5866,10 +5760,10 @@ export default function App() {
                                               placeholder="Search MOTM... (optional)" 
                                               value={motmSearch}
                                               onChange={(e) => setMotmSearch(e.target.value)}
-                                              className="w-full bg-black/20 border border-white/10 rounded-sm p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center"
+                                              className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center"
                                             />
                                             {motmSearch && (
-                                              <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-sm shadow-xl z-[100] max-h-40 overflow-y-auto hide-scrollbar">
+                                              <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-2xl shadow-xl z-[100] max-h-40 overflow-y-auto hide-scrollbar">
                                                 {registrations.filter(r => r.fcName.toLowerCase().includes(motmSearch.toLowerCase())).map(r => (
                                                   <button 
                                                     key={r.userId}
@@ -5891,12 +5785,12 @@ export default function App() {
                               {isSubmittingImg && (
                                  <div className="flex items-center justify-center gap-3 text-fc-neon-green">
                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                   <span className="text-[10px] font-black uppercase tracking-widest">AI Analyzing Photo...</span>
+                                   <span className="text-[10px] font-bold tracking-normal">AI Analyzing Photo...</span>
                                  </div>
                               )}
 
                               {aiAnalysisResult && (
-                                <div className={`p-4 rounded-sm text-[10px] font-black uppercase tracking-widest ${
+                                <div className={`p-4 rounded-2xl text-[10px] font-bold tracking-normal ${
                                   aiAnalysisResult.startsWith('SUCCESS') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
                                 }`}>
                                   {aiAnalysisResult}
@@ -5907,7 +5801,7 @@ export default function App() {
 
                           {/* Upcoming Matches */}
                           <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8">
-                            <h3 className="text-lg font-display font-black uppercase italic text-white mb-6">Upcoming Fixtures</h3>
+                            <h3 className="text-lg font-display font-bold  text-white mb-6">Upcoming Fixtures</h3>
                             <div className="space-y-4">
                                {myMatches.filter(m => (m.status === 'scheduled' || m.status === 'rescheduled') && !(config.hiddenDates || []).includes(m.date || '')).length === 0 ? (
                                   <div className="p-8 text-center bg-white/5 rounded-[2rem] border border-white/10">
@@ -5925,12 +5819,12 @@ export default function App() {
                                        <div className={`absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none ${isHome ? 'bg-fc-neon-green text-black' : 'bg-orange-500'}`}></div>
                                        
                                        <div className="flex items-center gap-4 relative z-10 w-full">
-                                         <div className={`w-14 items-center justify-center flex py-2 rounded-sm text-[10px] font-black uppercase tracking-widest ${isHome ? 'bg-fc-purple-light/30 text-fc-neon-green border border-fc-neon-green/50/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
+                                         <div className={`w-14 items-center justify-center flex py-2 rounded-2xl text-[10px] font-bold tracking-normal ${isHome ? 'bg-fc-purple-light/30 text-fc-neon-green border border-fc-neon-green/50/30' : 'bg-orange-500/20 text-orange-400 border border-orange-500/30'}`}>
                                            {isHome ? 'Home' : 'Away'}
                                          </div>
                                         <div className="flex-1">
-                                          <p className="text-lg md:text-xl font-display font-black italic text-white uppercase mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
-                                          <div className="flex items-center gap-3 text-white/40 text-xs font-black uppercase tracking-widest">
+                                          <p className="text-lg md:text-xl font-display font-bold  text-white mt-1 mb-1 line-clamp-1">vs {opponent?.name || 'TBD'}</p>
+                                          <div className="flex items-center gap-3 text-white/40 text-xs font-bold tracking-normal">
                                             <div className="flex items-center gap-1.5 bg-white/5 px-2 py-1 rounded-md border border-white/5">
                                               <EditableMatchBadge match={m} isAdmin={isAdmin} textClassName="text-fc-neon-green font-bold" />
                                               <div className="w-[1px] h-3 bg-white/10 mx-1" />
@@ -5943,7 +5837,7 @@ export default function App() {
                                        <div className="relative z-10 md:w-auto w-full">
                                           <button 
                                             onClick={() => setSelectedMatch(m)} 
-                                            className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-sm text-white text-xs font-black uppercase tracking-widest transition-colors whitespace-nowrap"
+                                            className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-white text-xs font-bold tracking-normal transition-colors whitespace-nowrap"
                                           >
                                             View Details
                                           </button>
@@ -5985,59 +5879,59 @@ export default function App() {
             >
               {/* Top Scorers Section */}
               <div className="flex items-center gap-4 mb-4 mt-2">
-                <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-neon-green/50/30">
+                <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30">
                   <BarChart2 className="w-6 h-6 text-fc-neon-green" />
                 </div>
                 <div>
-                  <EditableText id="scorers_header" defaultText="Top Scorers" as="h2" className="font-display text-2xl font-black uppercase italic tracking-tight leading-none" />
-                  <p className="text-fc-neon-green/40 text-xs uppercase tracking-widest mt-1">
+                  <EditableText id="scorers_header" defaultText="Top Scorers" as="h2" className="font-display text-2xl font-bold  tracking-tight leading-none" />
+                  <p className="text-fc-neon-green/40 text-xs tracking-normal mt-1">
                     <EditableText id="individual_stats_sub" defaultText="Individual Player Statistics" />
                   </p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-sm border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
-                <table className="w-full text-left border-collapse">
+              <div className="overflow-x-auto mb-12">
+                <table className="w-full text-left border-separate border-spacing-y-2">
                   <thead>
-                    <tr className="bg-white/5 text-fc-neon-green/50 text-[10px] uppercase tracking-[0.2em] font-bold">
-                      <th className="px-6 py-4">Rank</th>
-                      <th className="px-6 py-4">Football Player</th>
-                      <th className="px-6 py-4">Gamer</th>
-                      <th className="px-6 py-4 text-center">Goals</th>
+                    <tr className="text-[#3B82F6] text-[10px] tracking-[0.1em] font-sans font-bold">
+                      <th className="px-6 py-2">Rank</th>
+                      <th className="px-6 py-2">Football Player</th>
+                      <th className="px-6 py-2">Gamer</th>
+                      <th className="px-6 py-2 text-center">Goals</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody>
                     {stats.length > 0 ? stats.map((stat, index) => (
-                      <tr key={`${stat.playerName}-${stat.teamId}`} className="hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className={`w-8 h-8 rounded-sm flex items-center justify-center font-bold text-sm ${
-                            index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
-                            index === 1 ? 'bg-gray-400/20 text-gray-300' : 
-                            index === 2 ? 'bg-orange-500/20 text-orange-400' : 
+                      <tr key={`${stat.playerName}-${stat.teamId}`} className="relative group/row hover:-translate-y-1 transition-all shadow-sm hover:shadow-[0_10px_30px_rgba(59,130,246,0.1)]">
+                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                            index === 0 ? 'bg-[#3B82F6] text-white shadow-md' : 
+                            index === 1 ? 'bg-[#888888] text-white' : 
+                            index === 2 ? 'bg-[#EF4444]/20 text-[#EF4444]' : 
                             'bg-white/10 text-white/70'
                           }`}>
                             {index + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="font-display font-black uppercase italic text-sm tracking-tight">{stat.playerName}</span>
+                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                          <span className="font-display font-bold text-lg tracking-tight text-white">{stat.playerName}</span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-white/80">{stat.gamerFullName}</span>
-                            <span className="text-[10px] font-black text-fc-neon-green/60 uppercase tracking-widest">{stat.gamerName}</span>
+                            <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
+                            <span className="text-[10px] font-sans font-bold text-[#3B82F6]/80 tracking-normal">{stat.gamerName}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-lg font-black text-fc-neon-green">{stat.goals}</span>
+                        <td className="px-6 py-4 text-center bg-white/[0.03] backdrop-blur-xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                          <span className="text-2xl font-display text-white">{stat.goals}</span>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center">
+                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/5">
                           <div className="flex flex-col items-center gap-3 opacity-20">
                             <Info className="w-8 h-8" />
-                            <p className="text-xs uppercase font-black tracking-widest">No goals recorded yet</p>
+                            <p className="text-xs font-sans font-bold tracking-normal">No goals recorded yet</p>
                           </div>
                         </td>
                       </tr>
@@ -6048,57 +5942,57 @@ export default function App() {
 
               {/* Clean Sheets Section */}
               <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-green-600/20 rounded-sm border border-green-500/30">
-                  <Shield className="w-6 h-6 text-green-400" />
+                <div className="p-3 bg-[#10B981]/20 rounded-2xl border border-[#10B981]/30 shadow-sm">
+                  <Shield className="w-6 h-6 text-[#10B981]" />
                 </div>
                 <div>
-                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Clean Sheets</h2>
-                  <p className="text-green-200/40 text-xs uppercase tracking-widest mt-1">Top Goalkeepers</p>
+                  <h2 className="font-display text-2xl font-bold tracking-tight leading-none text-white">Clean Sheets</h2>
+                  <p className="text-[#10B981]/60 text-xs font-sans font-bold tracking-normal mt-1">Top Goalkeepers</p>
                 </div>
               </div>
 
-              <div className="overflow-x-auto rounded-sm border border-white/10 bg-white/5 backdrop-blur-sm mb-12">
-                <table className="w-full text-left border-collapse">
+              <div className="overflow-x-auto mb-12">
+                <table className="w-full text-left border-separate border-spacing-y-2">
                   <thead>
-                    <tr className="bg-white/5 text-green-200/50 text-[10px] uppercase tracking-[0.2em] font-bold">
-                      <th className="px-6 py-4">Rank</th>
-                      <th className="px-6 py-4">Goalkeeper</th>
-                      <th className="px-6 py-4">Gamer</th>
-                      <th className="px-6 py-4 text-center">Clean Sheets</th>
+                    <tr className="text-[#10B981]/70 text-[10px] tracking-[0.1em] font-sans font-bold">
+                      <th className="px-6 py-2">Rank</th>
+                      <th className="px-6 py-2">Goalkeeper</th>
+                      <th className="px-6 py-2">Gamer</th>
+                      <th className="px-6 py-2 text-center">Clean Sheets</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
+                  <tbody>
                     {cleanSheets.length > 0 ? cleanSheets.map((stat, index) => (
-                      <tr key={stat.teamId} className="hover:bg-white/5 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className={`w-8 h-8 rounded-sm flex items-center justify-center font-bold text-sm ${
-                            index === 0 ? 'bg-yellow-500/20 text-yellow-400' : 
-                            index === 1 ? 'bg-gray-400/20 text-gray-300' : 
-                            index === 2 ? 'bg-orange-500/20 text-orange-400' : 
+                      <tr key={stat.teamId} className="relative group/row hover:-translate-y-1 transition-all shadow-sm hover:shadow-[0_10px_30px_rgba(0,155,77,0.1)]">
+                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                            index === 0 ? 'bg-[#10B981] text-white shadow-md' : 
+                            index === 1 ? 'bg-[#888888] text-white' : 
+                            index === 2 ? 'bg-[#3B82F6]/20 text-[#3B82F6]' : 
                             'bg-white/10 text-white/70'
                           }`}>
                             {index + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4">
-                          <span className="font-display font-black uppercase italic text-sm tracking-tight">{stat.goalkeeperName}</span>
+                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                          <span className="font-display font-bold text-lg tracking-tight text-white">{stat.goalkeeperName}</span>
                         </td>
-                        <td className="px-6 py-4">
+                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-white/80">{stat.gamerFullName}</span>
-                            <span className="text-[10px] font-black text-green-400/60 uppercase tracking-widest">{stat.gamerName}</span>
+                            <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
+                            <span className="text-[10px] font-sans font-bold text-[#10B981]/80 tracking-normal">{stat.gamerName}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center">
-                          <span className="text-lg font-black text-green-400">{stat.cleanSheets}</span>
+                        <td className="px-6 py-4 text-center bg-white/[0.03] backdrop-blur-xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                          <span className="text-2xl font-display text-white">{stat.cleanSheets}</span>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center">
+                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/5">
                           <div className="flex flex-col items-center gap-3 opacity-20">
-                            <Shield className="w-8 h-8" />
-                            <p className="text-xs uppercase font-black tracking-widest">No clean sheets recorded yet</p>
+                            <Info className="w-8 h-8" />
+                            <p className="text-xs font-sans font-bold tracking-normal">No clean sheets recorded yet</p>
                           </div>
                         </td>
                       </tr>
@@ -6109,16 +6003,16 @@ export default function App() {
 
               {/* Man of the Match Leaders */}
               <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-yellow-500/20 rounded-sm border border-yellow-500/30">
+                <div className="p-3 bg-yellow-500/20 rounded-2xl border border-yellow-500/30">
                   <Award className="w-6 h-6 text-yellow-400" />
                 </div>
                 <div>
-                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Man of the Match Leaders</h2>
-                  <p className="text-white/40 text-xs uppercase tracking-widest mt-1">Top Performers</p>
+                  <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Man of the Match Leaders</h2>
+                  <p className="text-white/40 text-xs tracking-normal mt-1">Top Performers</p>
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-sm p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-yellow-500/10 rounded-bl-full pointer-events-none" />
                 
                 <div className="space-y-4 relative z-10 max-w-2xl">
@@ -6146,10 +6040,10 @@ export default function App() {
                       }
 
                       return (
-                        <div key={leader.playerName} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-sm border ${styleClass} transition-all`}>
+                        <div key={leader.playerName} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-2xl border ${styleClass} transition-all`}>
                           <div className="flex items-center gap-4">
-                            <span className={`text-lg font-black ${rankClass}`}>#{index + 1}</span>
-                            <span className="text-base font-black uppercase tracking-widest text-white">{leader.playerName}</span>
+                            <span className={`text-lg font-bold ${rankClass}`}>#{index + 1}</span>
+                            <span className="text-base font-bold tracking-normal text-white">{leader.playerName}</span>
                           </div>
                           <div className="flex items-center gap-2 sm:ml-auto">
                             <span className={`${awardClass} font-bold`}>{leader.awards} award{leader.awards !== 1 ? 's' : ''}</span>
@@ -6160,7 +6054,7 @@ export default function App() {
                     })
                   ) : (
                     <div className="text-center py-8">
-                      <p className="text-white/40 uppercase font-black text-xs tracking-widest">No MOTM awards recorded yet</p>
+                      <p className="text-white/40 font-bold text-xs tracking-normal">No MOTM awards recorded yet</p>
                     </div>
                   )}
                 </div>
@@ -6168,55 +6062,55 @@ export default function App() {
 
               {/* Team Statistics Grid */}
               <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-fc-purple-base/20 rounded-sm border border-fc-purple-light/30">
+                <div className="p-3 bg-fc-purple-base/20 rounded-2xl border border-fc-purple-light/30">
                   <BarChart2 className="w-6 h-6 text-fc-neon-green" />
                 </div>
                 <div>
-                  <h2 className="font-display text-2xl font-black uppercase italic tracking-tight leading-none text-white">Team Overview</h2>
-                  <p className="text-white/40 text-xs uppercase tracking-widest mt-1">Tournament Averages</p>
+                  <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Team Overview</h2>
+                  <p className="text-white/40 text-xs tracking-normal mt-1">Tournament Averages</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-fc-neon-green/60 tracking-widest mb-1">Highest Average Possession</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-sm text-fc-neon-green font-bold text-sm">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal mb-1">Highest Average Possession</span>
+                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-2xl text-fc-neon-green font-bold text-sm">
                     {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-green-400/60 tracking-widest mb-1">Most Goals Scored</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-sm text-green-400 font-bold text-sm">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-bold text-green-400/60 tracking-normal mb-1">Most Goals Scored</span>
+                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 font-bold text-sm">
                     {hofStats.mostGoals?.value || 0} Goals
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-fc-neon-green/60 tracking-widest mb-1">Best Defense</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.leastConceded?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-fc-purple-light/10 border border-fc-purple-light/20 rounded-sm text-fc-neon-green font-bold text-sm">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal mb-1">Best Defense</span>
+                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.leastConceded?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-fc-purple-light/10 border border-fc-purple-light/20 rounded-2xl text-fc-neon-green font-bold text-sm">
                     {hofStats.leastConceded?.value || 0} Goals Conceded
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-black uppercase text-orange-400/60 tracking-widest mb-1">Most Shots Taken</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-sm text-orange-400 font-bold text-sm">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+                  <span className="text-[10px] font-bold text-orange-400/60 tracking-normal mb-1">Most Shots Taken</span>
+                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-2xl text-orange-400 font-bold text-sm">
                     {hofStats.mostShots?.value || 0} Shots
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
-                  <span className="text-[10px] font-black uppercase text-yellow-400/60 tracking-widest mb-1">Most Early Goals (1-30')</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostEarlyGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-sm text-yellow-400 font-bold text-sm">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
+                  <span className="text-[10px] font-bold text-yellow-400/60 tracking-normal mb-1">Most Early Goals (1-30')</span>
+                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostEarlyGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-yellow-400 font-bold text-sm">
                     {hofStats.mostEarlyGoals?.value || 0} Early Goals
                   </div>
                 </div>
-                <div className="bg-white/5 border border-white/10 rounded-sm p-6 flex flex-col justify-between items-center text-center border-red-500/30">
-                  <span className="text-[10px] font-black uppercase text-red-400/60 tracking-widest mb-1">Most Late Goals (60-90+')</span>
-                  <span className="text-xl md:text-2xl font-display font-black uppercase tracking-tight italic mb-2 text-white line-clamp-1">{hofStats.mostLateGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-sm text-red-400 font-bold text-sm">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center border-red-500/30">
+                  <span className="text-[10px] font-bold text-red-400/60 tracking-normal mb-1">Most Late Goals (60-90+')</span>
+                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostLateGoals?.name || '---'}</span>
+                  <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 font-bold text-sm">
                     {hofStats.mostLateGoals?.value || 0} Late Goals
                   </div>
                 </div>
@@ -6230,110 +6124,105 @@ export default function App() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="overflow-x-auto rounded-sm border border-white/10 bg-white/5 backdrop-blur-sm"
+              className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm"
             >
               <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-black uppercase italic tracking-tighter">
+                  <h2 className="text-xl font-bold  tracking-tight">
                     <EditableText id="league_table_header" defaultText="League" /> <span className="text-fc-neon-green">
                       <EditableText id="league_table_header_bold" defaultText="Table" />
                     </span>
                   </h2>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-sm bg-fc-neon-green text-black" />
-                  <span className="text-[10px] font-black uppercase tracking-widest text-white/60">
+                  <div className="w-2 h-2 rounded-2xl bg-fc-neon-green text-black" />
+                  <span className="text-[10px] font-bold tracking-normal text-white/60">
                     <EditableText id="tournament_season_label" defaultText="Tournament Season" />
                   </span>
                 </div>
               </div>
-              <table className="w-full text-left border-collapse">
+              <table className="w-full text-left border-separate border-spacing-y-2">
                 <thead>
-                  <tr className="bg-white/5 text-fc-neon-green/50 text-[10px] md:text-[10px] uppercase tracking-[0.1em] md:tracking-[0.2em] font-bold">
-                    <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4">Player</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell">FC Name</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">OVR</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">P</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">W</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">D</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">L</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">GF</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">GA</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">GD</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">Pts</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">Form</th>
+                  <tr className="text-[#3B82F6] text-[10px] md:text-xs tracking-[0.1em] font-sans font-bold">
+                    <th className="px-3 md:px-6 py-2">Pos</th>
+                    <th className="px-3 md:px-6 py-2">Player</th>
+                    <th className="px-3 md:px-6 py-2 hidden md:table-cell">FC Name</th>
+                    <th className="px-3 md:px-6 py-2 text-center">OVR</th>
+                    <th className="px-3 md:px-6 py-2 text-center">P</th>
+                    <th className="px-3 md:px-6 py-2 text-center">W</th>
+                    <th className="px-3 md:px-6 py-2 text-center">D</th>
+                    <th className="px-3 md:px-6 py-2 text-center">L</th>
+                    <th className="px-3 md:px-6 py-2 text-center">GF</th>
+                    <th className="px-3 md:px-6 py-2 text-center">GA</th>
+                    <th className="px-3 md:px-6 py-2 text-center">GD</th>
+                    <th className="px-3 md:px-6 py-2 text-center">Pts</th>
+                    <th className="px-3 md:px-6 py-2 text-center">Form</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-white/5">
+                <tbody>
                     {standings.map((team, index) => {
-                      let rowClass = "hover:bg-white/5 transition-colors";
-                      if (index < 4) {
-                        rowClass = "bg-green-500/10 hover:bg-green-500/20 transition-colors";
-                      } else if (index >= 4 && index < 8) {
-                        rowClass = "bg-yellow-500/10 hover:bg-yellow-500/20 transition-colors";
-                      } else if (index >= 16) {
-                        rowClass = "bg-red-500/10 hover:bg-red-500/20 transition-colors";
-                      }
-                      
                       return (
-                        <tr key={team.id} className={`${rowClass} relative group/row cursor-pointer`} onClick={() => setSelectedTeam(team)}>
-                          <td className="px-3 md:px-6 py-3 md:py-4 relative text-center">
-                            <div className={`w-6 h-6 md:w-8 md:h-8 mx-auto rounded-sm flex items-center justify-center font-bold text-xs md:text-sm relative z-10 ${
-                              index < 4 ? 'bg-green-600/20 text-green-400 ring-1 ring-green-500/30' : 
-                              index >= 4 && index < 8 ? 'bg-yellow-600/20 text-yellow-400 ring-1 ring-yellow-500/30' :
-                              index >= 16 ? 'bg-red-600/20 text-red-400 ring-1 ring-red-500/30' :
-                              'bg-white/10 text-white/70'
+                        <tr key={team.id} className="relative group/row cursor-pointer hover:-translate-y-1 transition-all shadow-sm hover:shadow-[0_10px_30px_rgba(59,130,246,0.15)]" onClick={() => setSelectedTeam(team)}>
+                          <td className="px-3 md:px-6 py-3 md:py-4 relative text-center bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl last:rounded-r-2xl border-y border-l border-white/5 border-r-0">
+                            <div className={`font-display text-xl md:text-2xl ${
+                              index === 0 || index === 1 ? 'text-[#3B82F6]' : 
+                              index === 2 ? 'text-[#888888]' :
+                              'text-[#555555]'
                             }`}>
                               {index + 1}
                             </div>
                           </td>
-                          <td className="px-3 md:px-6 py-3 md:py-4">
+                          <td className="px-3 md:px-6 py-3 md:py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
                             <div className="flex items-center min-w-0 gap-3">
-                              <div className="w-8 h-8 rounded-sm overflow-hidden border border-white/10 shrink-0 bg-white/5 flex items-center justify-center">
+                               <div className="w-10 h-10 rounded-2xl overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black shadow-sm">
                                 {team.logoUrl ? (
                                   <img src={team.logoUrl} alt={team.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
                                 ) : (
-                                  <span className="text-[10px] font-black text-white/20">{team.name[0]}</span>
+                                  <span className="text-[10px] font-display text-[#3B82F6]">{team.name.substring(0, 2)}</span>
                                 )}
                               </div>
                               <div className="flex flex-col">
                                 <div className="flex items-center gap-2">
-                                  <span className="font-display font-black tracking-tight whitespace-nowrap uppercase italic truncate pr-1 text-xs md:text-sm">
+                                  {team.country && (
+                                    <span className="text-sm shadow-sm" title={team.country}>
+                                      {WORLD_CUP_TEAMS.find(t => t.name === team.country)?.flag || '🌍'}
+                                    </span>
+                                  )}
+                                  <span className="font-sans font-bold whitespace-nowrap truncate pr-1 text-sm md:text-base text-white">
                                     {team.fullName}
                                   </span>
                                   {qualificationStatus && qualificationStatus[team.id] === 'Q' && (
-                                    <span className="px-1.5 py-0.5 bg-green-500/20 text-green-400 text-[8px] font-black uppercase tracking-tighter rounded border border-green-500/30" title="Mathematically Qualified (Top 8 Guaranteed)">Q</span>
+                                    <span className="px-2 py-0.5 bg-[#10B981] text-white text-[8px] font-sans font-bold tracking-tight rounded-full" title="Mathematically Qualified">Q</span>
                                   )}
                                   {qualificationStatus && qualificationStatus[team.id] === 'E' && (
-                                    <span className="px-1.5 py-0.5 bg-red-500/20 text-red-400 text-[8px] font-black uppercase tracking-tighter rounded border border-red-500/30" title="Mathematically Eliminated">E</span>
+                                    <span className="px-2 py-0.5 bg-[#EF4444] text-white text-[8px] font-sans font-bold tracking-tight rounded-full" title="Mathematically Eliminated">E</span>
                                   )}
                                 </div>
-                                <span className="text-[10px] md:text-xs text-white/40 font-bold uppercase tracking-widest mt-0.5">{team.fcName}</span>
+                                <span className="text-[10px] md:text-xs text-[#A0A0A0] font-sans font-bold tracking-normal mt-0.5">{team.fcName}</span>
                               </div>
                             </div>
                           </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-mono text-xs text-white/40">{team.fcName}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                          <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] md:text-[10px] font-black text-fc-neon-green">{team.ovr}</span>
+                        <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-sans font-bold text-xs text-[#A0A0A0] tracking-normal bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.fcName}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                          <span className="px-2 py-1 bg-[#1A1A1A] text-[10px] font-sans font-bold text-[#3B82F6] rounded-full">{team.ovr}</span>
                         </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.played}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.won}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.drawn}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.lost}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gf}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.ga}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-mono text-xs md:text-sm text-white/60">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-black text-xs md:text-sm text-fc-neon-green">{team.points}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.played}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.won}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.drawn}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.lost}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.gf}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.ga}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display text-xl md:text-2xl text-white bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
                           <div className="flex items-center justify-center gap-1">
                             {team.form.map((result, i) => (
                               <div
                                 key={i}
-                                className={`w-4 h-4 md:w-5 md:h-5 rounded-sm flex items-center justify-center text-[8px] md:text-[10px] font-black ${
-                                  result === 'W' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
-                                  result === 'D' ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30' :
-                                  'bg-red-500/20 text-red-400 border border-red-500/30'
+                                className={`w-5 h-5 text-[9px] font-sans font-bold flex items-center justify-center text-white rounded-full ${
+                                  result === 'W' ? 'bg-[#10B981]' :
+                                  result === 'D' ? 'bg-[#2A2A2A]' :
+                                  'bg-[#EF4444]'
                                 }`}
                                 title={result === 'W' ? 'Win' : result === 'D' ? 'Draw' : 'Loss'}
                               >
@@ -6349,16 +6238,16 @@ export default function App() {
               </table>
               <div className="mt-4 flex flex-wrap gap-4 px-4 pb-4">
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-green-500/20 border border-green-500/30"></span>
-                  <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Quarterfinal</span>
+                  <span className="w-3 h-3 rounded-2xl bg-green-500/20 border border-green-500/30"></span>
+                  <span className="text-[10px] font-bold text-white/40 tracking-normal">Quarterfinal</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-yellow-500/20 border border-yellow-500/30"></span>
-                  <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Round of 8</span>
+                  <span className="w-3 h-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/30"></span>
+                  <span className="text-[10px] font-bold text-white/40 tracking-normal">Round of 8</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-sm bg-red-500/20 border border-red-500/30"></span>
-                  <span className="text-[10px] font-black uppercase text-white/40 tracking-widest">Eliminated</span>
+                  <span className="w-3 h-3 rounded-2xl bg-red-500/20 border border-red-500/30"></span>
+                  <span className="text-[10px] font-bold text-white/40 tracking-normal">Eliminated</span>
                 </div>
               </div>
             </motion.div>
@@ -6372,18 +6261,18 @@ export default function App() {
               exit={{ opacity: 0, y: -20 }}
               className="max-w-2xl mx-auto px-4 py-8 space-y-6"
             >
-              <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between w-full bg-white/5 p-6 rounded-sm border border-white/10 backdrop-blur-sm">
+              <div className="flex flex-col md:flex-row items-center gap-4 mb-8 justify-between w-full bg-white/5 p-6 rounded-2xl border border-white/10 backdrop-blur-sm">
                 <div className="flex items-center gap-4">
-                  <div className="p-3 bg-fc-purple-light/30 rounded-sm border border-fc-neon-green/50/30">
+                  <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30">
                     <Calendar className="w-6 h-6 text-fc-neon-green" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black uppercase italic tracking-tighter">
+                    <h2 className="text-2xl font-bold  tracking-tight">
                       <EditableText id="fixtures_header" defaultText="Tournament" isAdmin={isAdmin} /> <span className="text-fc-neon-green">
                         <EditableText id="fixtures_header_bold" defaultText="Fixtures" isAdmin={isAdmin} />
                       </span>
                     </h2>
-                    <p className="text-fc-neon-green/40 text-[10px] uppercase font-black tracking-widest">
+                    <p className="text-fc-neon-green/40 text-[10px] font-bold tracking-normal">
                       <EditableText id="fixtures_sub" defaultText="Season 2026" isAdmin={isAdmin} />
                     </p>
                   </div>
@@ -6393,7 +6282,7 @@ export default function App() {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={() => handleAddNewFixture()}
-                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-fc-neon-green to-fc-purple-base hover:from-fc-neon-green hover:to-fc-purple-light text-white text-[10px] font-black uppercase tracking-[0.2em] rounded-sm transition-all shadow-xl shadow-fc-neon-green/30 border border-white/20 whitespace-nowrap"
+                    className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-fc-neon-green to-fc-purple-base hover:from-fc-neon-green hover:to-fc-purple-light text-white text-[10px] font-bold tracking-[0.2em] rounded-2xl transition-all shadow-xl shadow-fc-neon-green/30 border border-white/20 whitespace-nowrap"
                   >
                     <Plus className="w-4 h-4" />
                     Add Fixture
@@ -6430,29 +6319,29 @@ export default function App() {
                       
                       if (isDataLoading) {
                         return (
-                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-sm flex flex-col items-center justify-center gap-6">
+                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-6">
                             <Loader2 className="w-12 h-12 text-fc-neon-green animate-spin" />
-                            <p className="text-white/40 text-xs tracking-[0.3em] uppercase font-bold animate-pulse">Syncing matches & teams...</p>
+                            <p className="text-white/40 text-xs tracking-[0.3em] font-bold animate-pulse">Syncing matches & teams...</p>
                           </div>
                         );
                       }
 
                       if (orderedDays.length === 0) {
                         return (
-                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-sm flex flex-col items-center gap-6">
-                            <div className="w-20 h-20 bg-fc-purple-light/20 rounded-sm flex items-center justify-center border border-fc-neon-green/30">
+                          <div className="py-24 text-center bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center gap-6">
+                            <div className="w-20 h-20 bg-fc-purple-light/20 rounded-2xl flex items-center justify-center border border-fc-neon-green/30">
                               <Calendar className="w-10 h-10 text-fc-neon-green" />
                             </div>
                             <div>
-                              <EditableText id="loading_fixtures_title" defaultText="No Fixtures Scheduled" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-black uppercase italic text-white mb-2" />
-                              <p className="text-white/40 text-sm font-bold uppercase tracking-widest">
+                              <EditableText id="loading_fixtures_title" defaultText="No Fixtures Scheduled" isAdmin={isAdmin} as="h3" className="text-2xl font-display font-bold  text-white mb-2" />
+                              <p className="text-white/40 text-sm font-bold tracking-normal">
                                 <EditableText id="loading_fixtures_sub" defaultText="Mark will add fixtures soon" isAdmin={isAdmin} />
                               </p>
                             </div>
                             {isAdmin && isEditingMode && (
                               <button 
                                 onClick={() => handleAddNewFixture()}
-                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black text-xs font-black uppercase tracking-widest rounded-sm transition-all shadow-xl shadow-fc-neon-green/30"
+                                className="mt-4 flex items-center gap-2 px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black text-xs font-bold tracking-normal rounded-2xl transition-all shadow-xl shadow-fc-neon-green/30"
                               >
                                 <Plus className="w-4 h-4" />
                                 Add First Fixture
@@ -6465,8 +6354,8 @@ export default function App() {
                       return orderedDays.map(day => (
                         <div key={day} className="space-y-6">
                           <div className="flex items-center gap-4">
-                            <div className="px-4 py-2 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-sm">
-                              <span className="text-xs font-black text-fc-neon-green uppercase tracking-widest">{day}</span>
+                            <div className="px-4 py-2 bg-fc-purple-light/30 border border-fc-neon-green/50/30 rounded-2xl">
+                              <span className="text-xs font-bold text-fc-neon-green tracking-normal">{day}</span>
                             </div>
                             <div className="h-[1px] flex-1 bg-white/10" />
                           </div>
@@ -6486,7 +6375,7 @@ export default function App() {
                             {isAdmin && isEditingMode && (
                               <button
                                 onClick={() => handleAddNewFixture(day)}
-                                className="flex items-center justify-center gap-2 p-6 bg-fc-purple-light/20 border border-dashed border-fc-neon-green/50/30 rounded-sm text-fc-neon-green hover:bg-fc-neon-green-dark/20 hover:border-fc-neon-green/50 transition-all font-black uppercase text-xs tracking-widest"
+                                className="flex items-center justify-center gap-2 p-6 bg-fc-purple-light/20 border border-dashed border-fc-neon-green/50/30 rounded-2xl text-fc-neon-green hover:bg-fc-neon-green-dark/20 hover:border-fc-neon-green/50 transition-all font-bold text-xs tracking-normal"
                               >
                                 <Plus className="w-5 h-5" /> Add Fixture
                               </button>
@@ -6509,19 +6398,19 @@ export default function App() {
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
                 {/* Qualifier Round */}
                 <div className="flex flex-col justify-around gap-16">
-                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
+                  <h3 className="text-fc-neon-green font-bold tracking-normal text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qual-${i}`;
                     const match = getBracketMatch(matchId);
                     return (
                       <div key={`hub-qual-${i}`} className="relative">
-                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-sm overflow-hidden shadow-lg transition-all group/match relative">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-fc-purple-light/20' : ''} relative z-10 gap-6`}>
-                            <span className="font-display font-black text-fc-neon-green/70 uppercase italic whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-display font-bold text-fc-neon-green/70  whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-fc-purple-light/20' : ''} gap-6`}>
-                            <span className="font-display font-black text-fc-neon-green/70 uppercase italic whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-display font-bold text-fc-neon-green/70  whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
@@ -6534,22 +6423,22 @@ export default function App() {
 
                 {/* Quarter Finals */}
                 <div className="flex flex-col justify-center gap-16">
-                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
+                  <h3 className="text-fc-neon-green font-bold tracking-normal text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qf-${i}`;
                     const match = getBracketMatch(matchId);
                     const isDashed = i === 1 || i === 3;
                     return (
                       <div key={`hub-qf-${i}`} className="relative">
-                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-sm overflow-hidden shadow-lg transition-all group/match relative">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-black uppercase italic transition-colors text-fc-neon-green/70 whitespace-nowrap">
+                            <span className="font-display font-bold  transition-colors text-fc-neon-green/70 whitespace-nowrap">
                               {match.homeTeamName || 'TBD'}
                             </span>
                             <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-black uppercase italic transition-colors text-fc-neon-green/70 whitespace-nowrap">
+                            <span className="font-display font-bold  transition-colors text-fc-neon-green/70 whitespace-nowrap">
                               {match.awayTeamName || 'TBD'}
                             </span>
                             <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
@@ -6569,20 +6458,20 @@ export default function App() {
 
                 {/* Semi Finals */}
                 <div className="flex flex-col justify-center gap-32">
-                  <h3 className="text-fc-neon-green font-black uppercase tracking-widest text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
+                  <h3 className="text-fc-neon-green font-bold tracking-normal text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => {
                     const matchId = `sf-${i}`;
                     const match = getBracketMatch(matchId);
                     const isDashed = i === 1;
                     return (
                       <div key={`hub-sf-${i}`} className="relative">
-                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-sm overflow-hidden shadow-lg transition-all group/match relative">
+                        <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-black uppercase italic text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-display font-bold  text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-black uppercase italic text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-display font-bold  text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                             <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
@@ -6604,19 +6493,19 @@ export default function App() {
                 {/* Final & 3rd Place */}
                 <div className="flex flex-col justify-center gap-16">
                   <div>
-                    <h3 className="text-yellow-400 font-black uppercase tracking-widest text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
+                    <h3 className="text-yellow-400 font-bold tracking-normal text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
                     {(() => {
                       const match = getBracketMatch('final');
                       return (
-                        <div className="w-fit min-w-[200px] bg-gradient-to-br from-fc-neon-green/20 to-fc-purple-base/20 border border-yellow-500/50 rounded-sm overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
-                          <div className="bg-fc-purple-dark rounded-sm overflow-hidden relative z-10">
+                        <div className="w-fit min-w-[200px] bg-gradient-to-br from-fc-neon-green/20 to-fc-purple-base/20 border border-yellow-500/50 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
+                          <div className="bg-fc-purple-dark rounded-2xl overflow-hidden relative z-10">
                             <div className="p-4 flex justify-between items-center gap-8">
-                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                              <span className="font-mono font-black text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
+                              <span className="font-display font-bold text-base  tracking-tight text-yellow-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                              <span className="font-mono font-bold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
                             </div>
                             <div className="p-4 flex justify-between items-center border-t border-white/5 gap-8">
-                              <span className="font-display font-black text-base uppercase italic tracking-tighter text-yellow-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                              <span className="font-mono font-black text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
+                              <span className="font-display font-bold text-base  tracking-tight text-yellow-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                              <span className="font-mono font-bold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -6625,18 +6514,18 @@ export default function App() {
                   </div>
 
                   <div>
-                    <h3 className="text-orange-400 font-black uppercase tracking-widest text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
+                    <h3 className="text-orange-400 font-bold tracking-normal text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
                     {(() => {
                       const match = getBracketMatch('third-place');
                       return (
-                        <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-sm overflow-hidden shadow-lg p-1 transition-all group/match relative">
-                          <div className="bg-[#000020] rounded-sm overflow-hidden relative z-10">
+                        <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-2xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
+                          <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden relative z-10">
                             <div className="p-3 flex justify-between items-center gap-8">
-                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                              <span className="font-display font-bold text-sm  tracking-tight text-orange-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
                               <span className="font-mono font-bold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
                             </div>
                             <div className="p-3 flex justify-between items-center border-t border-white/5 gap-8">
-                              <span className="font-display font-black text-sm uppercase italic tracking-tighter text-orange-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                              <span className="font-display font-bold text-sm  tracking-tight text-orange-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
                               <span className="font-mono font-bold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
@@ -6647,24 +6536,24 @@ export default function App() {
 
                   <div className="mt-4 flex flex-col items-center">
                     <Trophy className="w-12 h-12 text-yellow-500 drop-shadow-[0_0_10px_rgba(234,179,8,0.5)] mb-2" />
-                    <span className="text-[10px] font-black uppercase tracking-[0.3em] text-yellow-500/50">Champion</span>
+                    <span className="text-[10px] font-bold tracking-[0.3em] text-yellow-500/50">Champion</span>
                   </div>
                 </div>
               </div>
               
               {/* Legend */}
               <div className="mt-12 flex flex-col items-center gap-4">
-                <div className="flex flex-wrap justify-center gap-8 px-6 py-4 bg-white/5 border border-white/10 rounded-sm backdrop-blur-sm">
+                <div className="flex flex-wrap justify-center gap-8 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-[1px] bg-white/40" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Straight Line = 1st Leg Home</span>
+                    <span className="text-[10px] font-bold tracking-normal text-white/60">Straight Line = 1st Leg Home</span>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-[1px] border-t border-dashed border-white/60" />
-                    <span className="text-[10px] font-black uppercase tracking-widest text-white/60">Cutted Line = 2nd Leg Home</span>
+                    <span className="text-[10px] font-bold tracking-normal text-white/60">Cutted Line = 2nd Leg Home</span>
                   </div>
                 </div>
-                <p className="text-[9px] font-black uppercase tracking-widest text-fc-neon-green/40 italic">Note: Seeding benefit allows play second leg at home</p>
+                <p className="text-[9px] font-bold tracking-normal text-fc-neon-green/40 ">Note: Seeding benefit allows play second leg at home</p>
               </div>
             </motion.div>
           )}
@@ -6676,7 +6565,7 @@ export default function App() {
               exit={{ opacity: 0, x: -20 }}
               className="space-y-8"
             >
-              <div className="relative h-80 rounded-sm overflow-hidden group shadow-2xl">
+              <div className="relative h-80 rounded-2xl overflow-hidden group shadow-2xl">
                 <EditableImage 
                   id="reg_hero_image" 
                   defaultSrc="https://picsum.photos/seed/tournament/1920/1080" 
@@ -6684,13 +6573,13 @@ export default function App() {
                   className="w-full h-full text-[0] leading-[0] transition-transform duration-700 group-hover:scale-110" 
                   isAdmin={isAdmin} 
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-[#000020] via-[#000020]/40 to-transparent pointer-events-none" />
+                <div className="absolute inset-0 bg-gradient-to-t from-[#0A0A0A] via-[#0A0A0A]/40 to-transparent pointer-events-none" />
                 <div className="absolute inset-x-8 bottom-8 pointer-events-none">
-                  <span className="px-3 py-1 bg-fc-neon-green text-black text-black text-[10px] font-black rounded-sm uppercase tracking-widest mb-3 inline-block pointer-events-auto">
+                  <span className="px-3 py-1 bg-fc-neon-green text-black text-black text-[10px] font-bold rounded-2xl tracking-normal mb-3 inline-block pointer-events-auto">
                     <EditableText id="apps_live_status" defaultText="Applications Live" isAdmin={isAdmin} />
                   </span>
                   <div className="pointer-events-auto inline-block relative">
-                    <EditableText id="join_season_title" defaultText="Join Season 2026" isAdmin={isAdmin} as="h2" className="text-4xl md:text-5xl font-display font-black italic uppercase text-white tracking-tight leading-none mb-4" />
+                    <EditableText id="join_season_title" defaultText="Join Season 2026" isAdmin={isAdmin} as="h2" className="text-4xl md:text-5xl font-display font-bold  text-white tracking-tight leading-none mb-4" />
                   </div>
                   <p className="text-white/60 text-sm max-w-xl font-medium pointer-events-auto relative">
                     <EditableText id="ready_to_prove_sub" defaultText="Ready to prove your skills? Register now for the upcoming tournament season. Entry is limited to 16 teams." isAdmin={isAdmin} />
@@ -6700,22 +6589,22 @@ export default function App() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
-                   <div className="w-12 h-12 bg-fc-purple-light/30 rounded-sm flex items-center justify-center mb-6 border border-fc-neon-green/50/30">
+                   <div className="w-12 h-12 bg-fc-purple-light/30 rounded-2xl flex items-center justify-center mb-6 border border-fc-neon-green/50/30">
                      <Users className="w-6 h-6 text-fc-neon-green" />
                    </div>
-                   <EditableText id="player_reg_title" defaultText="Player Registration" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
+                   <EditableText id="player_reg_title" defaultText="Player Registration" isAdmin={isAdmin} as="h3" className="text-xl font-bold text-white  tracking-tight mb-2" />
                    <p className="text-white/40 text-sm mb-8">
                      <EditableText id="click_below_sub" defaultText="Click below to fill out your details and secure your spot in the bracket." isAdmin={isAdmin} />
                    </p>
                    
                    {hasRegistered ? (
                      <div className="space-y-4">
-                       <div className="p-5 bg-green-600/10 border border-green-500/20 rounded-sm flex items-center gap-3">
+                       <div className="p-5 bg-green-600/10 border border-green-500/20 rounded-2xl flex items-center gap-3">
                          <Check className="w-5 h-5 text-green-400" />
                          <span className="text-sm font-bold text-green-400">Successfully Registered</span>
                        </div>
-                       <div className="bg-[#25D366]/10 border border-[#25D366]/20 rounded-sm p-4 space-y-3">
-                         <p className="text-[10px] font-black uppercase text-[#25D366] tracking-wider flex items-center gap-1.5 animate-pulse">
+                       <div className="bg-[#25D366]/10 border border-[#25D366]/20 rounded-2xl p-4 space-y-3">
+                         <p className="text-[10px] font-bold text-[#25D366] tracking-wider flex items-center gap-1.5 animate-pulse">
                            <span className="w-2 h-2 rounded-full bg-[#25D366]" />
                            Action Required
                          </p>
@@ -6726,7 +6615,7 @@ export default function App() {
                            href="https://chat.whatsapp.com/Hc4mGIatJYkI1myUbAWiv7"
                            target="_blank"
                            rel="noopener noreferrer"
-                           className="w-full py-3 bg-[#25D366] hover:bg-[#20ba5a] text-black rounded-sm font-black uppercase text-[10px] tracking-widest transition-all shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] transform duration-150"
+                           className="w-full py-3 bg-[#25D366] hover:bg-[#20ba5a] text-black rounded-2xl font-bold text-[10px] tracking-normal transition-all shadow-md flex items-center justify-center gap-2 hover:scale-[1.02] transform duration-150"
                          >
                            Join WhatsApp Community
                          </a>
@@ -6745,7 +6634,7 @@ export default function App() {
                           }
                           setIsRegistrationModalOpen(true);
                         }}
-                       className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-sm font-black uppercase text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
+                       className="w-full py-5 bg-fc-neon-green text-black hover:bg-fc-purple-light text-black rounded-2xl font-bold text-xs tracking-[0.3em] transition-all shadow-xl shadow-fc-neon-green/20"
                      >
                        Register Now
                      </button>
@@ -6753,10 +6642,10 @@ export default function App() {
                  </div>
 
                  <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 backdrop-blur-md">
-                   <div className="w-12 h-12 bg-yellow-500/20 rounded-sm flex items-center justify-center mb-6 border border-yellow-500/30">
+                   <div className="w-12 h-12 bg-yellow-500/20 rounded-2xl flex items-center justify-center mb-6 border border-yellow-500/30">
                      <Shield className="w-6 h-6 text-yellow-400" />
                    </div>
-                   <EditableText id="requirements_title" defaultText="Requirements" isAdmin={isAdmin} as="h3" className="text-xl font-black text-white uppercase italic tracking-tight mb-2" />
+                   <EditableText id="requirements_title" defaultText="Requirements" isAdmin={isAdmin} as="h3" className="text-xl font-bold text-white  tracking-tight mb-2" />
                    <ul className="space-y-3">
                      {[
                        { id: 'req_1', text: "FC Mobile Active UID" },
@@ -6765,7 +6654,7 @@ export default function App() {
                        { id: 'req_4', text: "Fair Play Commitment" }
                      ].map(req => (
                        <li key={req.id} className="flex items-center gap-3 text-xs font-bold text-white/60">
-                         <div className="w-1.5 h-1.5 bg-fc-neon-green text-black rounded-sm" />
+                         <div className="w-1.5 h-1.5 bg-fc-neon-green text-black rounded-2xl" />
                          <EditableText id={req.id} defaultText={req.text} isAdmin={isAdmin} />
                        </li>
                      ))}
@@ -6790,11 +6679,11 @@ export default function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => { setActiveTab('registration'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
-              className="flex items-center gap-3 px-6 py-4 bg-fc-neon-green text-black rounded-sm shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-fc-neon-green/40/30 group relative overflow-hidden"
+              className="flex items-center gap-3 px-6 py-4 bg-fc-neon-green text-black rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] border border-fc-neon-green/40/30 group relative overflow-hidden"
             >
               <div className="relative z-10 flex items-center gap-3">
                 <Layout className="w-5 h-5 text-white" />
-                <span className="font-display font-black uppercase italic text-sm tracking-widest text-white">Join Tournament</span>
+                <span className="font-display font-bold  text-sm tracking-normal text-white">Join Tournament</span>
               </div>
               <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity" />
             </motion.button>
@@ -6829,6 +6718,8 @@ export default function App() {
             isSubmitting={isSubmittingRegistration}
             hasRegistered={hasRegistered}
             user={user}
+            existingRegistrations={registrations}
+            config={config}
           />
         )}
 
@@ -6848,6 +6739,7 @@ export default function App() {
             onClose={() => setIsEditingProfile(false)}
             handleUpdateRegistration={handleUpdateRegistration}
             isSubmitting={isSubmittingRegistration}
+            config={config}
           />
         )}
         {adminEditingRegistration && (
@@ -6856,6 +6748,7 @@ export default function App() {
             onClose={() => setAdminEditingRegistration(null)}
             handleUpdateRegistration={handleAdminUpdateUserRegistration}
             isSubmitting={isSubmittingRegistration}
+            config={config}
           />
         )}
         {isAdminModalOpen && (
@@ -6907,31 +6800,31 @@ export default function App() {
         <div className="max-w-5xl mx-auto px-4 text-center">
           <div className="flex flex-wrap justify-center gap-4 md:gap-8 mb-8">
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] font-bold text-fc-neon-green/50 mb-1">
                     TOTAL MATCHES
                   </p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{matches.length}</p>
+                  <p className="text-xl md:text-3xl font-display font-bold  tracking-tight pr-1">{matches.length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] font-bold text-fc-neon-green/50 mb-1">
                     TEAMS
                   </p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{teams.length}</p>
+                  <p className="text-xl md:text-3xl font-display font-bold  tracking-tight pr-1">{teams.length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] font-bold text-fc-neon-green/50 mb-1">
                     MATCHDAYS
                   </p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{Object.keys(matchesByDay).length}</p>
+                  <p className="text-xl md:text-3xl font-display font-bold  tracking-tight pr-1">{Object.keys(matchesByDay).length}</p>
                 </div>
                 <div className="text-center md:text-left">
-                  <p className="text-[8px] md:text-[10px] uppercase tracking-[0.2em] md:tracking-[0.3em] font-black text-fc-neon-green/50 mb-1">
+                  <p className="text-[8px] md:text-[10px] tracking-[0.2em] md:tracking-[0.3em] font-bold text-fc-neon-green/50 mb-1">
                     <EditableText id="footer_visits_label" defaultText="Total Visits" isAdmin={isAdmin} />
                   </p>
-                  <p className="text-xl md:text-3xl font-display font-black italic tracking-tighter pr-1">{visitCount}</p>
+                  <p className="text-xl md:text-3xl font-display font-bold  tracking-tight pr-1">{visitCount}</p>
                 </div>
           </div>
-          <p className="text-white/20 text-[10px] font-mono uppercase tracking-widest">
+          <p className="text-white/20 text-[10px] font-mono tracking-normal">
             &copy; 2026 UXI Tournament Hub
           </p>
         </div>

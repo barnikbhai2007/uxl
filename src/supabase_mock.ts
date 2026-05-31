@@ -67,6 +67,8 @@ export type User = {
   emailVerified?: boolean;
   tenantId?: string;
   providerData?: any[];
+  displayName?: string;
+  role?: string;
 };
 
 class AuthMock {

@@ -17,6 +17,7 @@ export interface Team {
   points: number;
   form: string[];
   logoUrl?: string;
+  country?: string;
 }
 
 export interface Scorer {
@@ -100,6 +101,7 @@ export interface Registration {
   email?: string;
   logoUrl?: string;
   goalkeeper: string;
+  country?: string;
 }
 
 export interface AppContent {
@@ -113,6 +115,7 @@ export interface Config {
   hiddenDates?: string[];
   dateOrder?: string[];
   geminiApiKey?: string;
+  allowedNames?: string[];
   geminiModel?: string;
 }
 

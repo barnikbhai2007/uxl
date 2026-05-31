@@ -25,6 +25,41 @@ export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: nu
   "ANIMESH": { fcName: "Ashish..Won", uid: "646962951897718784", ovr: 119, fullName: "Animesh", goalkeeper: "Courtois" }
 };
 
+export const WORLD_CUP_TEAMS = [
+  { name: 'Argentina', flag: '🇦🇷' },
+  { name: 'Australia', flag: '🇦🇺' },
+  { name: 'Belgium', flag: '🇧🇪' },
+  { name: 'Brazil', flag: '🇧🇷' },
+  { name: 'Cameroon', flag: '🇨🇲' },
+  { name: 'Canada', flag: '🇨🇦' },
+  { name: 'Colombia', flag: '🇨🇴' },
+  { name: 'Costa Rica', flag: '🇨🇷' },
+  { name: 'Croatia', flag: '🇭🇷' },
+  { name: 'Denmark', flag: '🇩🇰' },
+  { name: 'Ecuador', flag: '🇪🇨' },
+  { name: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
+  { name: 'France', flag: '🇫🇷' },
+  { name: 'Germany', flag: '🇩🇪' },
+  { name: 'Ghana', flag: '🇬🇭' },
+  { name: 'Iran', flag: '🇮🇷' },
+  { name: 'Italy', flag: '🇮🇹' },
+  { name: 'Japan', flag: '🇯🇵' },
+  { name: 'Mexico', flag: '🇲🇽' },
+  { name: 'Morocco', flag: '🇲🇦' },
+  { name: 'Netherlands', flag: '🇳🇱' },
+  { name: 'Poland', flag: '🇵🇱' },
+  { name: 'Portugal', flag: '🇵🇹' },
+  { name: 'Saudi Arabia', flag: '🇸🇦' },
+  { name: 'Senegal', flag: '🇸🇳' },
+  { name: 'Serbia', flag: '🇷🇸' },
+  { name: 'South Korea', flag: '🇰🇷' },
+  { name: 'Spain', flag: '🇪🇸' },
+  { name: 'Switzerland', flag: '🇨🇭' },
+  { name: 'USA', flag: '🇺🇸' },
+  { name: 'Uruguay', flag: '🇺🇾' },
+  { name: 'Wales', flag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿' },
+];
+
 export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => {
   const details = TEAM_DETAILS[name];
   return {
