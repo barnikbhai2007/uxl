@@ -457,8 +457,11 @@ app.post("/api/analyze-match", async (req, res) => {
               2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
               3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
               4. Extract GOAL SCORERS:
-                 - In EAFC/FIFA match facts, there's usually a unified timeline on the RIGHT side indicating who scored. 
-                 - Scan the entire screen to identify ANY player names accompanied by a Goal icon (soccer ball) and a minute (e.g. 18').
+                 - In FC Mobile Match Summary, the screen has two distinct halves:
+                   * LEFT HALF contains the Home team's details, including a list of Home goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 18').
+                   * RIGHT HALF contains the Away team's details, including a list of Away goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 54').
+                 - Scan both halves of the screen carefully. Player Names under the Left (Home) team belong to "team1". Player Names under the Right (Away) team belong to "team2".
+                 - DO NOT MIX THEM UP. Left-side scorers are strictly "team1", and Right-side scorers are strictly "team2".
                  - FOLLOW THE CRITICAL SCORER ASSIGNMENT RULES BELOW.
               5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
                  - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
@@ -467,15 +470,14 @@ app.post("/api/analyze-match", async (req, res) => {
               6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
               
               CRITICAL SCORER ASSIGNMENT RULES:
-              1. The scorers list on the RIGHT SIDE of the screen belongs to BOTH teams combined (unified timeline).
-              2. You MUST figure out which goal belongs to which team by using the FINAL SCORE as truth:
-                 - If team1Score is 3, exactly 3 goals must be assigned to team1 in the scorers list.
-                 - If team2Score is 2, exactly 2 goals must be assigned to team2 in the scorers list.
-                 - Total scorers must always add up to the correct score.
-              3. Goals are listed in TIME ORDER (earliest first) — NOT grouped by team.
-              4. To assign a goal to the correct team, use the running score logic if possible, or context clues.
-              5. NEVER assign more goals to a team than their final score.
-              6. If unsure which team scored a goal, assign it to the team that still needs goals to reach their final score.
+              1. Goals listed on the Left-side half of the screenshot are scored by the Left-side player/team (team1).
+              2. Goals listed on the Right-side half of the screenshot are scored by the Right-side player/team (team2).
+              3. Verify the final score:
+                 - If team1Score is 3, exactly 3 goals must contain team1 scorers.
+                 - If team2Score is 2, exactly 2 goals must contain team2 scorers.
+              4. If a player is listed on the Left side, their "team" field MUST be "team1". If listed on the Right side, their "team" field MUST be "team2".
+              5. The sum of goals for team1 scorers MUST equal team1Score, and the sum of goals for team2 scorers MUST equal team2Score.
+              6. Under no circumstances should you assign a left-side scorer to "team2", or a right-side scorer to "team1".
               7. team1 = the LEFT side player (home), team2 = the RIGHT side player (away).
               8. Double check: count team1 scorers = team1Score, count team2 scorers = team2Score.
 

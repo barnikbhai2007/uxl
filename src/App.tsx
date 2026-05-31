@@ -594,7 +594,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       }
       return (
         <div className="text-center max-w-[140px] mt-2">
-          <div className="text-lg md:text-xl font-display text-white tracking-normal truncate px-2">
+          <div className="text-lg md:text-xl font-display font-extrabold text-white tracking-normal truncate px-2">
             {team?.fullName || team?.fcName || team?.name || 'TBD'}
           </div>
         </div>
@@ -628,18 +628,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               textClassName="text-[10px] font-sans font-bold text-white tracking-[0.1em] placeholder-white/50"
             />
             <div className="flex items-center gap-4">
-              <span className={`text-4xl font-display tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
+              <span className={`text-4xl font-display font-extrabold tabular-nums ${displayStatus === 'finished' ? (match.homeScore! > match.awayScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
                 {match.homeScore ?? '-'}
               </span>
               <div className="flex flex-col items-center">
                  <span className="text-[10px] font-sans font-bold text-[#A0A0A0]">VS</span>
                  <div className="h-4 w-[1px] bg-white/[0.08] backdrop-blur-xl my-1" />
               </div>
-              <span className={`text-4xl font-display tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
+              <span className={`text-4xl font-display font-extrabold tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
                 {match.awayScore ?? '-'}
               </span>
             </div>
-            <div className={`px-4 py-1 text-[10px] font-sans font-bold tracking-[0.1em] rounded-full shadow-sm ${
+            <div className={`px-4 py-1 text-[10px] font-sans font-bold tracking-[0.1em] rounded-none shadow-sm ${
               displayStatus === 'finished' ? 'bg-[#3B82F6] text-white' :
               displayStatus === 'ongoing' || displayStatus === 'live' ? 'bg-[#EF4444] text-white animate-pulse' :
               'bg-white/[0.08] backdrop-blur-xl text-[#A0A0A0]'
@@ -923,7 +923,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     Rescheduled Match
                   </div>
                 )}
-                <div className={`px-3 md:px-4 py-1 md:py-1.5 text-[10px] font-sans font-bold tracking-[0.1em] flex items-center gap-2 ${
+                <div className={`px-3 md:px-4 py-1 md:py-1.5 text-[10px] font-sans font-bold tracking-[0.1em] flex items-center gap-2 rounded-none ${
                   displayStatus === 'finished' ? 'bg-[#3B82F6] text-[#080808]' : 
                   displayStatus === 'rescheduled' ? 'bg-white/[0.08] backdrop-blur-xl text-[#3B82F6]' :
                   displayStatus === 'live' || displayStatus === 'ongoing' ? 'bg-[#EF4444] text-white' : 'bg-white/[0.08] backdrop-blur-xl text-[#555555]'
@@ -3489,8 +3489,8 @@ export default function App() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
-  const [selectedMotm, setSelectedMotm] = useState<{fcName: string, userId: string} | null>(null);
-  const [motmSearch, setMotmSearch] = useState('');
+  const [motmInput, setMotmInput] = useState('');
+  const [showMotmSuggestions, setShowMotmSuggestions] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
   const [newAchievements, setNewAchievements] = useState<string[]>([]);
@@ -3653,6 +3653,23 @@ export default function App() {
   const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
   const stats = useMemo(() => calculateStats(teams, matches).slice(0, 10), [teams, matches]);
   const cleanSheets = useMemo(() => calculateCleanSheets(teams, matches).slice(0, 10), [teams, matches]);
+  
+  const motmSuggestions = useMemo(() => {
+    const list = new Set<string>();
+    // 1. All approved and other registered team FC Names
+    registrations.forEach(r => {
+      if (r.fcName && r.fcName.trim()) {
+        list.add(r.fcName.trim());
+      }
+    });
+    // 2. Previously saved man of the matches from all tournament matches
+    matches.forEach(m => {
+      if (m.manOfTheMatch && m.manOfTheMatch.trim()) {
+        list.add(m.manOfTheMatch.trim());
+      }
+    });
+    return Array.from(list).sort((a, b) => a.localeCompare(b));
+  }, [registrations, matches]);
   
   const [liveMotmLeaders, setLiveMotmLeaders] = useState<{playerName: string, awards: number}[]>([]);
   useEffect(() => {
@@ -4732,7 +4749,7 @@ export default function App() {
     if (opponentUserId) await updateAchievements(opponentUserId, opponentAchievements);
   };
 
-  const processMatchResultImage = async (file: File, playerRegistration: Registration, motm: {fcName: string, userId: string} | null = null) => {
+  const processMatchResultImage = async (file: File, playerRegistration: Registration, motm: string | null = null) => {
     setIsSubmittingImg(true);
     setAiAnalysisResult(null);
     try {
@@ -4924,7 +4941,7 @@ export default function App() {
 
           const isTeam1ActuallyDbHome = existingMatch.homeTeamId === team1.id;
 
-          let finalMOTM = data.manOfTheMatch;
+          let finalMOTM = motm || data.manOfTheMatch;
           if (!finalMOTM) {
              const allPlayers = parseScorers(() => true);
              if (allPlayers.length > 0) {
@@ -4955,7 +4972,7 @@ export default function App() {
           cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
           cleanedPayload.evidenceTimestamp = serverTimestamp();
           if (motm) {
-            cleanedPayload.motm = motm;
+            cleanedPayload.motm = { fcName: motm, userId: '' };
           }
 
           const updatedMatch = { ...existingMatch, ...cleanedPayload } as Match;
@@ -4973,11 +4990,11 @@ export default function App() {
                const lbSnap = await getDoc(leaderboardRef);
                if (lbSnap.exists()) {
                   await updateDoc(leaderboardRef, {
-                     [`players.${motm.fcName}`]: increment(1)
+                     [`players.${motm}`]: increment(1)
                   });
                } else {
                   await setDoc(leaderboardRef, {
-                     players: { [motm.fcName]: 1 }
+                     players: { [motm]: 1 }
                   });
                }
             } catch(e) {
@@ -5854,13 +5871,13 @@ export default function App() {
                                   {myStats.map(s => (
                                     <div key={s.playerName} className="p-4 bg-white/[0.03] backdrop-blur-xl border-t-2 border-[#3B82F6] border border-x-[#1E1E1E] border-b-[#1E1E1E]">
                                       <div className="flex flex-col mb-4">
-                                        <span className="font-display text-white text-2xl">{s.playerName}</span>
+                                        <span className="font-display font-extrabold text-white text-2xl">{s.playerName}</span>
                                         <div className="text-[#3B82F6] font-sans text-[10px] small-caps font-bold tracking-[0.1em] mt-0.5">FORWARD</div>
                                       </div>
                                       <div className="grid grid-cols-2 gap-4 border-t border-white/10 pt-3 mt-auto">
                                         <div className="flex flex-col">
                                           <span className="text-[#555555] font-sans text-[10px] font-bold tracking-normal">GOALS</span>
-                                          <span className="font-display text-white text-3xl">{s.goals}</span>
+                                          <span className="font-display font-extrabold text-white text-3xl">{s.goals}</span>
                                         </div>
                                       </div>
                                     </div>
@@ -5915,7 +5932,12 @@ export default function App() {
                                               alert("Please register a team first to submit match results.");
                                               return;
                                             }
-                                            processMatchResultImage(file, myRegistration, selectedMotm);
+                                            if (!motmInput.trim()) {
+                                              alert("Please enter/select the Man of the Match (Required) before uploading!");
+                                              e.target.value = '';
+                                              return;
+                                            }
+                                            processMatchResultImage(file, myRegistration, motmInput.trim());
                                           }
                                         }}
                                         className="absolute inset-0 opacity-0 cursor-pointer"
@@ -5924,37 +5946,50 @@ export default function App() {
                                       <span className="text-[10px] font-bold text-white/40 tracking-normal text-center">Upload FC Result<br/>(Max 2MB)</span>
                                     </div>
                                     <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-2xl bg-white/5 relative">
-                                        <label className="text-[10px] font-bold tracking-normal text-white/40 mb-4 block text-center">Man of the Match (Optional)</label>
-                                        {selectedMotm ? (
-                                           <div className="flex items-center justify-center gap-2 bg-yellow-500/20 text-yellow-500 rounded-2xl px-4 py-2 border border-yellow-500/30 mx-auto w-fit">
-                                             <Star className="w-4 h-4 fill-current" />
-                                             <span className="text-sm font-bold">{selectedMotm.fcName}</span>
-                                             <button onClick={() => setSelectedMotm(null)} className="ml-2 hover:text-white z-10 relative"><X className="w-4 h-4" /></button>
-                                           </div>
-                                        ) : (
-                                          <div className="relative w-full max-w-xs mx-auto">
-                                            <input 
-                                              type="text" 
-                                              placeholder="Search MOTM... (optional)" 
-                                              value={motmSearch}
-                                              onChange={(e) => setMotmSearch(e.target.value)}
-                                              className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center"
-                                            />
-                                            {motmSearch && (
+                                        <label className="text-[10px] font-bold tracking-normal text-white/40 mb-2 block text-center uppercase tracking-wider">
+                                          Man of the Match <span className="text-red-500 font-extrabold">*Required*</span>
+                                        </label>
+                                        <div className="relative w-full max-w-xs mx-auto">
+                                          <input 
+                                            type="text" 
+                                            placeholder="Type or select name..." 
+                                            value={motmInput}
+                                            onChange={(e) => {
+                                              setMotmInput(e.target.value);
+                                              setShowMotmSuggestions(true);
+                                            }}
+                                            onFocus={() => setShowMotmSuggestions(true)}
+                                            className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center font-bold"
+                                          />
+                                          {showMotmSuggestions && (
+                                            <>
+                                              <div className="fixed inset-0 z-[90]" onClick={() => setShowMotmSuggestions(false)} />
                                               <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-2xl shadow-xl z-[100] max-h-40 overflow-y-auto hide-scrollbar">
-                                                {registrations.filter(r => r.fcName.toLowerCase().includes(motmSearch.toLowerCase())).map(r => (
-                                                  <button 
-                                                    key={r.userId}
-                                                    onClick={() => { setSelectedMotm({fcName: r.fcName, userId: r.userId}); setMotmSearch(''); }}
-                                                    className="w-full text-center p-3 hover:bg-white/10 text-sm font-bold text-white border-b border-white/5 last:border-0"
-                                                  >
-                                                    {r.fcName}
-                                                  </button>
-                                                ))}
+                                                {motmSuggestions
+                                                  .filter(item => !motmInput || item.toLowerCase().includes(motmInput.toLowerCase()))
+                                                  .map(item => (
+                                                    <button 
+                                                      key={item}
+                                                      type="button"
+                                                      onClick={() => { 
+                                                        setMotmInput(item); 
+                                                        setShowMotmSuggestions(false); 
+                                                      }}
+                                                      className="w-full text-center p-3 hover:bg-white/10 text-sm font-bold text-white border-b border-white/5 last:border-0 relative z-[101]"
+                                                    >
+                                                      {item}
+                                                    </button>
+                                                  ))
+                                                }
+                                                {motmInput && !motmSuggestions.some(item => item.toLowerCase() === motmInput.toLowerCase()) && (
+                                                  <div className="w-full text-center p-3 text-xs text-white/45 italic relative z-[101]">
+                                                    Click outside to use typed name "{motmInput}"
+                                                  </div>
+                                                )}
                                               </div>
-                                            )}
-                                          </div>
-                                        )}
+                                            </>
+                                          )}
+                                        </div>
                                     </div>
                                   </div>
                                 );
@@ -6391,7 +6426,7 @@ export default function App() {
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.gf}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.ga}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display text-xl md:text-2xl text-white bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display font-extrabold text-xl md:text-2xl text-white bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.points}</td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
                           <div className="flex items-center justify-center gap-1">
                             {team.form.map((result, i) => (
@@ -6584,12 +6619,12 @@ export default function App() {
                       <div key={`hub-qual-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-fc-purple-light/20' : ''} relative z-10 gap-6`}>
-                            <span className="font-display font-bold text-fc-neon-green/70  whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-mono font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-fc-purple-light/20' : ''} gap-6`}>
-                            <span className="font-display font-bold text-fc-neon-green/70  whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line - Straight to Quarterfinal */}
@@ -6610,16 +6645,16 @@ export default function App() {
                       <div key={`hub-qf-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-bold  transition-colors text-fc-neon-green/70 whitespace-nowrap">
+                            <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap">
                               {match.homeTeamName || 'TBD'}
                             </span>
-                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <span className="font-mono font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-bold  transition-colors text-fc-neon-green/70 whitespace-nowrap">
+                            <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap">
                               {match.awayTeamName || 'TBD'}
                             </span>
-                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -6645,12 +6680,12 @@ export default function App() {
                       <div key={`hub-sf-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-bold  text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                            <span className="font-mono font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-bold  text-fc-neon-green/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                            <span className="font-mono font-bold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                            <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -6678,12 +6713,12 @@ export default function App() {
                         <div className="w-fit min-w-[200px] bg-gradient-to-br from-fc-neon-green/20 to-fc-purple-base/20 border border-yellow-500/50 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
                           <div className="bg-fc-purple-dark rounded-2xl overflow-hidden relative z-10">
                             <div className="p-4 flex justify-between items-center gap-8">
-                              <span className="font-display font-bold text-base  tracking-tight text-yellow-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                              <span className="font-mono font-bold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                              <span className="font-mono font-extrabold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
                             </div>
                             <div className="p-4 flex justify-between items-center border-t border-white/5 gap-8">
-                              <span className="font-display font-bold text-base  tracking-tight text-yellow-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                              <span className="font-mono font-bold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                              <span className="font-mono font-extrabold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -6699,12 +6734,12 @@ export default function App() {
                         <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-2xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
                           <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden relative z-10">
                             <div className="p-3 flex justify-between items-center gap-8">
-                              <span className="font-display font-bold text-sm  tracking-tight text-orange-400/70 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                              <span className="font-mono font-bold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
+                              <span className="font-mono font-extrabold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
                             </div>
                             <div className="p-3 flex justify-between items-center border-t border-white/5 gap-8">
-                              <span className="font-display font-bold text-sm  tracking-tight text-orange-400/70 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                              <span className="font-mono font-bold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
+                              <span className="font-mono font-extrabold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>
