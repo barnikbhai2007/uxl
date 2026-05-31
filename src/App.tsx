@@ -3265,7 +3265,7 @@ const DEFAULT_PLAYERS = [
   "Sougata JR", "Sayantan", "Utsab", "Animesh", "Rajat"
 ];
 
-function LoginModal({ onClose }: { onClose: () => void }) {
+function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLogin?: () => void }) {
   const [tab, setTab] = useState<'player'|'admin'>('player');
   const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState('');
@@ -3316,6 +3316,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
         const res = await signIn(selectedPlayer, "", "user");
       } else {
         const res = await signIn("admin", password, "admin");
+        if (onAdminLogin) onAdminLogin();
       }
       onClose();
     } catch (err: any) {
@@ -3378,7 +3379,7 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
           {tab === 'admin' && (
             <div>
-              <label className="block text-[10px] uppercase text-white/50 mb-2">Admin Password</label>
+              <label className="block text-[10px] uppercase text-white/50 mb-2">Admin Password (Default: Broken@2000)</label>
               <input 
                 type="password"
                 value={password}
@@ -3788,9 +3789,7 @@ export default function App() {
   const [isAdminModalOpen, setIsAdminModalOpen] = useState(false);
 
   const isAdmin = useMemo(() => {
-    const isEmailAdmin = user?.email === 'webblogger82@gmail.com';
-    // Optional additional check if we ever want to trust the DB role prop
-    return isEmailAdmin;
+    return user?.email === 'webblogger82@gmail.com' || user?.email === 'admin@uxl.com' || (user as any)?.role === 'admin';
   }, [user]);
 
   // For debugging, only shown in development console
@@ -6757,7 +6756,7 @@ export default function App() {
 
       {/* Modals */}
       <AnimatePresence>
-        {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
+        {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} onAdminLogin={() => setIsAdminModalOpen(true)} />}
         {selectedMatch && (
           <MatchDetailsModal 
             match={selectedMatch} 
