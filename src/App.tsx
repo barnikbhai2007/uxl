@@ -1327,16 +1327,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     return WORLD_CUP_TEAMS.map((team) => {
                       const isTaken = takenCountries.includes(team.name.toLowerCase().trim());
                       const isSelected = formData.country?.toLowerCase().trim() === team.name.toLowerCase().trim();
+                      const isLocked = config?.lockedCountries?.includes(team.name);
                       return (
                         <button
                           key={team.name}
                           type="button"
-                          disabled={isTaken && !isSelected}
+                          disabled={(isTaken || isLocked) && !isSelected}
                           onClick={() => setFormData({...formData, country: team.name})}
                           className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
                             isSelected 
                               ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)] font-bold' 
-                              : isTaken
+                              : (isTaken || isLocked)
                                 ? 'bg-white/5 border-transparent text-white/30 cursor-not-allowed opacity-50'
                                 : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
                           }`}
@@ -1344,6 +1345,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           <span className="text-xl">{team.flag}</span>
                           <span className="text-xs font-bold truncate">{team.name}</span>
                           {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
+                          {isLocked && !isSelected && <span className="text-[9px] ml-auto text-yellow-400 font-bold uppercase tracking-widest">Locked</span>}
                         </button>
                       );
                     });
@@ -1827,16 +1829,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     {WORLD_CUP_TEAMS.map((team) => {
                       const isTaken = takenCountries.some(tc => tc.toLowerCase().trim() === team.name.toLowerCase().trim());
                       const isSelected = formData.country && formData.country.toLowerCase().trim() === team.name.toLowerCase().trim();
+                      const isLocked = config?.lockedCountries?.includes(team.name);
                       return (
                         <button
                           key={team.name}
                           type="button"
-                          disabled={isTaken && !isSelected}
+                          disabled={(isTaken || isLocked) && !isSelected}
                           onClick={() => setFormData({...formData, country: team.name})}
                           className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
                             isSelected 
                               ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)]' 
-                              : isTaken
+                              : (isTaken || isLocked)
                                 ? 'bg-white/5 border-transparent text-white/30 cursor-not-allowed opacity-50'
                                 : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
                           }`}
@@ -1844,6 +1847,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           <span className="text-xl">{team.flag}</span>
                           <span className="text-xs font-bold truncate">{team.name}</span>
                           {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
+                          {isLocked && !isSelected && <span className="text-[9px] ml-auto text-yellow-400 font-bold uppercase tracking-widest">Locked</span>}
                         </button>
                       );
                     })}
@@ -1959,7 +1963,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleRandomizeGroups: () => Promise<void>,
     handleClearGroups: () => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries'>('bracket');
     const [newAllowedNameInput, setNewAllowedNameInput] = useState('');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
@@ -2432,6 +2436,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'names' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Allowed Names
+            </button>
+            <button 
+              onClick={() => setActiveTab('countries')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'countries' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Country Locking
             </button>
 
             <button 
@@ -3090,6 +3100,40 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </div>
                     )}
                   </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'countries' && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-display font-bold text-white">Country Locking</h3>
+                </div>
+                <p className="text-xs text-white/50 mb-6">Lock specific countries to prevent them from being selected during registration.</p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {WORLD_CUP_TEAMS.map((team) => {
+                    const isLocked = (config.lockedCountries || []).includes(team.name);
+                    return (
+                      <button
+                        key={team.name}
+                        onClick={async () => {
+                          const newLocked = isLocked 
+                            ? (config.lockedCountries || []).filter(c => c !== team.name)
+                            : [...(config.lockedCountries || []), team.name];
+                          await handleUpdateConfig({ ...config, lockedCountries: newLocked });
+                        }}
+                        className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
+                          isLocked 
+                            ? 'bg-red-500/20 border-red-500 text-white font-bold' 
+                            : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80'
+                        }`}
+                      >
+                        <span className="text-xl">{team.flag}</span>
+                        <span className="text-xs font-bold">{team.name}</span>
+                        {isLocked && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Locked</span>}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}

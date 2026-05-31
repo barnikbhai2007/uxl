@@ -123,6 +123,7 @@ export interface Config {
   groupAssignments?: Record<string, string>;
   groupNames?: Record<string, string>;
   groupLabels?: Record<string, string>;
+  lockedCountries?: string[];
 }
 
 export interface MatchReport {
