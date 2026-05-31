@@ -306,6 +306,20 @@ app.get("/api/auth/me", (req, res) => {
   }
 });
 
+app.get("/api/ai-key", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ success: false, error: "No token" });
+  
+  const token = authHeader.split(" ")[1];
+  try {
+    jwt.verify(token, JWT_SECRET);
+    const config = await getAiConfig();
+    res.json({ success: true, key: config.key, model: config.model });
+  } catch (e) {
+    res.status(401).json({ success: false, error: "Invalid token" });
+  }
+});
+
 
 // -------------------------------------------------------------
 // Existing Features
@@ -420,97 +434,104 @@ app.get("/api/test-ai", async (req, res) => {
 
 app.post("/api/analyze-match", async (req, res) => {
   try {
-    const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper, motm } = req.body;
-    const config = await getAiConfig();
+    const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper, motm, preAnalyzedMatchData } = req.body;
+    let matchData;
     
-    console.log(`[AI] Analysis Request | Model: ${config.model} | Source: ${config.source}`);
-    
-    if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
+    if (preAnalyzedMatchData) {
+      console.log(`[AI] Using Client Side Pre-Analyzed Match Data for ${fcName}`);
+      matchData = preAnalyzedMatchData.matchData || preAnalyzedMatchData;
+    } else {
+      const config = await getAiConfig();
+      
+      console.log(`[AI] Analysis Request | Model: ${config.model} | Source: ${config.source}`);
+      
+      if (!config.key) throw new Error("GROQ_API_KEY is not configured.");
 
-    const groq = new Groq({ apiKey: config.key });
+      const groq = new Groq({ apiKey: config.key });
 
-    const response = await groq.chat.completions.create({
-      model: config.model,
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "image_url",
-              image_url: { url: `data:${mimeType};base64,${base64}` }
-            },
-            {
-              type: "text",
-              text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
-              
-              CONTEXT:
-              - Home Team Goalkeeper: ${homeGoalkeeper || "Not specified"}
-              - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
+      const response = await groq.chat.completions.create({
+        model: config.model,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "image_url",
+                image_url: { url: `data:${mimeType};base64,${base64}` }
+              },
+              {
+                type: "text",
+                text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
+                
+                CONTEXT:
+                - Home Team Goalkeeper: ${homeGoalkeeper || "Not specified"}
+                - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
-              INSTRUCTIONS:
-              1. USERNAME DETECTION (CRITICAL):
-                 - Home player username = large bold text TOP LEFT of screen.
-                 - Away player username = large bold Latin text TOP RIGHT of screen.
-                 - IGNORE all subtitle text below usernames (team names, league names, Cyrillic text, "NO LEAGUE" etc.).
-                 - The username is ALWAYS Latin alphabet, never Cyrillic. 
-                 - Examples: "brokenaqua", "Icebear" — NOT "збірна України 3", "KOLKATA MASTERS", or "NO LEAGUE".
-              2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
-              3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
-              4. Extract GOAL SCORERS:
-                 - In FC Mobile Match Summary, the screen has two distinct halves:
-                   * LEFT HALF contains the Home team's details, including a list of Home goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 18').
-                   * RIGHT HALF contains the Away team's details, including a list of Away goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 54').
-                 - Scan both halves of the screen carefully. Player Names under the Left (Home) team belong to "team1". Player Names under the Right (Away) team belong to "team2".
-                 - DO NOT MIX THEM UP. Left-side scorers are strictly "team1", and Right-side scorers are strictly "team2".
-                 - FOLLOW THE CRITICAL SCORER ASSIGNMENT RULES BELOW.
-              5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
-                 - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
-                 - Left-side values = "team1Stats".
-                 - Right-side values = "team2Stats".
-              6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
-              
-              CRITICAL SCORER ASSIGNMENT RULES:
-              1. Goals listed on the Left-side half of the screenshot are scored by the Left-side player/team (team1).
-              2. Goals listed on the Right-side half of the screenshot are scored by the Right-side player/team (team2).
-              3. Verify the final score:
-                 - If team1Score is 3, exactly 3 goals must contain team1 scorers.
-                 - If team2Score is 2, exactly 2 goals must contain team2 scorers.
-              4. If a player is listed on the Left side, their "team" field MUST be "team1". If listed on the Right side, their "team" field MUST be "team2".
-              5. The sum of goals for team1 scorers MUST equal team1Score, and the sum of goals for team2 scorers MUST equal team2Score.
-              6. Under no circumstances should you assign a left-side scorer to "team2", or a right-side scorer to "team1".
-              7. team1 = the LEFT side player (home), team2 = the RIGHT side player (away).
-              8. Double check: count team1 scorers = team1Score, count team2 scorers = team2Score.
+                INSTRUCTIONS:
+                1. USERNAME DETECTION (CRITICAL):
+                   - Home player username = large bold text TOP LEFT of screen.
+                   - Away player username = large bold Latin text TOP RIGHT of screen.
+                   - IGNORE all subtitle text below usernames (team names, league names, Cyrillic text, "NO LEAGUE" etc.).
+                   - The username is ALWAYS Latin alphabet, never Cyrillic. 
+                   - Examples: "brokenaqua", "Icebear" — NOT "збірна України 3", "KOLKATA MASTERS", or "NO LEAGUE".
+                2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
+                3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
+                4. Extract GOAL SCORERS:
+                   - In FC Mobile Match Summary, the screen has two distinct halves:
+                     * LEFT HALF contains the Home team's details, including a list of Home goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 18').
+                     * RIGHT HALF contains the Away team's details, including a list of Away goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 54').
+                   - Scan both halves of the screen carefully. Player Names under the Left (Home) team belong to "team1". Player Names under the Right (Away) team belong to "team2".
+                   - DO NOT MIX THEM UP. Left-side scorers are strictly "team1", and Right-side scorers are strictly "team2".
+                   - FOLLOW THE CRITICAL SCORER ASSIGNMENT RULES BELOW.
+                5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
+                   - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
+                   - Left-side values = "team1Stats".
+                   - Right-side values = "team2Stats".
+                6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
+                
+                CRITICAL SCORER ASSIGNMENT RULES:
+                1. Goals listed on the Left-side half of the screenshot are scored by the Left-side player/team (team1).
+                2. Goals listed on the Right-side half of the screenshot are scored by the Right-side player/team (team2).
+                3. Verify the final score:
+                   - If team1Score is 3, exactly 3 goals must contain team1 scorers.
+                   - If team2Score is 2, exactly 2 goals must contain team2 scorers.
+                4. If a player is listed on the Left side, their "team" field MUST be "team1". If listed on the Right side, their "team" field MUST be "team2".
+                5. The sum of goals for team1 scorers MUST equal team1Score, and the sum of goals for team2 scorers MUST equal team2Score.
+                6. Under no circumstances should you assign a left-side scorer to "team2", or a right-side scorer to "team1".
+                7. team1 = the LEFT side player (home), team2 = the RIGHT side player (away).
+                8. Double check: count team1 scorers = team1Score, count team2 scorers = team2Score.
 
-              CRITICAL RULES:
-              - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
-              - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
-              - One team must match or contain "${fcName}".
-              
-              Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation.
-              CRITICAL: The "scorers" array must have ALL goals assigned.
-              { 
-                "team1": "string", "team2": "string", 
-                "team1Score": number, "team2Score": number, 
-                "scorers": [{ "name": "string", "team": "team1"|"team2", "minute": number, "goals": 1 }],
-                "team1Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
-                "team2Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
-                "manOfTheMatch": "string"
-              }`
-            }
-          ]
-        }
-      ]
-    });
+                CRITICAL RULES:
+                - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
+                - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
+                - One team must match or contain "${fcName}".
+                
+                Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation.
+                CRITICAL: The "scorers" array must have ALL goals assigned.
+                { 
+                  "team1": "string", "team2": "string", 
+                  "team1Score": number, "team2Score": number, 
+                  "scorers": [{ "name": "string", "team": "team1"|"team2", "minute": number, "goals": 1 }],
+                  "team1Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
+                  "team2Stats": { "possession": number, "shots": number, "shotsOnTarget": number, "passAccuracy": number, "fouls": number, "offsides": number, "saves": number },
+                  "manOfTheMatch": "string"
+                }`
+              }
+            ]
+          }
+        ]
+      });
 
-    const raw = response.choices[0]?.message?.content || "{}";
-    const clean = raw.replace(/```json|```/g, "").trim();
-    const resultParsed = JSON.parse(clean);
-    console.log("AI Match Analysis Output:", JSON.stringify(resultParsed, null, 2));
-    if (resultParsed.error) {
-        throw new Error(resultParsed.error);
+      const raw = response.choices[0]?.message?.content || "{}";
+      const clean = raw.replace(/```json|```/g, "").trim();
+      const resultParsed = JSON.parse(clean);
+      console.log("AI Match Analysis Output:", JSON.stringify(resultParsed, null, 2));
+      if (resultParsed.error) {
+          throw new Error(resultParsed.error);
+      }
+      
+      matchData = resultParsed.matchData || resultParsed;
     }
-    
-    const matchData = resultParsed.matchData || resultParsed;
 
     // Achievement Logic using Cloudflare D1
     const checkAndAwardAchievements = async (playerFcName: string, data: any) => {
