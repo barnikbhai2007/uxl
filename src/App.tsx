@@ -1884,11 +1884,55 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleRandomizeGroups: () => Promise<void>,
     handleClearGroups: () => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups'>('bracket');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
     const [adminUsers, setAdminUsers] = useState<any[]>([]);
+
+    const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null);
+    const [editingGroupName, setEditingGroupName] = useState<string>('');
+    const [editingGroupLabel, setEditingGroupLabel] = useState<string>('');
+
+    const movePlayerToGroup = async (playerId: string, groupKey: string) => {
+      const newAssignments = {
+        ...(config.groupAssignments || {}),
+      };
+      if (groupKey) {
+        newAssignments[playerId] = groupKey;
+      } else {
+        delete newAssignments[playerId];
+      }
+      await handleUpdateConfig({
+        ...config,
+        groupAssignments: newAssignments
+      });
+    };
+
+    const handleSaveGroupDetails = async (groupKey: string) => {
+      const newNames = { ...(config.groupNames || {}) };
+      if (editingGroupName.trim() === '') {
+        delete newNames[groupKey];
+      } else {
+        newNames[groupKey] = editingGroupName.trim();
+      }
+
+      const newLabels = { ...(config.groupLabels || {}) };
+      if (editingGroupLabel.trim() === '') {
+        delete newLabels[groupKey];
+      } else {
+        newLabels[groupKey] = editingGroupLabel.trim();
+      }
+
+      await handleUpdateConfig({
+        ...config,
+        groupNames: newNames,
+        groupLabels: newLabels
+      });
+      setEditingGroupKey(null);
+      setEditingGroupName('');
+      setEditingGroupLabel('');
+    };
 
     useEffect(() => {
       const fetchU = async () => {
@@ -2282,6 +2326,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
+            </button>
+            <button 
+              onClick={() => setActiveTab('groups')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'groups' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Groups Manager
             </button>
             <button 
               onClick={() => setActiveTab('schedule')}
@@ -2966,6 +3016,295 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     )}
                   </div>
                 </div>
+              </div>
+            )}
+
+
+
+            {activeTab === 'groups' && (
+              <div className="space-y-8 animate-in fade-in duration-200">
+                {/* Format Toggle Header card */}
+                <div className="flex flex-col md:flex-row items-center justify-between bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 gap-4 shadow-xl">
+                  <div className="text-center md:text-left min-w-0">
+                    <h3 className="text-xl md:text-2xl font-display font-black text-white tracking-tight flex items-center justify-center md:justify-start gap-2">
+                      <Layout className="w-5 h-5 text-fc-neon-green" />
+                      Groups & Assign Management
+                    </h3>
+                    <p className="text-fc-neon-green/40 text-[9px] md:text-[10px] font-bold tracking-[0.2em] mt-1">
+                      CURRENT FORMAT: <span className="text-white bg-fc-neon-green/10 px-2 py-0.5 rounded ml-1 font-bold">{config.groupType === 'many' ? 'MANY GROUPS' : 'SINGLE LEAGUE TABLE'}</span>
+                    </p>
+                  </div>
+                  
+                  <div className="flex flex-wrap items-center gap-3">
+                    <button
+                      onClick={async () => {
+                        const newType = config.groupType === 'many' ? 'single' : 'many';
+                        await handleUpdateConfig({
+                          ...config,
+                          groupType: newType
+                        });
+                      }}
+                      className="px-4 py-2.5 bg-fc-neon-green/10 hover:bg-fc-neon-green/30 text-fc-neon-green border border-fc-neon-green/20 hover:border-fc-neon-green/40 rounded-xl flex items-center gap-2 text-xs font-bold transition duration-200 cursor-pointer shadow-sm tracking-wide"
+                    >
+                      <ArrowRightLeft className="w-4 h-4" />
+                      <span>Switch to {config.groupType === 'many' ? 'Single League Table' : 'Many Groups Stage'}</span>
+                    </button>
+                    
+                    {config.groupType === 'many' && (
+                      <>
+                        <button
+                          onClick={handleRandomizeGroups}
+                          className="px-4 py-2.5 bg-[#3B82F6]/15 hover:bg-[#3B82F6]/30 text-[#3B82F6] hover:text-white border border-[#3B82F6]/20 rounded-xl flex items-center gap-2 text-xs font-bold transition duration-200 cursor-pointer shadow-sm tracking-wide"
+                        >
+                          <Sparkles className="w-4 h-4 text-blue-400" />
+                          <span>Auto Randomize</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (confirm("Are you sure you want to clear all group assignments?")) {
+                              await handleClearGroups();
+                            }
+                          }}
+                          className="px-4 py-2.5 bg-red-500/10 hover:bg-red-500/35 text-red-400 hover:text-white border border-red-500/25 rounded-xl flex items-center gap-2 text-xs font-bold transition duration-200 cursor-pointer shadow-sm tracking-wide"
+                        >
+                          <RotateCcw className="w-4 h-4 text-red-400" />
+                          <span>Clear Assignments</span>
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {config.groupType !== 'many' ? (
+                  <div className="p-12 text-center bg-white/5 border border-white/10 rounded-2xl flex flex-col items-center justify-center space-y-4 shadow-xl">
+                    <AlertCircle className="w-16 h-16 text-white/20" />
+                    <p className="text-white/80 font-display font-black text-lg">Group Stage Mode is Off</p>
+                    <p className="text-white/40 text-sm max-w-md mx-auto leading-relaxed">
+                      Your current tournament structure is configured as a single unified league table. Switch to Multi-Group mode to manage individual groups, auto-assign players, and edit group names.
+                    </p>
+                    <button
+                      onClick={async () => {
+                        await handleUpdateConfig({
+                          ...config,
+                          groupType: 'many'
+                        });
+                      }}
+                      className="px-6 py-3 bg-fc-neon-green text-black hover:bg-fc-neon-green/90 rounded-xl text-xs font-bold tracking-wide transition shadow-lg shadow-fc-neon-green/20"
+                    >
+                      Activate Many Groups Format
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                    {/* Left Column: Unassigned Players Pool */}
+                    <div className="lg:col-span-1 bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl h-fit">
+                      <div className="flex items-center justify-between mb-4 pb-3 border-b border-white/5">
+                        <div className="text-left">
+                          <h4 className="text-sm font-display font-black text-white uppercase tracking-wider flex items-center gap-2">
+                            <Users className="w-4 h-4 text-fc-neon-green" />
+                            Unassigned Pool
+                          </h4>
+                          <p className="text-[10px] text-white/40 font-bold tracking-normal mt-0.5">Approved players not yet in a group</p>
+                        </div>
+                        <span className="px-2 py-0.5 bg-fc-neon-green/10 text-fc-neon-green rounded text-xs font-display font-black">
+                          {registrations.filter(r => r.status === 'approved' && !(config.groupAssignments?.[r.id])).length}
+                        </span>
+                      </div>
+
+                      <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
+                        {registrations.filter(r => r.status === 'approved' && !(config.groupAssignments?.[r.id])).length === 0 ? (
+                          <div className="py-12 text-center text-white/20 text-xs font-medium border border-dashed border-white/5 rounded-xl">
+                            All players are assigned!
+                          </div>
+                        ) : (
+                          registrations.filter(r => r.status === 'approved' && !(config.groupAssignments?.[r.id])).map(player => (
+                            <div key={player.id} className="bg-white/[0.02] border border-white/5 rounded-xl p-3 hover:bg-white/[0.05] transition-all flex flex-col gap-2.5">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black">
+                                  {player.logoUrl ? (
+                                    <img src={player.logoUrl} alt={player.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <span className="text-[10px] font-display text-fc-neon-green">{player.name.substring(0, 2)}</span>
+                                  )}
+                                </div>
+                                <div className="min-w-0 text-left">
+                                  <p className="font-sans font-bold text-xs text-white truncate" title={player.name}>{player.name}</p>
+                                  <p className="text-[9px] text-[#A0A0A0] font-sans font-medium truncate" title={player.fcName}>{player.fcName}</p>
+                                </div>
+                              </div>
+                              
+                              <div className="flex items-center gap-2">
+                                <select
+                                  value=""
+                                  onChange={(e) => movePlayerToGroup(player.id, e.target.value)}
+                                  className="flex-1 bg-black/60 border border-white/10 text-white font-sans text-[11px] font-bold rounded-lg px-2.5 py-1 focus:outline-none cursor-pointer"
+                                >
+                                  <option value="">Move to group...</option>
+                                  {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(g => (
+                                    <option key={g} value={g}>{config.groupNames?.[g] || `Group ${g}`}</option>
+                                  ))}
+                                </select>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Right Column: Groups Grid */}
+                    <div className="lg:col-span-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                        {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map((groupKey) => {
+                          const groupPlayers = registrations.filter(r => r.status === 'approved' && (config.groupAssignments?.[r.id] || '') === groupKey);
+                          const isEditingThisGroup = editingGroupKey === groupKey;
+                          
+                          return (
+                            <div key={groupKey} className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl flex flex-col justify-between group/card hover:border-fc-neon-green/30 transition-all">
+                              <div>
+                                <div className="flex items-center justify-between pb-3 border-b border-white/5 mb-3">
+                                  {isEditingThisGroup ? (
+                                    <div className="flex flex-col gap-2 w-full">
+                                      <div className="flex items-center gap-2">
+                                        <input 
+                                          type="text" 
+                                          value={editingGroupName} 
+                                          onChange={e => setEditingGroupName(e.target.value)} 
+                                          className="bg-black/60 border border-white/20 text-white font-sans text-xs font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-fc-neon-green flex-1"
+                                          placeholder={`Group ${groupKey} Name`}
+                                          autoFocus
+                                        />
+                                      </div>
+                                      <div className="flex items-center gap-2">
+                                        <input 
+                                          type="text" 
+                                          value={editingGroupLabel} 
+                                          onChange={e => setEditingGroupLabel(e.target.value)} 
+                                          className="bg-black/60 border border-white/20 text-white font-sans text-xs font-bold rounded-xl px-2.5 py-1.5 focus:outline-none focus:border-fc-neon-green flex-1"
+                                          placeholder="Indicator Label (e.g. Top 2 Qualify)"
+                                        />
+                                        <div className="flex gap-1 shrink-0">
+                                          <button 
+                                            onClick={() => handleSaveGroupDetails(groupKey)} 
+                                            className="p-1.5 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black rounded-lg transition-all"
+                                            title="Save Details"
+                                          >
+                                            <Check className="w-3.5 h-3.5" />
+                                          </button>
+                                          <button 
+                                            onClick={() => { setEditingGroupKey(null); setEditingGroupName(''); setEditingGroupLabel(''); }} 
+                                            className="p-1.5 bg-red-500/20 text-red-500 hover:bg-red-500 hover:text-white rounded-lg transition-all"
+                                            title="Cancel"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center justify-between w-full">
+                                      <div className="min-w-0 text-left">
+                                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                                          <span className="font-display font-black text-[10px] text-fc-neon-green uppercase tracking-widest block">Group {groupKey}</span>
+                                          <span className="highlighter-green text-[8px] font-sans font-black tracking-wider uppercase py-0 px-1.5 scale-90 origin-left">
+                                            {config.groupLabels?.[groupKey] || 'Top 2 Qualify'}
+                                          </span>
+                                        </div>
+                                        <h4 className="font-sans font-black text-sm text-white truncate max-w-[130px]" title={config.groupNames?.[groupKey] || `Group ${groupKey}`}>
+                                          {config.groupNames?.[groupKey] || `Group ${groupKey}`}
+                                        </h4>
+                                      </div>
+                                      <button 
+                                        onClick={() => { 
+                                          setEditingGroupKey(groupKey); 
+                                          setEditingGroupName(config.groupNames?.[groupKey] || ''); 
+                                          setEditingGroupLabel(config.groupLabels?.[groupKey] || 'Top 2 Qualify'); 
+                                        }}
+                                        className="p-1.5 hover:bg-white/5 rounded-lg text-white/40 hover:text-white/80 transition-colors"
+                                        title="Rename Group or Label"
+                                      >
+                                        <Edit3 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
+                                </div>
+
+                                <div className="space-y-2 mt-4 min-h-[160px]">
+                                  {groupPlayers.length === 0 ? (
+                                    <div className="py-12 text-center text-white/10 border border-dashed border-white/5 rounded-xl text-xs font-semibold">
+                                      No players assigned
+                                    </div>
+                                  ) : (
+                                    groupPlayers.map(player => (
+                                      <div key={player.id} className="flex items-center justify-between bg-white/[0.02] hover:bg-white/[0.05] border border-white/5 rounded-xl p-2 transition-all">
+                                        <div className="flex items-center min-w-0 gap-2">
+                                          <div className="w-7 h-7 rounded-lg overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black">
+                                            {player.logoUrl ? (
+                                              <img src={player.logoUrl} alt={player.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                            ) : (
+                                              <span className="text-[9px] font-display text-[#3B82F6]">{player.name.substring(0, 2)}</span>
+                                            )}
+                                          </div>
+                                          <div className="min-w-0 text-left">
+                                            <p className="font-sans font-bold text-xs text-white truncate max-w-[90px] xl:max-w-[110px]" title={player.name}>{player.name}</p>
+                                            <p className="text-[9px] text-[#A0A0A0] font-sans font-medium truncate max-w-[90px] xl:max-w-[110px]" title={player.fcName}>{player.fcName}</p>
+                                          </div>
+                                        </div>
+                                        
+                                        <div className="flex items-center gap-1 shrink-0">
+                                          <select
+                                            value={groupKey}
+                                            onChange={(e) => movePlayerToGroup(player.id, e.target.value)}
+                                            className="bg-black/65 border border-white/10 text-white font-sans text-[10px] font-bold rounded-lg px-1.5 py-0.5 focus:outline-none cursor-pointer"
+                                          >
+                                            {['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].map(g => (
+                                              <option key={g} value={g}>{config.groupNames?.[g] || `Group ${g}`}</option>
+                                            ))}
+                                            <option value="">Remove</option>
+                                          </select>
+                                          <button
+                                            onClick={() => movePlayerToGroup(player.id, '')}
+                                            className="p-1 hover:bg-red-500/10 rounded-lg text-white/30 hover:text-red-400 transition-colors"
+                                            title="Remove from group"
+                                          >
+                                            <X className="w-3.5 h-3.5" />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Add Quick-selector */}
+                              <div className="mt-4 pt-4 border-t border-white/5">
+                                <select
+                                  value=""
+                                  onChange={(e) => {
+                                    if (e.target.value) {
+                                      movePlayerToGroup(e.target.value, groupKey);
+                                    }
+                                  }}
+                                  className="bg-fc-neon-green/10 border border-fc-neon-green/10 hover:border-fc-neon-green/30 text-fc-neon-green font-sans text-[10px] font-bold rounded-xl px-2 py-2 focus:outline-none tracking-wide cursor-pointer transition-colors w-full text-center"
+                                >
+                                  <option value="" className="bg-[#121215] text-white">Add player to group...</option>
+                                  {registrations.filter(r => r.status === 'approved' && (config.groupAssignments?.[r.id] || '') !== groupKey).map(p => {
+                                    const isCurrentOther = config.groupAssignments?.[p.id];
+                                    const otherLabel = isCurrentOther ? ` (currently Group ${isCurrentOther})` : '';
+                                    return (
+                                      <option key={p.id} value={p.id} className="bg-[#121215] text-white">
+                                        {p.name} {otherLabel}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -4563,9 +4902,30 @@ export default function App() {
       alert("Permission denied");
       return;
     }
+    const doubleConfirm = window.confirm("Are you absolutely sure you want to delete this player? This will PERMANENTLY delete their registration, user account, group assignments, and ALL of their scheduled/played matches! This data cannot be recovered.");
+    if (!doubleConfirm) return;
+
     try {
       // Find the registration first to get userId
       const reg = registrations.find(r => r.id === id);
+
+      // Delete all matches played or scheduled for this player
+      const matchesToDelete = dbMatches.filter(m => m.homeTeamId === id || m.awayTeamId === id);
+      for (const m of matchesToDelete) {
+        await deleteDoc(doc(db, 'matches', m.id));
+      }
+
+      // Remove from group assignments
+      if (config.groupAssignments && config.groupAssignments[id]) {
+        const newGroupAssignments = { ...config.groupAssignments };
+        delete newGroupAssignments[id];
+        await handleUpdateConfig({
+          ...config,
+          groupAssignments: newGroupAssignments
+        });
+      }
+
+      // Delete the registration document
       await deleteDoc(doc(db, 'registrations', id));
       if (reg && reg.userId) {
         try {
@@ -4574,7 +4934,11 @@ export default function App() {
           console.warn("Could not delete user shadow document, it might be protected.");
         }
       }
+
+      // Refresh caches to update listings and standings immediately
+      await refreshCache('matches');
       await refreshCache('teams');
+      alert("Player, group assignments, and all related matches have been permanently deleted and reset.");
     } catch (error) {
       console.error("Delete failed:", error);
       alert("Delete failed. Check console.");
@@ -5642,9 +6006,9 @@ export default function App() {
             animate={{ y: 0, opacity: 1 }}
             className="text-left w-full relative max-w-3xl"
           >
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#3B82F6]/10 border border-[#3B82F6]/20 rounded-full mb-6 max-w-full overflow-hidden">
-              <span className="w-2 h-2 rounded-full bg-[#3B82F6] animate-pulse shrink-0"></span>
-              <span className="text-[#3B82F6] font-sans font-bold text-[10px] tracking-widest uppercase truncate">
+            <div className="highlighter-yellow mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse shrink-0 mr-1.5" />
+              <span className="text-[10px] font-sans font-black tracking-widest uppercase truncate">
                 <EditableText id="hero_status" defaultText="GLOBAL LEAGUE ACTIVE" />
               </span>
             </div>
@@ -6433,11 +6797,13 @@ export default function App() {
                           <div className="absolute inset-0 bg-gradient-to-br from-fc-neon-green/0 via-transparent to-white/0 group-hover:from-fc-neon-green/5 group-hover:to-white/5 transition-all duration-300 pointer-events-none rounded-2xl" />
                           <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
                             <h3 className="text-lg md:text-xl font-display font-black text-white flex items-center gap-2 tracking-tight">
-                               Group <span className="text-fc-neon-green">{groupKey === 'Unassigned' ? 'Unassigned' : groupKey}</span> Standings
+                              {groupKey === 'Unassigned' ? 'Unassigned Standings' : (config.groupNames?.[groupKey] || `Group ${groupKey}`)}
                             </h3>
-                            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#10B981]/15 text-[#10B981] rounded-full border border-[#10B981]/20">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse shrink-0" />
-                              <span className="text-[10px] font-sans font-bold tracking-tight uppercase">Top 2 Qualify</span>
+                            <div className="highlighter-green">
+                              <span className="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse shrink-0 mr-1.5" />
+                              <span className="text-[9.5px] font-sans font-black tracking-wider uppercase">
+                                {config.groupLabels?.[groupKey] || 'Top 2 Qualify'}
+                              </span>
                             </div>
                           </div>
 
@@ -6448,9 +6814,14 @@ export default function App() {
                                 <th className="px-2 md:px-4 py-2">Player</th>
                                 <th className="px-2 md:px-3 py-2 text-center w-12">OVR</th>
                                 <th className="px-2 py-2 text-center w-8">P</th>
+                                <th className="px-1.5 py-2 text-center w-8 text-emerald-400">W</th>
+                                <th className="px-1.5 py-2 text-center w-8 text-white/50">D</th>
+                                <th className="px-1.5 py-2 text-center w-8 text-red-400">L</th>
+                                <th className="px-2 py-2 text-center w-10">GF</th>
+                                <th className="px-2 py-2 text-center w-10">GA</th>
                                 <th className="px-2 py-2 text-center w-10">GD</th>
                                 <th className="px-2 md:px-3 py-2 text-center w-10">Pts</th>
-                                <th className="px-2 py-2 text-center w-24 hidden sm:table-cell">Form</th>
+                                <th className="px-2 py-2 text-center w-24">Form</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -6497,9 +6868,14 @@ export default function App() {
                                       <span className="px-1.5 py-0.5 bg-[#1a1a1a] text-[9px] font-sans font-bold text-[#3B82F6] rounded-md">{team.ovr}</span>
                                     </td>
                                     <td className="px-2 py-3 text-center font-sans font-bold text-xs text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.played}</td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-emerald-400/90 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.won}</td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-white/45 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.drawn}</td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-red-400/90 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.lost}</td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gf}</td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.ga}</td>
                                     <td className="px-2 py-3 text-center font-sans font-bold text-xs text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
                                     <td className="px-2 md:px-3 py-3 text-center font-display font-extrabold text-sm md:text-base text-white bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.points}</td>
-                                    <td className="px-2 py-3 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0 hidden sm:table-cell">
+                                    <td className="px-2 py-3 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
                                       <div className="flex items-center justify-center gap-1">
                                         {team.form.map((result, i) => (
                                           <div

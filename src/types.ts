@@ -121,6 +121,8 @@ export interface Config {
   groupType?: 'single' | 'many';
   playersPerGroup?: number;
   groupAssignments?: Record<string, string>;
+  groupNames?: Record<string, string>;
+  groupLabels?: Record<string, string>;
 }
 
 export interface MatchReport {

@@ -28,8 +28,62 @@ h1, h2, h3, h4, h5, h6, .font-display {
   border-radius: 1rem !important;
 }
 
-.rounded-full {
-  border-radius: 50% !important;
+/* Schoolbook-style Highlighter Markers */
+.highlighter-yellow {
+  background: rgba(254, 240, 138, 0.95) !important; /* Realistic neon-yellow school marker */
+  color: #0b0f19 !important;
+  font-weight: 800 !important;
+  font-family: var(--font-sans) !important;
+  border-radius: 3px 2px 4px 1px !important; /* Slightly uneven marker tip look */
+  padding: 0.15rem 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border: none !important;
+  transform: rotate(-1.5deg) !important;
+  box-shadow: 0 2px 8px rgba(234, 179, 8, 0.25) !important;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.highlighter-yellow:hover {
+  transform: rotate(0.5deg) scale(1.02) !important;
+  filter: brightness(1.05);
+}
+
+.highlighter-green {
+  background: rgba(134, 239, 172, 0.95) !important; /* Realistic neon-green school marker */
+  color: #05160c !important;
+  font-weight: 800 !important;
+  font-family: var(--font-sans) !important;
+  border-radius: 2px 4px 2px 3px !important; /* Irregular bounds */
+  padding: 0.15rem 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border: none !important;
+  transform: rotate(1.2deg) !important;
+  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2) !important;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.highlighter-green:hover {
+  transform: rotate(-0.5deg) scale(1.02) !important;
+  filter: brightness(1.05);
+}
+
+.highlighter-pink {
+  background: rgba(244, 114, 182, 0.95) !important; /* Realistic neon-pink school marker */
+  color: #1e0210 !important;
+  font-weight: 800 !important;
+  font-family: var(--font-sans) !important;
+  border-radius: 4px 2px 3px 2px !important;
+  padding: 0.15rem 0.5rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  border: none !important;
+  transform: rotate(-0.8deg) !important;
+  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.2) !important;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+.highlighter-pink:hover {
+  transform: rotate(0.8deg) scale(1.02) !important;
+  filter: brightness(1.05);
 }
 
 input[type="text"], input[type="number"], input[type="password"], textarea, select {
