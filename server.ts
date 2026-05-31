@@ -127,8 +127,8 @@ async function runD1Query(sql: string, params: any[] = []) {
   const dbId = process.env.CF_D1_DATABASE_ID;
   const token = process.env.CF_API_TOKEN;
 
+  // If missing auth, just run strictly locally
   if (!accountId || accountId === "local" || !dbId || !token || token === "dummy") {
-    // Fallback to local SQLite if running in dev environment (AI Studio)
     const db = await getLocalDb();
     try {
       if (sql.trim().toUpperCase().startsWith('SELECT')) {
@@ -164,6 +164,7 @@ async function runD1Query(sql: string, params: any[] = []) {
 
     const rawText = await response.text();
     if (!response.ok) {
+      // Intentionally return the D1 error string to user
       throw new Error(`D1 API Error: ${response.status} ${response.statusText} ${rawText}`);
     }
 
@@ -174,32 +175,11 @@ async function runD1Query(sql: string, params: any[] = []) {
 
     return result.result[0].results || [];
   } catch (apiError: any) {
-    if (process.env.NODE_ENV !== "production") {
-       console.warn("D1 API Failed, falling back to local SQLite:", apiError.message);
-       const db = await getLocalDb();
-       try {
-         if (sql.trim().toUpperCase().startsWith('SELECT')) {
-           const stmt = db.prepare(sql);
-           stmt.bind(params);
-           const results = [];
-           while (stmt.step()) {
-             results.push(stmt.getAsObject());
-           }
-           stmt.free();
-           return results;
-         } else {
-           db.run(sql, params);
-           schedulePersist();
-           return [{ success: true, changes: 1 }];
-         }
-       } catch (localDbErr: any) {
-         console.error("Local DB Fallback Error:", localDbErr);
-         throw new Error("Local DB Error: " + localDbErr.message);
-       }
-    }
+    console.warn("D1 API Failed, throwing error to surface it:", apiError.message);
     throw apiError;
   }
 }
+
 
 // -------------------------------------------------------------
 // DB API Routes
