@@ -5369,7 +5369,7 @@ export default function App() {
               </div>
             ) : (
               <button 
-                onClick={() => signIn()}
+                onClick={() => signIn().catch(e => alert(e.message))}
                 className="flex items-center gap-2 px-4 py-2 rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 text-fc-neon-green hover:bg-fc-neon-green-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
               >
                 <LogIn className="w-3.5 h-3.5" />
@@ -5495,7 +5495,7 @@ export default function App() {
               {!user ? (
                 <div className="p-12 text-center bg-white/5 rounded-sm border border-white/10">
                   <p className="text-white/40 mb-6">Please login to access your campaign portal.</p>
-                  <button onClick={() => signIn()} className="px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
+                  <button onClick={() => signIn().catch(e => alert(e.message))} className="px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
                 </div>
               ) : (
                 (() => {
