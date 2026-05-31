@@ -1954,7 +1954,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleRandomizeGroups: () => Promise<void>,
     handleClearGroups: () => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names'>('bracket');
+    const [newAllowedNameInput, setNewAllowedNameInput] = useState('');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -3033,29 +3034,28 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <div className="flex gap-2">
                     <input 
                       type="text"
-                      id="newAllowedName"
                       placeholder="Add a new name (e.g. Ayush)"
+                      value={newAllowedNameInput}
+                      onChange={(e) => setNewAllowedNameInput(e.target.value)}
                       className="flex-1 bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
-                          const input = e.currentTarget;
-                          const name = input.value.trim();
+                          const name = newAllowedNameInput.trim();
                           if (name) {
                             const newNames = [...(config.allowedNames || []), name];
                             await handleUpdateConfig({ ...config, allowedNames: newNames });
-                            input.value = '';
+                            setNewAllowedNameInput('');
                           }
                         }
                       }}
                     />
                     <button 
                       onClick={async () => {
-                        const input = document.getElementById('newAllowedName') as HTMLInputElement;
-                        const name = input?.value.trim();
+                        const name = newAllowedNameInput.trim();
                         if (name) {
                           const newNames = [...(config.allowedNames || []), name];
                           await handleUpdateConfig({ ...config, allowedNames: newNames });
-                          if (input) input.value = '';
+                          setNewAllowedNameInput('');
                         }
                       }}
                       className="px-4 py-2 bg-fc-neon-green text-black rounded-xl font-bold text-sm hover:bg-fc-purple-light transition-all cursor-pointer"
@@ -3731,16 +3731,36 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
     const fetchUsers = async () => {
       try {
         setIsLoading(true);
-        const usersSnap = await getDocs(collection(db, 'users'));
+        const [usersSnap, regsSnap, configSnap] = await Promise.all([
+          getDocs(collection(db, 'users')),
+          getDocs(collection(db, 'registrations')),
+          getDoc(doc(db, 'config', 'system'))
+        ]);
+
         const takenNames = new Set<string>();
         usersSnap.forEach((doc: any) => {
           const data = doc.data();
           if (data.displayName && data.role !== 'admin') {
             takenNames.add(data.displayName);
           }
+          if (data.username && data.role !== 'admin') {
+            takenNames.add(data.username);
+          }
         });
+
+        regsSnap.forEach((doc: any) => {
+          const data = doc.data();
+          if (data.name) {
+            takenNames.add(data.name);
+          }
+        });
+
+        const configData = configSnap.exists() ? configSnap.data() : null;
+        const basePlayers = configData?.allowedNames && configData.allowedNames.length > 0
+          ? configData.allowedNames
+          : DEFAULT_PLAYERS;
         
-        const available = DEFAULT_PLAYERS.filter(p => !takenNames.has(p)).sort((a,b) => a.localeCompare(b));
+        const available = basePlayers.filter(p => !takenNames.has(p)).sort((a,b) => a.localeCompare(b));
         setAvailablePlayers(available);
         if (available.length > 0) {
           setSelectedPlayer(available[0]);
@@ -4882,9 +4902,11 @@ export default function App() {
   const refreshCache = async (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => {
     try {
       if (type === 'matches') {
+        localStorage.removeItem('cache_matches');
         const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 30000);
         setDbMatches(data);
       } else if (type === 'teams') {
+        localStorage.removeItem('cache_teams');
         const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
         const teamsList: Team[] = teamsData.map((data: any) => ({
           id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
@@ -4893,21 +4915,25 @@ export default function App() {
         }));
         setDbTeams(teamsList);
       } else if (type === 'bracket') {
+         localStorage.removeItem('cache_bracket');
          const q = query(collection(db, 'bracket'));
          const bracketDataMap: Record<string, BracketMatch> = {};
          const snapshot = await fetchWithCache('cache_bracket', q, false, 0);
          snapshot.forEach((data: any) => { bracketDataMap[data.id] = data; });
          setBracket(Object.values(bracketDataMap));
       } else if (type === 'config') {
+         localStorage.removeItem('cache_config');
          const data = await fetchWithCache('cache_config', doc(db, 'config', 'system'), true, 0);
          if (data) setConfig(data as Config);
       } else if (type === 'site_content') {
+         localStorage.removeItem('cache_site_content');
          const q = query(collection(db, 'site_content'));
          const data = await fetchWithCache('cache_site_content', q, false, 600000);
          const content: Record<string, any> = {};
          data.forEach((docData: any) => { content[docData.id] = docData; });
          setSiteContent(content);
       } else if (type === 'cache_qual') {
+         localStorage.removeItem('cache_qual');
          const docSnap = await fetchWithCache('cache_qual', doc(db, 'config', 'qualification'), true, 600000);
          if (docSnap?.statuses) setQualificationStatus(docSnap.statuses);
       }
