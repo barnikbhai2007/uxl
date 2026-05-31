@@ -1119,12 +1119,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
       setIsCompressing(true);
       try {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFormData({ ...formData, logoUrl: reader.result as string });
-          setIsCompressing(false);
-        };
-        reader.readAsDataURL(file);
+        const croppedBase64 = await cropToSquareImage(file);
+        setFormData({ ...formData, logoUrl: croppedBase64 });
+        setIsCompressing(false);
       } catch (error) {
         console.error("File read error:", error);
         alert("Failed to process image. Please try another one.");
@@ -1496,12 +1493,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
       setIsCompressing(true);
       try {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          setFormData({ ...formData, logoUrl: reader.result as string });
-          setIsCompressing(false);
-        };
-        reader.readAsDataURL(file);
+        const croppedBase64 = await cropToSquareImage(file);
+        setFormData({ ...formData, logoUrl: croppedBase64 });
+        setIsCompressing(false);
       } catch (error) {
         console.error("File read error:", error);
         setIsCompressing(false);
@@ -2535,136 +2529,130 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-                  {adminUsers.length === 0 ? (
+                  {registrations.length === 0 && adminUsers.length === 0 ? (
                     <div className="p-20 text-center bg-white/5 border border-white/5 rounded-2xl">
                       <Users className="w-16 h-16 text-white/10 mx-auto mb-4" />
                       <p className="text-white/40 font-bold">No registrations yet.</p>
                     </div>
                   ) : (
-                    adminUsers.sort((a, b) => {
-                      const tA = registrations.find(r => r.userId === a.id)?.timestamp?.seconds || 0;
-                      const tB = registrations.find(r => r.userId === b.id)?.timestamp?.seconds || 0;
-                      return tB - tA;
-                    }).map(user => {
-                      const reg = registrations.find(r => r.userId === user.id);
-                      if (!reg) {
-                        // User has logged in but not submitted registration
+                    <>
+                      {registrations.sort((a,b) => (b.timestamp?.seconds||0) - (a.timestamp?.seconds||0)).map(reg => {
+                        const user = adminUsers.find(u => u.id === reg.userId) || { displayName: reg.name, id: reg.userId, name: reg.name };
                         return (
-                          <div key={user.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all flex items-center justify-between">
-                            <div>
-                               <p className="text-sm font-bold text-white mb-1"><span className="text-fc-neon-green/60 mr-2">Gamer:</span>{user.displayName || user.name || 'Unknown'}</p>
-                               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
+                          <div key={reg.id} className="bg-white/5 border border-white/10 rounded-2xl md:rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all group">
+                            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 items-start lg:items-center">
+                              
+                              <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
+                                <div className="min-w-[80px]">
+                                  <p className="text-[8px] font-bold tracking-normal text-fc-neon-green mb-0.5">Status</p>
+                                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
+                                    reg.status === 'approved' ? 'bg-green-500/20 text-green-400' :
+                                    reg.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
+                                    'bg-yellow-500/20 text-yellow-500'
+                                  }`}>{reg.status}</span>
+                                </div>
+                                <div className="flex flex-row flex-wrap sm:flex-nowrap gap-2">
+                                  <button 
+                                    onClick={() => handleApproveRegistration(reg.id)}
+                                    className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-2xl flex-shrink-0"
+                                    title="Approve"
+                                  >
+                                    <Check className="w-4 h-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => handleRejectRegistration(reg.id)}
+                                    className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-2xl flex-shrink-0"
+                                    title="Reject"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => {
+                                      if (confirmDeleteId === reg.id) {
+                                        handleDeleteRegistration(reg.id);
+                                        setConfirmDeleteId(null);
+                                        setAdminUsers(prev => prev.filter(u => u.id !== user.id));
+                                      } else {
+                                        setConfirmDeleteId(reg.id);
+                                      }
+                                    }}
+                                    className={`p-2 transition-all rounded-2xl flex-shrink-0 ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
+                                    title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => setAdminEditingRegistration(reg)}
+                                    className="p-2 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green hover:text-black transition-all rounded-2xl flex-shrink-0"
+                                    title="Edit Registration"
+                                  >
+                                    <Edit3 className="w-4 h-4" />
+                                  </button>
+                                  <button 
+                                    onClick={() => setDownloadingRegistration(reg)}
+                                    className="p-2 bg-fc-purple-light/20 text-fc-neon-green hover:bg-fc-purple-light hover:text-white transition-all rounded-2xl flex-shrink-0"
+                                    title="Download ID Card"
+                                  >
+                                    <IdCard className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+
+                              <div className="flex flex-row flex-wrap md:flex-nowrap gap-4 md:gap-6 items-center flex-1 w-full lg:w-auto">
+                                <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center flex-shrink-0">
+                                  {reg.logoUrl ? (
+                                    <img src={reg.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  ) : (
+                                    <Plus className="w-8 h-8 text-white/10" />
+                                  )}
+                                </div>
+                                <div className="min-w-[120px]">
+                                   <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Gamer / FC Name</p>
+                                   <p className="text-xs md:text-sm font-bold text-white mb-0.5">{user.displayName || reg.name}</p>
+                                   <p className="text-[10px] text-white/60 font-mono break-all">{reg.fcName}</p>
+                                </div>
+                                <div>
+                                   <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Age</p>
+                                   <p className="text-xs md:text-sm font-bold text-white">{reg.age} years</p>
+                                </div>
+                                <div>
+                                   <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Team OVR</p>
+                                   <span className="text-lg font-display font-bold text-yellow-500">{reg.teamOvr}</span>
+                                </div>
+                                <div className="hidden sm:block">
+                                   <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Experience</p>
+                                   <p className="text-[9px] md:text-[10px] font-bold text-white/60">{reg.experience}</p>
+                                </div>
+                              </div>
                             </div>
-                            <button 
-                               onClick={async () => {
-                                 if (window.confirm('Delete this user? Name spot will be freed.')) {
-                                   try {
-                                     await deleteDoc(doc(db, 'users', user.id));
-                                   } catch (e) {
-                                     console.warn("Could not delete shadow user doc:", e);
-                                   }
-                                   setAdminUsers(prev => prev.filter(u => u.id !== user.id));
-                                 }
-                               }}
-                               className="p-3 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-2xl flex items-center gap-2 text-xs font-bold tracking-normal"
-                            >
-                              <Trash2 className="w-4 h-4" /> Reset Name
-                            </button>
                           </div>
                         );
-                      }
+                      })}
                       
-                      return (
-                      <div key={reg.id} className="bg-white/5 border border-white/10 rounded-2xl md:rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all group">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-6 items-center">
-                          <div className="flex items-center gap-2">
-                             <div className="mr-2">
-                               <p className="text-[8px] font-bold tracking-normal text-fc-neon-green mb-0.5">Status</p>
-                               <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${
-                                 reg.status === 'approved' ? 'bg-green-500/20 text-green-400' :
-                                 reg.status === 'rejected' ? 'bg-red-500/20 text-red-400' :
-                                 'bg-yellow-500/20 text-yellow-500'
-                               }`}>{reg.status}</span>
-                             </div>
-                             <div className="flex flex-col gap-1">
-                               <button 
-                                 onClick={() => handleApproveRegistration(reg.id)}
-                                 className="p-2 bg-green-500/20 text-green-400 hover:bg-green-500 hover:text-black transition-all rounded-2xl"
-                                 title="Approve"
-                               >
-                                 <Check className="w-4 h-4" />
-                               </button>
-                               <button 
-                                 onClick={() => handleRejectRegistration(reg.id)}
-                                 className="p-2 bg-red-500/20 text-red-400 hover:bg-red-500 transition-all rounded-2xl"
-                                 title="Reject"
-                               >
-                                 <X className="w-4 h-4" />
-                               </button>
-                               <button 
-                                 onClick={() => {
-                                   if (confirmDeleteId === reg.id) {
-                                     handleDeleteRegistration(reg.id);
-                                     setConfirmDeleteId(null);
-                                     setAdminUsers(prev => prev.filter(u => u.id !== user.id));
-                                   } else {
-                                     setConfirmDeleteId(reg.id);
-                                   }
-                                 }}
-                                 className={`p-2 transition-all rounded-2xl ${confirmDeleteId === reg.id ? 'bg-red-600 text-white animate-pulse' : 'bg-white/5 text-white/40 hover:text-red-500'}`}
-                                 title={confirmDeleteId === reg.id ? "Click again to confirm" : "Delete Forever"}
-                               >
-                                 <Trash2 className="w-4 h-4" />
-                               </button>
-                               <button 
-                                 onClick={() => setAdminEditingRegistration(reg)}
-                                 className="p-2 bg-fc-neon-green/20 text-fc-neon-green hover:bg-fc-neon-green text-black hover:text-black transition-all rounded-2xl"
-                                 title="Edit Registration"
-                               >
-                                 <Edit3 className="w-4 h-4" />
-                               </button>
-                               <button 
-                                 onClick={() => setDownloadingRegistration(reg)}
-                                 className="p-2 bg-fc-purple-light/20 text-fc-neon-green hover:bg-fc-purple-light hover:text-white transition-all rounded-2xl"
-                                 title="Download ID Card"
-                               >
-                                 <IdCard className="w-4 h-4" />
-                               </button>
-                             </div>
-                          </div>
-                          <div className="flex justify-center lg:justify-start">
-                             <div className="w-16 h-16 rounded-2xl bg-white/10 border border-white/20 overflow-hidden shadow-lg group-hover:scale-105 transition-transform flex items-center justify-center">
-                               {reg.logoUrl ? (
-                                 <img src={reg.logoUrl} alt="Logo" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                               ) : (
-                                 <Plus className="w-8 h-8 text-white/10" />
-                               )}
-                             </div>
-                          </div>
+                      {adminUsers.filter(u => u.id && !registrations.find(r => r.userId === u.id) && u.role !== 'admin').map((user) => (
+                        <div key={user.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all flex items-center justify-between mt-2">
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Gamer / FC Name</p>
-                             <p className="text-xs md:text-sm font-bold text-white mb-0.5">{user.displayName || reg.name}</p>
-                             <p className="text-[10px] text-white/60 font-mono">{reg.fcName}</p>
+                             <p className="text-sm font-bold text-white mb-1"><span className="text-fc-neon-green/60 mr-2">Gamer:</span>{user.displayName || user.name || 'Unknown'}</p>
+                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
                           </div>
-                          <div>
-                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Age</p>
-                             <p className="text-xs md:text-sm font-bold text-white">{reg.age} years</p>
-                          </div>
-                          <div>
-                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Team OVR</p>
-                             <div className="flex items-center gap-2">
-                               <span className="text-lg md:text-xl font-display font-bold  text-yellow-500">{reg.teamOvr}</span>
-                               <span className="text-[8px] md:text-[10px] font-bold text-white/20 tracking-normal">Rating</span>
-                             </div>
-                          </div>
-                          <div>
-                             <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Experience</p>
-                             <p className="text-[9px] md:text-[10px] font-bold text-white/60">{reg.experience}</p>
-                          </div>
+                          <button 
+                             onClick={async () => {
+                               if (window.confirm('Delete this user? Name spot will be freed.')) {
+                                 try {
+                                   await deleteDoc(doc(db, 'users', user.id));
+                                 } catch (e) {
+                                   console.warn("Could not delete shadow user doc:", e);
+                                 }
+                                 setAdminUsers(prev => prev.filter(u => u.id !== user.id));
+                               }
+                             }}
+                             className="p-3 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-2xl flex items-center gap-2 text-xs font-bold tracking-normal"
+                          >
+                            <Trash2 className="w-4 h-4" /> Reset Name
+                          </button>
                         </div>
-                      </div>
-                      );
-                    })
+                      ))}
+                    </>
                   )}
                 </div>
               </div>
@@ -2904,6 +2892,53 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
               </div>
             )}
+          </div>
+          
+          <div className="absolute left-[9999px] top-0 pointer-events-none">
+             {downloadingRegistration && (
+                <div ref={cardRef} className="w-[800px] h-[1200px] bg-gradient-to-br from-[#0a0a0c] to-[#121218] text-white p-16 flex flex-col items-center border-[16px] border-fc-neon-green relative shadow-2xl">
+                   <div className="absolute top-0 left-0 w-full h-[400px] bg-fc-neon-green/10 -skew-y-6 transform origin-top-left -z-10" />
+                   
+                   <h1 className="text-7xl font-black italic tracking-tighter text-fc-neon-green mt-8 mb-16 uppercase shadow-lg">UX Leagues</h1>
+                   
+                   <div className="w-[450px] h-[450px] rounded-[64px] overflow-hidden border-8 border-fc-neon-green/50 mb-16 shadow-[0_0_100px_rgba(201,168,76,0.2)] bg-black/50 p-4">
+                      {downloadingRegistration.logoUrl ? (
+                         <img src={downloadingRegistration.logoUrl} className="w-full h-full object-cover rounded-[48px]" alt="Player" referrerPolicy="no-referrer" />
+                      ) : (
+                         <div className="w-full h-full rounded-[48px] bg-white/5 flex items-center justify-center">
+                            <Users className="w-32 h-32 text-white/10" />
+                         </div>
+                      )}
+                   </div>
+                   
+                   <div className="w-full text-center space-y-4 mb-16">
+                      <h2 className="text-6xl font-black tracking-tight text-white uppercase">{downloadingRegistration.name}</h2>
+                      <p className="text-4xl text-fc-neon-green font-mono tracking-widest">{downloadingRegistration.fcName}</p>
+                      <p className="text-2xl text-white/40 font-bold mt-4 uppercase">Registration ID: {downloadingRegistration.id.substring(0, 8)}</p>
+                   </div>
+                   
+                   <div className="grid grid-cols-2 gap-8 w-full max-w-[600px] mt-auto mb-8">
+                     <div className="bg-white/5 p-8 rounded-[32px] border border-white/10 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-fc-purple-light/20 blur-2xl" />
+                        <p className="text-2xl text-white/40 font-bold mb-4 relative">AGE</p>
+                        <p className="text-7xl font-black text-white relative">{downloadingRegistration.age}</p>
+                     </div>
+                     <div className="bg-fc-neon-green/10 p-8 rounded-[32px] border border-fc-neon-green/30 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-fc-neon-green/20 blur-2xl" />
+                        <p className="text-2xl text-fc-neon-green/60 font-bold mb-4 relative tracking-widest">OVR</p>
+                        <p className="text-7xl font-black text-fc-neon-green relative">{downloadingRegistration.teamOvr}</p>
+                     </div>
+                   </div>
+                   
+                   {/* Decorative elements */}
+                   <div className="absolute bottom-16 right-16 w-32 h-32 opacity-50">
+                      <DummyQRCode />
+                   </div>
+                   <div className="absolute bottom-16 left-16">
+                      <p className="text-xl font-bold text-white/20 whitespace-normal w-48 text-left leading-tight">OFFICIAL PLAYER PASSPORT</p>
+                   </div>
+                </div>
+             )}
           </div>
         </div>
       </motion.div>
@@ -4497,6 +4532,33 @@ export default function App() {
       console.error("AI Error:", error);
       alert(`AI Assistant failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  };
+
+  const cropToSquareImage = (file: File, size: number = 400): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = size;
+          canvas.height = size;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('Canvas context unavailable'));
+          
+          const minDim = Math.min(img.width, img.height);
+          const sx = (img.width - minDim) / 2;
+          const sy = (img.height - minDim) / 2;
+          
+          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+          resolve(canvas.toDataURL('image/jpeg', 0.8));
+        };
+        img.onerror = reject;
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
   };
 
   const compressImage = (file: File): Promise<string> => {
