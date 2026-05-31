@@ -5068,6 +5068,36 @@ export default function App() {
     }
   };
 
+  const handleCancelMyRegistration = async () => {
+    if (!user) return;
+    const confirmDelete = window.confirm("Are you absolutely sure you want to delete your registration? This will cancel your tournament application and remove you from the system. You will need to fill in your info to register again.");
+    if (!confirmDelete) return;
+
+    setIsSubmittingRegistration(true);
+    try {
+      const regId = user.uid;
+      await deleteDoc(doc(db, 'registrations', regId));
+      
+      localStorage.removeItem('cache_teams');
+      localStorage.removeItem('cache_matches');
+      localStorage.removeItem('cache_bracket');
+
+      const qKey = 'registrations';
+      localStorage.removeItem(`sb_query_${qKey}`);
+
+      setHasRegistered(false);
+      setMyRegistrationData(null);
+
+      await refreshCache('teams');
+      alert("Your registration has been successfully deleted. You can now register again by clicking the registration button!");
+    } catch (error) {
+      console.error("Cancel registration failed:", error);
+      alert(`Cancellation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setIsSubmittingRegistration(false);
+    }
+  };
+
   const getBracketMatch = (id: string) => {
     const bracketMatch = bracket.find(m => m.id === id);
     if (bracketMatch) return bracketMatch;
@@ -6768,6 +6798,14 @@ export default function App() {
                            Join WhatsApp Community
                          </a>
                        </div>
+                       <button
+                         id="btn-cancel-my-registration"
+                         onClick={handleCancelMyRegistration}
+                         className="w-full py-3.5 bg-red-500/10 hover:bg-red-500/25 text-red-400 hover:text-white border border-red-500/20 hover:border-red-500/50 rounded-2xl flex items-center justify-center gap-2 text-xs font-bold transition duration-200 cursor-pointer shadow-sm tracking-wide"
+                       >
+                         <Trash2 className="w-4 h-4 text-red-500" />
+                         <span>Cancel &amp; Delete My Registration</span>
+                       </button>
                      </div>
                    ) : (
                      <button
