@@ -131,14 +131,8 @@ export async function signIn() {
       
       authInstance.currentUser = res.user as User;
     } catch (fbErr: any) {
-      console.warn("Firebase login failed, falling back to dummy login:", fbErr.message);
-      const res = await apiFetch("/api/auth/login", {
-        method: "POST",
-        body: JSON.stringify({ email: "admin@uxl.com", password: "admin123" }),
-      });
-      localStorage.setItem("auth_token", res.token);
-      const userRes = await apiFetch("/api/auth/me");
-      authInstance.currentUser = userRes.user as User;
+      console.error("Firebase login failed:", fbErr.message);
+      throw new Error(`Google Login Failed: ${fbErr.message}`);
     }
 
     authInstance.notifyListeners();
