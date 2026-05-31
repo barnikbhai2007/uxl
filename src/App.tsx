@@ -3183,8 +3183,21 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
 
     try {
       if (tab === 'player') {
-        const res = await signIn(selectedPlayer, "", "user");
+        if (selectedPlayer.trim().toLowerCase() === 'barnik') {
+          if (!password) {
+            setError('Admin password is required for Barnik.');
+            return;
+          }
+          const res = await signIn(selectedPlayer, password, "admin");
+          if (onAdminLogin) onAdminLogin();
+        } else {
+          const res = await signIn(selectedPlayer, "", "user");
+        }
       } else {
+        if (!password) {
+          setError('Admin password is required.');
+          return;
+        }
         const res = await signIn("admin", password, "admin");
         if (onAdminLogin) onAdminLogin();
       }
@@ -3227,22 +3240,36 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
 
         <form onSubmit={handleLogin} className="space-y-6">
           {tab === 'player' && (
-            <div>
-              <label className="block text-[10px] text-white/50 mb-2">Select Player Name</label>
-              {isLoading ? (
-                <div className="text-xs text-white/50">Loading available spots...</div>
-              ) : availablePlayers.length === 0 ? (
-                <div className="text-xs text-red-400">All spots have been taken.</div>
-              ) : (
-                <select 
-                  value={selectedPlayer}
-                  onChange={(e) => setSelectedPlayer(e.target.value)}
-                  className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
-                >
-                  {availablePlayers.map(p => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-[10px] text-white/50 mb-2">Select Player Name</label>
+                {isLoading ? (
+                  <div className="text-xs text-white/50">Loading available spots...</div>
+                ) : availablePlayers.length === 0 ? (
+                  <div className="text-xs text-red-400">All spots have been taken.</div>
+                ) : (
+                  <select 
+                    value={selectedPlayer}
+                    onChange={(e) => setSelectedPlayer(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                  >
+                    {availablePlayers.map(p => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                )}
+              </div>
+              {selectedPlayer.trim().toLowerCase() === 'barnik' && (
+                <div className="animate-in fade-in slide-in-from-top-2">
+                  <label className="block text-[10px] text-white/50 mb-2">Admin Password for Barnik</label>
+                  <input 
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                    placeholder="Enter admin password"
+                  />
+                </div>
               )}
             </div>
           )}

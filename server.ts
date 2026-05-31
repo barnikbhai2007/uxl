@@ -275,8 +275,9 @@ app.post("/api/auth/login", (req, res) => {
   if (role === 'admin' || username === 'admin') {
     console.log("LOGIN ATTEMPT password:", password);
     if ((password || '').trim() === 'Broken@2000') {
-      const token = jwt.sign({ uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: "Admin" }, JWT_SECRET, { expiresIn: '30d' });
-      return res.json({ success: true, token, user: { uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: "Admin" } });
+      const display = username === 'admin' ? 'Admin' : (username || 'Admin');
+      const token = jwt.sign({ uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: display }, JWT_SECRET, { expiresIn: '30d' });
+      return res.json({ success: true, token, user: { uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: display } });
     } else {
       return res.status(401).json({ success: false, error: "Invalid admin password" });
     }
