@@ -1321,12 +1321,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     const takenCountries = registrations
                       ? registrations
                           .filter(r => r.id !== registration.id)
-                          .map(r => r.country)
+                          .map(r => r.country?.toLowerCase().trim())
                           .filter(Boolean) as string[]
                       : [];
                     return WORLD_CUP_TEAMS.map((team) => {
-                      const isTaken = takenCountries.includes(team.name);
-                      const isSelected = formData.country === team.name;
+                      const isTaken = takenCountries.includes(team.name.toLowerCase().trim());
+                      const isSelected = formData.country?.toLowerCase().trim() === team.name.toLowerCase().trim();
                       return (
                         <button
                           key={team.name}
@@ -1746,9 +1746,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                     >
                       <option value="">-- Select Your Name --</option>
-                      {config.allowedNames.map(name => (
-                        <option key={name} value={name}>{name}</option>
-                      ))}
+                      {config.allowedNames.map(name => {
+                        const isTaken = existingRegistrations?.some(r => r.name.toLowerCase().trim() === name.toLowerCase().trim());
+                        return (
+                          <option key={name} value={name} disabled={isTaken}>
+                            {name} {isTaken ? ' (Registered)' : ''}
+                          </option>
+                        );
+                      })}
                     </select>
                   ) : (
                     <input 
@@ -1820,8 +1825,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   <label className="text-[10px] font-bold tracking-normal text-white/40">World Cup Country</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
                     {WORLD_CUP_TEAMS.map((team) => {
-                      const isTaken = takenCountries.includes(team.name);
-                      const isSelected = formData.country === team.name;
+                      const isTaken = takenCountries.some(tc => tc.toLowerCase().trim() === team.name.toLowerCase().trim());
+                      const isSelected = formData.country && formData.country.toLowerCase().trim() === team.name.toLowerCase().trim();
                       return (
                         <button
                           key={team.name}
@@ -3741,17 +3746,17 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
         usersSnap.forEach((doc: any) => {
           const data = doc.data();
           if (data.displayName && data.role !== 'admin') {
-            takenNames.add(data.displayName);
+            takenNames.add(data.displayName.toLowerCase().trim());
           }
           if (data.username && data.role !== 'admin') {
-            takenNames.add(data.username);
+            takenNames.add(data.username.toLowerCase().trim());
           }
         });
 
         regsSnap.forEach((doc: any) => {
           const data = doc.data();
           if (data.name) {
-            takenNames.add(data.name);
+            takenNames.add(data.name.toLowerCase().trim());
           }
         });
 
@@ -3760,10 +3765,15 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           ? configData.allowedNames
           : DEFAULT_PLAYERS;
         
-        const available = basePlayers.filter(p => !takenNames.has(p)).sort((a,b) => a.localeCompare(b));
+        const available = basePlayers.filter(p => !takenNames.has(p.toLowerCase().trim())).sort((a,b) => a.localeCompare(b));
         setAvailablePlayers(available);
         if (available.length > 0) {
-          setSelectedPlayer(available[0]);
+          setSelectedPlayer(prev => {
+            if (prev && available.includes(prev)) {
+              return prev;
+            }
+            return available[0];
+          });
         }
       } catch (err) {
         console.error("Failed to fetch available players", err);
