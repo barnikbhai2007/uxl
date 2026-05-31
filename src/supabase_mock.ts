@@ -94,14 +94,26 @@ export async function signIn(username?: string, password?: string, role: string 
       body: JSON.stringify(body),
     });
 
+    console.log("Login res:", res);
+
     if (!res || res.success === false) {
       throw new Error(res?.error || "Login Failed");
     }
 
     localStorage.setItem("auth_token", res.token);
     
+    // Explicitly check for user
+    if (!res.user) {
+      console.error("res.user is undefined! Response:", res);
+      throw new Error("Missing user data in response");
+    }
+
     authInstance.currentUser = res.user as User;
     authInstance.notifyListeners();
+
+    if (!authInstance.currentUser || !authInstance.currentUser.uid) {
+      throw new Error(`Invalid user object: ${JSON.stringify(authInstance.currentUser)}`);
+    }
 
     // Check if user exists in db, if not create
     const userRef = doc(db, 'users', authInstance.currentUser.uid);

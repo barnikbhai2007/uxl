@@ -3307,13 +3307,50 @@ const DEFAULT_PLAYERS = [
 
 function LoginModal({ onClose }: { onClose: () => void }) {
   const [tab, setTab] = useState<'player'|'admin'>('player');
-  const [selectedPlayer, setSelectedPlayer] = useState(DEFAULT_PLAYERS[0]);
+  const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
+  const [selectedPlayer, setSelectedPlayer] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setIsLoading(true);
+        const usersSnap = await getDocs(collection(db, 'users'));
+        const takenNames = new Set<string>();
+        usersSnap.forEach((doc: any) => {
+          const data = doc.data();
+          if (data.displayName && data.role !== 'admin') {
+            takenNames.add(data.displayName);
+          }
+        });
+        
+        const available = DEFAULT_PLAYERS.filter(p => !takenNames.has(p));
+        setAvailablePlayers(available);
+        if (available.length > 0) {
+          setSelectedPlayer(available[0]);
+        }
+      } catch (err) {
+        console.error("Failed to fetch available players", err);
+        setAvailablePlayers(DEFAULT_PLAYERS);
+        setSelectedPlayer(DEFAULT_PLAYERS[0]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    if (tab === 'player' && !selectedPlayer) {
+      setError('No player selected or all spots taken.');
+      return;
+    }
+
     try {
       if (tab === 'player') {
         const res = await signIn(selectedPlayer, "", "user");
@@ -3361,15 +3398,21 @@ function LoginModal({ onClose }: { onClose: () => void }) {
           {tab === 'player' && (
             <div>
               <label className="block text-[10px] uppercase text-white/50 mb-2">Select Player Name</label>
-              <select 
-                value={selectedPlayer}
-                onChange={(e) => setSelectedPlayer(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
-              >
-                {DEFAULT_PLAYERS.map(p => (
-                  <option key={p} value={p}>{p}</option>
-                ))}
-              </select>
+              {isLoading ? (
+                <div className="text-xs text-white/50">Loading available spots...</div>
+              ) : availablePlayers.length === 0 ? (
+                <div className="text-xs text-red-400">All spots have been taken.</div>
+              ) : (
+                <select 
+                  value={selectedPlayer}
+                  onChange={(e) => setSelectedPlayer(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                >
+                  {availablePlayers.map(p => (
+                    <option key={p} value={p}>{p}</option>
+                  ))}
+                </select>
+              )}
             </div>
           )}
 
@@ -3390,7 +3433,8 @@ function LoginModal({ onClose }: { onClose: () => void }) {
 
           <button 
             type="submit"
-            className="w-full py-4 bg-fc-neon-green text-black uppercase tracking-widest font-black text-xs hover:bg-fc-purple-light transition-colors rounded-sm"
+            disabled={tab === 'player' && availablePlayers.length === 0}
+            className="w-full py-4 bg-fc-neon-green text-black uppercase tracking-widest font-black text-xs hover:bg-fc-purple-light transition-colors rounded-sm disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Proceed
           </button>
