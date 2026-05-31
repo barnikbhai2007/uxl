@@ -25,10 +25,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, getCollectionMeta } from './supabase_mock';
 import { onAuthStateChanged, User, supabase } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, getDocsWithDelta, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
-import { ACHIEVEMENTS } from './achievements';
-import { evaluateAchievements } from './utils/achievementEngine';
-import { AchievementsList, AchievementPopup } from './components/AchievementSystem';
 import { ScheduleRandomizer } from './ScheduleRandomizer';
+
+const WORLD_CUP_FLAGS = new Map(WORLD_CUP_TEAMS.map(t => [t.name, t.flag]));
 
 const cropToSquareImage = (file: File, size: number = 400): Promise<string> => {
   return new Promise((resolve, reject) => {
@@ -157,6 +156,7 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
 
 const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
   const standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: [] as string[] }));
+  const standingsMap = new Map(standings.map(t => [t.id, t]));
   
   // Sort matches by matchNumber to ensure form is chronological
   const sortedMatches = [...matches].sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
@@ -166,8 +166,8 @@ const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
     const isLeagueMatch = (m.matchday || 0) <= 20; 
 
     if (m.status === 'finished' && isLeagueMatch && m.homeScore !== undefined && m.homeScore !== null && m.awayScore !== undefined && m.awayScore !== null) {
-      const home = standings.find(t => t.id === m.homeTeamId);
-      const away = standings.find(t => t.id === m.awayTeamId);
+      const home = standingsMap.get(m.homeTeamId);
+      const away = standingsMap.get(m.awayTeamId);
       
       if (home && away) {
         home.played++;
@@ -232,11 +232,12 @@ interface PlayerGoalStats {
 
 const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { teamId: string })[] => {
   const statsMap: Record<string, PlayerGoalStats & { teamId: string }> = {};
+  const teamsMap = new Map(teams.map(t => [t.id, t]));
 
   matches.forEach(m => {
     if (m.status === 'finished') {
-      const homeTeam = teams.find(t => t.id === m.homeTeamId);
-      const awayTeam = teams.find(t => t.id === m.awayTeamId);
+      const homeTeam = teamsMap.get(m.homeTeamId);
+      const awayTeam = teamsMap.get(m.awayTeamId);
 
       if (homeTeam && m.homeScorers) {
         m.homeScorers.forEach(s => {
@@ -285,11 +286,12 @@ interface CleanSheetStats {
 
 const calculateCleanSheets = (teams: Team[], matches: Match[]): CleanSheetStats[] => {
   const statsMap: Record<string, CleanSheetStats> = {};
+  const teamsMap = new Map(teams.map(t => [t.id, t]));
 
   matches.forEach(m => {
     if (m.status === 'finished') {
-      const homeTeam = teams.find(t => t.id === m.homeTeamId);
-      const awayTeam = teams.find(t => t.id === m.awayTeamId);
+      const homeTeam = teamsMap.get(m.homeTeamId);
+      const awayTeam = teamsMap.get(m.awayTeamId);
 
       if (homeTeam && (m.awayScore ?? -1) === 0) {
         const key = homeTeam.id;
@@ -605,7 +607,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       <motion.div
         whileHover={{ scale: 1.01, y: -2 }}
         onClick={onClick}
-        className="bg-white/[0.04] backdrop-blur-xl border border-white/5 relative p-6 cursor-pointer hover:brightness-110 transition-all group overflow-visible rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
+        className="bg-white/[0.04] border border-white/5 relative p-6 cursor-pointer hover:brightness-110 transition-all group overflow-visible rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.4)]"
       >
         <div className="absolute top-0 right-0 p-4 opacity-[0.08] pointer-events-none select-none">
            <span className="text-6xl font-display font-bold  text-white tracking-tight">
@@ -633,7 +635,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </span>
               <div className="flex flex-col items-center">
                  <span className="text-[10px] font-sans font-bold text-[#A0A0A0]">VS</span>
-                 <div className="h-4 w-[1px] bg-white/[0.08] backdrop-blur-xl my-1" />
+                 <div className="h-4 w-[1px] bg-white/[0.08] my-1" />
               </div>
               <span className={`text-4xl font-display font-extrabold tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
                 {match.awayScore ?? '-'}
@@ -642,7 +644,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <div className={`px-4 py-1 text-[10px] font-sans font-bold tracking-[0.1em] rounded-none shadow-sm ${
               displayStatus === 'finished' ? 'bg-[#3B82F6] text-white' :
               displayStatus === 'ongoing' || displayStatus === 'live' ? 'bg-[#EF4444] text-white animate-pulse' :
-              'bg-white/[0.08] backdrop-blur-xl text-[#A0A0A0]'
+              'bg-white/[0.08] text-[#A0A0A0]'
             }`}>
               {displayStatus === 'finished' ? 'FT' : displayStatus === 'ongoing' || displayStatus === 'live' ? 'LIVE' : 'UPCOMING'}
             </div>
@@ -1878,7 +1880,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     teams: Team[],
     matches?: Match[]
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'achievements' | 'backup' | 'edits' | 'schedule'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule'>('bracket');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
@@ -2301,12 +2303,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             >
               Allowed Names
             </button>
-            <button 
-              onClick={() => setActiveTab('achievements')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Trophies
-            </button>
+
             <button 
               onClick={() => setActiveTab('backup')}
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
@@ -2860,55 +2857,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
             )}
 
-            {activeTab === 'achievements' && (
-              <div className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6">
-                 <div className="text-left w-full mb-8">
-                   <h3 className="text-xl md:text-2xl font-display font-bold  text-white tracking-tight">Manual Achievement Award</h3>
-                   <p className="text-fc-neon-green/60 text-[9px] md:text-[10px] font-bold tracking-[0.2em] mt-1">Select user and achievement to grant directly</p>
-                 </div>
-                 
-                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-6">
-                    <div className="space-y-4">
-                      <div>
-                        <label className="text-[10px] font-bold tracking-normal text-fc-neon-green opacity-60 mb-2 block">Select Registered Player</label>
-                        <select 
-                          value={awardUserId}
-                          onChange={e => setAwardUserId(e.target.value)}
-                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
-                        >
-                          <option value="">-- Choose User --</option>
-                          {registrations.filter(r => r.status === 'approved' && r.userId).map(r => (
-                             <option key={r.id} value={r.userId}>{r.fcName} ({r.name})</option>
-                          ))}
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <label className="text-[10px] font-bold tracking-normal text-fc-neon-green opacity-60 mb-2 block">Select Trophy / Achievement</label>
-                        <select 
-                          value={awardAchvId}
-                          onChange={e => setAwardAchvId(e.target.value)}
-                          className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl px-4 py-3 text-white text-sm focus:border-fc-neon-green/50 font-sans outline-none disabled:opacity-50"
-                        >
-                          <option value="">-- Choose Achievement --</option>
-                          {(ACHIEVEMENTS || []).map(a => (
-                             <option key={a.id} value={a.id}>{a.title} ({a.category})</option>
-                          ))}
-                        </select>
-                      </div>
 
-                      <button 
-                        onClick={handleAwardSubmit}
-                        disabled={isAwarding || !awardAchvId || !awardUserId}
-                        className="w-full py-4 bg-yellow-600/20 text-yellow-400 border border-yellow-500/30 rounded-2xl font-bold tracking-normal text-xs hover:bg-yellow-600/30 transition-all shadow-xl shadow-yellow-600/10 disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                         {isAwarding ? <Loader2 className="w-4 h-4 animate-spin" /> : <Award className="w-4 h-4" />}
-                         Award Achievement
-                      </button>
-                    </div>
-                 </div>
-              </div>
-            )}
 
             {activeTab === 'backup' && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
@@ -3244,6 +3193,18 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [lastLoginDetails, setLastLoginDetails] = useState<{username: string, displayName: string, role: string, password?: string} | null>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('last_login_details');
+      if (stored) {
+        setLastLoginDetails(JSON.parse(stored));
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -3275,6 +3236,23 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
     fetchUsers();
   }, []);
 
+  const handleQuickLogin = async () => {
+    if (!lastLoginDetails) return;
+    try {
+      setError('');
+      setIsLoading(true);
+      const res = await signIn(lastLoginDetails.username, lastLoginDetails.password || "", lastLoginDetails.role || "user");
+      if (lastLoginDetails.role === 'admin' && onAdminLogin) {
+        onAdminLogin();
+      }
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Quick login failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -3292,9 +3270,21 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
             return;
           }
           const res = await signIn(selectedPlayer, password, "admin");
+          localStorage.setItem('last_login_details', JSON.stringify({
+            username: selectedPlayer,
+            password: password,
+            role: "admin",
+            displayName: selectedPlayer
+          }));
           if (onAdminLogin) onAdminLogin();
         } else {
           const res = await signIn(selectedPlayer, "", "user");
+          localStorage.setItem('last_login_details', JSON.stringify({
+            username: selectedPlayer,
+            password: "",
+            role: "user",
+            displayName: selectedPlayer
+          }));
         }
       } else {
         if (!password) {
@@ -3302,6 +3292,12 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           return;
         }
         const res = await signIn("admin", password, "admin");
+        localStorage.setItem('last_login_details', JSON.stringify({
+          username: "admin",
+          password: password,
+          role: "admin",
+          displayName: "Admin"
+        }));
         if (onAdminLogin) onAdminLogin();
       }
       onClose();
@@ -3340,6 +3336,21 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
             Admin
           </button>
         </div>
+
+        {lastLoginDetails && (
+          <div className="mb-6 p-4 bg-white/[0.04] border border-fc-neon-green/35 rounded-xl text-center space-y-2 animate-in fade-in duration-300">
+            <p className="text-[10px] text-white/50 tracking-wide font-sans">
+              Accidentally logged out? Log back in!
+            </p>
+            <button
+              type="button"
+              onClick={handleQuickLogin}
+              className="w-full py-2 px-4 bg-fc-neon-green hover:brightness-110 active:scale-[0.98] transition-all text-black rounded-lg text-xs font-bold font-sans flex items-center justify-center gap-1.5 shadow-[0_0_15px_rgba(34,197,94,0.15)]"
+            >
+              Log back in as {lastLoginDetails.displayName}
+            </button>
+          </div>
+        )}
 
         <form onSubmit={handleLogin} className="space-y-6">
           {tab === 'player' && (
@@ -3492,8 +3503,7 @@ export default function App() {
   const [motmInput, setMotmInput] = useState('');
   const [showMotmSuggestions, setShowMotmSuggestions] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
-  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit' | 'achievements'>('stats');
-  const [newAchievements, setNewAchievements] = useState<string[]>([]);
+  const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit'>('stats');
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
 
   const handleDeleteNews = async (id: string | number) => {
@@ -3702,6 +3712,31 @@ export default function App() {
   const [hasRegistered, setHasRegistered] = useState(false);
   const [matchLabels, setMatchLabels] = useState<Record<string, string>>({}); // date -> status
   const [qualificationStatus, setQualificationStatus] = useState<Record<string, string>>({});
+
+  const [lastLoginDetails, setLastLoginDetails] = useState<any>(null);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('last_login_details');
+      if (stored) {
+        setLastLoginDetails(JSON.parse(stored));
+      } else {
+        setLastLoginDetails(null);
+      }
+    } catch (e) {}
+  }, [user]);
+
+  const handleQuickLogin = async () => {
+    if (!lastLoginDetails) return;
+    try {
+      setIsDataLoading(true);
+      await signIn(lastLoginDetails.username, lastLoginDetails.password || "", lastLoginDetails.role || "user");
+    } catch (err) {
+      console.error("Quick login failed", err);
+    } finally {
+      setIsDataLoading(false);
+    }
+  };
 
   useEffect(() => {
     let _mounted = true;
@@ -4247,27 +4282,7 @@ export default function App() {
       await updateDoc(doc(db, 'matches', match.id), cleanedData);
       await refreshCache('matches');
       
-      // Call achievements after match saved
-      if (cleanedData.status === 'finished' && user?.uid) {
-        const homeT = dbTeams.find(t => t.id === match.homeTeamId);
-        const awayT = dbTeams.find(t => t.id === match.awayTeamId);
-        try {
-          await checkAndAwardAchievements(
-            {
-              homeScore: cleanedData.homeScore,
-              awayScore: cleanedData.awayScore,
-              homeScorers: cleanedData.homeScorers || [],
-              awayScorers: cleanedData.awayScorers || [],
-              homeTeam: homeT?.fcName || '', 
-              awayTeam: awayT?.fcName || '',
-            },
-            user.uid,
-            (user.uid === match.homeTeamId ? match.awayTeamId : match.homeTeamId) || ''
-          );
-        } catch (e) {
-          console.warn('Achievement check failed:', e);
-        }
-      }
+
 
       if (cleanedData.status === 'finished') {
         const homeT = dbTeams.find(t => t.id === match.homeTeamId);
@@ -4398,17 +4413,7 @@ export default function App() {
     }
   };
 
-  const AchievementNotification = ({ achievements, onClose }: { achievements: Achievement[], onClose: () => void }) => {
-    return (
-      <div className="fixed bottom-4 right-4 z-50 flex flex-col gap-2">
-        {achievements.map((achievement, i) => (
-          <div key={i}>
-            <AchievementPopup achievement={achievement} onClose={onClose} />
-          </div>
-        ))}
-      </div>
-    );
-  };
+
 
   const handleUpdateRegistration = async (reg: Registration) => {
     if (!user || user.uid !== reg.userId) return;
@@ -4674,80 +4679,7 @@ export default function App() {
     }
   };
 
-  const checkAndAwardAchievements = async (matchData: any, currentUserId: string, opponentUserId: string) => {
-    const { homeScore, awayScore, homeScorers, awayScorers, homeTeam, awayTeam } = matchData;
-    const currentUserAchievements: string[] = [];
-    const opponentAchievements: string[] = [];
-    
-    // Helper to get minutes
-    const getMinutes = (scorers: any[]) => scorers?.flatMap(s => String(s.time || '').split(',').map(t => parseInt(t.trim().replace("'", ""))).filter(t => !isNaN(t))) || [];
-    const homeMinutes = getMinutes(homeScorers);
-    const awayMinutes = getMinutes(awayScorers);
-    
-    // Determine who is who
-    const isCurrentUserHome = myRegistrationData?.fcName && homeTeam?.toLowerCase().includes(myRegistrationData.fcName.toLowerCase());
-    const myScore = isCurrentUserHome ? homeScore : awayScore;
-    const oppScore = isCurrentUserHome ? awayScore : homeScore;
-    const myMinutes = isCurrentUserHome ? homeMinutes : awayMinutes;
-    const oppMinutes = isCurrentUserHome ? awayMinutes : homeMinutes;
 
-    if (myRegistrationData?.fcName) {
-      if (myScore > oppScore) currentUserAchievements.push('first_blood');
-      if (oppScore === 0 && myScore > 0) currentUserAchievements.push('clean_sheet_king');
-      if (myScore === 0 && oppScore > 0) opponentAchievements.push('clean_sheet_king');
-      if (myScore >= 5) opponentAchievements.push('goalkeepers_nightmare');
-      if (oppScore >= 5) currentUserAchievements.push('goalkeepers_nightmare');
-      if (myScore >= 3 && oppScore >= 3) {
-        currentUserAchievements.push('thriller');
-        opponentAchievements.push('thriller');
-      }
-      
-      // Scorers logic
-      const myScorers = isCurrentUserHome ? homeScorers : awayScorers;
-      const oppScorers = isCurrentUserHome ? awayScorers : homeScorers;
-      
-      myScorers?.forEach((s: any) => {
-        if (s.goals >= 3) currentUserAchievements.push('hat_trick_hero');
-        if (s.goals >= 5) currentUserAchievements.push('sniper');
-        if (s.playerName?.includes('(OG)')) currentUserAchievements.push('uno_reversed');
-      });
-      oppScorers?.forEach((s: any) => {
-        if (s.playerName?.includes('(OG)')) opponentAchievements.push('uno_reversed');
-      });
-
-      if (oppMinutes?.some((m: number) => m >= 90)) {
-        currentUserAchievements.push('heartbreak_90');
-        currentUserAchievements.push('last_minute_hero');
-      }
-      if (myMinutes?.some((m: number) => m >= 90)) {
-        opponentAchievements.push('heartbreak_90');
-        opponentAchievements.push('last_minute_hero');
-      }
-      
-      if (myMinutes?.includes(67)) currentUserAchievements.push('lover_67');
-      if (myMinutes?.includes(69)) currentUserAchievements.push('lover_69');
-      if (oppMinutes?.includes(67)) opponentAchievements.push('lover_67');
-      if (oppMinutes?.includes(69)) opponentAchievements.push('lover_69');
-    }
-
-    const updateAchievements = async (userId: string, achievements: string[]) => {
-      if (!userId) return;
-      if (!isAdmin && userId !== currentUserId) return; // Non-admins cannot update other users
-      
-      try {
-        const updates: any = {};
-        achievements.forEach(id => {
-          updates[`achievements.${id}`] = { unlockedAt: serverTimestamp(), seen: false };
-        });
-        await updateDoc(doc(db, 'users', userId), updates);
-      } catch (e) {
-        console.warn("Could not update achievements:", e);
-      }
-    };
-
-    await updateAchievements(currentUserId, currentUserAchievements);
-    if (opponentUserId) await updateAchievements(opponentUserId, opponentAchievements);
-  };
 
   const processMatchResultImage = async (file: File, playerRegistration: Registration, motm: string | null = null) => {
     setIsSubmittingImg(true);
@@ -5002,25 +4934,7 @@ export default function App() {
             }
           }
 
-          // Call achievements after match saved
-          if (cleanedPayload.status === 'finished' && user?.uid) {
-            try {
-              await checkAndAwardAchievements(
-                {
-                  homeScore: cleanedPayload.homeScore,
-                  awayScore: cleanedPayload.awayScore,
-                  homeScorers: cleanedPayload.homeScorers || [],
-                  awayScorers: cleanedPayload.awayScorers || [],
-                  homeTeam: team1.fcName,
-                  awayTeam: team2.fcName,
-                },
-                user.uid,
-                opponentReg?.userId || ''
-              );
-            } catch (e) {
-              console.warn('Achievement check failed:', e);
-            }
-          }
+
 
           if (cleanedPayload.status === 'finished') {
             const homeT = dbTeams.find(t => t.id === existingMatch.homeTeamId);
@@ -5312,82 +5226,7 @@ export default function App() {
     }
   }, [user]);
 
-  // Achievement Notification Logic
-  useEffect(() => {
-    if (!user) return;
-    const userRef = doc(db, 'users', user.uid);
-    const unsub = onSnapshot(userRef, (snap) => {
-      const data = snap.data();
-      const achievements = data?.achievements || {};
-      const unseen = Object.entries(achievements)
-        .filter(([_, val]: any) => val.seen === false)
-        .map(([id]: any) => id);
-      if (unseen.length > 0) {
-        setNewAchievements(unseen);
-        const updates: any = {};
-        unseen.forEach(id => { updates[`achievements.${id}.seen`] = true; });
-        updateDoc(userRef, updates);
-      }
-    });
-    return () => unsub();
-  }, [user]);
-
-  // Auto-sync local user achievements based on match data
-  useEffect(() => {
-    if (!user || !userProfile || !myRegistrationData || !teams.length || !matches.length) return;
-    
-    // Use setTimeout so we don't blast firestore repeatedly on fast state changes
-    const timer = setTimeout(() => {
-      const myTeam = teams.find(t => t.fcName === myRegistrationData.fcName);
-      if (!myTeam) return;
-
-      const earnedIds = evaluateAchievements(myTeam, matches, myRegistrationData);
-      const existingIds = new Set(Object.keys(userProfile.achievements || {}));
-      
-      const missingIds = earnedIds.filter(id => !existingIds.has(id));
-      
-      if (missingIds.length > 0) {
-        const newAchievements: any = {};
-        missingIds.forEach(id => {
-          newAchievements[id] = {
-            unlockedAt: serverTimestamp(),
-            seen: false
-          };
-        });
-        
-        const updatedAchievements = { ...userProfile.achievements, ...newAchievements };
-        
-        // Update user profile in firestore to grant the achievement
-        setDoc(doc(db, 'users', user.uid), { achievements: updatedAchievements }, { merge: true }).catch(err => {
-          console.error("Failed to auto-grant achievement:", err);
-        });
-      }
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [user, userProfile, myRegistrationData, teams, matches]);
-
-  const handleCloseAchievement = async () => {
-    if (newAchievements.length === 0 || !userProfile) return;
-    
-    try {
-      const updatedAchievements = { ...userProfile.achievements };
-      newAchievements.forEach(id => {
-        if (updatedAchievements[id]) {
-          updatedAchievements[id].seen = true;
-        }
-      });
-      
-      const userRef = doc(db, 'users', userProfile.uid);
-      await updateDoc(userRef, { achievements: updatedAchievements });
-      
-      setUserProfile(prev => prev ? { ...prev, achievements: updatedAchievements } : null);
-      setNewAchievements([]);
-    } catch (e) {
-      console.error("Failed to mark achievement as seen:", e);
-      setNewAchievements([]);
-    }
-  };
+  // End of registrations sync
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       setUser(u);
@@ -5716,12 +5555,7 @@ export default function App() {
                     >
                       Results
                     </button>
-                    <button 
-                      onClick={() => setCampaignTab('achievements')}
-                      className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'achievements' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
-                    >
-                      Achievements
-                    </button>
+
                     <button 
                       onClick={() => setCampaignTab('edit')}
                       className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'edit' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
@@ -5735,7 +5569,17 @@ export default function App() {
               {!user ? (
                 <div className="p-12 text-center bg-white/5 rounded-2xl border border-white/10">
                   <p className="text-white/40 mb-6">Please login to access your campaign portal.</p>
-                  <button onClick={() => setShowLoginModal(true)} className="px-8 py-4 bg-fc-neon-green text-black rounded-2xl font-bold tracking-normal text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
+                  <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+                    <button onClick={() => setShowLoginModal(true)} className="px-8 py-4 bg-fc-neon-green text-black rounded-2xl font-bold tracking-normal text-xs hover:brightness-110 active:scale-95 transition-all shrink-0">Login Now</button>
+                    {lastLoginDetails && (
+                      <button 
+                        onClick={handleQuickLogin}
+                        className="px-8 py-4 bg-white/10 border border-white/15 text-white rounded-2xl font-bold tracking-normal text-xs hover:bg-white/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                        Log back in as <span className="text-[#3B82F6]">{lastLoginDetails.displayName}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : (
                 (() => {
@@ -5796,21 +5640,7 @@ export default function App() {
 
                   return (
                     <div className="space-y-8">
-                      {campaignTab === 'achievements' ? (
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          className="bg-white/5 border border-white/10 rounded-2xl p-8 md:p-12"
-                        >
-                          <div className="max-w-4xl mx-auto space-y-12">
-                             <div className="text-center space-y-4">
-                               <h2 className="text-4xl md:text-5xl font-display font-bold  text-white tracking-tight">My Trophy Room</h2>
-                               <p className="text-white/40 text-xs font-bold tracking-[0.3em]">Showcasing your tournament exploits</p>
-                             </div>
-                             <AchievementsList userAchievements={userProfile?.achievements || {}} />
-                          </div>
-                        </motion.div>
-                      ) : campaignTab === 'edit' ? (
+                      {campaignTab === 'edit' ? (
                          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 text-center">
                             <Shield className="w-16 h-16 text-fc-neon-green/20 mx-auto mb-6" />
                             <h3 className="text-xl font-display font-bold text-white ">Security Shield Active</h3>
@@ -5869,7 +5699,7 @@ export default function App() {
                               ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   {myStats.map(s => (
-                                    <div key={s.playerName} className="p-4 bg-white/[0.03] backdrop-blur-xl border-t-2 border-[#3B82F6] border border-x-[#1E1E1E] border-b-[#1E1E1E]">
+                                    <div key={s.playerName} className="p-4 bg-white/[0.03] border-t-2 border-[#3B82F6] border border-x-[#1E1E1E] border-b-[#1E1E1E]">
                                       <div className="flex flex-col mb-4">
                                         <span className="font-display font-extrabold text-white text-2xl">{s.playerName}</span>
                                         <div className="text-[#3B82F6] font-sans text-[10px] small-caps font-bold tracking-[0.1em] mt-0.5">FORWARD</div>
@@ -5888,7 +5718,7 @@ export default function App() {
                           </div>
 
                           {/* Result Submission AI */}
-                          <div className="bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative overflow-hidden">
+                          <div className="bg-fc-neon-green/5 border border-fc-neon-green/30 rounded-[2rem] p-8 relative">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-fc-purple-light/20 blur-[60px] pointer-events-none" />
                             <EditableText id="ai_update_title" defaultText="Automated Result update" as="h3" className="text-lg font-display font-bold  text-fc-neon-green mb-2" />
                             <p className="text-white/40 text-[10px] tracking-normal mb-6">
@@ -5920,7 +5750,7 @@ export default function App() {
                                 }
 
                                 return (
-                                  <div className="flex gap-4 w-full">
+                                  <div className="flex flex-col md:flex-row gap-4 w-full relative z-20">
                                     <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
                                       <input 
                                         type="file" 
@@ -5945,11 +5775,11 @@ export default function App() {
                                       <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
                                       <span className="text-[10px] font-bold text-white/40 tracking-normal text-center">Upload FC Result<br/>(Max 2MB)</span>
                                     </div>
-                                    <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-2xl bg-white/5 relative">
+                                    <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-2xl bg-white/5 relative z-30">
                                         <label className="text-[10px] font-bold tracking-normal text-white/40 mb-2 block text-center uppercase tracking-wider">
                                           Man of the Match <span className="text-red-500 font-extrabold">*Required*</span>
                                         </label>
-                                        <div className="relative w-full max-w-xs mx-auto">
+                                        <div className="relative w-full max-w-xs mx-auto z-40">
                                           <input 
                                             type="text" 
                                             placeholder="Type or select name..." 
@@ -5959,35 +5789,42 @@ export default function App() {
                                               setShowMotmSuggestions(true);
                                             }}
                                             onFocus={() => setShowMotmSuggestions(true)}
+                                            onBlur={() => {
+                                              // Close suggestions after a small delay to handle click selections safely
+                                              setTimeout(() => setShowMotmSuggestions(false), 200);
+                                            }}
                                             className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center font-bold"
                                           />
                                           {showMotmSuggestions && (
-                                            <>
-                                              <div className="fixed inset-0 z-[90]" onClick={() => setShowMotmSuggestions(false)} />
-                                              <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-2xl shadow-xl z-[100] max-h-40 overflow-y-auto hide-scrollbar">
-                                                {motmSuggestions
-                                                  .filter(item => !motmInput || item.toLowerCase().includes(motmInput.toLowerCase()))
-                                                  .map(item => (
-                                                    <button 
-                                                      key={item}
-                                                      type="button"
-                                                      onClick={() => { 
-                                                        setMotmInput(item); 
-                                                        setShowMotmSuggestions(false); 
-                                                      }}
-                                                      className="w-full text-center p-3 hover:bg-white/10 text-sm font-bold text-white border-b border-white/5 last:border-0 relative z-[101]"
-                                                    >
-                                                      {item}
-                                                    </button>
-                                                  ))
-                                                }
-                                                {motmInput && !motmSuggestions.some(item => item.toLowerCase() === motmInput.toLowerCase()) && (
-                                                  <div className="w-full text-center p-3 text-xs text-white/45 italic relative z-[101]">
-                                                    Click outside to use typed name "{motmInput}"
-                                                  </div>
-                                                )}
-                                              </div>
-                                            </>
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-2xl shadow-xl z-50 max-h-40 overflow-y-auto hide-scrollbar">
+                                              {motmSuggestions
+                                                .filter(item => !motmInput || item.toLowerCase().includes(motmInput.toLowerCase()))
+                                                .map(item => (
+                                                  <button 
+                                                    key={item}
+                                                    type="button"
+                                                    onMouseDown={(e) => {
+                                                      // Prevent immediate input blur which blocks selection
+                                                      e.preventDefault();
+                                                      setMotmInput(item);
+                                                      setShowMotmSuggestions(false);
+                                                    }}
+                                                    onClick={() => { 
+                                                      setMotmInput(item); 
+                                                      setShowMotmSuggestions(false); 
+                                                    }}
+                                                    className="w-full text-center p-3 hover:bg-white/10 text-sm font-bold text-white border-b border-white/5 last:border-0 relative z-50 cursor-pointer"
+                                                  >
+                                                    {item}
+                                                  </button>
+                                                ))
+                                              }
+                                              {motmInput && !motmSuggestions.some(item => item.toLowerCase() === motmInput.toLowerCase()) && (
+                                                <div className="w-full text-center p-3 text-xs text-white/45 italic relative z-50">
+                                                  Using custom name: "{motmInput}"
+                                                </div>
+                                              )}
+                                            </div>
                                           )}
                                         </div>
                                     </div>
@@ -6115,8 +5952,8 @@ export default function App() {
                   </thead>
                   <tbody>
                     {stats.length > 0 ? stats.map((stat, index) => (
-                      <tr key={`${stat.playerName}-${stat.teamId}`} className="relative group/row hover:-translate-y-1 transition-all shadow-sm hover:shadow-[0_10px_30px_rgba(59,130,246,0.1)]">
-                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
+                      <tr key={`${stat.playerName}-${stat.teamId}`} className="relative group/row transition-colors duration-150">
+                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                             index === 0 ? 'bg-[#3B82F6] text-white shadow-md' : 
                             index === 1 ? 'bg-[#888888] text-white' : 
@@ -6126,22 +5963,22 @@ export default function App() {
                             {index + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
                           <span className="font-display font-bold text-lg tracking-tight text-white">{stat.playerName}</span>
                         </td>
-                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
                           <div className="flex flex-col">
                             <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
                             <span className="text-[10px] font-sans font-bold text-[#3B82F6]/80 tracking-normal">{stat.gamerName}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center bg-white/[0.03] backdrop-blur-xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                        <td className="px-6 py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
                           <span className="text-2xl font-display text-white">{stat.goals}</span>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/5">
+                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] rounded-2xl border border-white/5">
                           <div className="flex flex-col items-center gap-3 opacity-20">
                             <Info className="w-8 h-8" />
                             <p className="text-xs font-sans font-bold tracking-normal">No goals recorded yet</p>
@@ -6176,8 +6013,8 @@ export default function App() {
                   </thead>
                   <tbody>
                     {cleanSheets.length > 0 ? cleanSheets.map((stat, index) => (
-                      <tr key={stat.teamId} className="relative group/row hover:-translate-y-1 transition-all shadow-sm hover:shadow-[0_10px_30px_rgba(0,155,77,0.1)]">
-                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
+                      <tr key={stat.teamId} className="relative group/row transition-colors duration-150">
+                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
                           <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
                             index === 0 ? 'bg-[#10B981] text-white shadow-md' : 
                             index === 1 ? 'bg-[#888888] text-white' : 
@@ -6187,22 +6024,22 @@ export default function App() {
                             {index + 1}
                           </div>
                         </td>
-                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
                           <span className="font-display font-bold text-lg tracking-tight text-white">{stat.goalkeeperName}</span>
                         </td>
-                        <td className="px-6 py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
                           <div className="flex flex-col">
                             <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
                             <span className="text-[10px] font-sans font-bold text-[#10B981]/80 tracking-normal">{stat.gamerName}</span>
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-center bg-white/[0.03] backdrop-blur-xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                        <td className="px-6 py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
                           <span className="text-2xl font-display text-white">{stat.cleanSheets}</span>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] backdrop-blur-xl rounded-2xl border border-white/5">
+                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] rounded-2xl border border-white/5">
                           <div className="flex flex-col items-center gap-3 opacity-20">
                             <Info className="w-8 h-8" />
                             <p className="text-xs font-sans font-bold tracking-normal">No clean sheets recorded yet</p>
@@ -6375,8 +6212,8 @@ export default function App() {
                 <tbody>
                     {standings.map((team, index) => {
                       return (
-                        <tr key={team.id} className="relative group/row cursor-pointer hover:-translate-y-1 transition-all shadow-sm hover:shadow-[0_10px_30px_rgba(59,130,246,0.15)]" onClick={() => setSelectedTeam(team)}>
-                          <td className="px-3 md:px-6 py-3 md:py-4 relative text-center bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl last:rounded-r-2xl border-y border-l border-white/5 border-r-0">
+                        <tr key={team.id} className="relative group/row cursor-pointer transition-colors duration-150" onClick={() => setSelectedTeam(team)}>
+                          <td className="px-3 md:px-6 py-3 md:py-4 relative text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl last:rounded-r-2xl border-y border-l border-white/5 border-r-0">
                             <div className={`font-display text-xl md:text-2xl ${
                               index === 0 || index === 1 ? 'text-[#3B82F6]' : 
                               index === 2 ? 'text-[#888888]' :
@@ -6385,7 +6222,7 @@ export default function App() {
                               {index + 1}
                             </div>
                           </td>
-                          <td className="px-3 md:px-6 py-3 md:py-4 bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                          <td className="px-3 md:px-6 py-3 md:py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
                             <div className="flex items-center min-w-0 gap-3">
                                <div className="w-10 h-10 rounded-2xl overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black shadow-sm">
                                 {team.logoUrl ? (
@@ -6398,7 +6235,7 @@ export default function App() {
                                 <div className="flex items-center gap-2">
                                   {team.country && (
                                     <span className="text-sm shadow-sm" title={team.country}>
-                                      {WORLD_CUP_TEAMS.find(t => t.name === team.country)?.flag || '🌍'}
+                                      {WORLD_CUP_FLAGS.get(team.country) || '🌍'}
                                     </span>
                                   )}
                                   <span className="font-sans font-bold whitespace-nowrap truncate pr-1 text-sm md:text-base text-white">
@@ -6415,19 +6252,19 @@ export default function App() {
                               </div>
                             </div>
                           </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-sans font-bold text-xs text-[#A0A0A0] tracking-normal bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.fcName}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] backdrop-blur-xl border-y border-white/5">
+                        <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-sans font-bold text-xs text-[#A0A0A0] tracking-normal bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.fcName}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
                           <span className="px-2 py-1 bg-[#1A1A1A] text-[10px] font-sans font-bold text-[#3B82F6] rounded-full">{team.ovr}</span>
                         </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.played}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.won}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.drawn}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.lost}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.gf}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.ga}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display font-extrabold text-xl md:text-2xl text-white bg-white/[0.03] backdrop-blur-xl border-y border-white/5">{team.points}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] backdrop-blur-xl first:rounded-l-2xl last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.played}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.won}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.drawn}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.lost}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gf}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.ga}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display font-extrabold text-xl md:text-2xl text-white bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.points}</td>
+                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
                           <div className="flex items-center justify-center gap-1">
                             {team.form.map((result, i) => (
                               <div
@@ -7012,9 +6849,7 @@ export default function App() {
             resetPlayer={handleResetPlayer}
           />
         )}
-        {newAchievements.length > 0 && (
-          <AchievementNotification achievements={newAchievements} onClose={() => setNewAchievements([])} />
-        )}
+
       </AnimatePresence>
 
       {/* Footer */}
