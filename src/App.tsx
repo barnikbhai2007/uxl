@@ -1851,7 +1851,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleUpdateConfig,
     setAdminEditingRegistration,
     teams,
-    matches
+    matches,
+    handleRandomizeGroups,
+    handleClearGroups
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -1878,7 +1880,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleUpdateConfig: (config: Config) => Promise<void>,
     setAdminEditingRegistration: (reg: Registration | null) => void,
     teams: Team[],
-    matches?: Match[]
+    matches?: Match[],
+    handleRandomizeGroups: () => Promise<void>,
+    handleClearGroups: () => Promise<void>
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule'>('bracket');
 
@@ -2441,6 +2445,85 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         </button>
                       </div>
 
+                      {/* Tournament Group Configuration */}
+                      <div className="p-6 bg-white/5 border border-white/5 rounded-2xl space-y-4">
+                        <div>
+                          <p className="text-sm font-bold text-white mb-1">Group Stage Format</p>
+                          <p className="text-[10px] font-bold tracking-normal text-white/30 mb-3">Choose tournament group stage structure</p>
+                        </div>
+                        <div className="grid grid-cols-2 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateConfig({ ...config, groupType: 'single' })}
+                            className={`py-2.5 px-4 rounded-xl text-xs font-bold font-sans transition-all flex items-center justify-center gap-1.5 border ${
+                              (!config.groupType || config.groupType === 'single')
+                                ? 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-[#3B82F6]/15'
+                                : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
+                            }`}
+                          >
+                            Single League Table
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleUpdateConfig({ ...config, groupType: 'many' })}
+                            className={`py-2.5 px-4 rounded-xl text-xs font-bold font-sans transition-all flex items-center justify-center gap-1.5 border ${
+                              config.groupType === 'many'
+                                ? 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-md shadow-[#3B82F6]/15'
+                                : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
+                            }`}
+                          >
+                            Many Groups (A, B, C...)
+                          </button>
+                        </div>
+                      </div>
+
+                      {config.groupType === 'many' && (
+                        <div className="p-6 bg-white/5 border border-white/5 rounded-2xl space-y-4 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <div>
+                            <p className="text-sm font-bold text-white mb-1">Players per Group</p>
+                            <p className="text-[10px] font-bold tracking-normal text-white/30 mb-3">Select the ideal group size (3 or 4 players)</p>
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            {[3, 4].map((size) => (
+                              <button
+                                key={size}
+                                type="button"
+                                onClick={() => handleUpdateConfig({ ...config, playersPerGroup: size })}
+                                className={`py-2.5 px-4 rounded-xl text-xs font-bold font-sans transition-all flex items-center justify-center gap-1.5 border ${
+                                  (config.playersPerGroup === size || (!config.playersPerGroup && size === 3))
+                                    ? 'bg-fc-neon-green text-black border-fc-neon-green shadow-md shadow-fc-neon-green/15'
+                                    : 'bg-white/5 text-white/60 border-white/5 hover:bg-white/10'
+                                }`}
+                              >
+                                {size} Players
+                              </button>
+                            ))}
+                          </div>
+
+                          <div className="pt-2 border-t border-white/5 space-y-3">
+                            <p className="text-xs font-bold text-white/80">Group Stage Actions</p>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                              <button
+                                type="button"
+                                onClick={handleRandomizeGroups}
+                                className="w-full py-2.5 px-4 bg-fc-neon-green hover:brightness-110 text-black font-sans text-xs font-bold rounded-xl active:scale-[0.98] transition-all flex items-center justify-center gap-1.5 shadow-lg shadow-fc-neon-green/10"
+                              >
+                                <Users className="w-4 h-4" />
+                                Randomize Groups
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleClearGroups}
+                                className="w-full py-2.5 px-4 bg-white/5 hover:bg-white/10 text-white/80 font-sans text-xs font-bold rounded-xl active:scale-[0.98] border border-white/10 transition-all flex items-center justify-center gap-1.5"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                                Clear Groups
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
                       <div className="p-6 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-2xl">
                         <div className="flex items-center gap-3 mb-3">
                           <Users className="w-5 h-5 text-fc-neon-green" />
@@ -2687,6 +2770,35 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                 <div className="hidden sm:block">
                                    <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Experience</p>
                                    <p className="text-[9px] md:text-[10px] font-bold text-white/60">{reg.experience}</p>
+                                 </div>
+                                 {config.groupType === 'many' && reg.status === 'approved' && (
+                                   <div className="animate-in fade-in duration-200 min-w-[140px] shrink-0 mt-2 lg:mt-0 lg:ml-4">
+                                      <p className="text-[8px] md:text-[9px] font-bold tracking-normal text-fc-neon-green mb-1">Group Stage Group</p>
+                                      <select
+                                        value={config.groupAssignments?.[reg.id] || ''}
+                                        onChange={async (e) => {
+                                          const grp = e.target.value;
+                                          const newMap = {
+                                            ...(config.groupAssignments || {}),
+                                            [reg.id]: grp
+                                          };
+                                          await handleUpdateConfig({
+                                            ...config,
+                                            groupAssignments: newMap
+                                          });
+                                        }}
+                                        className="bg-black/65 border border-white/10 text-white font-sans text-xs font-bold rounded-xl px-3 py-1.5 focus:outline-none focus:border-fc-neon-green tracking-wide cursor-pointer transition-colors w-full"
+                                      >
+                                        <option value="">None (Unassigned)</option>
+                                        {Array.from({ length: 8 }).map((_, i) => {
+                                          const char = String.fromCharCode(65 + i);
+                                          return <option key={char} value={char}>Group {char}</option>;
+                                        })}
+                                      </select>
+                                   </div>
+                                 )}
+                                 <div className="hidden sm:block" style={{display: 'none'}}>
+                                    <p className="text-[9px] md:text-[10px] font-bold text-white/80">dummy</p>
                                 </div>
                               </div>
                             </div>
@@ -3448,6 +3560,7 @@ const RotatingFlag = () => {
 
 export default function App() {
   const [hasQuotaError, setHasQuotaError] = useState(false);
+  const [config, setConfig] = useState<Config>({ registrationEnabled: false });
 
   useEffect(() => {
     const handleQuotaError = () => setHasQuotaError(true);
@@ -3544,12 +3657,15 @@ export default function App() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   const teams = useMemo(() => {
-    return [...dbTeams].sort((a, b) => {
+    return dbTeams.map(t => ({
+      ...t,
+      group: config.groupAssignments?.[t.id] || ''
+    })).sort((a, b) => {
       const nameA = a.fullName || a.fcName || a.name || '';
       const nameB = b.fullName || b.fcName || b.name || '';
       return nameA.localeCompare(nameB);
     });
-  }, [dbTeams]);
+  }, [dbTeams, config.groupAssignments]);
   const matches = useMemo(() => dbMatches, [dbMatches]);
   const hofStats = useMemo(() => {
     const monthMatches = matches;
@@ -3661,6 +3777,31 @@ export default function App() {
   }, [matches, teams]);
   
   const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
+  
+  const groupedStandings = useMemo(() => {
+    if (config.groupType !== 'many') return null;
+    const groups: Record<string, Team[]> = {};
+    
+    // Sort first
+    const sorted = [...standings].sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+    
+    sorted.forEach(team => {
+      const g = team.group || 'Unassigned';
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(team);
+    });
+    
+    return groups;
+  }, [standings, config.groupType, config.groupAssignments]);
+
+  const sortedGroupKeys = useMemo(() => {
+    if (!groupedStandings) return [];
+    return Object.keys(groupedStandings).sort((a, b) => {
+      if (a === 'Unassigned') return 1;
+      if (b === 'Unassigned') return -1;
+      return a.localeCompare(b);
+    });
+  }, [groupedStandings]);
   const stats = useMemo(() => calculateStats(teams, matches).slice(0, 10), [teams, matches]);
   const cleanSheets = useMemo(() => calculateCleanSheets(teams, matches).slice(0, 10), [teams, matches]);
   
@@ -3706,7 +3847,6 @@ export default function App() {
   // Firebase State
   const [user, setUser] = useState<User | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [config, setConfig] = useState<Config>({ registrationEnabled: false });
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
   const [hasRegistered, setHasRegistered] = useState(false);
@@ -3783,52 +3923,111 @@ export default function App() {
   const handleAnalyzeQualification = async () => {
     if (!isAdmin) return;
     try {
-      const K = 8;
-      const remainingMatches: Record<string, number> = {};
-      
-      INITIAL_TEAMS.forEach(t => {
-         let played = 0;
-         matches.forEach(m => {
-            if (m.matchday && m.matchday < 5 && m.status === 'finished') {
-               if (m.homeTeamId === t.id || m.awayTeamId === t.id) played++;
-            }
-         });
-         let totalFixtures = 0;
-         matches.forEach(m => {
-            if (m.matchday && m.matchday < 5 && (m.homeTeamId === t.id || m.awayTeamId === t.id)) totalFixtures++;
-         });
-         remainingMatches[t.id] = totalFixtures - played;
-      });
-
-      const currentStandings = calculateStandings(INITIAL_TEAMS, matches);
-      // Sort to determine current ranks
-      currentStandings.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
-
       const statuses: Record<string, string> = {};
-      
-      currentStandings.forEach(t => {
-         const currentPoints = t.points;
-         const maxPoints = currentPoints + (remainingMatches[t.id] * 3);
-         
-         const otherTeamsMaxPoints = currentStandings
-             .filter(other => other.id !== t.id)
-             .map(other => other.points + (remainingMatches[other.id] * 3))
-             .sort((a, b) => b - a);
-             
-         const eighthBestOther = otherTeamsMaxPoints[K - 1];
-         
-         if (currentPoints > eighthBestOther) {
-             statuses[t.id] = 'Q';
-         } else {
-             const currentEighthPoints = currentStandings[K - 1]?.points || 0;
-             if (maxPoints < currentEighthPoints) {
-                 statuses[t.id] = 'E';
-             }
-         }
-      });
+      const currentStandings = calculateStandings(teams, matches);
+
+      if (config.groupType === 'many') {
+        const K = 2;
+        const groups: Record<string, Team[]> = {};
+        currentStandings.forEach(t => {
+          const g = config.groupAssignments?.[t.id] || 'Unassigned';
+          if (!groups[g]) groups[g] = [];
+          groups[g].push(t);
+        });
+
+        const remainingMatches: Record<string, number> = {};
+        teams.forEach(t => {
+          let played = 0;
+          const tGroup = config.groupAssignments?.[t.id] || '';
+          matches.filter(m => m.status === 'finished').forEach(m => {
+            const hGroup = config.groupAssignments?.[m.homeTeamId] || '';
+            const aGroup = config.groupAssignments?.[m.awayTeamId] || '';
+            if (hGroup === tGroup && aGroup === tGroup) {
+              if (m.homeTeamId === t.id || m.awayTeamId === t.id) played++;
+            }
+          });
+          
+          let totalFixtures = 0;
+          matches.forEach(m => {
+            const hGroup = config.groupAssignments?.[m.homeTeamId] || '';
+            const aGroup = config.groupAssignments?.[m.awayTeamId] || '';
+            if (hGroup === tGroup && aGroup === tGroup) {
+              if (m.homeTeamId === t.id || m.awayTeamId === t.id) totalFixtures++;
+            }
+          });
+          remainingMatches[t.id] = Math.max(0, totalFixtures - played);
+        });
+
+        Object.entries(groups).forEach(([groupName, groupTeams]) => {
+          if (groupName === 'Unassigned') return;
+          groupTeams.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+
+          groupTeams.forEach(t => {
+            const currentPoints = t.points;
+            const maxPoints = currentPoints + (remainingMatches[t.id] * 3);
+            
+            const otherTeamsMaxPoints = groupTeams
+              .filter(other => other.id !== t.id)
+              .map(other => other.points + (remainingMatches[other.id] * 3))
+              .sort((a, b) => b - a);
+              
+            const secondBestOther = otherTeamsMaxPoints[K - 1] ?? 0;
+            
+            if (currentPoints > secondBestOther && groupTeams.length > K) {
+              statuses[t.id] = 'Q';
+            } else {
+              const currentSecondPoints = groupTeams[K - 1]?.points ?? 0;
+              if (maxPoints < currentSecondPoints && groupTeams.length >= K) {
+                statuses[t.id] = 'E';
+              }
+            }
+          });
+        });
+      } else {
+        const K = 8;
+        const remainingMatches: Record<string, number> = {};
+        
+        teams.forEach(t => {
+           let played = 0;
+           matches.forEach(m => {
+              if (m.matchday && m.matchday < 5 && m.status === 'finished') {
+                 if (m.homeTeamId === t.id || m.awayTeamId === t.id) played++;
+              }
+           });
+           let totalFixtures = 0;
+           matches.forEach(m => {
+              if (m.matchday && m.matchday < 5 && (m.homeTeamId === t.id || m.awayTeamId === t.id)) totalFixtures++;
+           });
+           remainingMatches[t.id] = Math.max(0, totalFixtures - played);
+        });
+
+        const standingsSorted = [...currentStandings].sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+        
+        standingsSorted.forEach(t => {
+           const currentPoints = t.points;
+           const maxPoints = currentPoints + (remainingMatches[t.id] * 3);
+           
+           const otherTeamsMaxPoints = standingsSorted
+               .filter(other => other.id !== t.id)
+               .map(other => other.points + (remainingMatches[other.id] * 3))
+               .sort((a, b) => b - a);
+               
+           const eighthBestOther = otherTeamsMaxPoints[K - 1] ?? 0;
+           
+           if (currentPoints > eighthBestOther) {
+               statuses[t.id] = 'Q';
+           } else {
+               const currentEighthPoints = standingsSorted[K - 1]?.points || 0;
+               if (maxPoints < currentEighthPoints) {
+                   statuses[t.id] = 'E';
+               }
+           }
+        });
+      }
 
       await setDoc(doc(db, 'config', 'qualification'), { statuses });
       await refreshCache('cache_qual');
+      alert("Qualification statuses analyzed & updated successfully!");
     } catch (error) {
       console.error("Qualification analysis failed:", error);
     }
@@ -4080,6 +4279,44 @@ export default function App() {
       console.error("Error updating config:", error);
     } finally {
       setIsSavingAdmin(false);
+    }
+  };
+
+  const handleRandomizeGroups = async () => {
+    if (!isAdmin) return;
+    const approvedRegs = registrations.filter(r => r.status === 'approved');
+    if (approvedRegs.length === 0) {
+      alert("No approved players available. Please approve some registrations first!");
+      return;
+    }
+    
+    const size = config.playersPerGroup || 3;
+    const shuffled = [...approvedRegs].sort(() => Math.random() - 0.5);
+    const assignments: Record<string, string> = {};
+    
+    let targetNumGroups = Math.floor(shuffled.length / size);
+    if (targetNumGroups === 0) targetNumGroups = 1;
+    
+    for (let i = 0; i < shuffled.length; i++) {
+      const grpIdx = Math.min(Math.floor(i / size), targetNumGroups - 1);
+      const letter = String.fromCharCode(65 + grpIdx);
+      assignments[shuffled[i].id] = letter;
+    }
+    
+    await handleUpdateConfig({
+      ...config,
+      groupAssignments: assignments
+    });
+    alert(`Successfully distributed ${approvedRegs.length} players into ${targetNumGroups} groups of target size ${size}!`);
+  };
+
+  const handleClearGroups = async () => {
+    if (!isAdmin) return;
+    if (confirm("Are you sure you want to clear all group assignments?")) {
+      await handleUpdateConfig({
+        ...config,
+        groupAssignments: {}
+      });
     }
   };
 
@@ -6174,132 +6411,260 @@ export default function App() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm"
+              className="w-full"
             >
-              <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
-                <div className="flex items-center gap-4">
-                  <h2 className="text-xl font-bold  tracking-tight">
-                    <EditableText id="league_table_header" defaultText="League" /> <span className="text-fc-neon-green">
-                      <EditableText id="league_table_header_bold" defaultText="Table" />
-                    </span>
-                  </h2>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-2xl bg-fc-neon-green text-black" />
-                  <span className="text-[10px] font-bold tracking-normal text-white/60">
-                    <EditableText id="tournament_season_label" defaultText="Tournament Season" />
-                  </span>
-                </div>
-              </div>
-              <table className="w-full text-left border-separate border-spacing-y-2">
-                <thead>
-                  <tr className="text-[#3B82F6] text-[10px] md:text-xs tracking-[0.1em] font-sans font-bold">
-                    <th className="px-3 md:px-6 py-2">Pos</th>
-                    <th className="px-3 md:px-6 py-2">Player</th>
-                    <th className="px-3 md:px-6 py-2 hidden md:table-cell">FC Name</th>
-                    <th className="px-3 md:px-6 py-2 text-center">OVR</th>
-                    <th className="px-3 md:px-6 py-2 text-center">P</th>
-                    <th className="px-3 md:px-6 py-2 text-center">W</th>
-                    <th className="px-3 md:px-6 py-2 text-center">D</th>
-                    <th className="px-3 md:px-6 py-2 text-center">L</th>
-                    <th className="px-3 md:px-6 py-2 text-center">GF</th>
-                    <th className="px-3 md:px-6 py-2 text-center">GA</th>
-                    <th className="px-3 md:px-6 py-2 text-center">GD</th>
-                    <th className="px-3 md:px-6 py-2 text-center">Pts</th>
-                    <th className="px-3 md:px-6 py-2 text-center">Form</th>
-                  </tr>
-                </thead>
-                <tbody>
-                    {standings.map((team, index) => {
+              {config.groupType === 'many' ? (
+                <div className="space-y-12">
+                  {sortedGroupKeys.length === 0 && (
+                     <div className="p-12 text-center bg-white/5 border border-white/10 rounded-2xl">
+                       <Users className="w-12 h-12 text-white/20 mx-auto mb-4" />
+                       <p className="text-white/60 font-sans font-bold">Groups have not been distributed yet.</p>
+                       {isAdmin && (
+                         <p className="text-fc-neon-green/80 font-sans text-xs font-bold mt-2">Go to Admin panel &rarr; Global Config to randomly distribute players into groups!</p>
+                       )}
+                     </div>
+                  )}
+
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+                    {sortedGroupKeys.map((groupKey) => {
+                      const groupTeams = groupedStandings?.[groupKey] || [];
                       return (
-                        <tr key={team.id} className="relative group/row cursor-pointer transition-colors duration-150" onClick={() => setSelectedTeam(team)}>
-                          <td className="px-3 md:px-6 py-3 md:py-4 relative text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl last:rounded-r-2xl border-y border-l border-white/5 border-r-0">
-                            <div className={`font-display text-xl md:text-2xl ${
-                              index === 0 || index === 1 ? 'text-[#3B82F6]' : 
-                              index === 2 ? 'text-[#888888]' :
-                              'text-[#555555]'
-                            }`}>
-                              {index + 1}
+                        <div key={groupKey} className="overflow-x-auto rounded-xl border border-white/10 bg-white/5 backdrop-blur-sm p-4 md:p-6 shadow-xl relative group">
+                          <div className="absolute inset-0 bg-gradient-to-br from-fc-neon-green/0 via-transparent to-white/0 group-hover:from-fc-neon-green/5 group-hover:to-white/5 transition-all duration-300 pointer-events-none rounded-2xl" />
+                          <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+                            <h3 className="text-lg md:text-xl font-display font-black text-white flex items-center gap-2 tracking-tight">
+                               Group <span className="text-fc-neon-green">{groupKey === 'Unassigned' ? 'Unassigned' : groupKey}</span> Standings
+                            </h3>
+                            <div className="flex items-center gap-1.5 px-3 py-1 bg-[#10B981]/15 text-[#10B981] rounded-full border border-[#10B981]/20">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse shrink-0" />
+                              <span className="text-[10px] font-sans font-bold tracking-tight uppercase">Top 2 Qualify</span>
                             </div>
-                          </td>
-                          <td className="px-3 md:px-6 py-3 md:py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
-                            <div className="flex items-center min-w-0 gap-3">
-                               <div className="w-10 h-10 rounded-2xl overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black shadow-sm">
-                                {team.logoUrl ? (
-                                  <img src={team.logoUrl} alt={team.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-                                ) : (
-                                  <span className="text-[10px] font-display text-[#3B82F6]">{team.name.substring(0, 2)}</span>
-                                )}
-                              </div>
-                              <div className="flex flex-col">
-                                <div className="flex items-center gap-2">
-                                  {team.country && (
-                                    <span className="text-sm shadow-sm" title={team.country}>
-                                      {WORLD_CUP_FLAGS.get(team.country) || '🌍'}
-                                    </span>
-                                  )}
-                                  <span className="font-sans font-bold whitespace-nowrap truncate pr-1 text-sm md:text-base text-white">
-                                    {team.fullName}
-                                  </span>
-                                  {qualificationStatus && qualificationStatus[team.id] === 'Q' && (
-                                    <span className="px-2 py-0.5 bg-[#10B981] text-white text-[8px] font-sans font-bold tracking-tight rounded-full" title="Mathematically Qualified">Q</span>
-                                  )}
-                                  {qualificationStatus && qualificationStatus[team.id] === 'E' && (
-                                    <span className="px-2 py-0.5 bg-[#EF4444] text-white text-[8px] font-sans font-bold tracking-tight rounded-full" title="Mathematically Eliminated">E</span>
-                                  )}
-                                </div>
-                                <span className="text-[10px] md:text-xs text-[#A0A0A0] font-sans font-bold tracking-normal mt-0.5">{team.fcName}</span>
-                              </div>
-                            </div>
-                          </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-sans font-bold text-xs text-[#A0A0A0] tracking-normal bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.fcName}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
-                          <span className="px-2 py-1 bg-[#1A1A1A] text-[10px] font-sans font-bold text-[#3B82F6] rounded-full">{team.ovr}</span>
-                        </td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.played}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.won}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.drawn}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.lost}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gf}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.ga}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display font-extrabold text-xl md:text-2xl text-white bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.points}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
-                          <div className="flex items-center justify-center gap-1">
-                            {team.form.map((result, i) => (
-                              <div
-                                key={i}
-                                className={`w-5 h-5 text-[9px] font-sans font-bold flex items-center justify-center text-white rounded-full ${
-                                  result === 'W' ? 'bg-[#10B981]' :
-                                  result === 'D' ? 'bg-[#2A2A2A]' :
-                                  'bg-[#EF4444]'
-                                }`}
-                                title={result === 'W' ? 'Win' : result === 'D' ? 'Draw' : 'Loss'}
-                              >
-                                {result}
-                              </div>
-                            ))}
                           </div>
-                        </td>
+
+                          <table className="w-full text-left border-separate border-spacing-y-2">
+                            <thead>
+                              <tr className="text-[#3B82F6] text-[10px] md:text-xs tracking-[0.1em] font-sans font-bold opacity-85">
+                                <th className="px-2 md:px-3 py-2 text-center w-8">Pos</th>
+                                <th className="px-2 md:px-4 py-2">Player</th>
+                                <th className="px-2 md:px-3 py-2 text-center w-12">OVR</th>
+                                <th className="px-2 py-2 text-center w-8">P</th>
+                                <th className="px-2 py-2 text-center w-10">GD</th>
+                                <th className="px-2 md:px-3 py-2 text-center w-10">Pts</th>
+                                <th className="px-2 py-2 text-center w-24 hidden sm:table-cell">Form</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {groupTeams.map((team, gIndex) => {
+                                const isQualified = gIndex < 2;
+                                return (
+                                  <tr key={team.id} className="relative group/row cursor-pointer transition-colors duration-150" onClick={() => setSelectedTeam(team)}>
+                                    <td className={`px-2 md:px-3 py-3 relative text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl last:rounded-r-2xl border-y border-l border-white/5 border-r-0 ${
+                                      isQualified ? 'border-l-2 border-l-[#10B981]' : ''
+                                    }`}>
+                                      <div className={`font-display text-base md:text-lg ${isQualified ? 'text-[#10B981] font-extrabold' : 'text-[#555555]'}`}>
+                                        {gIndex + 1}
+                                      </div>
+                                    </td>
+                                    <td className="px-2 md:px-4 py-3 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                                      <div className="flex items-center min-w-0 gap-3">
+                                        <div className="w-8 h-8 rounded-xl overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black">
+                                          {team.logoUrl ? (
+                                            <img src={team.logoUrl} alt={team.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                          ) : (
+                                            <span className="text-[10px] font-display text-[#3B82F6]">{team.name.substring(0, 2)}</span>
+                                          )}
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                          <div className="flex items-center gap-1.5 min-w-0">
+                                            {team.country && (
+                                              <span className="text-xs shrink-0">{WORLD_CUP_FLAGS.get(team.country) || '🌍'}</span>
+                                            )}
+                                            <span className="font-sans font-bold text-xs md:text-sm text-white truncate max-w-[120px] md:max-w-none">
+                                              {team.fullName}
+                                            </span>
+                                            {qualificationStatus && qualificationStatus[team.id] === 'Q' && (
+                                              <span className="px-1.5 py-0.5 bg-[#10B981]/25 text-[#10B981] text-[7px] font-sans font-extrabold tracking-tight rounded-md uppercase border border-[#10B981]/20">Q</span>
+                                            )}
+                                            {qualificationStatus && qualificationStatus[team.id] === 'E' && (
+                                              <span className="px-1.5 py-0.5 bg-[#EF4444]/25 text-[#EF4444] text-[7px] font-sans font-extrabold tracking-tight rounded-md uppercase border border-[#EF4444]/20">E</span>
+                                            )}
+                                          </div>
+                                          <span className="text-[9px] text-[#A0A0A0] font-sans font-medium truncate">{team.fcName}</span>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="px-2 md:px-3 py-3 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                                      <span className="px-1.5 py-0.5 bg-[#1a1a1a] text-[9px] font-sans font-bold text-[#3B82F6] rounded-md">{team.ovr}</span>
+                                    </td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.played}</td>
+                                    <td className="px-2 py-3 text-center font-sans font-bold text-xs text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                                    <td className="px-2 md:px-3 py-3 text-center font-display font-extrabold text-sm md:text-base text-white bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.points}</td>
+                                    <td className="px-2 py-3 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0 hidden sm:table-cell">
+                                      <div className="flex items-center justify-center gap-1">
+                                        {team.form.map((result, i) => (
+                                          <div
+                                            key={i}
+                                            className={`w-4.5 h-4.5 text-[8px] font-sans font-bold flex items-center justify-center text-white rounded-full ${
+                                              result === 'W' ? 'bg-[#10B981]' :
+                                              result === 'D' ? 'bg-[#2A2A2A]' :
+                                              'bg-[#EF4444]'
+                                            }`}
+                                            title={result === 'W' ? 'Win' : result === 'D' ? 'Draw' : 'Loss'}
+                                          >
+                                            {result}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  
+                  <div className="flex flex-wrap gap-4 px-4 pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-2xl bg-[#10B981]"></span>
+                      <span className="text-[10px] font-bold text-[#10B981] tracking-normal uppercase">Q - Qualified</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-2xl bg-[#EF4444]"></span>
+                      <span className="text-[10px] font-bold text-[#EF4444] tracking-normal uppercase">E - Eliminated</span>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="overflow-x-auto rounded-2xl border border-white/10 bg-white/5 backdrop-blur-sm">
+                  <div className="flex items-center justify-between p-4 border-b border-white/10 bg-white/5">
+                    <div className="flex items-center gap-4">
+                      <h2 className="text-xl font-bold  tracking-tight">
+                        <EditableText id="league_table_header" defaultText="League" /> <span className="text-fc-neon-green">
+                          <EditableText id="league_table_header_bold" defaultText="Table" />
+                        </span>
+                      </h2>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-2xl bg-fc-neon-green text-black" />
+                      <span className="text-[10px] font-bold tracking-normal text-white/60">
+                        <EditableText id="tournament_season_label" defaultText="Tournament Season" />
+                      </span>
+                    </div>
+                  </div>
+                  <table className="w-full text-left border-separate border-spacing-y-2">
+                    <thead>
+                      <tr className="text-[#3B82F6] text-[10px] md:text-xs tracking-[0.1em] font-sans font-bold">
+                        <th className="px-3 md:px-6 py-2">Pos</th>
+                        <th className="px-3 md:px-6 py-2">Player</th>
+                        <th className="px-3 md:px-6 py-2 hidden md:table-cell">FC Name</th>
+                        <th className="px-3 md:px-6 py-2 text-center">OVR</th>
+                        <th className="px-3 md:px-6 py-2 text-center">P</th>
+                        <th className="px-3 md:px-6 py-2 text-center">W</th>
+                        <th className="px-3 md:px-6 py-2 text-center">D</th>
+                        <th className="px-3 md:px-6 py-2 text-center">L</th>
+                        <th className="px-3 md:px-6 py-2 text-center">GF</th>
+                        <th className="px-3 md:px-6 py-2 text-center">GA</th>
+                        <th className="px-3 md:px-6 py-2 text-center">GD</th>
+                        <th className="px-3 md:px-6 py-2 text-center">Pts</th>
+                        <th className="px-3 md:px-6 py-2 text-center">Form</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              <div className="mt-4 flex flex-wrap gap-4 px-4 pb-4">
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-2xl bg-green-500/20 border border-green-500/30"></span>
-                  <span className="text-[10px] font-bold text-white/40 tracking-normal">Quarterfinal</span>
+                    </thead>
+                    <tbody>
+                        {standings.map((team, index) => {
+                          return (
+                            <tr key={team.id} className="relative group/row cursor-pointer transition-colors duration-150" onClick={() => setSelectedTeam(team)}>
+                              <td className="px-3 md:px-6 py-3 md:py-4 relative text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl last:rounded-r-2xl border-y border-l border-white/5 border-r-0">
+                                <div className={`font-display text-xl md:text-2xl ${
+                                  index === 0 || index === 1 ? 'text-[#3B82F6]' : 
+                                  index === 2 ? 'text-[#888888]' :
+                                  'text-[#555555]'
+                                }`}>
+                                  {index + 1}
+                                </div>
+                              </td>
+                              <td className="px-3 md:px-6 py-3 md:py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                                <div className="flex items-center min-w-0 gap-3">
+                                   <div className="w-10 h-10 rounded-2xl overflow-hidden border border-[#222222] shrink-0 flex items-center justify-center bg-black shadow-sm">
+                                    {team.logoUrl ? (
+                                      <img src={team.logoUrl} alt={team.fullName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                    ) : (
+                                      <span className="text-[10px] font-display text-[#3B82F6]">{team.name.substring(0, 2)}</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <div className="flex items-center gap-2">
+                                      {team.country && (
+                                        <span className="text-sm shadow-sm" title={team.country}>
+                                          {WORLD_CUP_FLAGS.get(team.country) || '🌍'}
+                                        </span>
+                                      )}
+                                      <span className="font-sans font-bold whitespace-nowrap truncate pr-1 text-sm md:text-base text-white">
+                                        {team.fullName}
+                                      </span>
+                                      {qualificationStatus && qualificationStatus[team.id] === 'Q' && (
+                                        <span className="px-2 py-0.5 bg-[#10B981] text-white text-[8px] font-sans font-bold tracking-tight rounded-full" title="Mathematically Qualified">Q</span>
+                                      )}
+                                      {qualificationStatus && qualificationStatus[team.id] === 'E' && (
+                                        <span className="px-2 py-0.5 bg-[#EF4444] text-white text-[8px] font-sans font-bold tracking-tight rounded-full" title="Mathematically Eliminated">E</span>
+                                      )}
+                                    </div>
+                                    <span className="text-[10px] md:text-xs text-[#A0A0A0] font-sans font-bold tracking-normal mt-0.5">{team.fcName}</span>
+                                  </div>
+                                </div>
+                              </td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-sans font-bold text-xs text-[#A0A0A0] tracking-normal bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.fcName}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                              <span className="px-2 py-1 bg-[#1A1A1A] text-[10px] font-sans font-bold text-[#3B82F6] rounded-full">{team.ovr}</span>
+                            </td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.played}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.won}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.drawn}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.lost}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gf}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.ga}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-sans font-bold text-xs md:text-sm text-[#A0A0A0] bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.gd > 0 ? `+${team.gd}` : team.gd}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center font-display font-extrabold text-xl md:text-2xl text-white bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">{team.points}</td>
+                            <td className="px-3 md:px-6 py-3 md:py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                              <div className="flex items-center justify-center gap-1">
+                                {team.form.map((result, i) => (
+                                  <div
+                                    key={i}
+                                    className={`w-5 h-5 text-[9px] font-sans font-bold flex items-center justify-center text-white rounded-full ${
+                                      result === 'W' ? 'bg-[#10B981]' :
+                                      result === 'D' ? 'bg-[#2A2A2A]' :
+                                      'bg-[#EF4444]'
+                                    }`}
+                                    title={result === 'W' ? 'Win' : result === 'D' ? 'Draw' : 'Loss'}
+                                  >
+                                    {result}
+                                  </div>
+                                ))}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                  <div className="mt-4 flex flex-wrap gap-4 px-4 pb-4">
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-2xl bg-green-500/20 border border-green-500/30"></span>
+                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Quarterfinal</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/30"></span>
+                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Round of 8</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="w-3 h-3 rounded-2xl bg-[#EF4444]/20 border border-[#EF4444]/30"></span>
+                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Eliminated</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/30"></span>
-                  <span className="text-[10px] font-bold text-white/40 tracking-normal">Round of 8</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-3 h-3 rounded-2xl bg-red-500/20 border border-red-500/30"></span>
-                  <span className="text-[10px] font-bold text-white/40 tracking-normal">Eliminated</span>
-                </div>
-              </div>
+              )}
             </motion.div>
           )}
 
@@ -6837,6 +7202,8 @@ export default function App() {
             setAdminEditingRegistration={setAdminEditingRegistration}
             teams={dbTeams}
             matches={matches}
+            handleRandomizeGroups={handleRandomizeGroups}
+            handleClearGroups={handleClearGroups}
           />
         )}
         {selectedTeam && (

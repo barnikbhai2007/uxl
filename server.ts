@@ -442,56 +442,52 @@ app.post("/api/analyze-match", async (req, res) => {
             {
               type: "text",
               text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
-
+              
               CONTEXT:
               - Home Team Goalkeeper: ${homeGoalkeeper || "Not specified"}
               - Away Team Goalkeeper: ${awayGoalkeeper || "Not specified"}
 
-              DEFINITIONS:
-              - "Gamer Usernames" (Gamers): The real human players playing the match (visible at top-left and top-right of screen, e.g. "brokenaqua", "Icebear").
-              - "In-game Football Players" (Scorers): The virtual soccer player cards on the pitch (e.g. "Messi", "Haaland", "Mbappé", "Ronaldo") listed under columns on the left or right half of the screen.
-
-              VISUAL ALIGNMENT AND BOUNDARIES (CRITICAL):
-              - LEFT side of the screen is STRICTLY "team1" (Left Gamer, Left Score, Left Scorers, Left Stats).
-              - RIGHT side of the screen is STRICTLY "team2" (Right Gamer, Right Score, Right Scorers, Right Stats).
-              - NEVER cross-assign. Under no circumstances should Left-side details belong to "team2", or Right-side details belong to "team1".
-
               INSTRUCTIONS:
-              1. GAMER USERNAME DETECTION (CRITICAL):
-                 - Left Gamer Username ("team1") = large bold text at the TOP LEFT of the screen.
-                 - Right Gamer Username ("team2") = large bold Latin text at the TOP RIGHT of the screen.
-                 - Do NOT swap their positions. Even if "${fcName}" is the reporter, if they appear on the TOP RIGHT of the screen, they are "team2", and the other gamer is "team1". Do NOT force the reporter to be "team1" if they are visible on the right.
-                 - IGNORE all subtitle text below usernames (team names, clan names, league names, Cyrillic text, "NO LEAGUE" etc.).
-                 - Assure usernames are detected correctly as Latin-alphabet strings.
+              1. USERNAME DETECTION (CRITICAL):
+                 - Home player username = large bold text TOP LEFT of screen.
+                 - Away player username = large bold Latin text TOP RIGHT of screen.
+                 - IGNORE all subtitle text below usernames (team names, league names, Cyrillic text, "NO LEAGUE" etc.).
+                 - The username is ALWAYS Latin alphabet, never Cyrillic. 
+                 - Examples: "brokenaqua", "Icebear" — NOT "збірна України 3", "KOLKATA MASTERS", or "NO LEAGUE".
+              2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
+              3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
+              4. Extract GOAL SCORERS:
+                 - In FC Mobile Match Summary, the screen has two distinct halves:
+                   * LEFT HALF contains the Home team's details, including a list of Home goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 18').
+                   * RIGHT HALF contains the Away team's details, including a list of Away goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 54').
+                 - Scan both halves of the screen carefully. Player Names under the Left (Home) team belong to "team1". Player Names under the Right (Away) team belong to "team2".
+                 - DO NOT MIX THEM UP. Left-side scorers are strictly "team1", and Right-side scorers are strictly "team2".
+                 - FOLLOW THE CRITICAL SCORER ASSIGNMENT RULES BELOW.
+              5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
+                 - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
+                 - Left-side values = "team1Stats".
+                 - Right-side values = "team2Stats".
+              6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
+              
+              CRITICAL SCORER ASSIGNMENT RULES:
+              1. Goals listed on the Left-side half of the screenshot are scored by the Left-side player/team (team1).
+              2. Goals listed on the Right-side half of the screenshot are scored by the Right-side player/team (team2).
+              3. Verify the final score:
+                 - If team1Score is 3, exactly 3 goals must contain team1 scorers.
+                 - If team2Score is 2, exactly 2 goals must contain team2 scorers.
+              4. If a player is listed on the Left side, their "team" field MUST be "team1". If listed on the Right side, their "team" field MUST be "team2".
+              5. The sum of goals for team1 scorers MUST equal team1Score, and the sum of goals for team2 scorers MUST equal team2Score.
+              6. Under no circumstances should you assign a left-side scorer to "team2", or a right-side scorer to "team1".
+              7. team1 = the LEFT side player (home), team2 = the RIGHT side player (away).
+              8. Double check: count team1 scorers = team1Score, count team2 scorers = team2Score.
 
-              2. IDENTIFY FINAL SCORES:
-                 - "team1Score" = Left Score (middle-left giant number).
-                 - "team2Score" = Right Score (middle-right giant number).
-
-              3. EXTRACT GOAL SCORERS:
-                 - Left Half Column contains goals scored for the Left Gamer (team1). These in-game player names MUST be assigned "team": "team1".
-                 - Right Half Column contains goals scored for the Right Gamer (team2). These in-game player names MUST be assigned "team": "team2".
-                 - Match the score exactly:
-                   * The number of goals assigned to "team1" in the scorers list MUST equal "team1Score" exactly.
-                   * The number of goals assigned to "team2" in the scorers list MUST equal "team2Score" exactly.
-                 - Both players can have the same card (e.g. both have "Messi"). Do not assume a star belongs to a specific gamer; assign strictly by which side's column the goal is listed under.
-
-              4. EXTRACT MATCH STATISTICS:
-                 - All stats on the LEFT side = "team1Stats".
-                 - All stats on the RIGHT side = "team2Stats".
-                 - Shots: For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
-
-              5. MAN OF THE MATCH (MOTM):
-                 - Look for a player rated highest, marked with a Star Icon or "MVP". If not explicitly shown, select the player with the most goals from the winning team.
-
-              CRITICAL VERIFICATION PROCESS:
-              Before returning:
-              - Count the total goals of "team1" scorers. It must equal "team1Score" exactly.
-              - Count the total goals of "team2" scorers. It must equal "team2Score" exactly.
-              - Confirm "team1" username matches the TOP-LEFT text, and "team2" matches the TOP-RIGHT text.
-              - DOUBLE CHECK that you did not assign a right-side scorer's goal to "team1" or a left-side scorer's goal to "team2".
-
-              Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation:
+              CRITICAL RULES:
+              - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
+              - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
+              - One team must match or contain "${fcName}".
+              
+              Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation.
+              CRITICAL: The "scorers" array must have ALL goals assigned.
               { 
                 "team1": "string", "team2": "string", 
                 "team1Score": number, "team2Score": number, 

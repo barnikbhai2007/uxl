@@ -18,6 +18,7 @@ export interface Team {
   form: string[];
   logoUrl?: string;
   country?: string;
+  group?: string;
 }
 
 export interface Scorer {
@@ -117,6 +118,9 @@ export interface Config {
   geminiApiKey?: string;
   allowedNames?: string[];
   geminiModel?: string;
+  groupType?: 'single' | 'many';
+  playersPerGroup?: number;
+  groupAssignments?: Record<string, string>;
 }
 
 export interface MatchReport {
