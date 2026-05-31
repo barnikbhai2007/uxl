@@ -30,6 +30,70 @@ import { evaluateAchievements } from './utils/achievementEngine';
 import { AchievementsList, AchievementPopup } from './components/AchievementSystem';
 import { ScheduleRandomizer } from './ScheduleRandomizer';
 
+const cropToSquareImage = (file: File, size: number = 400): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = size;
+        canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas context unavailable'));
+        
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.onerror = reject;
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+};
+
+const compressImage = (file: File): Promise<string> => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        let width = img.width;
+        let height = img.height;
+        const maxDim = 800;
+
+        if (width > height && width > maxDim) {
+          height = Math.round((height * maxDim) / width);
+          width = maxDim;
+        } else if (height > maxDim) {
+          width = Math.round((width * maxDim) / height);
+          height = maxDim;
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return reject(new Error('Canvas context unavailable'));
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+        resolve(dataUrl.split(',')[1]);
+      };
+      img.onerror = () => reject(new Error('Image load failed'));
+      img.src = e.target?.result as string;
+    };
+    reader.onerror = () => reject(new Error('FileReader error'));
+    reader.readAsDataURL(file);
+  });
+};
+
+
 const INITIAL_BRACKET: BracketMatch[] = [
   { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
   { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
@@ -1112,11 +1176,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       const file = e.target.files?.[0];
       if (!file) return;
 
-      if (file.size > 10 * 1024 * 1024) {
-        alert("File is too large. Please select an image under 10MB.");
-        return;
-      }
-
       setIsCompressing(true);
       try {
         const croppedBase64 = await cropToSquareImage(file);
@@ -1487,10 +1546,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       const file = e.target.files?.[0];
       if (!file) return;
 
-      if (file.size > 5 * 1024 * 1024) {
-        return;
-      }
-
       setIsCompressing(true);
       try {
         const croppedBase64 = await cropToSquareImage(file);
@@ -1719,7 +1774,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional, under 5MB)</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional)</label>
                   <div className="relative">
                     <input 
                       type="file"
@@ -1734,7 +1789,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     >
                       {formData.logoUrl ? (
                         <div className="flex flex-col items-center gap-2">
-                          <img src={formData.logoUrl} alt="Preview" className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
+                          <img src={formData.logoUrl} alt="Preview" className="w-24 h-24 rounded-[16px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
                           <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Photo Selected</span>
                         </div>
                       ) : (
@@ -1744,7 +1799,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           </div>
                           <div className="text-left">
                             <p className="text-sm font-bold text-white">Click to Upload Photo</p>
-                            <p className="text-[10px] text-white/30 font-bold">PNG, JPG up to 5MB</p>
+                            <p className="text-[10px] text-white/30 font-bold">PNG, JPG</p>
                           </div>
                         </>
                       )}
@@ -3821,19 +3876,14 @@ export default function App() {
     const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      if (file.size > 2 * 1024 * 1024) return alert("Image must be under 2MB");
       
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        try {
-          await updateSiteContent(id, base64, true);
-        } catch (err) {
-          console.error("Failed to upload image:", err);
-          alert("Failed to update image");
-        }
-      };
-      reader.readAsDataURL(file);
+      try {
+        const base64 = await compressImage(file);
+        await updateSiteContent(id, base64, true);
+      } catch (err) {
+        console.error("Failed to upload image:", err);
+        alert("Failed to update image");
+      }
     };
 
     if (isAdmin && isEditingMode) {
@@ -4532,69 +4582,6 @@ export default function App() {
       console.error("AI Error:", error);
       alert(`AI Assistant failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
-  };
-
-  const cropToSquareImage = (file: File, size: number = 400): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          canvas.width = size;
-          canvas.height = size;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return reject(new Error('Canvas context unavailable'));
-          
-          const minDim = Math.min(img.width, img.height);
-          const sx = (img.width - minDim) / 2;
-          const sy = (img.height - minDim) / 2;
-          
-          ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, size, size);
-          resolve(canvas.toDataURL('image/jpeg', 0.8));
-        };
-        img.onerror = reject;
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = reject;
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const compressImage = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          const maxDim = 800;
-
-          if (width > height && width > maxDim) {
-            height = Math.round((height * maxDim) / width);
-            width = maxDim;
-          } else if (height > maxDim) {
-            width = Math.round((width * maxDim) / height);
-            height = maxDim;
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return reject(new Error('Canvas context unavailable'));
-          ctx.drawImage(img, 0, 0, width, height);
-
-          const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-          resolve(dataUrl.split(',')[1]);
-        };
-        img.onerror = () => reject(new Error('Image load failed'));
-        img.src = e.target?.result as string;
-      };
-      reader.onerror = () => reject(new Error('FileReader error'));
-      reader.readAsDataURL(file);
-    });
   };
 
   const checkAndAwardAchievements = async (matchData: any, currentUserId: string, opponentUserId: string) => {
@@ -5825,7 +5812,6 @@ export default function App() {
                                               alert("Please register a team first to submit match results.");
                                               return;
                                             }
-                                            if (file.size > 2 * 1024 * 1024) return alert("File size must be under 2MB");
                                             processMatchResultImage(file, myRegistration, selectedMotm);
                                           }
                                         }}
