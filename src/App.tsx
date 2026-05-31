@@ -1747,6 +1747,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
+    const [adminUsers, setAdminUsers] = useState<any[]>([]);
+
+    useEffect(() => {
+      const fetchU = async () => {
+        const snap = await getDocs(collection(db, 'users'));
+        setAdminUsers(snap.docs.map(d => ({id: d.id, ...d.data() as any})).filter(u => u.role !== 'admin'));
+      };
+      if (activeTab === 'registrations') {
+        fetchU();
+      }
+    }, [activeTab]);
 
     useEffect(() => {
       if (downloadingRegistration && cardRef.current) {
@@ -2452,13 +2463,46 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
 
                 <div className="grid grid-cols-1 gap-4">
-                  {registrations.length === 0 ? (
+                  {adminUsers.length === 0 ? (
                     <div className="p-20 text-center bg-white/5 border border-white/5 rounded-sm">
                       <Users className="w-16 h-16 text-white/10 mx-auto mb-4" />
                       <p className="text-white/40 font-bold">No registrations yet.</p>
                     </div>
                   ) : (
-                    registrations.sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0)).map(reg => (
+                    adminUsers.sort((a, b) => {
+                      const tA = registrations.find(r => r.userId === a.id)?.timestamp?.seconds || 0;
+                      const tB = registrations.find(r => r.userId === b.id)?.timestamp?.seconds || 0;
+                      return tB - tA;
+                    }).map(user => {
+                      const reg = registrations.find(r => r.userId === user.id);
+                      if (!reg) {
+                        // User has logged in but not submitted registration
+                        return (
+                          <div key={user.id} className="bg-white/5 border border-white/10 rounded-sm p-4 md:p-6 hover:bg-white/10 transition-all flex items-center justify-between">
+                            <div>
+                               <p className="text-sm font-bold text-white mb-1"><span className="text-fc-neon-green/60 mr-2">Gamer:</span>{user.displayName || user.name || 'Unknown'}</p>
+                               <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
+                            </div>
+                            <button 
+                               onClick={async () => {
+                                 if (window.confirm('Delete this user? Name spot will be freed.')) {
+                                   try {
+                                     await deleteDoc(doc(db, 'users', user.id));
+                                     setAdminUsers(prev => prev.filter(u => u.id !== user.id));
+                                   } catch (e) {
+                                     console.error(e);
+                                   }
+                                 }
+                               }}
+                               className="p-3 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-sm flex items-center gap-2 text-xs font-black uppercase tracking-widest"
+                            >
+                              <Trash2 className="w-4 h-4" /> Reset Name
+                            </button>
+                          </div>
+                        );
+                      }
+                      
+                      return (
                       <div key={reg.id} className="bg-white/5 border border-white/10 rounded-sm md:rounded-sm p-4 md:p-6 hover:bg-white/10 transition-all group">
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-4 md:gap-6 items-center">
                           <div className="flex items-center gap-2">
@@ -2490,6 +2534,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                    if (confirmDeleteId === reg.id) {
                                      handleDeleteRegistration(reg.id);
                                      setConfirmDeleteId(null);
+                                     setAdminUsers(prev => prev.filter(u => u.id !== user.id));
                                    } else {
                                      setConfirmDeleteId(reg.id);
                                    }
@@ -2525,8 +2570,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                              </div>
                           </div>
                           <div>
-                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">FC Name</p>
-                             <p className="text-xs md:text-sm font-bold text-white">{reg.fcName}</p>
+                             <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Gamer / FC Name</p>
+                             <p className="text-xs md:text-sm font-bold text-white mb-0.5">{user.displayName || reg.name}</p>
+                             <p className="text-[10px] text-white/60 font-mono">{reg.fcName}</p>
                           </div>
                           <div>
                              <p className="text-[8px] md:text-[9px] font-black uppercase tracking-widest text-fc-neon-green mb-1">Age</p>
@@ -2545,7 +2591,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           </div>
                         </div>
                       </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               </div>
@@ -3286,15 +3333,16 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           }
         });
         
-        const available = DEFAULT_PLAYERS.filter(p => !takenNames.has(p));
+        const available = DEFAULT_PLAYERS.filter(p => !takenNames.has(p)).sort((a,b) => a.localeCompare(b));
         setAvailablePlayers(available);
         if (available.length > 0) {
           setSelectedPlayer(available[0]);
         }
       } catch (err) {
         console.error("Failed to fetch available players", err);
-        setAvailablePlayers(DEFAULT_PLAYERS);
-        setSelectedPlayer(DEFAULT_PLAYERS[0]);
+        const fb = [...DEFAULT_PLAYERS].sort((a,b) => a.localeCompare(b));
+        setAvailablePlayers(fb);
+        setSelectedPlayer(fb[0]);
       } finally {
         setIsLoading(false);
       }
