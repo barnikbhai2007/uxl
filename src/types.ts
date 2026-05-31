@@ -92,7 +92,6 @@ export interface Registration {
   userId: string;
   name: string;
   age: number;
-  fcUid: string;
   fcName: string;
   teamOvr: number;
   experience: string;

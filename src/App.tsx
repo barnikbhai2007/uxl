@@ -354,9 +354,6 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
             <div className="flex flex-wrap items-center gap-3">
               <span className="px-3 py-1 bg-white/10 rounded-sm text-xs font-black uppercase tracking-widest text-white/60">FC: {team.fcName}</span>
               <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-sm text-xs font-black uppercase tracking-widest text-fc-neon-green">OVR {team.ovr}</span>
-              <div className="px-3 py-1 bg-white/5 rounded-sm flex items-center gap-1.5 text-xs text-white/40 font-mono">
-                 UID: <span>{team.uid}</span>
-              </div>
             </div>
           </div>
         </div>
@@ -1094,7 +1091,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       ...registration,
       name: registration.name || '',
       age: (registration.age || '').toString(),
-      fcUid: registration.fcUid || '',
       fcName: registration.fcName || '',
       teamOvr: (registration.teamOvr || '').toString(),
       experience: registration.experience || '',
@@ -1187,16 +1183,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   type="number"
                   value={formData.age}
                   onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC UID</label>
-                <input 
-                  required
-                  type="text"
-                  value={formData.fcUid}
-                  onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
                   className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
@@ -1455,7 +1441,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const [formData, setFormData] = useState({
       name: '',
       age: '',
-      fcUid: '',
       fcName: '',
       teamOvr: '',
       experience: '',
@@ -1488,6 +1473,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
+      if (!formData.logoUrl) {
+        alert("Please upload a logo/photo before submitting.");
+        return;
+      }
       if (isCompressing) {
         return;
       }
@@ -1604,17 +1593,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     value={formData.age}
                     onChange={(e) => setFormData({...formData, age: e.target.value})}
                     placeholder="21"
-                    className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-widest text-white/40">FC UID</label>
-                  <input 
-                    required
-                    type="text"
-                    value={formData.fcUid}
-                    onChange={(e) => setFormData({...formData, fcUid: e.target.value})}
-                    placeholder="Unique ID"
                     className="w-full bg-white/5 border border-white/10 rounded-sm p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
@@ -3004,7 +2982,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                    )}
                  </div>
                  <h2 className="text-5xl font-black text-white uppercase text-center bg-clip-text text-transparent bg-gradient-to-r from-white to-white/70 tracking-tight">{downloadingRegistration.name}</h2>
-                 <p className="text-2xl text-white/60 font-black uppercase tracking-widest mt-4">FC UID: {downloadingRegistration.fcUid}</p>
               </div>
 
               <div className="grid grid-cols-2 gap-6 bg-fc-purple-dark/40 backdrop-blur-2xl rounded-sm p-8 border-2 border-white/10 relative z-10 shadow-2xl mt-8">
@@ -3094,23 +3071,6 @@ const TeamNameWithCopy = ({ team, size = 'lg', reverse = false, showCopy = true,
             size === 'lg' ? 'text-xs md:text-lg' : 'text-xs md:text-sm'
           }`}>{team.name}</span>
         </div>
-        {showCopy && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              copyToClipboard(team.uid);
-            }}
-            className={`${size === 'lg' ? 'px-2 py-1 md:px-3 md:py-1.5' : 'px-1.5 py-0.5 md:px-2 md:py-1'} rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green flex items-center gap-1.5 transition-all shrink-0 border border-white/5`}
-            title="Click to copy UID"
-          >
-            {copiedId === team.uid ? (
-              <Check className="w-2.5 h-2.5 md:w-3 md:h-3 text-green-400" />
-            ) : (
-              <Copy className="w-2.5 h-2.5 md:w-3 md:h-3" />
-            )}
-            <span className="text-[8px] md:text-[10px] font-black uppercase tracking-wider">UID</span>
-          </button>
-        )}
       </div>
     );
   };
@@ -3812,7 +3772,7 @@ export default function App() {
         fullName: data.name,
         fcName: data.fcName,
         ovr: data.teamOvr,
-        uid: data.fcUid,
+        uid: data.id,
         logoUrl: data.logoUrl,
         goalkeeper: data.goalkeeper,
         played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
@@ -4205,7 +4165,7 @@ export default function App() {
         const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
         const teamsList: Team[] = teamsData.map((data: any) => ({
           id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
-          fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.fcUid,
+          fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.id,
           logoUrl: data.logoUrl, goalkeeper: data.goalkeeper, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
         }));
         setDbTeams(teamsList);
@@ -4343,7 +4303,7 @@ export default function App() {
         fullName: data.name,
         fcName: data.fcName,
         ovr: data.teamOvr,
-        uid: data.fcUid,
+        uid: data.id,
         logoUrl: data.logoUrl,
         goalkeeper: data.goalkeeper,
         played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
@@ -5996,7 +5956,6 @@ export default function App() {
                       <th className="px-6 py-4">Rank</th>
                       <th className="px-6 py-4">Football Player</th>
                       <th className="px-6 py-4">Gamer</th>
-                      <th className="px-6 py-4 text-center">UID</th>
                       <th className="px-6 py-4 text-center">Goals</th>
                     </tr>
                   </thead>
@@ -6023,28 +5982,12 @@ export default function App() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <button 
-                            onClick={() => {
-                              const team = teams.find(t => t.name === stat.gamerName);
-                              if (team) copyToClipboard(team.uid);
-                            }}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green transition-all border border-white/5"
-                            title="Copy UID"
-                          >
-                            {copiedId === teams.find(t => t.name === stat.gamerName)?.uid ? (
-                              <Check className="w-3 h-3 text-green-400" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 text-center">
                           <span className="text-lg font-black text-fc-neon-green">{stat.goals}</span>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center">
+                        <td colSpan={4} className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center gap-3 opacity-20">
                             <Info className="w-8 h-8" />
                             <p className="text-xs uppercase font-black tracking-widest">No goals recorded yet</p>
@@ -6074,7 +6017,6 @@ export default function App() {
                       <th className="px-6 py-4">Rank</th>
                       <th className="px-6 py-4">Goalkeeper</th>
                       <th className="px-6 py-4">Gamer</th>
-                      <th className="px-6 py-4 text-center">UID</th>
                       <th className="px-6 py-4 text-center">Clean Sheets</th>
                     </tr>
                   </thead>
@@ -6101,28 +6043,12 @@ export default function App() {
                           </div>
                         </td>
                         <td className="px-6 py-4 text-center">
-                          <button 
-                            onClick={() => {
-                              const team = teams.find(t => t.name === stat.gamerName);
-                              if (team) copyToClipboard(team.uid);
-                            }}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-green-400/80 hover:text-green-400 transition-all border border-white/5"
-                            title="Copy UID"
-                          >
-                            {copiedId === teams.find(t => t.name === stat.gamerName)?.uid ? (
-                              <Check className="w-3 h-3 text-green-400" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </button>
-                        </td>
-                        <td className="px-6 py-4 text-center">
                           <span className="text-lg font-black text-green-400">{stat.cleanSheets}</span>
                         </td>
                       </tr>
                     )) : (
                       <tr>
-                        <td colSpan={5} className="px-6 py-12 text-center">
+                        <td colSpan={4} className="px-6 py-12 text-center">
                           <div className="flex flex-col items-center gap-3 opacity-20">
                             <Shield className="w-8 h-8" />
                             <p className="text-xs uppercase font-black tracking-widest">No clean sheets recorded yet</p>
@@ -6280,7 +6206,6 @@ export default function App() {
                     <th className="px-3 md:px-6 py-3 md:py-4">Pos</th>
                     <th className="px-3 md:px-6 py-3 md:py-4">Player</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell">FC Name</th>
-                    <th className="px-3 md:px-6 py-3 md:py-4 text-center">UID</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">OVR</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">P</th>
                     <th className="px-3 md:px-6 py-3 md:py-4 text-center">W</th>
@@ -6342,19 +6267,6 @@ export default function App() {
                             </div>
                           </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 hidden md:table-cell font-mono text-xs text-white/40">{team.fcName}</td>
-                        <td className="px-3 md:px-6 py-3 md:py-4 text-center">
-                          <button 
-                            onClick={() => copyToClipboard(team.uid)}
-                            className="inline-flex items-center justify-center p-1.5 rounded-md bg-white/5 hover:bg-white/10 text-fc-neon-green/80 hover:text-fc-neon-green transition-all border border-white/5"
-                            title="Copy UID"
-                          >
-                            {copiedId === team.uid ? (
-                              <Check className="w-3 h-3 text-green-400" />
-                            ) : (
-                              <Copy className="w-3 h-3" />
-                            )}
-                          </button>
-                        </td>
                         <td className="px-3 md:px-6 py-3 md:py-4 text-center">
                           <span className="px-1.5 py-0.5 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded text-[9px] md:text-[10px] font-black text-fc-neon-green">{team.ovr}</span>
                         </td>
