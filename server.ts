@@ -9,27 +9,6 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import initSqlJs from "sql.js";
-import * as admin from 'firebase-admin';
-
-let firebaseAdminApp: admin.app.App | null = null;
-function getFirebaseAdmin() {
-  if (!firebaseAdminApp) {
-    const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
-    if (serviceAccountJson) {
-      try {
-        const serviceAccount = JSON.parse(serviceAccountJson);
-        firebaseAdminApp = admin.initializeApp({
-          credential: admin.credential.cert(serviceAccount)
-        });
-      } catch (e) {
-        // Just silent warn if configuration is invalid
-      }
-    }
-  }
-  return firebaseAdminApp;
-}
-
-
 const __dirname = process.cwd();
 
 const app = express();
@@ -289,42 +268,27 @@ app.post("/api/db/bump_meta", async (req, res) => {
 // -------------------------------------------------------------
 // Auth Routes
 // -------------------------------------------------------------
-app.post("/api/auth/google", async (req, res) => {
-  try {
-    const { idToken } = req.body;
-    const adminApp = getFirebaseAdmin();
-    if (!adminApp) {
-      return res.status(500).json({ success: false, error: "Firebase Admin is not configured" });
-    }
-    const decodedToken = await adminApp.auth().verifyIdToken(idToken);
-    const email = decodedToken.email;
-    const uid = decodedToken.uid;
-    const token = jwt.sign({ uid, email, role: "user" }, JWT_SECRET, { expiresIn: '30d' });
-    res.json({ success: true, token, user: { uid, email, role: "user" } });
-  } catch (e: any) {
-    console.error("Google verify error:", e);
-    res.status(401).json({ success: false, error: e.message });
-  }
-});
-
 app.post("/api/auth/login", (req, res) => {
-  const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-  const { email, password, isAnonymous } = req.body;
+  const adminPassword = process.env.ADMIN_PASSWORD || "Broken@2000";
+  const { username, password, role } = req.body;
   
-  if (isAnonymous) {
-    const token = jwt.sign({ uid: `anon_${Date.now()}`, role: "anon", isAnonymous: true }, JWT_SECRET, { expiresIn: '7d' });
-    return res.json({ success: true, token });
+  if (role === 'admin' || username === 'admin') {
+    if (password === adminPassword) {
+      const token = jwt.sign({ uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: "Admin" }, JWT_SECRET, { expiresIn: '30d' });
+      return res.json({ success: true, token, user: { uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: "Admin" } });
+    } else {
+      return res.status(401).json({ success: false, error: "Invalid admin password" });
+    }
   }
 
-  // Very simple check
-  if (email === "admin@uxl.com" || password === adminPassword) {
-    const token = jwt.sign({ uid: "admin_user", email: email || "admin@uxl.com", role: "admin" }, JWT_SECRET, { expiresIn: '30d' });
-    return res.json({ success: true, token });
-  } else {
-    // Normal user simulate
-    const token = jwt.sign({ uid: `user_${Date.now()}`, email, role: "user" }, JWT_SECRET, { expiresIn: '7d' });
-    return res.json({ success: true, token });
+  // Pre-made user login
+  if (username) {
+    const cleanName = username.replace(/\s+/g, '_').toLowerCase();
+    const token = jwt.sign({ uid: `user_${cleanName}`, email: `${cleanName}@uxl.com`, role: "user", displayName: username }, JWT_SECRET, { expiresIn: '30d' });
+    return res.json({ success: true, token, user: { uid: `user_${cleanName}`, email: `${cleanName}@uxl.com`, role: "user", displayName: username } });
   }
+
+  res.status(400).json({ success: false, error: "Invalid login" });
 });
 
 app.get("/api/auth/me", (req, res) => {

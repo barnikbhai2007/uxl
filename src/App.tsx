@@ -3298,6 +3298,108 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
   );
 };
 
+const DEFAULT_PLAYERS = [
+  "Ayush", "Aryan", "Sagnick", "Sagnik", "Samriddha", 
+  "Biswadeb", "Souvik", "Priyam", "Barnik", "Pritam", 
+  "Soumajit", "Ranajay", "Ankit", "Sonu", "Sougata", 
+  "Sougata JR", "Sayantan", "Utsab", "Animesh", "Rajat"
+];
+
+function LoginModal({ onClose }: { onClose: () => void }) {
+  const [tab, setTab] = useState<'player'|'admin'>('player');
+  const [selectedPlayer, setSelectedPlayer] = useState(DEFAULT_PLAYERS[0]);
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    try {
+      if (tab === 'player') {
+        const res = await signIn(selectedPlayer, "", "user");
+      } else {
+        const res = await signIn("admin", password, "admin");
+      }
+      onClose();
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={onClose} />
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="relative bg-fc-purple-dark border border-fc-neon-green/30 p-8 rounded-sm max-w-sm w-full font-mono text-white shadow-2xl"
+      >
+        <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white">
+          <X className="w-5 h-5" />
+        </button>
+        <h2 className="text-xl font-black uppercase tracking-widest text-fc-neon-green mb-6 text-center">Login</h2>
+        
+        <div className="flex gap-4 mb-6">
+          <button 
+            type="button"
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${tab === 'player' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
+            onClick={() => setTab('player')}
+          >
+            Player
+          </button>
+          <button 
+            type="button"
+            className={`flex-1 py-2 text-xs font-bold uppercase tracking-wider border-b-2 transition-colors ${tab === 'admin' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
+            onClick={() => setTab('admin')}
+          >
+            Admin
+          </button>
+        </div>
+
+        <form onSubmit={handleLogin} className="space-y-6">
+          {tab === 'player' && (
+            <div>
+              <label className="block text-[10px] uppercase text-white/50 mb-2">Select Player Name</label>
+              <select 
+                value={selectedPlayer}
+                onChange={(e) => setSelectedPlayer(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+              >
+                {DEFAULT_PLAYERS.map(p => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {tab === 'admin' && (
+            <div>
+              <label className="block text-[10px] uppercase text-white/50 mb-2">Admin Password</label>
+              <input 
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-black/50 border border-white/10 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                placeholder="Enter admin password"
+              />
+            </div>
+          )}
+
+          {error && <div className="text-red-500 text-xs text-center">{error}</div>}
+
+          <button 
+            type="submit"
+            className="w-full py-4 bg-fc-neon-green text-black uppercase tracking-widest font-black text-xs hover:bg-fc-purple-light transition-colors rounded-sm"
+          >
+            Proceed
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+}
+
 export default function App() {
   const [hasQuotaError, setHasQuotaError] = useState(false);
 
@@ -3541,6 +3643,7 @@ export default function App() {
 
   // Firebase State
   const [user, setUser] = useState<User | null>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
   const [config, setConfig] = useState<Config>({ registrationEnabled: false });
   const [isRegistrationModalOpen, setIsRegistrationModalOpen] = useState(false);
   const [isSubmittingRegistration, setIsSubmittingRegistration] = useState(false);
@@ -4163,7 +4266,12 @@ export default function App() {
       return;
     }
     try {
+      // Find the registration first to get userId
+      const reg = registrations.find(r => r.id === id);
       await deleteDoc(doc(db, 'registrations', id));
+      if (reg && reg.userId) {
+        await deleteDoc(doc(db, 'users', reg.userId));
+      }
     } catch (error) {
       console.error("Delete failed:", error);
     }
@@ -4859,7 +4967,8 @@ export default function App() {
     let currentUser = user;
     if (!currentUser || currentUser.isAnonymous) {
       try {
-        currentUser = await signIn(); // Force Google login for registration
+        setShowLoginModal(true);
+        return; // Pause registration to allow login
       } catch (error) {
         console.error("Auth failed:", error);
         return;
@@ -5369,7 +5478,7 @@ export default function App() {
               </div>
             ) : (
               <button 
-                onClick={() => signIn().catch(e => alert(e.message))}
+                onClick={() => setShowLoginModal(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-sm bg-fc-purple-light/30 border border-fc-neon-green/50/30 text-fc-neon-green hover:bg-fc-neon-green-dark/30 transition-all text-[10px] font-black uppercase tracking-widest backdrop-blur-sm"
               >
                 <LogIn className="w-3.5 h-3.5" />
@@ -5495,7 +5604,7 @@ export default function App() {
               {!user ? (
                 <div className="p-12 text-center bg-white/5 rounded-sm border border-white/10">
                   <p className="text-white/40 mb-6">Please login to access your campaign portal.</p>
-                  <button onClick={() => signIn().catch(e => alert(e.message))} className="px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
+                  <button onClick={() => setShowLoginModal(true)} className="px-8 py-4 bg-fc-neon-green text-black rounded-sm font-black uppercase tracking-widest text-xs hover:bg-fc-purple-light transition-all">Login Now</button>
                 </div>
               ) : (
                 (() => {
@@ -6625,7 +6734,7 @@ export default function App() {
                        onClick={async () => {
                           if (!user || user.isAnonymous) {
                             try {
-                              await signIn();
+                              setShowLoginModal(true);
                             } catch (e) {
                               console.error("Login failed", e);
                               return;
@@ -6692,6 +6801,7 @@ export default function App() {
 
       {/* Modals */}
       <AnimatePresence>
+        {showLoginModal && <LoginModal onClose={() => setShowLoginModal(false)} />}
         {selectedMatch && (
           <MatchDetailsModal 
             match={selectedMatch} 

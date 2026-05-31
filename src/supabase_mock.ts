@@ -1,10 +1,6 @@
 const rawApiUrl = (import.meta as any).env?.VITE_API_URL || "";
 const VITE_API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
 
-import { auth as firebaseAuth, googleProvider, signInWithPopup, firebaseSignOut } from './firebase';
-
-export { firebaseAuth as firebaseAuthImpl }; // Just optionally
-
 export const supabase = {
   removeChannel: (channel: any) => {},
 };
@@ -90,70 +86,40 @@ export function getAuth(app: any) {
 
 export class GoogleAuthProvider {}
 
-export async function signIn() {
+export async function signIn(username?: string, password?: string, role: string = 'user') {
   try {
-    const apiKey = import.meta.env.VITE_FIREBASE_API_KEY || "";
-    if (!apiKey || apiKey === "MY_API_KEY" || apiKey.includes("YOUR_")) {
-       console.warn("Firebase config not found! Falling back to dummy login");
-       const res = await apiFetch("/api/auth/login", {
-         method: "POST",
-         body: JSON.stringify({ email: "admin@uxl.com", password: "admin123" }),
-       });
-       localStorage.setItem("auth_token", res.token);
-       const userRes = await apiFetch("/api/auth/me");
-       authInstance.currentUser = userRes.user as User;
-       authInstance.notifyListeners();
+    const body = { username, password, role };
+    const res = await apiFetch("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+    });
 
-       // Check if user exists in Firestore, if not create
-       const userRef = doc(db, 'users', authInstance.currentUser.uid);
-       const userSnap = await getDoc(userRef);
-       if (!userSnap.exists()) {
-         await setDoc(userRef, {
-           uid: authInstance.currentUser.uid,
-           email: authInstance.currentUser.email,
-           role: 'user',
-           createdAt: new Date().toISOString()
-         });
-       }
-       return authInstance.currentUser;
+    if (!res || res.success === false) {
+      throw new Error(res?.error || "Login Failed");
     }
 
-    try {
-      const result = await signInWithPopup(firebaseAuth, googleProvider);
-      const idToken = await result.user.getIdToken();
-
-      const res = await apiFetch("/api/auth/google", {
-        method: "POST",
-        body: JSON.stringify({ idToken }),
-      });
-
-      localStorage.setItem("auth_token", res.token);
-      
-      authInstance.currentUser = res.user as User;
-    } catch (fbErr: any) {
-      console.error("Firebase login failed:", fbErr.message);
-      throw new Error(`Google Login Failed: ${fbErr.message}`);
-    }
-
+    localStorage.setItem("auth_token", res.token);
+    
+    authInstance.currentUser = res.user as User;
     authInstance.notifyListeners();
 
-    // Check if user exists in Firestore, if not create
+    // Check if user exists in db, if not create
     const userRef = doc(db, 'users', authInstance.currentUser.uid);
     const userSnap = await getDoc(userRef);
-    
     if (!userSnap.exists()) {
       await setDoc(userRef, {
         uid: authInstance.currentUser.uid,
         email: authInstance.currentUser.email,
-        role: 'user',
+        displayName: authInstance.currentUser.displayName || username,
+        role: authInstance.currentUser.role,
         createdAt: new Date().toISOString()
       });
     }
 
     return authInstance.currentUser;
-  } catch (error) {
-    console.error("Error signing in with Google:", error);
-    throw error;
+  } catch (error: any) {
+    console.error("Error signing in:", error);
+    throw new Error(error.message || "Failed to sign in");
   }
 }
 
@@ -176,11 +142,6 @@ export async function signInAnon() {
 }
 
 export async function signOut(authObj: any = null) {
-  try {
-    await firebaseSignOut(firebaseAuth);
-  } catch (e) {
-    console.warn("Firebase signout error:", e);
-  }
   localStorage.removeItem("auth_token");
   authInstance.currentUser = null;
   authInstance.notifyListeners();
