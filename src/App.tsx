@@ -4831,7 +4831,7 @@ export default function App() {
   };
 
   const handleUpdateConfig = async (newConfig: Config) => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isDrawAdmin) return;
     setIsSavingAdmin(true);
     try {
       await setDoc(doc(db, 'config', 'system'), newConfig, { merge: true });
