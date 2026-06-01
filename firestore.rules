@@ -65,6 +65,13 @@ service cloud.firestore {
       );
     }
 
+    function isDrawAdmin() {
+      return isAuthenticated() && (
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) && 
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == "draw_admin"
+      );
+    }
+
     function isValidUser(data) {
       return data.keys().hasAll(['uid', 'email', 'role']) &&
              data.uid is string &&
@@ -121,8 +128,8 @@ service cloud.firestore {
     }
 
     match /registrations/{registrationId} {
-      allow get: if isAdmin() || isOwner(registrationId) || (isAuthenticated() && request.auth.token.role == "draw_admin");
-      allow list: if isAdmin() || (resource.data.status == 'approved') || (isAuthenticated() && request.auth.token.role == "draw_admin");
+      allow get: if isAdmin() || isOwner(registrationId) || isDrawAdmin();
+      allow list: if isAdmin() || isDrawAdmin() || (resource.data.status == 'approved');
       allow create: if isAuthenticated() && isValidRegistration(request.resource.data);
       allow update, delete: if isAdmin();
     }

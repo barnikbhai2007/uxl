@@ -6139,7 +6139,7 @@ export default function App() {
     });
 
     let unsubscribeRegs: any;
-    if (isAdmin) {
+    if (isAdmin || isDrawAdmin) {
       // For Admin, we can afford onSnapshot to manage registrations comfortably,
       // but to save quota we can use getDocs polling. Since admin is a single user, onSnapshot is fine.
       const q = query(collection(db, 'registrations'));
@@ -6158,7 +6158,7 @@ export default function App() {
       unsubQual();
       if (unsubscribeRegs) unsubscribeRegs();
     };
-  }, [isAdmin]);
+  }, [isAdmin, isDrawAdmin]);
 
   useEffect(() => {
     // Check if user has already registered

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Registration, Config, Team } from '../types';
+import { WORLD_CUP_TEAMS } from '../constants';
 
 interface DrawAdminPanelProps {
   registrations: Registration[];
@@ -185,28 +186,54 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2 }}
-                    className="flex flex-col items-center justify-center gap-3"
+                    className="flex flex-col items-center justify-center relative min-h-[220px] w-full"
                   >
-                    <div className="text-2xl text-fc-neon-green/80 font-bold uppercase tracking-widest bg-fc-neon-green/10 px-6 py-2 rounded-xl mb-2">
-                       {drawnPlayer.player.country || 'Unknown Country'}
-                    </div>
+                    {/* FLAG REVEAL (Fades in, stays, fades out within 3s) */}
                     <motion.div 
-                      initial={{ opacity: 0, scale: 0.8 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 1.5, type: "spring", bounce: 0.6 }}
-                      className="text-5xl md:text-6xl font-display font-black text-white text-shadow-xl mb-6 uppercase"
+                      initial={{ opacity: 0, scale: 0.5 }}
+                      animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1, 1, 0.8] }}
+                      transition={{ duration: 3, times: [0, 0.15, 0.85, 1], ease: "easeInOut" }}
+                      className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
                     >
-                      {drawnPlayer.player.name}
+                      <span className="text-8xl drop-shadow-2xl">
+                        {WORLD_CUP_TEAMS.find(t => t.name === drawnPlayer.player.country)?.flag || '🌍'}
+                      </span>
+                      <span className="text-xl font-black text-white/80 uppercase tracking-widest mt-4">
+                         {drawnPlayer.player.country || 'Unknown Country'}
+                      </span>
+                    </motion.div>
+
+                    {/* NAME REVEAL WITH GREEN HIGHLIGHT */}
+                    <motion.div 
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: 4, type: "spring", bounce: 0.5 }}
+                      className="relative inline-flex items-center justify-center px-4 py-2 mt-4"
+                    >
+                      <motion.div 
+                        initial={{ scaleX: 0 }}
+                        animate={{ scaleX: 1 }}
+                        transition={{ delay: 4.4, duration: 0.4, ease: "easeOut" }}
+                        className="absolute inset-0 bg-fc-neon-green -skew-x-6 z-0 origin-left"
+                      />
+                      <motion.span 
+                        initial={{ color: "#ffffff" }}
+                        animate={{ color: "#000000" }}
+                        transition={{ delay: 4.4, duration: 0.1 }}
+                        className="relative z-10 text-5xl md:text-7xl font-display font-black uppercase tracking-tight"
+                      >
+                        {drawnPlayer.player.name}
+                      </motion.span>
                     </motion.div>
                   </motion.div>
 
                   <motion.div 
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 2.2 }}
-                    className="inline-block px-8 py-3 bg-fc-neon-green text-black font-black uppercase tracking-widest rounded-xl text-xl shadow-[0_0_20px_rgba(20,255,0,0.3)]"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 5.2 }}
+                    className="inline-block px-8 py-3 bg-white/10 text-white border border-white/20 font-black uppercase tracking-widest rounded-xl text-xl mt-6 shadow-[0_0_20px_rgba(255,255,255,0.05)]"
                   >
-                    Assigned to Group {drawnPlayer.targetGroup}
+                    Assigned to Group <span className="text-fc-neon-green">{drawnPlayer.targetGroup}</span>
                   </motion.div>
                 </motion.div>
               )}
