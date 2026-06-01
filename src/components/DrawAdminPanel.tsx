@@ -90,8 +90,32 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
 
   return (
     <div className="bg-white/5 border border-white/10 rounded-2xl p-8 min-h-[500px]">
-      <div className="flex items-center justify-between mb-8">
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <h3 className="text-2xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green">Live Draw Studio</h3>
+      </div>
+      
+      <div className="mb-10 p-6 bg-black/40 border border-white/10 rounded-xl text-white/80 font-sans text-sm md:text-base leading-relaxed">
+        <h4 className="text-fc-neon-green font-bold text-lg mb-4 uppercase tracking-wider">Tournament Format</h4>
+        
+        <h5 className="font-bold text-white mb-2 uppercase tracking-wide">Group Stage</h5>
+        <ul className="list-disc list-inside space-y-1 mb-6 text-white/70 marker:text-fc-neon-green">
+          <li>7 groups total</li>
+          <li>Each group plays 4 matches</li>
+          <li>Top 2 teams from each group qualify for the Round of 16</li>
+          <li>The bottom team is eliminated</li>
+          <li>2 additional teams (from the remaining 7 third-place finishers) will be selected for the Round of 16 using an AI-based system &mdash; Goal Difference and Goals Scored will be key factors, favoring the best performers from the toughest groups</li>
+        </ul>
+
+        <h5 className="font-bold text-white mb-2 uppercase tracking-wide">Knockout Stage</h5>
+        <ul className="list-disc list-inside space-y-1 mb-6 text-white/70 marker:text-fc-neon-green">
+          <li>Daily schedule: 2 matches per day in the Group Stage, 1 match per day in the Knockout rounds</li>
+        </ul>
+
+        <h5 className="font-bold text-white mb-2 uppercase tracking-wide">Rules</h5>
+        <ul className="list-disc list-inside space-y-1 text-white/70 marker:text-fc-neon-green">
+          <li>No Home/Away rule &mdash; teams can play anywhere</li>
+          <li>Network issues are not the admin's responsibility &mdash; a match can be withdrawn or replayed if the opponent agrees</li>
+        </ul>
       </div>
       
       {!isWrapped && pots.length === 0 && (
