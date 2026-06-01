@@ -4208,7 +4208,7 @@ export default function App() {
     fetchNews();
     
     // Simulate realtime updates by polling every 30 seconds since we removed websockets
-    const interval = setInterval(fetchNews, 30000);
+    const interval = setInterval(fetchNews, 300000);
     return () => clearInterval(interval);
   }, []);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
