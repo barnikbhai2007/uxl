@@ -67,20 +67,21 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
     
     window.scrollTo({ top: 0, behavior: 'smooth' });
     
+    // Assign to group immediately
+    const targetGroup = groupKeys[currentGroupIdx % numGroups];
+    
+    const newAssignments = { ...groupAssignmentsRef.current };
+    newAssignments[player.id] = targetGroup;
+    groupAssignmentsRef.current = newAssignments;
+    handleUpdateConfig({ ...config, groupAssignments: newAssignments });
+    
+    setCurrentGroupIdx(prev => prev + 1);
+    
     // Animate Unwrapping
     setUnwrapping(true);
     setDrawnPlayer(null);
     
-    setTimeout(async () => {
-      const targetGroup = groupKeys[currentGroupIdx % numGroups];
-      
-      const newAssignments = { ...groupAssignmentsRef.current };
-      newAssignments[player.id] = targetGroup;
-      
-      groupAssignmentsRef.current = newAssignments;
-      await handleUpdateConfig({ ...config, groupAssignments: newAssignments });
-      
-      setCurrentGroupIdx(prev => prev + 1);
+    setTimeout(() => {
       setDrawnPlayer({ player, targetGroup });
       setUnwrapping(false);
     }, 1800);
@@ -125,13 +126,20 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                     <motion.div 
                       key={p.id}
                       initial={{ scale: 0, opacity: 0 }}
-                      animate={isWrapping ? { rotateX: [0, 90, 180], scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                      animate={isWrapping ? { 
+                        scale: [1, 0.5, 0], 
+                        scaleY: [1, 0.2, 0],
+                        rotate: [0, -10, 45],
+                        opacity: [1, 1, 0] 
+                      } : { scale: 1, opacity: 1 }}
                       transition={{ 
-                        duration: isWrapping ? 0.4 : 0.3, 
-                        delay: isWrapping ? Math.random() * 0.5 : i * 0.2 + idx * 0.1 
+                        duration: isWrapping ? 0.6 : 0.3, 
+                        delay: isWrapping ? Math.random() * 0.4 : i * 0.2 + idx * 0.1,
+                        ease: "easeInOut"
                       }}
-                      className="bg-[#f8f5ee] px-4 py-2.5 rounded shadow-sm text-black font-sans relative transform -rotate-1 origin-center"
+                      className="bg-[#f8f5ee] px-4 py-2.5 rounded shadow-sm text-black font-sans relative transform -rotate-1 origin-center flex flex-col items-center justify-center border-l-4 border-black/10"
                     >
+                      <span className="text-[10px] text-gray-400 font-black uppercase tracking-widest">{p.country || 'Unknown'}</span>
                       <span className="font-bold tracking-tight text-sm">{p.name}</span>
                     </motion.div>
                   ))}
@@ -169,13 +177,37 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                   initial={{ scale: 0.5, opacity: 0, y: 50 }}
                   animate={{ scale: 1, opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -50 }}
-                  className="relative z-10"
+                  className="relative z-10 flex flex-col items-center"
                 >
-                  <div className="text-xs text-white/50 font-bold uppercase tracking-widest mb-2">Drawn Player</div>
-                  <div className="text-4xl md:text-5xl font-display font-black text-white text-shadow-lg mb-4 uppercase">{drawnPlayer.player.name}</div>
-                  <div className="inline-block px-6 py-2 bg-fc-neon-green text-black font-black uppercase tracking-widest rounded-xl text-lg">
+                  <div className="text-xs text-white/50 font-bold uppercase tracking-widest mb-4">Drawn Player</div>
+                  
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex flex-col items-center justify-center gap-3"
+                  >
+                    <div className="text-2xl text-fc-neon-green/80 font-bold uppercase tracking-widest bg-fc-neon-green/10 px-6 py-2 rounded-xl mb-2">
+                       {drawnPlayer.player.country || 'Unknown Country'}
+                    </div>
+                    <motion.div 
+                      initial={{ opacity: 0, scale: 0.8 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 1.5, type: "spring", bounce: 0.6 }}
+                      className="text-5xl md:text-6xl font-display font-black text-white text-shadow-xl mb-6 uppercase"
+                    >
+                      {drawnPlayer.player.name}
+                    </motion.div>
+                  </motion.div>
+
+                  <motion.div 
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 2.2 }}
+                    className="inline-block px-8 py-3 bg-fc-neon-green text-black font-black uppercase tracking-widest rounded-xl text-xl shadow-[0_0_20px_rgba(20,255,0,0.3)]"
+                  >
                     Assigned to Group {drawnPlayer.targetGroup}
-                  </div>
+                  </motion.div>
                 </motion.div>
               )}
             </AnimatePresence>

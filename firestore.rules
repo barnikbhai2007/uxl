@@ -121,8 +121,8 @@ service cloud.firestore {
     }
 
     match /registrations/{registrationId} {
-      allow get: if isAdmin() || isOwner(registrationId);
-      allow list: if isAdmin() || (resource.data.status == 'approved');
+      allow get: if isAdmin() || isOwner(registrationId) || (isAuthenticated() && request.auth.token.role == "draw_admin");
+      allow list: if isAdmin() || (resource.data.status == 'approved') || (isAuthenticated() && request.auth.token.role == "draw_admin");
       allow create: if isAuthenticated() && isValidRegistration(request.resource.data);
       allow update, delete: if isAdmin();
     }
