@@ -188,19 +188,29 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                     transition={{ delay: 0.2 }}
                     className="flex flex-col items-center justify-center relative min-h-[220px] w-full"
                   >
-                    {/* FLAG REVEAL (Fades in, stays, fades out within 3s) */}
+                    {/* COUNTRY REVEAL (Fades in, highlights, stays, fades out within 3s) */}
                     <motion.div 
-                      initial={{ opacity: 0, scale: 0.5 }}
-                      animate={{ opacity: [0, 1, 1, 0], scale: [0.5, 1, 1, 0.8] }}
+                      initial={{ opacity: 0, y: 30 }}
+                      animate={{ opacity: [0, 1, 1, 0], y: [30, 0, 0, -20] }}
                       transition={{ duration: 3, times: [0, 0.15, 0.85, 1], ease: "easeInOut" }}
                       className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none"
                     >
-                      <span className="text-8xl drop-shadow-2xl">
-                        {WORLD_CUP_TEAMS.find(t => t.name === drawnPlayer.player.country)?.flag || '🌍'}
-                      </span>
-                      <span className="text-xl font-black text-white/80 uppercase tracking-widest mt-4">
-                         {drawnPlayer.player.country || 'Unknown Country'}
-                      </span>
+                      <div className="relative inline-flex items-center justify-center px-4 py-2 mt-4 pointer-events-auto">
+                        <motion.div 
+                          initial={{ scaleX: 0 }}
+                          animate={{ scaleX: 1 }}
+                          transition={{ delay: 0.4, duration: 0.4, ease: "easeOut" }}
+                          className="absolute inset-0 bg-white -skew-x-6 z-0 origin-left"
+                        />
+                        <motion.span 
+                          initial={{ color: "#ffffff" }}
+                          animate={{ color: "#000000" }}
+                          transition={{ delay: 0.4, duration: 0.1 }}
+                          className="relative z-10 text-4xl md:text-6xl font-display font-black uppercase tracking-tight"
+                        >
+                          {drawnPlayer.player.country || 'Unknown Country'}
+                        </motion.span>
+                      </div>
                     </motion.div>
 
                     {/* NAME REVEAL WITH GREEN HIGHLIGHT */}
