@@ -3033,7 +3033,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       Schedule Generator
                     </h3>
                   </div>
-                  <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} />
+                  <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} config={config} />
                 </div>
               </div>
             )}
@@ -7444,7 +7444,7 @@ export default function App() {
               </div>
 
               {isAdmin && isEditingMode && (
-                <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} />
+                <ScheduleRandomizer teams={registrations.filter(r => r.status === 'approved')} config={config} />
               )}
 
                     {(() => {

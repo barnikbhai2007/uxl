@@ -1,10 +1,10 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { Registration } from './types';
+import { Registration, Config } from './types';
 import { Calendar, Trash2, Save, X, Settings2, Play, Users, GitBranch, ChevronDown, ChevronRight, BarChart2 } from 'lucide-react';
 import { db, doc, writeBatch, query, collection, where, getDocs, deleteDoc, onSnapshot, updateDoc, orderBy } from './supabase_mock';
 import { v4 as uuidv4 } from 'uuid';
 
-export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
+export const ScheduleRandomizer = ({ teams, config }: { teams: Registration[], config?: Config }) => {
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
   const [skipSundays, setSkipSundays] = useState(true);
   const [previewData, setPreviewData] = useState<any>(null);
@@ -130,18 +130,14 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
       return;
     }
 
-    const rounds = generatePairs(teams);
     const homeCount: Record<string, number> = {};
     const awayCount: Record<string, number> = {};
-    const history: Record<string, string[]> = {};
-    
     teams.forEach(t => { 
       homeCount[t.fcName] = 0; 
       awayCount[t.fcName] = 0; 
-      history[t.fcName] = []; 
     });
     
-    const allMatches = [];
+    const allMatches: any[] = [];
     
     let currentDay = 1;
     let currDate = startDate;
@@ -149,87 +145,188 @@ export const ScheduleRandomizer = ({ teams }: { teams: Registration[] }) => {
     if (skipSundays && dateIsSunday) {
         currDate = nextIsoDate(currDate);
     }
-    let matchesThisDay: Record<string, number> = {};
     
     let matchNum = 1;
-    
-    // Process round by round
-    rounds.forEach((roundPairs, roundIdx) => {
-      // Shuffle pairs within the round optionally, but we process them sequentially
-      roundPairs.forEach(pair => {
-         let [t1, t2] = pair;
-         if (t1.id === 'bye' || t2.id === 'bye') {
-           const realTeam = t1.id === 'bye' ? t2 : t1;
+
+    if (config?.groupType === 'many') {
+      const groups: Record<string, Registration[]> = {};
+      teams.forEach(t => {
+         const g = config?.groupAssignments?.[t.id] || 'Unassigned';
+         if (!groups[g]) groups[g] = [];
+         groups[g].push(t);
+      });
+
+      // We need to schedule across all groups. 
+      // Day 1: Teams play 2 matches (home and away). 
+      // Day 2: Teams play 2 matches (away and home).
+      Object.keys(groups).forEach(g => {
+         const groupTeams = groups[g];
+         if (groupTeams.length === 3) {
+           const [t1, t2, t3] = groupTeams;
+
+           // Day 1 Matches
+           const day1Matches = [
+             { home: t1, away: t2 },
+             { home: t2, away: t3 },
+             { home: t3, away: t1 }
+           ];
+
+           // Day 2 Matches
+           const day2Matches = [
+             { home: t2, away: t1 },
+             { home: t3, away: t2 },
+             { home: t1, away: t3 }
+           ];
+
+           const pushMatch = (home: Registration, away: Registration, dNum: number) => {
+             homeCount[home.fcName]++;
+             awayCount[away.fcName]++;
+             allMatches.push({
+               id: uuidv4(),
+               homeTeamId: home.id,
+               awayTeamId: away.id,
+               homeTeamName: home.fcName,
+               awayTeamName: away.fcName,
+               scheduledDate: dNum === 1 ? currDate : nextIsoDate(currDate),
+               matchday: dNum,
+               matchNumber: matchNum++,
+               round: dNum,
+               status: 'scheduled',
+               homeScore: null,
+               awayScore: null,
+               isBye: false
+             });
+           };
+
+           day1Matches.forEach(m => pushMatch(m.home, m.away, 1));
+           day2Matches.forEach(m => pushMatch(m.home, m.away, 2));
+
+         } else {
+           // Fallback for groups != 3
+           for (let i = 0; i < groupTeams.length; i++) {
+             for (let j = i + 1; j < groupTeams.length; j++) {
+               // 1st leg
+               allMatches.push({
+                 id: uuidv4(),
+                 homeTeamId: groupTeams[i].id,
+                 awayTeamId: groupTeams[j].id,
+                 homeTeamName: groupTeams[i].fcName,
+                 awayTeamName: groupTeams[j].fcName,
+                 scheduledDate: currDate,
+                 matchday: 1,
+                 matchNumber: matchNum++,
+                 round: 1,
+                 status: 'scheduled',
+                 homeScore: null,
+                 awayScore: null,
+                 isBye: false
+               });
+               homeCount[groupTeams[i].fcName]++;
+               awayCount[groupTeams[j].fcName]++;
+
+               // 2nd leg
+               allMatches.push({
+                 id: uuidv4(),
+                 homeTeamId: groupTeams[j].id,
+                 awayTeamId: groupTeams[i].id,
+                 homeTeamName: groupTeams[j].fcName,
+                 awayTeamName: groupTeams[i].fcName,
+                 scheduledDate: nextIsoDate(currDate),
+                 matchday: 2,
+                 matchNumber: matchNum++,
+                 round: 2,
+                 status: 'scheduled',
+                 homeScore: null,
+                 awayScore: null,
+                 isBye: false
+               });
+               homeCount[groupTeams[j].fcName]++;
+               awayCount[groupTeams[i].fcName]++;
+             }
+           }
+         }
+      });
+      currentDay = 2; // Maximum matchday
+    } else {
+      const rounds = generatePairs(teams);
+      const history: Record<string, string[]> = {};
+      teams.forEach(t => { history[t.fcName] = []; });
+      let matchesThisDay: Record<string, number> = {};
+
+      rounds.forEach((roundPairs, roundIdx) => {
+        roundPairs.forEach(pair => {
+           let [t1, t2] = pair;
+           if (t1.id === 'bye' || t2.id === 'bye') {
+             const realTeam = t1.id === 'bye' ? t2 : t1;
+             allMatches.push({
+               id: uuidv4(),
+               homeTeamId: realTeam.id,
+               awayTeamId: 'bye',
+               homeTeamName: realTeam.fcName,
+               awayTeamName: 'BYE',
+               scheduledDate: currDate,
+               matchday: currentDay,
+               round: roundIdx + 1,
+               status: 'bye',
+               isBye: true
+             });
+             return;
+           }
+           
+           let home = t1;
+           let away = t2;
+           
+           const t1Hist = history[t1.fcName];
+           const t2Hist = history[t2.fcName];
+           const t1StreakHome = t1Hist.length >= 2 && t1Hist[t1Hist.length-1] === 'H' && t1Hist[t1Hist.length-2] === 'H';
+           const t1StreakAway = t1Hist.length >= 2 && t1Hist[t1Hist.length-1] === 'A' && t1Hist[t1Hist.length-2] === 'A';
+           const t2StreakHome = t2Hist.length >= 2 && t2Hist[t2Hist.length-1] === 'H' && t2Hist[t2Hist.length-2] === 'H';
+           const t2StreakAway = t2Hist.length >= 2 && t2Hist[t2Hist.length-1] === 'A' && t2Hist[t2Hist.length-2] === 'A';
+  
+           if (t1StreakHome || t2StreakAway) {
+               home = t2; away = t1;
+           } else if (t1StreakAway || t2StreakHome) {
+               home = t1; away = t2;
+           } else if (homeCount[t1.fcName] < homeCount[t2.fcName]) {
+              home = t1; away = t2;
+           } else if (homeCount[t2.fcName] < homeCount[t1.fcName]) {
+              home = t2; away = t1;
+           } else {
+              if (Math.random() > 0.5) { home = t1; away = t2; }
+              else { home = t2; away = t1; }
+           }
+           
+           if ((matchesThisDay[home.fcName] || 0) >= 2 || (matchesThisDay[away.fcName] || 0) >= 2) {
+              currentDay++;
+              currDate = nextIsoDate(currDate);
+              matchesThisDay = {};
+           }
+           
+           matchesThisDay[home.fcName] = (matchesThisDay[home.fcName] || 0) + 1;
+           matchesThisDay[away.fcName] = (matchesThisDay[away.fcName] || 0) + 1;
+           homeCount[home.fcName]++;
+           awayCount[away.fcName]++;
+           history[home.fcName].push('H');
+           history[away.fcName].push('A');
+           
            allMatches.push({
              id: uuidv4(),
-             homeTeamId: realTeam.id,
-             awayTeamId: 'bye',
-             homeTeamName: realTeam.fcName,
-             awayTeamName: 'BYE',
+             homeTeamId: home.id,
+             awayTeamId: away.id,
+             homeTeamName: home.fcName,
+             awayTeamName: away.fcName,
              scheduledDate: currDate,
              matchday: currentDay,
+             matchNumber: matchNum++,
              round: roundIdx + 1,
-             status: 'bye',
-             isBye: true
+             status: 'scheduled',
+             homeScore: null,
+             awayScore: null,
+             isBye: false
            });
-           return;
-         }
-         
-         let home = t1;
-         let away = t2;
-         
-         const t1Hist = history[t1.fcName];
-         const t2Hist = history[t2.fcName];
-         const t1StreakHome = t1Hist.length >= 2 && t1Hist[t1Hist.length-1] === 'H' && t1Hist[t1Hist.length-2] === 'H';
-         const t1StreakAway = t1Hist.length >= 2 && t1Hist[t1Hist.length-1] === 'A' && t1Hist[t1Hist.length-2] === 'A';
-         const t2StreakHome = t2Hist.length >= 2 && t2Hist[t2Hist.length-1] === 'H' && t2Hist[t2Hist.length-2] === 'H';
-         const t2StreakAway = t2Hist.length >= 2 && t2Hist[t2Hist.length-1] === 'A' && t2Hist[t2Hist.length-2] === 'A';
-
-         if (t1StreakHome || t2StreakAway) {
-             home = t2; away = t1;
-         } else if (t1StreakAway || t2StreakHome) {
-             home = t1; away = t2;
-         } else if (homeCount[t1.fcName] < homeCount[t2.fcName]) {
-            home = t1; away = t2;
-         } else if (homeCount[t2.fcName] < homeCount[t1.fcName]) {
-            home = t2; away = t1;
-         } else {
-            if (Math.random() > 0.5) { home = t1; away = t2; }
-            else { home = t2; away = t1; }
-         }
-         
-         // Enforce max 2 matches per day constraint:
-         if ((matchesThisDay[home.fcName] || 0) >= 2 || (matchesThisDay[away.fcName] || 0) >= 2) {
-            currentDay++;
-            currDate = nextIsoDate(currDate);
-            matchesThisDay = {};
-         }
-         
-         matchesThisDay[home.fcName] = (matchesThisDay[home.fcName] || 0) + 1;
-         matchesThisDay[away.fcName] = (matchesThisDay[away.fcName] || 0) + 1;
-         homeCount[home.fcName]++;
-         awayCount[away.fcName]++;
-         
-         history[home.fcName].push('H');
-         history[away.fcName].push('A');
-         
-         allMatches.push({
-           id: uuidv4(),
-           homeTeamId: home.id,
-           awayTeamId: away.id,
-           homeTeamName: home.fcName,
-           awayTeamName: away.fcName,
-           scheduledDate: currDate,
-           matchday: currentDay,
-           matchNumber: matchNum++,
-           round: roundIdx + 1,
-           status: 'scheduled',
-           homeScore: null,
-           awayScore: null,
-           isBye: false
-         });
+        });
       });
-    });
+    }
 
     setPreviewData({
       matches: allMatches,
