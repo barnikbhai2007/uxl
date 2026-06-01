@@ -2365,6 +2365,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       setIsAiLoading(false);
     };
 
+    if (!isAdmin && !isDrawAdmin) {
+      return (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] bg-fc-purple-dark text-white flex flex-col items-center justify-center font-sans tracking-tight"
+        >
+          <div className="text-center max-w-sm px-6">
+            <h2 className="text-2xl font-bold mb-4 text-red-500">Access Restricted</h2>
+            <p className="text-white/60 mb-8">This panel has been strictly disabled or you lack required permissions.</p>
+            <button onClick={onClose} className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-xl transition-all font-bold">Close</button>
+          </div>
+        </motion.div>
+      );
+    }
+
     if (!isAdmin && isDrawAdmin) {
       return (
         <motion.div 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Registration, Config, Team } from '../types';
 
@@ -15,9 +15,16 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
   const [numGroups, setNumGroups] = useState(3);
   const [pots, setPots] = useState<Registration[][]>([]);
   const [isWrapped, setIsWrapped] = useState(false);
+  const [isWrapping, setIsWrapping] = useState(false);
   const [currentGroupIdx, setCurrentGroupIdx] = useState(0);
-  const [drawnPlayer, setDrawnPlayer] = useState<Registration | null>(null);
+  const [drawnPlayer, setDrawnPlayer] = useState<{player: Registration, targetGroup: string} | null>(null);
   const [unwrapping, setUnwrapping] = useState(false);
+
+  const groupAssignmentsRef = useRef<Record<string, string>>(config.groupAssignments || {});
+  
+  useEffect(() => {
+    groupAssignmentsRef.current = config.groupAssignments || {};
+  }, [config.groupAssignments]);
   
   const groupKeys = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'].slice(0, numGroups);
 
@@ -32,23 +39,28 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
     
     setPots(newPots);
     setIsWrapped(false);
+    setIsWrapping(false);
     setCurrentGroupIdx(0);
     setDrawnPlayer(null);
   };
 
   const wrapNames = () => {
-    setIsWrapped(true);
+    setIsWrapping(true);
+    setTimeout(() => {
+      setIsWrapping(false);
+      setIsWrapped(true);
+    }, 1200);
   };
 
   const drawFromPot = async (potIndex: number) => {
-    if (pots[potIndex].length === 0) return;
+    if (pots[potIndex].length === 0 || unwrapping || isWrapping) return;
     
     // Pick random player from the pot
     const pot = [...pots[potIndex]];
     const randomIndex = Math.floor(Math.random() * pot.length);
     const player = pot.splice(randomIndex, 1)[0];
     
-    // Update pots
+    // Update pots immediately
     const newPots = [...pots];
     newPots[potIndex] = pot;
     setPots(newPots);
@@ -60,19 +72,18 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
     setDrawnPlayer(null);
     
     setTimeout(async () => {
-      setDrawnPlayer(player);
-      setUnwrapping(false);
-      
-      // Assign to group
       const targetGroup = groupKeys[currentGroupIdx % numGroups];
       
-      const newAssignments = { ...(config.groupAssignments || {}) };
+      const newAssignments = { ...groupAssignmentsRef.current };
       newAssignments[player.id] = targetGroup;
       
+      groupAssignmentsRef.current = newAssignments;
       await handleUpdateConfig({ ...config, groupAssignments: newAssignments });
       
       setCurrentGroupIdx(prev => prev + 1);
-    }, 2000);
+      setDrawnPlayer({ player, targetGroup });
+      setUnwrapping(false);
+    }, 1800);
   };
 
   return (
@@ -114,11 +125,14 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                     <motion.div 
                       key={p.id}
                       initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      transition={{ delay: i * 0.2 + idx * 0.1 }}
-                      className="bg-gradient-to-br from-[#f8f5ee] to-[#e8e4d9] px-4 py-2.5 rounded shadow-sm text-black font-sans relative before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/cream-paper.png')] before:opacity-30 before:pointer-events-none transform -rotate-1 hover:rotate-0 transition-transform"
+                      animate={isWrapping ? { rotateX: [0, 90, 180], scale: 0, opacity: 0 } : { scale: 1, opacity: 1 }}
+                      transition={{ 
+                        duration: isWrapping ? 0.4 : 0.3, 
+                        delay: isWrapping ? Math.random() * 0.5 : i * 0.2 + idx * 0.1 
+                      }}
+                      className="bg-[#f8f5ee] px-4 py-2.5 rounded shadow-sm text-black font-sans relative transform -rotate-1 origin-center"
                     >
-                      <span className="font-bold tracking-tight text-sm drop-shadow-sm">{p.name}</span>
+                      <span className="font-bold tracking-tight text-sm">{p.name}</span>
                     </motion.div>
                   ))}
                 </div>
@@ -136,14 +150,14 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
               <motion.div
                 initial={{ scale: 0.5, rotate: -180 }}
                 animate={{ scale: 3, rotate: 0, opacity: [1, 1, 0] }}
-                transition={{ duration: 2, ease: "easeInOut" }}
-                className="w-32 h-32 bg-gradient-to-br from-[#f8f5ee] to-[#d6d2c4] rounded-full flex items-center justify-center shadow-[0_0_50px_rgba(255,255,255,0.5)] absolute overflow-hidden before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/crumpled-paper.png')] before:opacity-50"
+                transition={{ duration: 1.8, ease: "easeInOut" }}
+                className="w-32 h-32 bg-[#e8e4d9] rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.2)] absolute overflow-hidden"
               >
                 {/* Paper opening lines */}
                 <motion.div 
                   initial={{ opacity: 1 }} 
                   animate={{ opacity: 0 }} 
-                  transition={{ delay: 1 }} 
+                  transition={{ delay: 0.8 }} 
                   className="w-full h-1 bg-black/10 transform rotate-45" 
                 />
               </motion.div>
@@ -158,9 +172,9 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                   className="relative z-10"
                 >
                   <div className="text-xs text-white/50 font-bold uppercase tracking-widest mb-2">Drawn Player</div>
-                  <div className="text-4xl md:text-5xl font-display font-black text-white text-shadow-lg mb-4 uppercase">{drawnPlayer.name}</div>
+                  <div className="text-4xl md:text-5xl font-display font-black text-white text-shadow-lg mb-4 uppercase">{drawnPlayer.player.name}</div>
                   <div className="inline-block px-6 py-2 bg-fc-neon-green text-black font-black uppercase tracking-widest rounded-xl text-lg">
-                    Assigned to Group {groupKeys[(currentGroupIdx - 1) % numGroups]}
+                    Assigned to Group {drawnPlayer.targetGroup}
                   </div>
                 </motion.div>
               )}
@@ -186,12 +200,11 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
                        key={idx}
                        initial={{ scale: 0, rotate: -180 }}
                        animate={{ scale: 1, rotate: Math.random() * 60 - 30 }}
-                       transition={{ type: "spring", bounce: 0.5, delay: idx * 0.05 }}
-                       className="w-12 h-12 bg-gradient-to-br from-[#f8f5ee] to-[#d6d2c4] rounded-full shadow-[inset_-3px_-3px_12px_rgba(0,0,0,0.3),0_5px_10px_rgba(0,0,0,0.4)] flex items-center justify-center relative overflow-hidden before:absolute before:inset-0 before:bg-[url('https://www.transparenttextures.com/patterns/crumpled-paper.png')] before:opacity-50"
+                       transition={{ type: "spring", bounce: 0.5, delay: idx * 0.02 }}
+                       className="w-10 h-10 bg-[#e8e4d9] rounded-full shadow-[inset_-2px_-2px_6px_rgba(0,0,0,0.1),0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center relative overflow-hidden"
                      >
-                       {/* Crumple effect lines */}
-                       <div className="w-full h-px bg-black/10 absolute top-1/2 -ml-2 -mt-1 transform rotate-45" />
-                       <div className="w-full h-px bg-black/10 absolute top-1/3 -ml-1 transform -rotate-12" />
+                       <div className="w-full h-px bg-black/5 absolute top-1/2 transform rotate-45" />
+                       <div className="w-full h-px bg-black/5 absolute top-1/3 transform -rotate-12" />
                      </motion.div>
                   ))}
                 </div>
