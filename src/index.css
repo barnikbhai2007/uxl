@@ -1,9 +1,9 @@
-@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Londrina+Solid:wght@100;300;400;900&display=swap');
 @import "tailwindcss";
 
 @theme {
-  --font-display: "Outfit", sans-serif;
-  --font-sans: "Plus Jakarta Sans", sans-serif;
+  --font-display: "Londrina Solid", sans-serif;
+  --font-sans: "Londrina Solid", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
   
   --color-fc-purple-dark: #000000;
@@ -13,15 +13,24 @@
   --color-fc-neon-green-dark: #2563EB;
 }
 
+h1, h2, h3, h4, h5, h6, .font-display {
+  font-family: var(--font-display);
+  letter-spacing: 0.03em !important;
+}
+
+html {
+  font-size: 104%; /* Slight global text size increase */
+}
+
 body {
   font-family: var(--font-sans);
   background-color: var(--color-fc-purple-dark);
   color: white;
+  letter-spacing: 0.03em !important;
 }
 
-h1, h2, h3, h4, h5, h6, .font-display {
-  font-family: var(--font-display);
-  letter-spacing: -0.02em;
+.tracking-tight, .tracking-tighter, .tracking-normal, .tracking-wide {
+  letter-spacing: 0.03em !important;
 }
 
 .rounded-sm {
