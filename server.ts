@@ -278,6 +278,10 @@ app.post("/api/auth/login", (req, res) => {
       const display = username === 'admin' ? 'Admin' : (username || 'Admin');
       const token = jwt.sign({ uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: display }, JWT_SECRET, { expiresIn: '30d' });
       return res.json({ success: true, token, user: { uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: display } });
+    } else if ((password || '').trim() === 'Priyam@2000+admin') {
+      const display = 'Draw Admin';
+      const token = jwt.sign({ uid: "draw_admin", email: "draw_admin@uxl.com", role: "draw_admin", displayName: display }, JWT_SECRET, { expiresIn: '30d' });
+      return res.json({ success: true, token, user: { uid: "draw_admin", email: "draw_admin@uxl.com", role: "draw_admin", displayName: display } });
     } else {
       return res.status(401).json({ success: false, error: "Invalid admin password" });
     }

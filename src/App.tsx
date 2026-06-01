@@ -26,6 +26,7 @@ import { auth, db, signIn, logout, handleFirestoreError, OperationType, getColle
 import { onAuthStateChanged, User, supabase } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, getDocsWithDelta, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ScheduleRandomizer } from './ScheduleRandomizer';
+import DrawAdminPanel from './components/DrawAdminPanel';
 
 const WORLD_CUP_FLAGS = new Map(WORLD_CUP_TEAMS.map(t => [t.name, t.flag]));
 
@@ -1907,6 +1908,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
   const AdminModal = ({ 
     onClose, 
     isAdmin,
+    isDrawAdmin,
     user,
     bracket,
     isSavingBracket,
@@ -1936,6 +1938,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
+    isDrawAdmin: boolean,
     user: User | null,
     bracket: BracketMatch[],
     isSavingBracket: boolean,
@@ -1963,7 +1966,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleRandomizeGroups: () => Promise<void>,
     handleClearGroups: () => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin'>('bracket');
     const [newAllowedNameInput, setNewAllowedNameInput] = useState('');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
@@ -2362,6 +2365,33 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       setIsAiLoading(false);
     };
 
+    if (!isAdmin && isDrawAdmin) {
+      return (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 z-[200] bg-fc-purple-dark text-white flex flex-col font-sans overflow-y-auto"
+        >
+          <div className="flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-fc-purple-dark/40 backdrop-blur-md sticky top-0 z-20 gap-4">
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={onClose}
+                className="group flex items-center gap-2 md:gap-3 px-3 md:px-4 py-2 bg-white/5 hover:bg-white/10 rounded-2xl transition-all border border-white/5 shrink-0"
+              >
+                <ArrowLeft className="w-4 md:w-5 h-4 md:h-5 text-fc-neon-green group-hover:-translate-x-1 transition-transform" />
+                <span className="text-[9px] md:text-[10px] font-bold tracking-normal whitespace-nowrap">Back</span>
+              </button>
+            </div>
+            <h2 className="text-lg md:text-2xl font-display font-bold  leading-none text-white tracking-tight truncate">Live Draw Admin</h2>
+          </div>
+          <div className="p-4 md:p-8">
+            <DrawAdminPanel registrations={registrations} config={config} handleUpdateConfig={handleUpdateConfig} />
+          </div>
+        </motion.div>
+      );
+    }
+
     return (
       <motion.div 
         initial={{ opacity: 0 }}
@@ -2442,6 +2472,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'countries' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Country Locking
+            </button>
+            <button 
+              onClick={() => setActiveTab('draw_admin')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'draw_admin' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              Draw Admin
             </button>
 
             <button 
@@ -3135,6 +3171,27 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     );
                   })}
                 </div>
+              </div>
+            )}
+
+            {activeTab === 'draw_admin' && (
+              <div className="space-y-8">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-xl font-display font-bold text-white">Draw Admin settings</h3>
+                    <button
+                      onClick={async () => {
+                        const enabled = config.drawAdminEnabled !== false;
+                        await handleUpdateConfig({ ...config, drawAdminEnabled: !enabled });
+                      }}
+                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${config.drawAdminEnabled !== false ? 'bg-fc-neon-green' : 'bg-gray-600'}`}
+                    >
+                      <span className={`inline-block w-4 h-4 transform rounded-full bg-white transition-transform ${config.drawAdminEnabled !== false ? 'translate-x-6' : 'translate-x-1'}`} />
+                    </button>
+                  </div>
+                  <p className="text-xs text-white/50 mb-6">Enable or disable the draw admin (Password: Priyam@2000+admin). If enabled, draw admin has a dedicated panel for pots and live draws.</p>
+                </div>
+                <DrawAdminPanel registrations={registrations} config={config} handleUpdateConfig={handleUpdateConfig} />
               </div>
             )}
 
@@ -4556,6 +4613,10 @@ export default function App() {
   const isAdmin = useMemo(() => {
     return user?.email === 'webblogger82@gmail.com' || user?.email === 'admin@uxl.com' || (user as any)?.role === 'admin';
   }, [user]);
+
+  const isDrawAdmin = useMemo(() => {
+    return (user as any)?.role === 'draw_admin' && config?.drawAdminEnabled !== false;
+  }, [user, config]);
 
   // For debugging, only shown in development console
   useEffect(() => {
@@ -6315,7 +6376,7 @@ export default function App() {
                   <p className="text-[10px] text-white/50 tracking-widest uppercase leading-none font-sans font-bold mb-0.5">Session Active</p>
                   <p className="text-xs font-bold text-white truncate max-w-[120px] font-sans">{user.displayName || user.email}</p>
                 </div>
-                {isAdmin && (
+                {(isAdmin || isDrawAdmin) && (
                   <button
                     onClick={() => setIsAdminModalOpen(true)}
                     className="px-3 py-2 bg-white/10 hover:bg-[#3B82F6] text-white font-sans font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 border border-white/5 shadow-sm"
@@ -7839,6 +7900,7 @@ export default function App() {
         {isAdminModalOpen && (
           <AdminModal 
             isAdmin={isAdmin}
+            isDrawAdmin={isDrawAdmin}
             user={user}
             onClose={() => setIsAdminModalOpen(false)} 
             registrations={registrations}

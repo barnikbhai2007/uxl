@@ -124,6 +124,7 @@ export interface Config {
   groupNames?: Record<string, string>;
   groupLabels?: Record<string, string>;
   lockedCountries?: string[];
+  drawAdminEnabled?: boolean;
 }
 
 export interface MatchReport {
