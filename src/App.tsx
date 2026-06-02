@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -1927,6 +1927,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     setIsEditingMode,
     matchLabels,
     updateMatchLabel,
+    handleRenameMatchDate,
     matchesByDay,
     handleAnalyzeQualification,
     handleUpdateConfig,
@@ -1957,6 +1958,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     setIsEditingMode: (mode: boolean) => void,
     matchLabels: Record<string, string>,
     updateMatchLabel: (date: string, status: string) => Promise<void>,
+    handleRenameMatchDate: (oldDate: string, newDate: string) => Promise<void>,
     matchesByDay: Record<string, Match[]>,
     handleAnalyzeQualification: () => Promise<void>,
     handleUpdateConfig: (config: Config) => Promise<void>,
@@ -2279,9 +2281,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const SortableDateItem = ({ date, index, total, matchLabels, updateMatchLabel, isHidden }: { date: string, index: number, total: number, matchLabels: Record<string, string>, updateMatchLabel: (date: string, status: string) => Promise<void>, isHidden: boolean, key?: any }) => {
       const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: date });
       const style = { transform: CSS.Transform.toString(transform), transition, zIndex: isDragging ? 50 : 'auto', position: 'relative' as any };
+      const [isRenaming, setIsRenaming] = useState(false);
+      const [newName, setNewName] = useState(date);
+
+      const submitRename = async () => {
+        if (newName.trim() && newName !== date) {
+          await handleRenameMatchDate(date, newName.trim());
+        }
+        setIsRenaming(false);
+      };
 
       return (
-        <div ref={setNodeRef} style={style} className={`flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''}`}>
+        <div ref={setNodeRef} style={style} className={`flex flex-col md:flex-row md:items-center justify-between p-4 bg-white/5 rounded-2xl border border-[${isHidden ? 'red-500/50' : 'white/10'}] ${isDragging ? 'shadow-2xl bg-fc-purple-light/30 border-fc-neon-green/50/50' : ''} ${isHidden ? 'opacity-50' : ''} gap-4`}>
           <div className="flex items-center gap-4">
             <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing p-2 hover:bg-white/5 rounded-2xl transition-colors">
               <Users className="w-4 h-4 text-white/20 select-none pointer-events-none" />
@@ -2294,7 +2305,25 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <ChevronDown className="w-3 h-3 text-white/60" />
               </button>
             </div>
-            <span className="text-sm font-bold text-white ">{date} {isHidden && '(Hidden)'}</span>
+            {isRenaming ? (
+              <div className="flex items-center gap-2">
+                <input 
+                  type="text" 
+                  value={newName} 
+                  onChange={e => setNewName(e.target.value)} 
+                  onKeyDown={e => e.key === 'Enter' && submitRename()}
+                  className="bg-black/50 border border-white/20 rounded px-2 py-1 text-sm text-white" 
+                  autoFocus
+                />
+                <button onClick={submitRename} className="p-1 bg-green-500/20 text-green-400 rounded hover:bg-green-500/40"><Check className="w-4 h-4" /></button>
+                <button onClick={() => { setIsRenaming(false); setNewName(date); }} className="p-1 bg-red-500/20 text-red-400 rounded hover:bg-red-500/40"><X className="w-4 h-4" /></button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 cursor-pointer group" onClick={() => setIsRenaming(true)}>
+                <span className="text-sm font-bold text-white group-hover:text-fc-neon-green transition-colors">{date} {isHidden && '(Hidden)'}</span>
+                <Edit2 className="w-3 h-3 text-white/20 group-hover:text-fc-neon-green/50 opacity-0 group-hover:opacity-100 transition-all" />
+              </div>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <button 
@@ -4364,20 +4393,14 @@ export default function App() {
   
   const motmSuggestions = useMemo(() => {
     const list = new Set<string>();
-    // 1. All approved and other registered team FC Names
-    registrations.forEach(r => {
-      if (r.fcName && r.fcName.trim()) {
-        list.add(r.fcName.trim());
-      }
-    });
-    // 2. Previously saved man of the matches from all tournament matches
+    // Previously saved man of the matches from all tournament matches
     matches.forEach(m => {
       if (m.manOfTheMatch && m.manOfTheMatch.trim()) {
         list.add(m.manOfTheMatch.trim());
       }
     });
     return Array.from(list).sort((a, b) => a.localeCompare(b));
-  }, [registrations, matches]);
+  }, [matches]);
   
   const [liveMotmLeaders, setLiveMotmLeaders] = useState<{playerName: string, awards: number}[]>([]);
   useEffect(() => {
@@ -4594,6 +4617,46 @@ export default function App() {
     if (!isAdmin) return;
     await setDoc(doc(db, 'match_labels', date), { status }, { merge: true });
   };
+
+  const handleRenameMatchDate = async (oldDate: string, newDate: string) => {
+    if (!isAdmin || !oldDate || !newDate || oldDate === newDate) return;
+    try {
+      const batch = writeBatch(db);
+      // Update matches
+      matches.forEach(m => {
+        if (m.date === oldDate) {
+          batch.update(doc(db, 'matches', m.id), { date: newDate });
+        }
+      });
+      
+      // Update match_labels if exists
+      if (matchLabels[oldDate]) {
+        batch.set(doc(db, 'match_labels', newDate), { status: matchLabels[oldDate] });
+        batch.delete(doc(db, 'match_labels', oldDate));
+      }
+      
+      // Update hiddenDates & dateOrder in config if needed
+      let newConfig = { ...config };
+      let configChanged = false;
+      if (config.hiddenDates?.includes(oldDate)) {
+        newConfig.hiddenDates = config.hiddenDates.map(d => d === oldDate ? newDate : d);
+        configChanged = true;
+      }
+      if (config.dateOrder?.includes(oldDate)) {
+        newConfig.dateOrder = config.dateOrder.map(d => d === oldDate ? newDate : d);
+        configChanged = true;
+      }
+      if (configChanged) {
+        batch.update(doc(db, 'config', 'global'), newConfig);
+      }
+      
+      await batch.commit();
+    } catch (e) {
+      console.error("Failed to rename date:", e);
+      alert("Failed to rename date.");
+    }
+  };
+
   const [isEditingMode, setIsEditingMode] = useState(false);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [adminEditingRegistration, setAdminEditingRegistration] = useState<Registration | null>(null);
@@ -7937,6 +8000,7 @@ export default function App() {
             setIsEditingMode={setIsEditingMode}
             matchLabels={matchLabels}
             updateMatchLabel={updateMatchLabel}
+            handleRenameMatchDate={handleRenameMatchDate}
             matchesByDay={matchesByDay}
             handleAnalyzeQualification={handleAnalyzeQualification}
             handleUpdateConfig={handleUpdateConfig}
