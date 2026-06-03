@@ -141,23 +141,24 @@ service cloud.firestore {
 
     match /config/{configId} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() || isDrawAdmin();
     }
 
     match /bracket/{matchId} {
       allow read: if true;
-      allow create, update: if isAdmin() && isValidBracketMatch(request.resource.data);
-      allow delete: if isAdmin();
+      allow create, update: if (isAdmin() || isDrawAdmin()) && isValidBracketMatch(request.resource.data);
+      allow delete: if isAdmin() || isDrawAdmin();
     }
 
     match /matches/{matchId} {
       allow read: if true;
-      allow create: if isAdmin() && isValidMatchCreate(request.resource.data);
+      allow create: if (isAdmin() || isDrawAdmin()) && isValidMatchCreate(request.resource.data);
       allow update: if (
         isAdmin() || 
+        isDrawAdmin() || 
         (isAuthenticated() && (request.auth.uid == resource.data.homeTeamId || request.auth.uid == resource.data.awayTeamId))
       ) && isValidMatch(request.resource.data);
-      allow delete: if isAdmin();
+      allow delete: if isAdmin() || isDrawAdmin();
     }
 
     match /match_labels/{date} {
@@ -180,6 +181,11 @@ service cloud.firestore {
       allow read, delete: if isAdmin();
       allow create: if isAuthenticated();
       allow update: if isAdmin();
+    }
+
+    match /statsGuesses/{guessId} {
+      allow read: if true;
+      allow write: if isAdmin() || isDrawAdmin();
     }
   }
 }

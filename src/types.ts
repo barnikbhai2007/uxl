@@ -166,3 +166,10 @@ export interface UserProfile {
   role: 'admin' | 'user';
   achievements?: UserAchievementMap;
 }
+
+export interface StatGuess {
+  id: string;
+  question: string;
+  options: string[];
+  correctOption: string; // "1" | "2" | "3" | "4"
+}

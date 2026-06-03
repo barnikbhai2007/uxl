@@ -2,8 +2,9 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
-import { Match, BracketMatch, Registration, Config, Team } from "../types";
+import { Match, BracketMatch, Registration, Config, Team, StatGuess } from "../types";
 import { WORLD_CUP_TEAMS } from "../constants";
+import { collection, onSnapshot, db } from "../supabase_mock";
 import {
   calculateStats,
   calculateCleanSheets,
@@ -19,6 +20,10 @@ import {
   Swords,
   ShieldAlert,
   Award,
+  Check,
+  X,
+  ChevronRight,
+  RotateCcw,
 } from "lucide-react";
 
 const AnimatedNumber = ({ value }: { value: string | number }) => {
@@ -73,12 +78,26 @@ export default function DrawBracketManager({
   const { width, height } = useWindowSize();
   const [step, setStep] = useState<
     | "timelapse"
+    | "trivia"
     | "tournament_stats"
     | "best_thirds"
     | "qualified_view"
     | "pot_assignment"
     | "bracket_draw"
   >("timelapse");
+
+  // Trivia states
+  const [triviaQuestions, setTriviaQuestions] = useState<StatGuess[]>([]);
+  const [currentTriviaIdx, setCurrentTriviaIdx] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "statsGuesses"), (snapshot) => {
+      const list = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id } as StatGuess));
+      setTriviaQuestions(list);
+    });
+    return () => unsub();
+  }, []);
 
   // Match Timelapse
   const finishedMatches = useMemo(() => {
@@ -122,7 +141,7 @@ export default function DrawBracketManager({
         }
       } else {
         const t = setTimeout(() => {
-          setStep("tournament_stats");
+          setStep("trivia");
         }, 4000);
         return () => clearTimeout(t);
       }
@@ -799,11 +818,156 @@ export default function DrawBracketManager({
           </div>
           
           <button
-            onClick={() => setStep("tournament_stats")}
+            onClick={() => setStep("trivia")}
             className="mt-8 px-4 py-2 border border-white/20 rounded-xl text-xs hover:bg-white/10"
           >
             Skip Animation
           </button>
+        </div>
+      )}
+
+      {step === "trivia" && (
+        <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-xl mx-auto px-4">
+          <motion.div
+            key="stats-trivia-lock"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="w-full bg-black/40 border border-white/10 rounded-2xl p-8 shadow-2xl relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-1.5 bg-fc-neon-green" />
+            
+            <div className="text-center mb-6">
+              <div className="inline-flex p-3 bg-fc-purple-light/20 rounded-full border border-fc-purple-light/40 mb-3">
+                <Trophy className="w-8 h-8 text-fc-neon-green" />
+              </div>
+              <h2 className="text-xl font-display font-black text-white uppercase tracking-wider">Tournament Trivia Challenge</h2>
+              <p className="text-white/60 text-xs mt-2">
+                Crack the trivia question to unlock the live tournament statistics and performance charts!
+              </p>
+            </div>
+
+            {(() => {
+              const activeQuestions = triviaQuestions.length > 0 ? triviaQuestions : [
+                {
+                  id: 'default-1',
+                  question: 'Which country has historically won the most FIFA World Cup tournaments?',
+                  options: ['Germany', 'Brazil', 'Italy', 'Argentina'],
+                  correctOption: '2'
+                },
+                {
+                  id: 'default-2',
+                  question: 'Who scored the famous "Hand of God" goal in 1986?',
+                  options: ['Pele', 'Diego Maradona', 'Lionel Messi', 'Zinedine Zidane'],
+                  correctOption: '2'
+                },
+                {
+                  id: 'default-3',
+                  question: 'Which player has won the most Ballon d\'Or awards in football history?',
+                  options: ['Cristiano Ronaldo', 'Lionel Messi', 'Michel Platini', 'Johan Cruyff'],
+                  correctOption: '2'
+                }
+              ];
+
+              const currentQuestion = activeQuestions[currentTriviaIdx] || activeQuestions[0];
+              if (!currentQuestion) return null;
+
+              return (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center text-[10px] text-white/40 uppercase font-bold tracking-widest border-b border-white/5 pb-2">
+                    <span>Question {currentTriviaIdx + 1} of {activeQuestions.length}</span>
+                    <span className="text-[#3B82F6]">Answer Required</span>
+                  </div>
+
+                  <div className="bg-white/[0.02] border border-white/5 rounded-xl p-5 text-center">
+                    <p className="text-white font-bold text-base leading-relaxed">
+                      {currentQuestion.question}
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-3">
+                    {currentQuestion.options.map((opt, i) => {
+                      const optionId = String(i + 1);
+                      const isSelected = selectedOption === optionId;
+                      const isCorrectIdx = currentQuestion.correctOption === optionId;
+                      
+                      let btnStyle = "border-white/10 bg-white/5 text-white/80 hover:bg-white/10";
+                      if (selectedOption) {
+                        if (isSelected) {
+                          if (isCorrectIdx) {
+                            btnStyle = "border-green-500 bg-green-500/20 text-white shadow-lg shadow-green-500/10";
+                          } else {
+                            btnStyle = "border-red-500 bg-red-500/20 text-white shadow-lg shadow-red-500/10";
+                          }
+                        } else if (isCorrectIdx) {
+                          btnStyle = "border-green-500/30 bg-green-500/5 text-green-400";
+                        }
+                      }
+
+                      return (
+                        <button
+                          key={i}
+                          type="button"
+                          disabled={!!selectedOption}
+                          onClick={() => setSelectedOption(optionId)}
+                          className={`w-full text-left p-4 rounded-xl border font-sans font-bold text-sm transition-all flex justify-between items-center ${btnStyle}`}
+                        >
+                          <span>{opt}</span>
+                          {selectedOption && isSelected && isCorrectIdx && (
+                            <Check className="w-4 h-4 text-green-400 shrink-0 ml-2" />
+                          )}
+                          {selectedOption && isSelected && !isCorrectIdx && (
+                            <X className="w-4 h-4 text-red-400 shrink-0 ml-2" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  {selectedOption && selectedOption !== currentQuestion.correctOption && (
+                    <div className="text-center text-xs text-red-400 font-bold bg-red-500/10 p-3 rounded-lg border border-red-500/20">
+                      Incorrect choice! Reset below to try again.
+                    </div>
+                  )}
+
+                  {selectedOption && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="pt-2"
+                    >
+                      {selectedOption === currentQuestion.correctOption ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (currentTriviaIdx + 1 < activeQuestions.length) {
+                              setCurrentTriviaIdx(currentTriviaIdx + 1);
+                              setSelectedOption(null);
+                            } else {
+                              setStep("tournament_stats");
+                            }
+                          }}
+                          className="w-full py-3 bg-[#ccff00] hover:bg-[#b5e000] text-black font-black text-sm rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2 shadow-lg shadow-[#ccff00]/20"
+                        >
+                          {currentTriviaIdx + 1 < activeQuestions.length ? "Next Question" : "Unlock Statistics"}
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedOption(null)}
+                          className="w-full py-3 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-xl uppercase tracking-wider transition-all flex items-center justify-center gap-2"
+                        >
+                          <RotateCcw className="w-4 h-4" />
+                          Try Question Again
+                        </button>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              );
+            })()}
+          </motion.div>
         </div>
       )}
 
@@ -968,10 +1132,12 @@ export default function DrawBracketManager({
                         animate={{ scale: 1, opacity: 1 }}
                         className="flex flex-col items-center bg-white/5 px-12 py-6 rounded-2xl border border-white/10"
                       >
-                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-900 via-purple-700 to-pink-600 border border-white/30 flex items-center justify-center text-3xl shadow-lg shadow-purple-500/20 animate-bounce mb-3">
-                          <span>🏺</span>
+                        <div className="relative w-16 h-16 bg-[#F5EFE0] border border-[#D5CAA7] rounded shadow-lg flex items-center justify-center overflow-hidden animate-bounce mb-3">
+                          <div className="absolute inset-y-0 left-1/2 w-2 -translate-x-1/2 bg-indigo-600 shadow-sm transform rotate-12" />
+                          <div className="absolute inset-x-0 top-1/2 h-2 -translate-y-1/2 bg-indigo-600 shadow-sm transform -rotate-12" />
+                          <div className="absolute top-0 right-0 w-4 h-4 bg-[#E9DFBE] border-l border-b border-[#C1B58C]" style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }} />
                         </div>
-                        <span className="text-white/50 text-xs font-mono font-bold uppercase tracking-widest">Mystery Wildcard Pot</span>
+                        <span className="text-white/50 text-xs font-mono font-bold uppercase tracking-widest">Mystery Wildcard Paper</span>
                       </motion.div>
                     )}
 
@@ -1182,86 +1348,7 @@ export default function DrawBracketManager({
             <Confetti width={width} height={height} recycle={false} numberOfPieces={800} colors={['#ccff00', '#ffffff', '#000000']} />
           )}
 
-          {/* High Impact Center Reveal Overlay */}
-          {activeDrawMatch && (
-            <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
-              <motion.div
-                initial={{ scale: 0.8, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                className={`bg-black/90 border ${
-                  activeDrawMatch.includes("home") ? "border-fc-purple-light/40" : "border-fc-neon-green/40"
-                } p-8 rounded-3xl max-w-lg w-full text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden`}
-              >
-                {/* Glowing radial background */}
-                <div className={`absolute -inset-10 opacity-15 bg-radial ${
-                  activeDrawMatch.includes("home") ? "from-fc-purple-light to-transparent" : "from-fc-neon-green to-transparent"
-                }`} />
-                
-                <div className="relative z-10">
-                  <span className={`text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-6 inline-block ${
-                    activeDrawMatch.includes("home") ? "text-fc-purple-light border-fc-purple-light/20" : "text-fc-neon-green border-fc-neon-green/20"
-                  }`}>
-                    {activeDrawMatch.includes("home") ? "🏺 DRAWING FROM POT 1 (HOME) 🏺" : "🏺 DRAWING FROM POT 2 (AWAY) 🏺"}
-                  </span>
-
-                  <div className="my-8 min-h-[220px] flex items-center justify-center">
-                    <AnimatePresence mode="wait">
-                      {activeDrawPhase === "country" && (
-                        <motion.div
-                          key="country"
-                          initial={{ scale: 0.5, y: 25, opacity: 0 }}
-                          animate={{ scale: 1.1, y: 0, opacity: 1 }}
-                          exit={{ scale: 0.8, opacity: 0 }}
-                          transition={{ type: "spring", duration: 0.8 }}
-                          className="flex flex-col items-center"
-                        >
-                          <div className="text-8xl md:text-9xl mb-4 animate-bounce select-none">
-                            {(() => {
-                              const countryName = bracketAssignments[activeDrawMatch]?.country || bracketAssignments[activeDrawMatch]?.name;
-                              return WORLD_CUP_TEAMS.find(t => t.name === countryName)?.flag || '🌍';
-                            })()}
-                          </div>
-                          <h3 className="text-2xl md:text-3xl font-display font-black uppercase text-white/50 tracking-widest">
-                            {bracketAssignments[activeDrawMatch]?.country || "Unknown Country"}
-                          </h3>
-                          <p className="text-xs text-white/40 mt-4 tracking-widest font-mono">REVEALING CONTENDER...</p>
-                        </motion.div>
-                      )}
-
-                      {activeDrawPhase === "name" && (
-                        <motion.div
-                          key="name"
-                          initial={{ scale: 0.6, rotate: -5, opacity: 0 }}
-                          animate={{ scale: 1.15, rotate: 1, opacity: 1 }}
-                          transition={{ type: "spring", stiffness: 300, damping: 15 }}
-                          className="flex flex-col items-center"
-                        >
-                          <div className="text-6xl md:text-7xl mb-4 select-none">
-                            {(() => {
-                              const countryName = bracketAssignments[activeDrawMatch]?.country || bracketAssignments[activeDrawMatch]?.name;
-                              return WORLD_CUP_TEAMS.find(t => t.name === countryName)?.flag || '🌍';
-                            })()}
-                          </div>
-                          <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-1">
-                            {bracketAssignments[activeDrawMatch]?.country} Representative
-                          </p>
-                          <h3 
-                            className={`text-5xl md:text-6xl font-display font-black px-6 py-3 rounded-2xl rotate-2 shadow-2xl tracking-tight leading-none ${
-                              activeDrawMatch.includes("home") 
-                                ? "bg-fc-purple-light text-white shadow-fc-purple-light/50" 
-                                : "bg-fc-neon-green text-black shadow-fc-neon-green/50"
-                            }`}
-                          >
-                            {bracketAssignments[activeDrawMatch]?.name}
-                          </h3>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </motion.div>
-            </div>
-          )}
+          {/* No full-screen overlay: live drawing / unfolding paper happens directly inside the bracket spots below */}
 
           <div className="flex justify-between items-center w-full mb-8 relative">
             <div className="flex flex-col items-center p-6 bg-black/40 border border-fc-purple-light/30 rounded-2xl w-full max-w-sm">
@@ -1272,14 +1359,17 @@ export default function DrawBracketManager({
                 {pots.pot1.map((p, i) => (
                   <div
                     key={p.id}
-                    title="Sealed Ball"
+                    title="Wrapped Paper Scroll"
                     className="relative flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:border-fc-purple-light/50 transition-all cursor-not-allowed"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-900 via-purple-700 to-pink-600 border border-white/30 flex items-center justify-center text-lg shadow-lg relative overflow-hidden">
-                      <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse opacity-50" />
-                      <span>🏺</span>
+                    <div className="relative w-12 h-12 bg-[#F5EFE0] border border-[#D5CAA7] rounded shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.15),0_3px_6px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden rotate-[-3deg]">
+                      {/* Ribbon / Thread wrapping the paper */}
+                      <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 bg-[#C83E3E] shadow-sm transform rotate-12" />
+                      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 bg-[#C83E3E] shadow-sm transform -rotate-12" />
+                      {/* Fold corner effect */}
+                      <div className="absolute top-0 right-0 w-3 h-3 bg-[#E9DFBE] border-l border-b border-[#C1B58C]" style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }} />
                     </div>
-                    <span className="text-[8px] font-mono font-bold text-fc-purple-light uppercase tracking-widest mt-1">Ball {i + 1}</span>
+                    <span className="text-[8px] font-mono font-bold text-fc-purple-light uppercase tracking-widest mt-1">Scroll {i + 1}</span>
                   </div>
                 ))}
               </div>
@@ -1304,14 +1394,17 @@ export default function DrawBracketManager({
                 {pots.pot2.map((p, i) => (
                   <div
                     key={p.id}
-                    title="Sealed Ball"
+                    title="Wrapped Paper Scroll"
                     className="relative flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:border-fc-neon-green/50 transition-all cursor-not-allowed"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-900 via-teal-700 to-fc-neon-green border border-white/30 flex items-center justify-center text-lg shadow-lg relative overflow-hidden">
-                      <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse opacity-50" />
-                      <span>🏺</span>
+                    <div className="relative w-12 h-12 bg-[#F5EFE0] border border-[#D5CAA7] rounded shadow-[inset_-2px_-2px_4px_rgba(0,0,0,0.15),0_3px_6px_rgba(0,0,0,0.3)] flex items-center justify-center overflow-hidden rotate-[-3deg]">
+                      {/* Ribbon / Thread wrapping the paper */}
+                      <div className="absolute inset-y-0 left-1/2 w-1.5 -translate-x-1/2 bg-[#C83E3E] shadow-sm transform rotate-12" />
+                      <div className="absolute inset-x-0 top-1/2 h-1.5 -translate-y-1/2 bg-[#C83E3E] shadow-sm transform -rotate-12" />
+                      {/* Fold corner effect */}
+                      <div className="absolute top-0 right-0 w-3 h-3 bg-[#E9DFBE] border-l border-b border-[#C1B58C]" style={{ clipPath: 'polygon(0 0, 100% 100%, 0 100%)' }} />
                     </div>
-                    <span className="text-[8px] font-mono font-bold text-fc-neon-green uppercase tracking-widest mt-1">Ball {i + 1}</span>
+                    <span className="text-[8px] font-mono font-bold text-fc-neon-green uppercase tracking-widest mt-1">Scroll {i + 1}</span>
                   </div>
                 ))}
               </div>
@@ -1339,35 +1432,70 @@ export default function DrawBracketManager({
                 return (
                   <div
                     key={i}
-                    className="bg-black/60 border border-white/10 p-4 rounded-xl flex flex-col gap-2 relative group hover:border-white/30 transition-all"
+                    className="bg-black/60 border border-white/10 p-4 rounded-xl flex flex-col gap-2 relative group hover:border-white/30 transition-all font-sans"
                   >
                     <span className="absolute -top-3 left-1/2 -translate-x-1/2 text-[10px] bg-black border border-white/20 px-2 py-0.5 rounded-full text-white/50 font-mono">
                       Match {i + 1}
                     </span>
 
+                    {/* Home Team Slot with Unfolding Paper Live Draw */}
                     <div
-                      className={`flex justify-between items-center p-2 rounded relative ${homeTeam ? (activeDrawMatch === homeKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-purple-light/20 border border-fc-purple-light/30") : "bg-white/5 border border-transparent"}`}
+                      className={`flex justify-between items-center p-2 rounded relative overflow-hidden transition-all duration-300 ${
+                        homeTeam 
+                          ? activeDrawMatch === homeKey 
+                            ? "border border-fc-purple-light bg-black" 
+                            : "bg-fc-purple-light/20 border border-fc-purple-light/30" 
+                          : "bg-white/5 border border-transparent"
+                      }`}
+                      style={{ minHeight: '38px' }}
                     >
-                      <span className={`text-xs font-bold truncate max-w-[100px] ${activeDrawMatch === homeKey ? "text-black" : "text-white"}`}>
-                        {homeTeam ? (
-                           activeDrawMatch === homeKey ? (
-                             activeDrawPhase === "country" ? (
-                               <motion.span
-                                 initial={{ scale: 0.2, opacity: 0 }}
-                                 animate={{ scale: [1, 3, 3, 1], opacity: 1 }}
-                                 transition={{ duration: 1.8, ease: "easeInOut" }}
-                                 className="absolute inset-0 flex items-center justify-center z-50 text-3xl drop-shadow-2xl bg-fc-neon-green rounded"
-                               >
-                                 {WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country)?.flag || '🌍'}
-                               </motion.span>
-                             ) : homeTeam.name
-                           ) : homeTeam.name
-                        ) : "TBD"}
-                      </span>
-                      {homeTeam && activeDrawMatch !== homeKey && (
-                        <span className="text-[10px] text-white/40">
-                          {WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country)?.flag || homeTeam.country}
-                        </span>
+                      {activeDrawMatch === homeKey && bracketAssignments[homeKey] ? (
+                        <motion.div
+                          key="unfolding-home"
+                          initial={{ scaleY: 0.05, opacity: 0, rotateX: 90 }}
+                          animate={{ scaleY: 1, opacity: 1, rotateX: 0 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="absolute inset-0 bg-[#F5EFE0] text-black flex items-center justify-between px-2 font-sans font-bold"
+                        >
+                          {activeDrawPhase === "country" ? (
+                            <motion.div 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="flex items-center gap-1.5 w-full justify-center"
+                            >
+                              <span className="text-xl animate-bounce">
+                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[homeKey].country)?.flag || '🌍'}
+                              </span>
+                              <span className="text-[9px] uppercase tracking-wider text-black/60 truncate">
+                                {bracketAssignments[homeKey].country}
+                              </span>
+                            </motion.div>
+                          ) : (
+                            <motion.div 
+                              initial={{ scale: 0.8, rotate: -2 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              className="flex items-center justify-between w-full"
+                            >
+                              <span className="text-xs truncate max-w-[90px] text-gray-950 font-black">
+                                {bracketAssignments[homeKey].name}
+                              </span>
+                              <span className="text-base shrink-0">
+                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[homeKey].country)?.flag || '🌍'}
+                              </span>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-bold truncate max-w-[100px] text-white">
+                            {homeTeam ? homeTeam.name : "TBD"}
+                          </span>
+                          {homeTeam && (
+                            <span className="text-[10px] text-white/40 font-bold shrink-0 ml-1">
+                              {WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country)?.flag || homeTeam.country}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
 
@@ -1375,29 +1503,64 @@ export default function DrawBracketManager({
                       VS
                     </div>
 
+                    {/* Away Team Slot with Unfolding Paper Live Draw */}
                     <div
-                      className={`flex justify-between items-center p-2 rounded relative ${awayTeam ? (activeDrawMatch === awayKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-neon-green/20 border border-fc-neon-green/30") : "bg-white/5 border border-transparent"}`}
+                      className={`flex justify-between items-center p-2 rounded relative overflow-hidden transition-all duration-300 ${
+                        awayTeam 
+                          ? activeDrawMatch === awayKey 
+                            ? "border border-fc-neon-green bg-black" 
+                            : "bg-fc-neon-green/10 border border-fc-neon-green/20" 
+                          : "bg-white/5 border border-transparent"
+                      }`}
+                      style={{ minHeight: '38px' }}
                     >
-                      <span className={`text-xs font-bold truncate max-w-[100px] ${activeDrawMatch === awayKey ? "text-black" : "text-white"}`}>
-                        {awayTeam ? (
-                           activeDrawMatch === awayKey ? (
-                             activeDrawPhase === "country" ? (
-                               <motion.span
-                                 initial={{ scale: 0.2, opacity: 0 }}
-                                 animate={{ scale: [1, 3, 3, 1], opacity: 1 }}
-                                 transition={{ duration: 1.8, ease: "easeInOut" }}
-                                 className="absolute inset-0 flex items-center justify-center z-50 text-3xl drop-shadow-2xl bg-fc-neon-green rounded"
-                               >
-                                 {WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country)?.flag || '🌍'}
-                               </motion.span>
-                             ) : awayTeam.name
-                           ) : awayTeam.name
-                        ) : "TBD"}
-                      </span>
-                      {awayTeam && activeDrawMatch !== awayKey && (
-                        <span className="text-[10px] text-white/40">
-                           {WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country)?.flag || awayTeam.country}
-                        </span>
+                      {activeDrawMatch === awayKey && bracketAssignments[awayKey] ? (
+                        <motion.div
+                          key="unfolding-away"
+                          initial={{ scaleY: 0.05, opacity: 0, rotateX: 90 }}
+                          animate={{ scaleY: 1, opacity: 1, rotateX: 0 }}
+                          transition={{ duration: 0.8, ease: "easeOut" }}
+                          className="absolute inset-0 bg-[#F5EFE0] text-black flex items-center justify-between px-2 font-sans font-bold"
+                        >
+                          {activeDrawPhase === "country" ? (
+                            <motion.div 
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              className="flex items-center gap-1.5 w-full justify-center"
+                            >
+                              <span className="text-xl animate-bounce">
+                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[awayKey].country)?.flag || '🌍'}
+                              </span>
+                              <span className="text-[9px] uppercase tracking-wider text-black/60 truncate">
+                                {bracketAssignments[awayKey].country}
+                              </span>
+                            </motion.div>
+                          ) : (
+                            <motion.div 
+                              initial={{ scale: 0.8, rotate: -2 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              className="flex items-center justify-between w-full"
+                            >
+                              <span className="text-xs truncate max-w-[90px] text-gray-950 font-black">
+                                {bracketAssignments[awayKey].name}
+                              </span>
+                              <span className="text-base shrink-0">
+                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[awayKey].country)?.flag || '🌍'}
+                              </span>
+                            </motion.div>
+                          )}
+                        </motion.div>
+                      ) : (
+                        <>
+                          <span className="text-xs font-bold truncate max-w-[100px] text-white">
+                            {awayTeam ? awayTeam.name : "TBD"}
+                          </span>
+                          {awayTeam && (
+                            <span className="text-[10px] text-white/40 font-bold shrink-0 ml-1">
+                              {WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country)?.flag || awayTeam.country}
+                            </span>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

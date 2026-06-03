@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS } from './constants';
-import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile } from './types';
+import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   DndContext, 
@@ -1393,13 +1393,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     );
   };
 
-  const TeamSearchableSelect = ({ label, value, onChange, teams, placeholder = "Search teammate..." }: { label: string, value: string, onChange: (val: string) => void, teams: Team[], placeholder?: string }) => {
+  const TeamSearchableSelect = ({ label, value, onChange, teams, placeholder = "Search teammate...", showTbdOption = true }: { label: string, value: string, onChange: (val: string) => void, teams: Team[], placeholder?: string, showTbdOption?: boolean }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
 
     // Get current team full name/fcName/name
     const currentSelectedName = useMemo(() => {
+      if (value === 'TBD') return 'TBD';
       const safeTeams = teams || [];
       const team = safeTeams.find(t => t.id === value);
       return team ? (team.fullName || team.fcName || team.name || '') : (value || '');
@@ -1443,6 +1444,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       });
     }, [search, teams, currentSelectedName]);
 
+    const showTbd = showTbdOption && (!search || 'tbd'.includes(search.toLowerCase()));
+
     return (
       <div className="space-y-2 relative" ref={dropdownRef}>
         <label className="text-[10px] font-bold text-white/40 tracking-normal">{label}</label>
@@ -1467,13 +1470,43 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         </div>
 
         <AnimatePresence>
-          {isOpen && (filteredTeams.length > 0 || search) && (
+          {isOpen && (filteredTeams.length > 0 || showTbd || search) && (
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto w-full"
+               initial={{ opacity: 0, y: -10 }}
+               animate={{ opacity: 1, y: 0 }}
+               exit={{ opacity: 0, y: -10 }}
+               className="absolute z-[110] left-0 right-0 mt-2 bg-zinc-900 border border-white/10 rounded-2xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto w-full animate-none"
             >
+              {showTbd && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onChange('TBD');
+                    setSearch('TBD');
+                    setIsOpen(false);
+                  }}
+                  className={`w-full px-4 py-3 text-left flex items-center gap-3 border-b border-white/5 transition-colors cursor-pointer ${
+                    value === 'TBD' || !value
+                      ? 'bg-fc-neon-green/20 text-white font-bold border-l-2 border-l-fc-neon-green'
+                      : 'hover:bg-fc-purple-light/30 text-white/80'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center shrink-0">
+                    <Users className={`w-4 h-4 ${value === 'TBD' || !value ? 'text-fc-neon-green animate-pulse' : 'text-fc-neon-green/40'}`} />
+                  </div>
+                  <div className="flex-1 truncate">
+                    <p className={`text-xs truncate ${value === 'TBD' || !value ? 'text-fc-neon-green font-bold' : 'text-white font-bold'}`}>
+                      TBD (To Be Determined)
+                    </p>
+                  </div>
+                  {(value === 'TBD' || !value) && (
+                    <div className="px-2 py-0.5 bg-fc-neon-green text-black text-[9px] uppercase tracking-wider font-extrabold rounded-md shrink-0 shadow-md">
+                      Selected
+                    </div>
+                  )}
+                </button>
+              )}
+
               {filteredTeams.length > 0 ? (
                 filteredTeams.map(team => {
                   const isSelected = team.id === value;
@@ -1520,9 +1553,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   );
                 })
               ) : (
-                <div className="p-4 text-center">
-                  <p className="text-[10px] font-bold tracking-normal text-white/20 ">No matching players</p>
-                </div>
+                !showTbd && (
+                  <div className="p-4 text-center">
+                    <p className="text-[10px] font-bold tracking-normal text-white/20 ">No matching players</p>
+                  </div>
+                )
               )}
             </motion.div>
           )}
@@ -1949,7 +1984,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     teams,
     matches,
     handleRandomizeGroups,
-    handleClearGroups
+    handleClearGroups,
+    refreshCache
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -1980,7 +2016,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     teams: Team[],
     matches?: Match[],
     handleRandomizeGroups: () => Promise<void>,
-    handleClearGroups: () => Promise<void>
+    handleClearGroups: () => Promise<void>,
+    refreshCache: (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => Promise<void>
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin'>('bracket');
     const [newAllowedNameInput, setNewAllowedNameInput] = useState('');
@@ -2461,9 +2498,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
         if (updates > 0) {
           await batch.commit();
+          await refreshCache('matches');
+          await refreshCache('bracket');
           alert(`Successfully generated and linked ${updates} fixtures from bracket.`);
-          await handleAdminReset('matches');
-          await handleAdminReset('bracket');
         } else {
           alert("No unlinked bracket matches found.");
         }
@@ -4343,7 +4380,7 @@ export default function App() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'fixtures' | 'table' | 'bracket' | 'registration' | 'stats' | 'campaign'>('fixtures');
+  const [activeTab, setActiveTab] = useState<'fixtures' | 'trivia' | 'stats' | 'table' | 'bracket' | 'registration' | 'campaign'>('fixtures');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -4353,6 +4390,11 @@ export default function App() {
   const [isAddMatchModalOpen, setIsAddMatchModalOpen] = useState(false);
   const [addMatchInitialData, setAddMatchInitialData] = useState<{ date: string, home: string, away: string }>({ date: '2026-05-TBD', home: '', away: '' });
   const [dbBracket, setDbBracket] = useState<BracketMatch[]>([]);
+  // Statistics Guess states
+  const [dbStatsGuesses, setDbStatsGuesses] = useState<StatGuess[]>([]);
+  const [triviaUnlocked, setTriviaUnlocked] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedTriviaOption, setSelectedTriviaOption] = useState<string | null>(null);
   const [isDataLoading, setIsDataLoading] = useState(true);
   const [myRegistrationData, setMyRegistrationData] = useState<Registration | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
@@ -4363,6 +4405,257 @@ export default function App() {
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit'>('stats');
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
+
+  const renderStatsTab = () => {
+    return (
+      <motion.div
+        key="stats"
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -20 }}
+        className="space-y-6"
+      >
+        {/* Top Scorers Section */}
+        <div className="flex items-center gap-4 mb-4 mt-2">
+          <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30">
+            <BarChart2 className="w-6 h-6 text-fc-neon-green" />
+          </div>
+          <div>
+            <EditableText id="scorers_header" defaultText="Top Scorers" as="h2" className="font-display text-2xl font-bold  tracking-tight leading-none" />
+            <p className="text-fc-neon-green/40 text-xs tracking-normal mt-1">
+              <EditableText id="individual_stats_sub" defaultText="Individual Player Statistics" />
+            </p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto mb-12">
+          <table className="w-full text-left border-separate border-spacing-y-2">
+            <thead>
+              <tr className="text-[#3B82F6] text-[10px] tracking-[0.1em] font-sans font-bold">
+                <th className="px-6 py-2">Rank</th>
+                <th className="px-6 py-2">Football Player</th>
+                <th className="px-6 py-2">Gamer</th>
+                <th className="px-6 py-2 text-center">Goals</th>
+              </tr>
+            </thead>
+            <tbody>
+              {stats.length > 0 ? stats.map((stat, index) => (
+                <tr key={`${stat.playerName}-${stat.teamId}`} className="relative group/row transition-colors duration-150">
+                  <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      index === 0 ? 'bg-[#3B82F6] text-white shadow-md' : 
+                      index === 1 ? 'bg-[#888888] text-white' : 
+                      index === 2 ? 'bg-[#EF4444]/20 text-[#EF4444]' : 
+                      'bg-white/10 text-white/70'
+                    }`}>
+                      {index + 1}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                    <span className="font-display font-bold text-lg tracking-tight text-white">{stat.playerName}</span>
+                  </td>
+                  <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
+                      <span className="text-[10px] font-sans font-bold text-[#3B82F6]/80 tracking-normal">{stat.gamerName}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                    <span className="text-2xl font-display text-white">{stat.goals}</span>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] rounded-2xl border border-white/5">
+                    <div className="flex flex-col items-center gap-3 opacity-20">
+                      <Info className="w-8 h-8" />
+                      <p className="text-xs font-sans font-bold tracking-normal">No goals recorded yet</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Clean Sheets Section */}
+        <div className="flex items-center gap-4 mb-4 mt-8">
+          <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30">
+            <BarChart2 className="w-6 h-6 text-fc-neon-green" />
+          </div>
+          <div>
+            <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Clean Sheets</h2>
+            <p className="text-fc-neon-green/40 text-xs tracking-normal mt-1">Individual Goalkeeper Statistics</p>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto mb-12">
+          <table className="w-full text-left border-separate border-spacing-y-2">
+            <thead>
+              <tr className="text-[#3B82F6] text-[10px] tracking-[0.1em] font-sans font-bold">
+                <th className="px-6 py-2">Rank</th>
+                <th className="px-6 py-2">Goalkeeper</th>
+                <th className="px-6 py-2">Gamer</th>
+                <th className="px-6 py-2 text-center">Clean Sheets</th>
+              </tr>
+            </thead>
+            <tbody>
+              {cleanSheets.length > 0 ? cleanSheets.map((stat, index) => (
+                <tr key={`${stat.playerName}-${stat.teamId}`} className="relative group/row transition-colors duration-150">
+                  <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
+                      index === 0 ? 'bg-[#3B82F6] text-white shadow-md' : 
+                      index === 1 ? 'bg-[#888888] text-white' : 
+                      index === 2 ? 'bg-[#EF4444]/20 text-[#EF4444]' : 
+                      'bg-white/10 text-white/70'
+                    }`}>
+                      {index + 1}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                    <span className="font-display font-bold text-lg tracking-tight text-white">{stat.playerName}</span>
+                  </td>
+                  <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
+                      <span className="text-[10px] font-sans font-bold text-[#3B82F6]/80 tracking-normal">{stat.gamerName}</span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
+                    <span className="text-2xl font-display text-white">{stat.cleanSheets}</span>
+                  </td>
+                </tr>
+              )) : (
+                <tr>
+                  <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] rounded-2xl border border-white/5">
+                    <div className="flex flex-col items-center gap-3 opacity-20">
+                      <Info className="w-8 h-8" />
+                      <p className="text-xs font-sans font-bold tracking-normal">No clean sheets recorded yet</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Man of the Match Leaders */}
+        <div className="flex items-center gap-4 mb-4 mt-8">
+          <div className="p-3 bg-yellow-500/20 rounded-2xl border border-yellow-500/30">
+            <Award className="w-6 h-6 text-yellow-400" />
+          </div>
+          <div>
+            <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Man of the Match Leaders</h2>
+            <p className="text-white/40 text-xs tracking-normal mt-1">Top Performers</p>
+          </div>
+        </div>
+
+        <div className="bg-white/5 border border-white/10 rounded-2xl p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-yellow-500/10 rounded-bl-full pointer-events-none" />
+          
+          <div className="space-y-4 relative z-10 max-w-2xl">
+            {liveMotmLeaders.length > 0 ? (
+              liveMotmLeaders.map((leader, index) => {
+                let styleClass = 'bg-fc-purple-dark/40 border-white/5';
+                let rankClass = 'text-white/40';
+                let awardClass = 'text-yellow-400';
+                let iconClass = 'text-yellow-500';
+
+                if (index === 0) {
+                  styleClass = 'bg-yellow-500/10 border-yellow-500/50 shadow-lg shadow-yellow-500/10';
+                  rankClass = 'text-yellow-500 text-xl';
+                  awardClass = 'text-yellow-400';
+                } else if (index === 1) {
+                  styleClass = 'bg-gray-300/10 border-gray-300/50 shadow-lg shadow-gray-300/10';
+                  rankClass = 'text-gray-300 text-xl';
+                  awardClass = 'text-gray-200';
+                  iconClass = 'text-gray-300';
+                } else if (index === 2) {
+                  styleClass = 'bg-amber-700/10 border-amber-700/50 shadow-lg shadow-amber-700/10';
+                  rankClass = 'text-amber-600 text-xl';
+                  awardClass = 'text-amber-500';
+                  iconClass = 'text-amber-600';
+                }
+
+                return (
+                  <div key={`${leader.playerName}-${index}`} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-2xl border ${styleClass} transition-all`}>
+                    <div className="flex items-center gap-4">
+                      <span className={`text-lg font-bold ${rankClass}`}>#{index + 1}</span>
+                      <span className="text-base font-bold tracking-normal text-white">{leader.playerName}</span>
+                    </div>
+                    <div className="flex items-center gap-2 sm:ml-auto">
+                      <span className={`${awardClass} font-bold`}>{leader.awards} award{leader.awards !== 1 ? 's' : ''}</span>
+                      <Star className={`w-4 h-4 fill-current ${iconClass}`} />
+                    </div>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="text-center py-8">
+                <p className="text-white/40 font-bold text-xs tracking-normal">No MOTM awards recorded yet</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Team Statistics Grid */}
+        <div className="flex items-center gap-4 mb-4 mt-8">
+          <div className="p-3 bg-fc-purple-base/20 rounded-2xl border border-fc-purple-light/30">
+            <BarChart2 className="w-6 h-6 text-fc-neon-green" />
+          </div>
+          <div>
+            <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Team Overview</h2>
+            <p className="text-white/40 text-xs tracking-normal mt-1">Tournament Averages</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+            <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal mb-1">Highest Average Possession</span>
+            <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
+            <div className="px-3 py-1 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-2xl text-fc-neon-green font-bold text-sm">
+              {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+            <span className="text-[10px] font-bold text-green-400/60 tracking-normal mb-1">Most Goals Scored</span>
+            <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostGoals?.name || '---'}</span>
+            <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 font-bold text-sm">
+              {hofStats.mostGoals?.value || 0} Goals
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+            <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal mb-1">Best Defense</span>
+            <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.leastConceded?.name || '---'}</span>
+            <div className="px-3 py-1 bg-fc-purple-light/10 border border-fc-purple-light/20 rounded-2xl text-fc-neon-green font-bold text-sm">
+              {hofStats.leastConceded?.value || 0} Goals Conceded
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
+            <span className="text-[10px] font-bold text-orange-400/60 tracking-normal mb-1">Most Shots Taken</span>
+            <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
+            <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-2xl text-orange-400 font-bold text-sm">
+              {hofStats.mostShots?.value || 0} Shots
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
+            <span className="text-[10px] font-bold text-yellow-400/60 tracking-normal mb-1">Most Early Goals (1-30')</span>
+            <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostEarlyGoals?.name || '---'}</span>
+            <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-yellow-400 font-bold text-sm">
+              {hofStats.mostEarlyGoals?.value || 0} Early Goals
+            </div>
+          </div>
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center border-red-500/30">
+            <span className="text-[10px] font-bold text-red-400/60 tracking-normal mb-1">Most Late Goals (60-90+')</span>
+            <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostLateGoals?.name || '---'}</span>
+            <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 font-bold text-sm">
+              {hofStats.mostLateGoals?.value || 0} Late Goals
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  };
 
   const handleDeleteNews = async (id: string | number) => {
     if (!isAdmin || !confirm('Are you sure you want to delete this news article?')) return;
@@ -5107,10 +5400,42 @@ export default function App() {
   };
 
   const handleSaveBracket = async (bracketMatch: Partial<BracketMatch> & { id: string }) => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isDrawAdmin) return;
     setIsSavingBracket(true);
     try {
+      // 1. Save local/remote bracket state
       await setDoc(doc(db, 'bracket', bracketMatch.id), bracketMatch, { merge: true });
+
+      // 2. Sync to corresponding linked fixture if existing
+      const existingBracketMatch = bracket.find(b => b.id === bracketMatch.id);
+      const targetLinkedId = bracketMatch.linkedMatchId !== undefined ? bracketMatch.linkedMatchId : existingBracketMatch?.linkedMatchId;
+      
+      if (targetLinkedId) {
+        const updateData: any = {};
+        if (bracketMatch.homeTeamId !== undefined) {
+          updateData.homeTeamId = bracketMatch.homeTeamId;
+        }
+        if (bracketMatch.awayTeamId !== undefined) {
+          updateData.awayTeamId = bracketMatch.awayTeamId;
+        }
+        if (bracketMatch.homeScore !== undefined) {
+          updateData.homeScore = bracketMatch.homeScore;
+        }
+        if (bracketMatch.awayScore !== undefined) {
+          updateData.awayScore = bracketMatch.awayScore;
+        }
+        
+        if (updateData.homeScore !== undefined || updateData.awayScore !== undefined) {
+          updateData.status = 'finished';
+        }
+
+        if (Object.keys(updateData).length > 0) {
+          await setDoc(doc(db, 'matches', targetLinkedId), updateData, { merge: true });
+          await refreshCache('matches');
+        }
+      }
+
+      await refreshCache('bracket');
     } catch (error) {
       console.error("Error saving bracket match:", error);
       alert("Failed to save bracket match.");
@@ -5146,7 +5471,7 @@ export default function App() {
 
 
   const handleAddNewFixture = async (fixtureDataOrDay?: { date: string, home: string, away: string } | string) => {
-    if (!isAdmin) return;
+    if (!isAdmin && !isDrawAdmin) return;
     
     let date = '';
     let homePlayer = '';
@@ -5301,7 +5626,7 @@ export default function App() {
 
   const handleUpdateMatch = async (match: Match) => {
     const isParticipant = user && (match.homeTeamId === user.uid || match.awayTeamId === user.uid);
-    if (!isAdmin && !isParticipant) {
+    if (!isAdmin && !isDrawAdmin && !isParticipant) {
        alert("Permission denied. Only admins or match participants can update results.");
        return;
     }
@@ -6356,6 +6681,16 @@ export default function App() {
   }, []);
 
   useEffect(() => {
+    const unsubGuesses = onSnapshot(collection(db, 'statsGuesses'), (snapshot) => {
+      const list = snapshot.docs.map(d => ({ ...d.data(), id: d.id } as StatGuess));
+      setDbStatsGuesses(list);
+    }, (error) => {
+      console.error("Error syncing statsGuesses:", error);
+    });
+    return () => unsubGuesses();
+  }, []);
+
+  useEffect(() => {
     const testConnection = async () => {
       try {
         await getDocFromServer(doc(db, 'config', 'system'));
@@ -6680,9 +7015,9 @@ export default function App() {
           <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 pointer-events-auto w-full md:w-auto overflow-x-auto hide-scrollbar pb-4 md:pb-0">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
+              { id: 'stats', label: 'Stats', icon: BarChart2 },
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
-              { id: 'stats', label: 'Stats', icon: BarChart2 },
               { id: 'news', label: 'News', icon: Sparkles },
               { id: 'registration', label: 'Registration', icon: Layout },
               { id: 'campaign', label: 'My Campaign', icon: UserIcon },
@@ -7133,255 +7468,8 @@ export default function App() {
             </motion.div>
           )}
 
-          {activeTab === 'stats' && (
-            <motion.div
-              key="stats"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
-            >
-              {/* Top Scorers Section */}
-              <div className="flex items-center gap-4 mb-4 mt-2">
-                <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30">
-                  <BarChart2 className="w-6 h-6 text-fc-neon-green" />
-                </div>
-                <div>
-                  <EditableText id="scorers_header" defaultText="Top Scorers" as="h2" className="font-display text-2xl font-bold  tracking-tight leading-none" />
-                  <p className="text-fc-neon-green/40 text-xs tracking-normal mt-1">
-                    <EditableText id="individual_stats_sub" defaultText="Individual Player Statistics" />
-                  </p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto mb-12">
-                <table className="w-full text-left border-separate border-spacing-y-2">
-                  <thead>
-                    <tr className="text-[#3B82F6] text-[10px] tracking-[0.1em] font-sans font-bold">
-                      <th className="px-6 py-2">Rank</th>
-                      <th className="px-6 py-2">Football Player</th>
-                      <th className="px-6 py-2">Gamer</th>
-                      <th className="px-6 py-2 text-center">Goals</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.length > 0 ? stats.map((stat, index) => (
-                      <tr key={`${stat.playerName}-${stat.teamId}`} className="relative group/row transition-colors duration-150">
-                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                            index === 0 ? 'bg-[#3B82F6] text-white shadow-md' : 
-                            index === 1 ? 'bg-[#888888] text-white' : 
-                            index === 2 ? 'bg-[#EF4444]/20 text-[#EF4444]' : 
-                            'bg-white/10 text-white/70'
-                          }`}>
-                            {index + 1}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
-                          <span className="font-display font-bold text-lg tracking-tight text-white">{stat.playerName}</span>
-                        </td>
-                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
-                            <span className="text-[10px] font-sans font-bold text-[#3B82F6]/80 tracking-normal">{stat.gamerName}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
-                          <span className="text-2xl font-display text-white">{stat.goals}</span>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] rounded-2xl border border-white/5">
-                          <div className="flex flex-col items-center gap-3 opacity-20">
-                            <Info className="w-8 h-8" />
-                            <p className="text-xs font-sans font-bold tracking-normal">No goals recorded yet</p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Clean Sheets Section */}
-              <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-[#10B981]/20 rounded-2xl border border-[#10B981]/30 shadow-sm">
-                  <Shield className="w-6 h-6 text-[#10B981]" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl font-bold tracking-tight leading-none text-white">Clean Sheets</h2>
-                  <p className="text-[#10B981]/60 text-xs font-sans font-bold tracking-normal mt-1">Top Goalkeepers</p>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto mb-12">
-                <table className="w-full text-left border-separate border-spacing-y-2">
-                  <thead>
-                    <tr className="text-[#10B981]/70 text-[10px] tracking-[0.1em] font-sans font-bold">
-                      <th className="px-6 py-2">Rank</th>
-                      <th className="px-6 py-2">Goalkeeper</th>
-                      <th className="px-6 py-2">Gamer</th>
-                      <th className="px-6 py-2 text-center">Clean Sheets</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cleanSheets.length > 0 ? cleanSheets.map((stat, index) => (
-                      <tr key={stat.teamId} className="relative group/row transition-colors duration-150">
-                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 first:rounded-l-2xl border-y border-l border-white/5 border-r-0">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                            index === 0 ? 'bg-[#10B981] text-white shadow-md' : 
-                            index === 1 ? 'bg-[#888888] text-white' : 
-                            index === 2 ? 'bg-[#3B82F6]/20 text-[#3B82F6]' : 
-                            'bg-white/10 text-white/70'
-                          }`}>
-                            {index + 1}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
-                          <span className="font-display font-bold text-lg tracking-tight text-white">{stat.goalkeeperName}</span>
-                        </td>
-                        <td className="px-6 py-4 bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 border-y border-white/5">
-                          <div className="flex flex-col">
-                            <span className="text-sm font-sans font-bold text-white/80">{stat.gamerFullName}</span>
-                            <span className="text-[10px] font-sans font-bold text-[#10B981]/80 tracking-normal">{stat.gamerName}</span>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 text-center bg-white/[0.03] group-hover/row:bg-white/[0.08] transition-colors duration-150 last:rounded-r-2xl border-y border-r border-white/5 border-l-0">
-                          <span className="text-2xl font-display text-white">{stat.cleanSheets}</span>
-                        </td>
-                      </tr>
-                    )) : (
-                      <tr>
-                        <td colSpan={4} className="px-6 py-12 text-center bg-white/[0.03] rounded-2xl border border-white/5">
-                          <div className="flex flex-col items-center gap-3 opacity-20">
-                            <Info className="w-8 h-8" />
-                            <p className="text-xs font-sans font-bold tracking-normal">No clean sheets recorded yet</p>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Man of the Match Leaders */}
-              <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-yellow-500/20 rounded-2xl border border-yellow-500/30">
-                  <Award className="w-6 h-6 text-yellow-400" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Man of the Match Leaders</h2>
-                  <p className="text-white/40 text-xs tracking-normal mt-1">Top Performers</p>
-                </div>
-              </div>
-
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 lg:p-8 mb-12 flex flex-col relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-8 w-32 h-32 bg-yellow-500/10 rounded-bl-full pointer-events-none" />
-                
-                <div className="space-y-4 relative z-10 max-w-2xl">
-                  {liveMotmLeaders.length > 0 ? (
-                    liveMotmLeaders.map((leader, index) => {
-                      let styleClass = 'bg-fc-purple-dark/40 border-white/5';
-                      let rankClass = 'text-white/40';
-                      let awardClass = 'text-yellow-400';
-                      let iconClass = 'text-yellow-500';
-
-                      if (index === 0) {
-                        styleClass = 'bg-yellow-500/10 border-yellow-500/50 shadow-lg shadow-yellow-500/10';
-                        rankClass = 'text-yellow-500 text-xl';
-                        awardClass = 'text-yellow-400';
-                      } else if (index === 1) {
-                        styleClass = 'bg-gray-300/10 border-gray-300/50 shadow-lg shadow-gray-300/10';
-                        rankClass = 'text-gray-300 text-xl';
-                        awardClass = 'text-gray-200';
-                        iconClass = 'text-gray-300';
-                      } else if (index === 2) {
-                        styleClass = 'bg-amber-700/10 border-amber-700/50 shadow-lg shadow-amber-700/10';
-                        rankClass = 'text-amber-600 text-xl';
-                        awardClass = 'text-amber-500';
-                        iconClass = 'text-amber-600';
-                      }
-
-                      return (
-                        <div key={`${leader.playerName}-${index}`} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-2xl border ${styleClass} transition-all`}>
-                          <div className="flex items-center gap-4">
-                            <span className={`text-lg font-bold ${rankClass}`}>#{index + 1}</span>
-                            <span className="text-base font-bold tracking-normal text-white">{leader.playerName}</span>
-                          </div>
-                          <div className="flex items-center gap-2 sm:ml-auto">
-                            <span className={`${awardClass} font-bold`}>{leader.awards} award{leader.awards !== 1 ? 's' : ''}</span>
-                            <Star className={`w-4 h-4 fill-current ${iconClass}`} />
-                          </div>
-                        </div>
-                      );
-                    })
-                  ) : (
-                    <div className="text-center py-8">
-                      <p className="text-white/40 font-bold text-xs tracking-normal">No MOTM awards recorded yet</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Team Statistics Grid */}
-              <div className="flex items-center gap-4 mb-4 mt-8">
-                <div className="p-3 bg-fc-purple-base/20 rounded-2xl border border-fc-purple-light/30">
-                  <BarChart2 className="w-6 h-6 text-fc-neon-green" />
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl font-bold  tracking-tight leading-none text-white">Team Overview</h2>
-                  <p className="text-white/40 text-xs tracking-normal mt-1">Tournament Averages</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-12">
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal mb-1">Highest Average Possession</span>
-                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostPossession?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-fc-purple-light/20 border border-fc-neon-green/30 rounded-2xl text-fc-neon-green font-bold text-sm">
-                    {hofStats.mostPossession?.value ? `${hofStats.mostPossession.value.toFixed(1)}%` : '0%'}
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-bold text-green-400/60 tracking-normal mb-1">Most Goals Scored</span>
-                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 font-bold text-sm">
-                    {hofStats.mostGoals?.value || 0} Goals
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-bold text-fc-neon-green/60 tracking-normal mb-1">Best Defense</span>
-                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.leastConceded?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-fc-purple-light/10 border border-fc-purple-light/20 rounded-2xl text-fc-neon-green font-bold text-sm">
-                    {hofStats.leastConceded?.value || 0} Goals Conceded
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center">
-                  <span className="text-[10px] font-bold text-orange-400/60 tracking-normal mb-1">Most Shots Taken</span>
-                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostShots?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-orange-500/10 border border-orange-500/20 rounded-2xl text-orange-400 font-bold text-sm">
-                    {hofStats.mostShots?.value || 0} Shots
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center border-yellow-500/30">
-                  <span className="text-[10px] font-bold text-yellow-400/60 tracking-normal mb-1">Most Early Goals (1-30')</span>
-                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostEarlyGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-yellow-500/10 border border-yellow-500/20 rounded-2xl text-yellow-400 font-bold text-sm">
-                    {hofStats.mostEarlyGoals?.value || 0} Early Goals
-                  </div>
-                </div>
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 flex flex-col justify-between items-center text-center border-red-500/30">
-                  <span className="text-[10px] font-bold text-red-400/60 tracking-normal mb-1">Most Late Goals (60-90+')</span>
-                  <span className="text-xl md:text-2xl font-display font-bold tracking-tight  mb-2 text-white line-clamp-1">{hofStats.mostLateGoals?.name || '---'}</span>
-                  <div className="px-3 py-1 bg-red-500/10 border border-red-500/20 rounded-2xl text-red-400 font-bold text-sm">
-                    {hofStats.mostLateGoals?.value || 0} Late Goals
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-
+          {activeTab === 'stats' && renderStatsTab()}
+          {false && null}
           {activeTab === 'table' && (
             <motion.div
               key="table"
@@ -8191,6 +8279,7 @@ export default function App() {
             matches={matches}
             handleRandomizeGroups={handleRandomizeGroups}
             handleClearGroups={handleClearGroups}
+            refreshCache={refreshCache}
           />
         )}
         {selectedTeam && (

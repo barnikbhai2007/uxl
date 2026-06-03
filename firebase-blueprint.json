@@ -96,9 +96,25 @@
         "text": { "type": "string" }
       },
       "required": ["text"]
+    },
+    "StatGuess": {
+      "title": "Stat Guess",
+      "description": "Trivia guessing question for the stats tab.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "question": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "correctOption": { "type": "string" }
+      },
+      "required": ["id", "question", "options", "correctOption"]
     }
   },
   "firestore": {
+    "/statsGuesses/{guessId}": {
+      "schema": "StatGuess",
+      "description": "Collection of trivia questions for stats guessing."
+    },
     "/registrations/{registrationId}": {
       "schema": "Registration",
       "description": "Collection of user registrations."

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, getDocs, writeBatch, db } from '../supabase_mock';
-import { Registration, Config, Team } from '../types';
+import { collection, getDocs, writeBatch, db, onSnapshot, doc } from '../supabase_mock';
+import { Registration, Config, Team, StatGuess } from '../types';
 import { WORLD_CUP_TEAMS } from '../constants';
 
 import { Match, BracketMatch } from '../types';
@@ -13,6 +13,79 @@ function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Conf
   const [autoQualifiedSelected, setAutoQualifiedSelected] = useState<string[]>(config.autoQualifiedSelected || []);
   const [groupOfDeath, setGroupOfDeath] = useState(config.groupOfDeath || "");
   const [easiestGroup, setEasiestGroup] = useState(config.easiestGroup || "");
+
+  // Statistics Trivia Question Admin states
+  const [guesses, setGuesses] = useState<StatGuess[]>([]);
+  const [loadingGuesses, setLoadingGuesses] = useState(false);
+
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'statsGuesses'), (snapshot) => {
+      const list = snapshot.docs.map(docSnap => ({ ...docSnap.data(), id: docSnap.id } as StatGuess));
+      setGuesses(list);
+    }, (err) => {
+      console.error(err);
+    });
+    return () => unsub();
+  }, []);
+
+  const handleAddGuess = () => {
+    setGuesses([...guesses, {
+      id: `trivia-${Math.random().toString(36).substring(7)}`,
+      question: '',
+      options: ['', '', '', ''],
+      correctOption: '1'
+    }]);
+  };
+
+  const handleRemoveGuess = (id: string) => {
+    setGuesses(guesses.filter(g => g.id !== id));
+  };
+
+  const handleUpdateGuessField = (id: string, field: 'question' | 'correctOption', val: string) => {
+    setGuesses(guesses.map(g => g.id === id ? { ...g, [field]: val } : g));
+  };
+
+  const handleUpdateGuessOption = (id: string, optIdx: number, val: string) => {
+    setGuesses(guesses.map(g => {
+      if (g.id === id) {
+        const opts = [...g.options];
+        opts[optIdx] = val;
+        return { ...g, options: opts };
+      }
+      return g;
+    }));
+  };
+
+  const handleSaveGuesses = async () => {
+    setLoadingGuesses(true);
+    try {
+      const batch = writeBatch(db);
+      // Remove all existing documents
+      const qSnap = await getDocs(collection(db, 'statsGuesses'));
+      qSnap.docs.forEach(docSnap => {
+        batch.delete(docSnap.ref);
+      });
+
+      // Add valid ones
+      guesses.forEach(g => {
+        if (g.question.trim()) {
+          batch.set(doc(db, 'statsGuesses', g.id), {
+            id: g.id,
+            question: g.question.trim(),
+            options: g.options.map(o => o.trim() || ""),
+            correctOption: g.correctOption || "1"
+          });
+        }
+      });
+      await batch.commit();
+      alert("Trivia / Guessing questions saved to statistics successfully!");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to save trivia guesses: " + (err as Error).message);
+    } finally {
+      setLoadingGuesses(false);
+    }
+  };
 
   const handleAdd = () => {
     setWildcards([...wildcards, { teamId: '', reason: 'Outstanding performance in a highly competitive group.' }]);
@@ -89,87 +162,89 @@ function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Conf
   }, [teams]);
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 min-h-[500px]">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green">Manual Wildcard Selection</h2>
-          <p className="text-white/50 text-xs mt-1">Select players who didn't automatically qualify to give them a wildcard spot in the Round of 16.</p>
-        </div>
-        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black uppercase font-bold text-xs rounded hover:bg-white transition-all">
-          <Save className="w-4 h-4" /> Save Wildcards
-        </button>
-      </div>
-
-      <div className="space-y-4">
-        {wildcards.map((wc, i) => {
-          const spot = i + 1;
-          let spotLabel = `${spot}th Spot`;
-          if (spot === 1) spotLabel = "1st Spot";
-          else if (spot === 2) spotLabel = "2nd Spot";
-          else if (spot === 3) spotLabel = "3rd Spot";
-          else if (spot !== 11 && spot !== 12 && spot !== 13) {
-            const last = spot % 10;
-            if (last === 1) spotLabel = `${spot}st Spot`;
-            if (last === 2) spotLabel = `${spot}nd Spot`;
-            if (last === 3) spotLabel = `${spot}rd Spot`;
-          }
-
-          return (
-          <div key={i} className="flex flex-col md:flex-row gap-4 items-start md:items-center bg-black/40 p-4 border border-white/10 rounded-xl">
-             <div className="flex items-center gap-2 font-bold text-fc-neon-green bg-white/5 border border-white/10 px-3 py-2 rounded">
-               <div className="flex flex-col">
-                 <button disabled={i === 0} onClick={() => handleMoveUp(i)} className="text-white/50 hover:text-white disabled:opacity-30">
-                   <ArrowUp className="w-3 h-3" />
-                 </button>
-                 <button disabled={i === wildcards.length - 1} onClick={() => handleMoveDown(i)} className="text-white/50 hover:text-white disabled:opacity-30">
-                   <ArrowDown className="w-3 h-3" />
-                 </button>
-               </div>
-               <span className="whitespace-nowrap min-w-[70px] text-center text-xs">{spotLabel}</span>
-             </div>
-             <div className="flex-1 w-full relative">
-               <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Select Player</label>
-               <select 
-                 className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
-                 value={wc.teamId}
-                 onChange={(e) => handleChange(i, 'teamId', e.target.value)}
-               >
-                 <option value="" disabled>Choose Player...</option>
-                 {nonAutoQualified.map(t => (
-                   <option key={t.id} value={t.id}>{t.name} ({t.group})</option>
-                 ))}
-               </select>
-             </div>
-             
-             <div className="flex-[2] w-full relative">
-               <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Reason</label>
-               <input 
-                 type="text" 
-                 value={wc.reason}
-                 onChange={(e) => handleChange(i, 'reason', e.target.value)}
-                 className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
-                 placeholder="Reason for wildcard..."
-               />
-             </div>
-             
-             <button onClick={() => handleRemove(i)} className="bg-red-500/20 text-red-500 p-4 rounded hover:bg-red-500 hover:text-white transition-all">
-               <Trash2 className="w-5 h-5" />
-             </button>
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 min-h-[500px] space-y-10">
+      <div>
+        <div className="flex justify-between items-center mb-6">
+          <div>
+            <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green">Manual Wildcard Selection</h2>
+            <p className="text-white/50 text-xs mt-1">Select players who didn't automatically qualify to give them a wildcard spot in the Round of 16.</p>
           </div>
-        )})}
+          <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black uppercase font-bold text-xs rounded hover:bg-white transition-all">
+            <Save className="w-4 h-4" /> Save Wildcards
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {wildcards.map((wc, i) => {
+            const spot = i + 1;
+            let spotLabel = `${spot}th Spot`;
+            if (spot === 1) spotLabel = "1st Spot";
+            else if (spot === 2) spotLabel = "2nd Spot";
+            else if (spot === 3) spotLabel = "3rd Spot";
+            else if (spot !== 11 && spot !== 12 && spot !== 13) {
+              const last = spot % 10;
+              if (last === 1) spotLabel = `${spot}st Spot`;
+              if (last === 2) spotLabel = `${spot}nd Spot`;
+              if (last === 3) spotLabel = `${spot}rd Spot`;
+            }
+
+            return (
+            <div key={i} className="flex flex-col md:flex-row gap-4 items-start md:items-center bg-black/40 p-4 border border-white/10 rounded-xl">
+               <div className="flex items-center gap-2 font-bold text-fc-neon-green bg-white/5 border border-white/10 px-3 py-2 rounded">
+                 <div className="flex flex-col">
+                   <button disabled={i === 0} onClick={() => handleMoveUp(i)} className="text-white/50 hover:text-white disabled:opacity-30">
+                     <ArrowUp className="w-3 h-3" />
+                   </button>
+                   <button disabled={i === wildcards.length - 1} onClick={() => handleMoveDown(i)} className="text-white/50 hover:text-white disabled:opacity-30">
+                     <ArrowDown className="w-3 h-3" />
+                   </button>
+                 </div>
+                 <span className="whitespace-nowrap min-w-[70px] text-center text-xs">{spotLabel}</span>
+               </div>
+               <div className="flex-1 w-full relative">
+                 <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Select Player</label>
+                 <select 
+                   className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
+                   value={wc.teamId}
+                   onChange={(e) => handleChange(i, 'teamId', e.target.value)}
+                 >
+                   <option value="" disabled>Choose Player...</option>
+                   {nonAutoQualified.map(t => (
+                     <option key={t.id} value={t.id}>{t.name} ({t.group})</option>
+                   ))}
+                 </select>
+               </div>
+               
+               <div className="flex-[2] w-full relative">
+                 <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Reason</label>
+                 <input 
+                   type="text" 
+                   value={wc.reason}
+                   onChange={(e) => handleChange(i, 'reason', e.target.value)}
+                   className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
+                   placeholder="Reason for wildcard..."
+                 />
+               </div>
+               
+               <button onClick={() => handleRemove(i)} className="bg-red-500/20 text-red-500 p-4 rounded hover:bg-red-500 hover:text-white transition-all">
+                 <Trash2 className="w-5 h-5" />
+               </button>
+            </div>
+          )})}
+        </div>
+
+        <button onClick={handleAdd} className="mt-6 flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white border border-white/10 border-dashed rounded-xl uppercase font-bold text-xs transition-all">
+          <Plus className="w-4 h-4" /> Add Wildcard Spot
+        </button>
+
+        <div className="mt-8 p-4 bg-fc-purple-light/20 border border-fc-purple-light/50 rounded-xl">
+           <p className="text-white/70 text-xs leading-relaxed">
+             <strong>Note:</strong> When you specify wildcards here, the Draw system will use these selections explicitly instead of automatically picking the best 3rd place finishers based on statistics. Make sure you select the exact amount needed (usually 2 for a 16-team bracket if 14 qualify automatically).
+           </p>
+        </div>
       </div>
 
-      <button onClick={handleAdd} className="mt-6 flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white border border-white/10 border-dashed rounded-xl uppercase font-bold text-xs transition-all">
-        <Plus className="w-4 h-4" /> Add Wildcard Spot
-      </button>
-
-      <div className="mt-8 p-4 bg-fc-purple-light/20 border border-fc-purple-light/50 rounded-xl mb-8">
-         <p className="text-white/70 text-xs leading-relaxed">
-           <strong>Note:</strong> When you specify wildcards here, the Draw system will use these selections explicitly instead of automatically picking the best 3rd place finishers based on statistics. Make sure you select the exact amount needed (usually 2 for a 16-team bracket if 14 qualify automatically).
-         </p>
-      </div>
-
-      <div className="mb-6 border-t border-white/10 pt-8">
+      <div className="border-t border-white/10 pt-8">
         <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green mb-6">Manual Auto-Qualified Players</h2>
         <p className="text-white/50 text-xs mb-4">Optionally hardcode the players that automatically qualify (e.g. 14 players) if you want to bypass the automatic calculations.</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -197,7 +272,7 @@ function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Conf
         </button>
       </div>
 
-      <div className="mb-6 border-t border-white/10 pt-8">
+      <div className="border-t border-white/10 pt-8">
         <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green mb-6">Group Awards (Manual)</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-black/40 p-4 border border-white/10 rounded-xl relative">
@@ -220,6 +295,95 @@ function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Conf
               placeholder="e.g. Group D"
             />
           </div>
+        </div>
+      </div>
+
+      {/* Admin Statistics Guesses / Trivia Editor */}
+      <div className="border-t border-white/10 pt-8">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 gap-4">
+          <div>
+            <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green">Statistics Guesses (Trivia Quiz)</h2>
+            <p className="text-white/50 text-xs mt-1">
+              Add guessing questions with 4 options each. Users will be asked to guess the correct answer before they can view tournament statistics.
+            </p>
+          </div>
+          <button 
+            type="button"
+            onClick={handleSaveGuesses}
+            disabled={loadingGuesses}
+            className="flex items-center gap-2 px-6 py-2 bg-[#3B82F6] hover:bg-[#2563EB] text-white uppercase font-bold text-xs rounded transition-all disabled:opacity-50"
+          >
+            {loadingGuesses ? "Saving..." : "Save Trivia Config"}
+          </button>
+        </div>
+
+        <div className="space-y-6 mt-6">
+          {guesses.map((g, idx) => (
+            <div key={g.id} className="bg-black/30 border border-white/10 p-5 rounded-xl space-y-4 relative">
+              <button 
+                type="button" 
+                onClick={() => handleRemoveGuess(g.id)}
+                className="absolute top-4 right-4 text-red-500 hover:text-red-400 p-1.5 bg-red-500/10 rounded hover:bg-red-500/20 transition-all"
+                title="Remove Question"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+
+              <div>
+                <span className="text-fc-neon-green font-display font-black text-xs mr-2 px-2 py-0.5 bg-fc-neon-green/10 rounded">Question {idx + 1}</span>
+                <input 
+                  type="text"
+                  value={g.question}
+                  onChange={(e) => handleUpdateGuessField(g.id, 'question', e.target.value)}
+                  placeholder="e.g. Who has the highest goals-per-match ratio so far?"
+                  className="w-full bg-black/45 border border-white/20 rounded-md py-2 px-3 text-white text-sm font-bold mt-2"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {g.options.map((opt, optIdx) => (
+                  <div key={optIdx} className="flex flex-col">
+                    <label className="text-[10px] text-white/50 font-bold uppercase mb-1">Option {optIdx + 1}</label>
+                    <input 
+                      type="text"
+                      value={opt}
+                      onChange={(e) => handleUpdateGuessOption(g.id, optIdx, e.target.value)}
+                      placeholder={`Option ${optIdx + 1}`}
+                      className="bg-black/50 border border-white/20 rounded py-2 px-3 text-white text-sm"
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div className="w-full md:w-1/3">
+                <label className="text-[10px] text-white/50 font-bold uppercase mb-1 block">Correct Answer Option</label>
+                <select
+                  value={g.correctOption}
+                  onChange={(e) => handleUpdateGuessField(g.id, 'correctOption', e.target.value)}
+                  className="w-full bg-black/50 border border-white/20 rounded py-2 px-3 text-white text-sm font-bold"
+                >
+                  <option value="1">Option 1</option>
+                  <option value="2">Option 2</option>
+                  <option value="3">Option 3</option>
+                  <option value="4">Option 4</option>
+                </select>
+              </div>
+            </div>
+          ))}
+
+          {guesses.length === 0 && (
+            <div className="text-center py-6 bg-white/[0.02] rounded-xl border border-dashed border-white/10 text-white/40 text-xs">
+              No active custom trivia questions. Default challenge questions will be displayed to users.
+            </div>
+          )}
+
+          <button 
+            type="button"
+            onClick={handleAddGuess}
+            className="flex items-center justify-center gap-2 w-full py-3 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white border border-white/10 border-dashed rounded-xl uppercase font-bold text-xs transition-all"
+          >
+            <Plus className="w-4 h-4" /> Add Statistics Trivia Question
+          </button>
         </div>
       </div>
     </div>
