@@ -494,7 +494,7 @@ export default function DrawBracketManager({
     let hasExternalAssignments = false;
 
     bracket.forEach(m => {
-      if (m.round === 'Round of 16' || m.round === 'r16') {
+      if (m.round === 'Round of 16' || m.round === 'r16' || m.id.startsWith('r16-')) {
         const i = m.id.replace('r16-', '');
         if (m.homeTeamId) {
           const t = teams.find(t => t.id === m.homeTeamId);
@@ -571,16 +571,18 @@ export default function DrawBracketManager({
       if (roundName === 'r16') roundName = 'Round of 16';
       else if (roundName === 'qf') roundName = 'Quarter-Finals';
       else if (roundName === 'sf') roundName = 'Semi-Finals';
-      const existingMatch = bracket.find((b) => b.id === mId) || { id: mId, round: roundName };
+
       if (matchKey.includes("home")) {
         await handleSaveBracket({
-          ...existingMatch,
+          id: mId,
+          round: roundName,
           homeTeamId: team.id,
           homeTeamName: team.name,
         } as BracketMatch);
       } else {
         await handleSaveBracket({
-          ...existingMatch,
+          id: mId,
+          round: roundName,
           awayTeamId: team.id,
           awayTeamName: team.name,
         } as BracketMatch);
@@ -911,7 +913,7 @@ export default function DrawBracketManager({
                           <div className="grid grid-cols-2 gap-4 text-xs">
                             <div className="flex flex-col">
                               <span className="text-white/50 uppercase tracking-widest text-[10px]">Group</span>
-                              <span className="text-white font-bold">{wildcards[wildcardIdx].group || "N/A"}</span>
+                              <span className="text-white font-bold">{wildcardPhase === "name" ? (wildcards[wildcardIdx].group || "N/A") : "❓"}</span>
                             </div>
                             <div className="flex flex-col">
                               <span className="text-white/50 uppercase tracking-widest text-[10px]">Points</span>
@@ -934,14 +936,14 @@ export default function DrawBracketManager({
                           </div>
                         </div>
                         
-                        {wildcards[wildcardIdx].group && groupStandings[wildcards[wildcardIdx].group] && (
+                        {wildcardPhase === "name" && wildcards[wildcardIdx].group && groupStandings[wildcards[wildcardIdx].group] && (
                           <div className="w-full text-left text-xs bg-black/40 p-3 rounded-xl border border-white/5 mb-2">
                              <div className="text-white/50 uppercase tracking-widest text-[10px] mb-2">{wildcards[wildcardIdx].group} Standings</div>
                              <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-b border-white/10 pb-2 mb-2 font-bold text-white/50 text-[10px] uppercase tracking-widest">
-                               <span>Team</span>
-                               <span className="text-center w-6">PTS</span>
-                               <span className="text-center w-6">GD</span>
-                               <span className="text-center w-6">GF</span>
+                                <span>Team</span>
+                                <span className="text-center w-6">PTS</span>
+                                <span className="text-center w-6">GD</span>
+                                <span className="text-center w-6">GF</span>
                              </div>
                              <div className="space-y-1">
                                {groupStandings[wildcards[wildcardIdx].group].map((st, idx) => (
@@ -960,19 +962,58 @@ export default function DrawBracketManager({
                         )}
                       </div>
 
+                    {wildcardPhase === "reason" && (
+                      <motion.div
+                        initial={{ scale: 0.8, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        className="flex flex-col items-center bg-white/5 px-12 py-6 rounded-2xl border border-white/10"
+                      >
+                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-900 via-purple-700 to-pink-600 border border-white/30 flex items-center justify-center text-3xl shadow-lg shadow-purple-500/20 animate-bounce mb-3">
+                          <span>🏺</span>
+                        </div>
+                        <span className="text-white/50 text-xs font-mono font-bold uppercase tracking-widest">Mystery Wildcard Pot</span>
+                      </motion.div>
+                    )}
+
                     {(wildcardPhase === "country" || wildcardPhase === "name") && (
                       <motion.div
                         initial={{ scale: 0.8, opacity: 0 }}
                         animate={{ scale: 1, opacity: 1 }}
-                        className="flex flex-col items-center bg-white/10 px-12 py-6 rounded-2xl border border-white/20"
+                        className={`flex flex-col items-center px-12 py-6 rounded-2xl border transition-all ${
+                          wildcardPhase === "name"
+                            ? wildcards[wildcardIdx].isEliminated
+                              ? "bg-red-600/10 border-red-500/30 text-red-100 shadow-[0_0_25px_rgba(239,68,68,0.2)]"
+                              : "bg-fc-neon-green/10 border-fc-neon-green/30 text-fc-neon-green shadow-[0_0_25px_rgba(204,255,0,0.2)]"
+                            : "bg-white/10 border-white/20"
+                        }`}
                       >
-                        <span className={`text-2xl font-bold uppercase tracking-widest mb-2 transition-all ${wildcardPhase === "name" ? 'bg-fc-neon-green text-black px-3 py-1 rounded shadow-lg -rotate-1 scale-110' : 'text-white/50'}`}>
-                          {wildcards[wildcardIdx].country || "Unknown"}
+                        {(() => {
+                          const flagEmoji = WORLD_CUP_TEAMS.find(t => t.name === wildcards[wildcardIdx].country)?.flag || '🌍';
+                          return (
+                            <motion.span
+                              initial={{ scale: 0.4, opacity: 0 }}
+                              animate={{ scale: 1.1, opacity: 1 }}
+                              className="text-6xl mb-4 filter drop-shadow-lg"
+                            >
+                              {flagEmoji}
+                            </motion.span>
+                          );
+                        })()}
+
+                        <span className="text-xl font-bold uppercase tracking-widest mb-2 text-white/70">
+                          {wildcards[wildcardIdx].country || "Unknown Country"}
                         </span>
+
                         {wildcardPhase === "name" && (
                            <motion.span 
-                             initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                             className="text-5xl font-display font-black text-black bg-fc-neon-green px-4 py-1 rounded mt-2 shadow-[0_0_20px_rgba(204,255,0,0.4)] rotate-1 scale-110"
+                             initial={{ opacity: 0, scale: 0.6, rotate: -5 }}
+                             animate={{ opacity: 1, scale: 1.1, rotate: 1 }}
+                             transition={{ type: "spring", stiffness: 200, damping: 12 }}
+                             className={`text-4xl md:text-5xl font-display font-black px-6 py-2 rounded-xl mt-2 rotate-1 shadow-lg pointer-events-none select-none ${
+                               wildcards[wildcardIdx].isEliminated
+                                 ? 'text-white bg-red-600 shadow-red-600/40'
+                                 : 'text-black bg-fc-neon-green shadow-fc-neon-green/40'
+                             }`}
                            >
                              {wildcards[wildcardIdx].name}
                            </motion.span>
@@ -1140,6 +1181,88 @@ export default function DrawBracketManager({
           {pots.pot1.length === 0 && pots.pot2.length === 0 && (
             <Confetti width={width} height={height} recycle={false} numberOfPieces={800} colors={['#ccff00', '#ffffff', '#000000']} />
           )}
+
+          {/* High Impact Center Reveal Overlay */}
+          {activeDrawMatch && (
+            <div className="fixed inset-0 bg-black/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-4">
+              <motion.div
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className={`bg-black/90 border ${
+                  activeDrawMatch.includes("home") ? "border-fc-purple-light/40" : "border-fc-neon-green/40"
+                } p-8 rounded-3xl max-w-lg w-full text-center shadow-[0_0_50px_rgba(0,0,0,0.8)] relative overflow-hidden`}
+              >
+                {/* Glowing radial background */}
+                <div className={`absolute -inset-10 opacity-15 bg-radial ${
+                  activeDrawMatch.includes("home") ? "from-fc-purple-light to-transparent" : "from-fc-neon-green to-transparent"
+                }`} />
+                
+                <div className="relative z-10">
+                  <span className={`text-[10px] font-mono font-bold uppercase tracking-widest px-3 py-1 bg-white/5 border border-white/10 rounded-full mb-6 inline-block ${
+                    activeDrawMatch.includes("home") ? "text-fc-purple-light border-fc-purple-light/20" : "text-fc-neon-green border-fc-neon-green/20"
+                  }`}>
+                    {activeDrawMatch.includes("home") ? "🏺 DRAWING FROM POT 1 (HOME) 🏺" : "🏺 DRAWING FROM POT 2 (AWAY) 🏺"}
+                  </span>
+
+                  <div className="my-8 min-h-[220px] flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                      {activeDrawPhase === "country" && (
+                        <motion.div
+                          key="country"
+                          initial={{ scale: 0.5, y: 25, opacity: 0 }}
+                          animate={{ scale: 1.1, y: 0, opacity: 1 }}
+                          exit={{ scale: 0.8, opacity: 0 }}
+                          transition={{ type: "spring", duration: 0.8 }}
+                          className="flex flex-col items-center"
+                        >
+                          <div className="text-8xl md:text-9xl mb-4 animate-bounce select-none">
+                            {(() => {
+                              const countryName = bracketAssignments[activeDrawMatch]?.country || bracketAssignments[activeDrawMatch]?.name;
+                              return WORLD_CUP_TEAMS.find(t => t.name === countryName)?.flag || '🌍';
+                            })()}
+                          </div>
+                          <h3 className="text-2xl md:text-3xl font-display font-black uppercase text-white/50 tracking-widest">
+                            {bracketAssignments[activeDrawMatch]?.country || "Unknown Country"}
+                          </h3>
+                          <p className="text-xs text-white/40 mt-4 tracking-widest font-mono">REVEALING CONTENDER...</p>
+                        </motion.div>
+                      )}
+
+                      {activeDrawPhase === "name" && (
+                        <motion.div
+                          key="name"
+                          initial={{ scale: 0.6, rotate: -5, opacity: 0 }}
+                          animate={{ scale: 1.15, rotate: 1, opacity: 1 }}
+                          transition={{ type: "spring", stiffness: 300, damping: 15 }}
+                          className="flex flex-col items-center"
+                        >
+                          <div className="text-6xl md:text-7xl mb-4 select-none">
+                            {(() => {
+                              const countryName = bracketAssignments[activeDrawMatch]?.country || bracketAssignments[activeDrawMatch]?.name;
+                              return WORLD_CUP_TEAMS.find(t => t.name === countryName)?.flag || '🌍';
+                            })()}
+                          </div>
+                          <p className="text-[10px] font-mono text-white/40 uppercase tracking-widest mb-1">
+                            {bracketAssignments[activeDrawMatch]?.country} Representative
+                          </p>
+                          <h3 
+                            className={`text-5xl md:text-6xl font-display font-black px-6 py-3 rounded-2xl rotate-2 shadow-2xl tracking-tight leading-none ${
+                              activeDrawMatch.includes("home") 
+                                ? "bg-fc-purple-light text-white shadow-fc-purple-light/50" 
+                                : "bg-fc-neon-green text-black shadow-fc-neon-green/50"
+                            }`}
+                          >
+                            {bracketAssignments[activeDrawMatch]?.name}
+                          </h3>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          )}
+
           <div className="flex justify-between items-center w-full mb-8 relative">
             <div className="flex flex-col items-center p-6 bg-black/40 border border-fc-purple-light/30 rounded-2xl w-full max-w-sm">
               <h3 className="text-fc-purple-light font-display font-black text-xl uppercase tracking-widest mb-4">
@@ -1149,9 +1272,14 @@ export default function DrawBracketManager({
                 {pots.pot1.map((p, i) => (
                   <div
                     key={p.id}
-                    className="bg-white/5 pt-1 pb-2 px-3 rounded border border-white/10 flex flex-col items-center"
+                    title="Sealed Ball"
+                    className="relative flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:border-fc-purple-light/50 transition-all cursor-not-allowed"
                   >
-                    <span className="font-bold text-white text-xs">{p.name}</span>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-900 via-purple-700 to-pink-600 border border-white/30 flex items-center justify-center text-lg shadow-lg relative overflow-hidden">
+                      <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse opacity-50" />
+                      <span>🏺</span>
+                    </div>
+                    <span className="text-[8px] font-mono font-bold text-fc-purple-light uppercase tracking-widest mt-1">Ball {i + 1}</span>
                   </div>
                 ))}
               </div>
@@ -1176,9 +1304,14 @@ export default function DrawBracketManager({
                 {pots.pot2.map((p, i) => (
                   <div
                     key={p.id}
-                    className="bg-white/5 pt-1 pb-2 px-3 rounded border border-white/10 flex flex-col items-center"
+                    title="Sealed Ball"
+                    className="relative flex flex-col items-center justify-center p-2 rounded-xl bg-white/5 border border-white/10 hover:border-fc-neon-green/50 transition-all cursor-not-allowed"
                   >
-                    <span className="font-bold text-white text-xs">{p.name}</span>
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-900 via-teal-700 to-fc-neon-green border border-white/30 flex items-center justify-center text-lg shadow-lg relative overflow-hidden">
+                      <div className="absolute inset-0 bg-white/10 rounded-full animate-pulse opacity-50" />
+                      <span>🏺</span>
+                    </div>
+                    <span className="text-[8px] font-mono font-bold text-fc-neon-green uppercase tracking-widest mt-1">Ball {i + 1}</span>
                   </div>
                 ))}
               </div>

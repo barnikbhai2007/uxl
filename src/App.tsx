@@ -2365,6 +2365,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const [editRound, setEditRound] = useState('');
     const [editHomeScore, setEditHomeScore] = useState(0);
     const [editAwayScore, setEditAwayScore] = useState(0);
+    const [editLinkedMatchId, setEditLinkedMatchId] = useState('');
     const firstInputRef = React.useRef<HTMLInputElement>(null);
 
     const startEditingMatch = (match: BracketMatch) => {
@@ -2374,6 +2375,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       setEditRound(match.round || '');
       setEditHomeScore(match.homeScore || 0);
       setEditAwayScore(match.awayScore || 0);
+      setEditLinkedMatchId(match.linkedMatchId || '');
       setTimeout(() => firstInputRef.current?.focus(), 100);
     };
 
@@ -2385,15 +2387,23 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         return team ? (team.fullName || team.fcName || team.name) : idOrName;
       };
 
+      let finalRound = editRound;
+      if (editingMatchId.startsWith('r16-')) finalRound = 'Round of 16';
+      else if (editingMatchId.startsWith('qf-')) finalRound = 'Quarter-Finals';
+      else if (editingMatchId.startsWith('sf-')) finalRound = 'Semi-Finals';
+      else if (editingMatchId === 'final') finalRound = 'Grand Final';
+      else if (editingMatchId === 'third-place') finalRound = '3rd Place Match';
+
       await handleSaveBracket({
         id: editingMatchId,
         homeTeamId: editHomeName,
         awayTeamId: editAwayName,
         homeTeamName: resolveName(editHomeName),
         awayTeamName: resolveName(editAwayName),
-        round: editRound,
+        round: finalRound,
         homeScore: editHomeScore,
-        awayScore: editAwayScore
+        awayScore: editAwayScore,
+        linkedMatchId: editLinkedMatchId || undefined
       });
       setEditingMatchId(null);
     };
@@ -2408,6 +2418,59 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       await handleAdminAiCommand(aiCommand);
       setAiCommand('');
       setIsAiLoading(false);
+    };
+
+    const handleGenerateFixturesFromBracket = async () => {
+      if (!window.confirm("This will auto-generate matches in the Fixtures tab for any bracket slots that are not currently linked. Proceed?")) return;
+      try {
+        const batch = writeBatch(db);
+        let updates = 0;
+        for (const bMatch of bracket) {
+          if (!bMatch.linkedMatchId) {
+             const randomId = Math.random().toString(36).substring(2);
+             const newMatchRef = doc(db, 'matches', randomId);
+             const homeTeam = teams.find(t => t.name === bMatch.homeTeamName || (bMatch.homeTeamId && t.id === bMatch.homeTeamId));
+             const awayTeam = teams.find(t => t.name === bMatch.awayTeamName || (bMatch.awayTeamId && t.id === bMatch.awayTeamId));
+             
+             const matchRoundStr = String(bMatch.round);
+             let matchType: Match['type'] = 'qualifier';
+             if (matchRoundStr === 'r16') matchType = 'qualifier';
+             else if (matchRoundStr === 'qf') matchType = 'quarterfinal';
+             else if (matchRoundStr === 'sf') matchType = 'semifinal';
+             else if (matchRoundStr.toLowerCase().includes('final') && !matchRoundStr.toLowerCase().includes('quarter') && !matchRoundStr.toLowerCase().includes('semi')) {
+                 matchType = 'final';
+             }
+             
+             const matchData: Match = {
+               id: newMatchRef.id,
+               matchNumber: matches.length + updates + 1,
+               date: 'TBD',
+               homeTeamId: homeTeam ? homeTeam.id : 'TBD',
+               awayTeamId: awayTeam ? awayTeam.id : 'TBD',
+               status: 'scheduled',
+               type: matchType,
+               leg: bMatch.leg
+             };
+             batch.set(newMatchRef, matchData);
+             
+             const bracketRef = doc(db, 'bracket', bMatch.id);
+             batch.update(bracketRef, { linkedMatchId: newMatchRef.id });
+             updates++;
+          }
+        }
+
+        if (updates > 0) {
+          await batch.commit();
+          alert(`Successfully generated and linked ${updates} fixtures from bracket.`);
+          await handleAdminReset('matches');
+          await handleAdminReset('bracket');
+        } else {
+          alert("No unlinked bracket matches found.");
+        }
+      } catch(e) {
+        console.error(e);
+        alert("Error syncing bracket to fixtures.");
+      }
     };
 
     if (!isAdmin && !isDrawAdmin) {
@@ -2594,13 +2657,51 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
                   <div className="space-y-12">
                     <div>
-                      <h3 className="text-xl font-display font-bold  text-fc-neon-green mb-6 flex items-center gap-3">
-                        <Layout className="w-6 h-6" />
-                        Live Bracket Editor
-                      </h3>
+                      <div className="flex items-center justify-between mb-6">
+                        <h3 className="text-xl font-display font-bold text-fc-neon-green flex items-center gap-3">
+                          <Layout className="w-6 h-6" />
+                          Live Bracket Editor
+                        </h3>
+                        <button 
+                          onClick={handleGenerateFixturesFromBracket}
+                          className="bg-fc-purple-light/20 text-white hover:bg-fc-neon-green hover:text-black hover:border-fc-neon-green transition-all px-4 py-2 rounded-2xl border border-white/20 text-[10px] font-bold"
+                        >
+                          Generate Fixtures
+                        </button>
+                      </div>
                       <div className="space-y-4">
                       {['Round of 16', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
-                        const roundMatches = bracket.filter(m => m.round === round || (round === 'Round of 16' && m.round === 'r16'));
+                        const resolveLinkedScoresLocal = (bracketMatch: BracketMatch) => {
+                          if (bracketMatch.linkedMatchId) {
+                            const fixtureMatch = matches.find(m => m.id === bracketMatch.linkedMatchId);
+                            if (fixtureMatch) {
+                              return {
+                                ...bracketMatch,
+                                homeScore: fixtureMatch.homeScore !== undefined ? fixtureMatch.homeScore : bracketMatch.homeScore,
+                                awayScore: fixtureMatch.awayScore !== undefined ? fixtureMatch.awayScore : bracketMatch.awayScore
+                              };
+                            }
+                          }
+                          return bracketMatch;
+                        };
+                        const roundMatches = bracket.filter(m => {
+                          if (round === 'Round of 16') {
+                            return m.round === 'Round of 16' || m.round === 'r16' || m.id.startsWith('r16-');
+                          }
+                          if (round === 'Quarter-Finals') {
+                            return m.round === 'Quarter-Finals' || m.round === 'qf' || m.id.startsWith('qf-');
+                          }
+                          if (round === 'Semi-Finals') {
+                            return m.round === 'Semi-Finals' || m.round === 'sf' || m.id.startsWith('sf-');
+                          }
+                          if (round === 'Grand Final') {
+                            return m.round === 'Grand Final' || m.id === 'final';
+                          }
+                          if (round === '3rd Place Match') {
+                            return m.round === '3rd Place Match' || m.id === 'third-place';
+                          }
+                          return m.round === round;
+                        }).map(m => resolveLinkedScoresLocal(m));
                         if (roundMatches.length === 0) return null;
                         return (
                           <div key={round} className="space-y-4">
@@ -2623,6 +2724,26 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                           onChange={setEditAwayName} 
                                           teams={teams} 
                                         />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <label className="text-[9px] font-bold text-white/40">Link to Existing Match (Optional)</label>
+                                        <select
+                                          value={editLinkedMatchId}
+                                          onChange={e => setEditLinkedMatchId(e.target.value)}
+                                          className="w-full border p-2.5 rounded-2xl bg-fc-purple-dark text-white border-white/5 text-xs"
+                                        >
+                                          <option value="">-- No Match Linked --</option>
+                                          {matches.map(m => {
+                                            const homeTeam = teams.find(t => t.id === m.homeTeamId);
+                                            const awayTeam = teams.find(t => t.id === m.awayTeamId);
+                                            const matchLabel = m.matchday ? `Matchday ${m.matchday}` : (m.type || 'Match');
+                                            return (
+                                              <option key={`link-${m.id}`} value={m.id}>
+                                                {matchLabel} - {homeTeam?.name || m.homeTeamId || 'TBD'} vs {awayTeam?.name || m.awayTeamId || 'TBD'} ({m.homeScore ?? '-'}-{m.awayScore ?? '-'} - {m.status})
+                                              </option>
+                                            );
+                                          })}
+                                        </select>
                                       </div>
                                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                         <div className="space-y-2">
@@ -6105,9 +6226,25 @@ export default function App() {
     }
   };
 
+  const resolveLinkedScores = (bracketMatch: BracketMatch) => {
+    if (bracketMatch.linkedMatchId) {
+      const fixtureMatch = dbMatches.find(m => m.id === bracketMatch.linkedMatchId);
+      if (fixtureMatch) {
+        return {
+          ...bracketMatch,
+          homeScore: fixtureMatch.homeScore !== undefined ? fixtureMatch.homeScore : bracketMatch.homeScore,
+          awayScore: fixtureMatch.awayScore !== undefined ? fixtureMatch.awayScore : bracketMatch.awayScore
+        };
+      }
+    }
+    return bracketMatch;
+  };
+
   const getBracketMatch = (id: string) => {
     const bracketMatch = bracket.find(m => m.id === id);
-    if (bracketMatch) return bracketMatch;
+    if (bracketMatch) {
+      return resolveLinkedScores(bracketMatch);
+    }
     
     return { id, round: '', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 };
   };

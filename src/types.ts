@@ -87,6 +87,7 @@ export interface BracketMatch {
   matchNumber?: number;
   status?: string;
   isBye?: boolean;
+  linkedMatchId?: string;
 }
 
 export interface Registration {
