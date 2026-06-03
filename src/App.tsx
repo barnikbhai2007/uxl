@@ -4977,7 +4977,7 @@ export default function App() {
     }
   };
 
-  const handleSaveBracket = async (bracketMatch: BracketMatch) => {
+  const handleSaveBracket = async (bracketMatch: Partial<BracketMatch> & { id: string }) => {
     if (!isAdmin) return;
     setIsSavingBracket(true);
     try {
