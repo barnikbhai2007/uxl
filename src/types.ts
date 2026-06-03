@@ -127,6 +127,7 @@ export interface Config {
   drawAdminEnabled?: boolean;
   checkedInPlayers?: string[];
   wildcardsSelected?: { teamId: string; reason: string }[];
+  autoQualifiedSelected?: string[];
   groupOfDeath?: string;
   easiestGroup?: string;
 }

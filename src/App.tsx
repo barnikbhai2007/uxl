@@ -2598,7 +2598,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       </h3>
                       <div className="space-y-4">
                       {['Round of 16', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
-                        const roundMatches = bracket.filter(m => m.round === round);
+                        const roundMatches = bracket.filter(m => m.round === round || (round === 'Round of 16' && m.round === 'r16'));
                         if (roundMatches.length === 0) return null;
                         return (
                           <div key={round} className="space-y-4">
@@ -4982,7 +4982,6 @@ export default function App() {
     setIsSavingBracket(true);
     try {
       await setDoc(doc(db, 'bracket', bracketMatch.id), bracketMatch, { merge: true });
-      await refreshCache('bracket');
     } catch (error) {
       console.error("Error saving bracket match:", error);
       alert("Failed to save bracket match.");
@@ -7799,20 +7798,7 @@ export default function App() {
                 </div>
               </div>
               
-              {/* Legend */}
-              <div className="mt-12 flex flex-col items-center gap-4">
-                <div className="flex flex-wrap justify-center gap-8 px-6 py-4 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-[1px] bg-white/40" />
-                    <span className="text-[10px] font-bold tracking-normal text-white/60">Straight Line = 1st Leg Home</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-[1px] border-t border-dashed border-white/60" />
-                    <span className="text-[10px] font-bold tracking-normal text-white/60">Cutted Line = 2nd Leg Home</span>
-                  </div>
-                </div>
-                <p className="text-[9px] font-bold tracking-normal text-fc-neon-green/40 ">Note: Seeding benefit allows play second leg at home</p>
-              </div>
+              {/* Legend hidden */}
             </motion.div>
           )}
           {activeTab === 'registration' && config.registrationEnabled && (

@@ -10,11 +10,26 @@ import { Save, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
 
 function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Config, teams: Team[], handleUpdateConfig: (config: Config) => Promise<void> }) {
   const [wildcards, setWildcards] = useState<{ teamId: string, reason: string }[]>(config.wildcardsSelected || []);
+  const [autoQualifiedSelected, setAutoQualifiedSelected] = useState<string[]>(config.autoQualifiedSelected || []);
   const [groupOfDeath, setGroupOfDeath] = useState(config.groupOfDeath || "");
   const [easiestGroup, setEasiestGroup] = useState(config.easiestGroup || "");
 
   const handleAdd = () => {
     setWildcards([...wildcards, { teamId: '', reason: 'Outstanding performance in a highly competitive group.' }]);
+  };
+
+  const handleAddAutoQualified = () => {
+    setAutoQualifiedSelected([...autoQualifiedSelected, '']);
+  };
+
+  const handleRemoveAutoQualified = (index: number) => {
+    setAutoQualifiedSelected(autoQualifiedSelected.filter((_, i) => i !== index));
+  };
+
+  const handleAutoQualifiedChange = (index: number, value: string) => {
+    const updated = [...autoQualifiedSelected];
+    updated[index] = value;
+    setAutoQualifiedSelected(updated);
   };
 
   const handleRemove = (index: number) => {
@@ -46,7 +61,7 @@ function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Conf
   };
 
   const handleSave = async () => {
-    await handleUpdateConfig({ ...config, wildcardsSelected: wildcards, groupOfDeath, easiestGroup });
+    await handleUpdateConfig({ ...config, wildcardsSelected: wildcards, autoQualifiedSelected, groupOfDeath, easiestGroup });
     alert("Manual configurations saved successfully!");
   };
 
@@ -152,6 +167,34 @@ function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Conf
          <p className="text-white/70 text-xs leading-relaxed">
            <strong>Note:</strong> When you specify wildcards here, the Draw system will use these selections explicitly instead of automatically picking the best 3rd place finishers based on statistics. Make sure you select the exact amount needed (usually 2 for a 16-team bracket if 14 qualify automatically).
          </p>
+      </div>
+
+      <div className="mb-6 border-t border-white/10 pt-8">
+        <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green mb-6">Manual Auto-Qualified Players</h2>
+        <p className="text-white/50 text-xs mb-4">Optionally hardcode the players that automatically qualify (e.g. 14 players) if you want to bypass the automatic calculations.</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {autoQualifiedSelected.map((teamId, i) => (
+            <div key={i} className="flex gap-2 items-center bg-black/40 p-4 border border-white/10 rounded-xl relative">
+              <span className="text-fc-neon-green font-bold text-xs">{i + 1}.</span>
+              <select 
+                  className="w-full bg-black/50 border border-white/20 rounded py-2 px-3 text-white font-bold text-sm"
+                  value={teamId}
+                  onChange={(e) => handleAutoQualifiedChange(i, e.target.value)}
+                >
+                  <option value="" disabled>Choose Player...</option>
+                  {teams.map(t => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.group})</option>
+                  ))}
+              </select>
+              <button onClick={() => handleRemoveAutoQualified(i)} className="text-red-500 hover:text-red-400 p-2">
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+        <button onClick={handleAddAutoQualified} className="mt-4 flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white border border-white/10 border-dashed rounded-xl uppercase font-bold text-xs transition-all">
+          <Plus className="w-4 h-4" /> Add Auto-Qualified Spot
+        </button>
       </div>
 
       <div className="mb-6 border-t border-white/10 pt-8">

@@ -364,7 +364,23 @@ export default function DrawBracketManager({
     const thirds: Team[] = [];
     const validGroups = Object.keys(groupStandings).filter(g => g !== "None");
 
-    if (validGroups.length > 0) {
+    if (config.autoQualifiedSelected && config.autoQualifiedSelected.length > 0) {
+      config.autoQualifiedSelected.forEach(id => {
+        const team = teams.find(t => t.id === id);
+        if (team) {
+          aq.push(team);
+        }
+      });
+      // Thirds shouldn't technically matter if wildcards are also manually selected, but we populate it just in case
+      validGroups.forEach((g) => {
+        const groupTeams = groupStandings[g];
+        groupTeams.forEach(t => {
+           if (!config.autoQualifiedSelected?.includes(t.id)) {
+              thirds.push(t);
+           }
+        });
+      });
+    } else if (validGroups.length > 0) {
       validGroups.forEach((g) => {
         const groupTeams = groupStandings[g];
         aq.push(...groupTeams.slice(0, 2));
@@ -379,7 +395,7 @@ export default function DrawBracketManager({
         if (b.gd !== a.gd) return b.gd - a.gd;
         return (b.gf || 0) - (a.gf || 0);
       });
-      aq.push(...sortedStandings.slice(0, 8));
+      aq.push(...sortedStandings.slice(0, 14)); // assume 14 since we want 2 wildcards in a 16 bracket usually if no groups? Actually let's assume 14.
     }
 
     thirds.sort((a, b) => {
@@ -389,7 +405,7 @@ export default function DrawBracketManager({
     });
 
     return { autoQualified: aq, thirdPlaceFinishers: thirds };
-  }, [groupStandings, standings]);
+  }, [groupStandings, standings, config.autoQualifiedSelected, teams]);
 
   const wildcards = useMemo(() => {
     const targetBracketSize = autoQualified.length <= 8 ? 8 : 16;
@@ -432,22 +448,12 @@ export default function DrawBracketManager({
       } else if (wildcardPhase === "country") {
         const t = setTimeout(() => setWildcardPhase("name"), 2000);
         return () => clearTimeout(t);
-      } else if (wildcardPhase === "name") {
-        const t = setTimeout(() => {
-          if (wildcardIdx > 0) {
-            setWildcardIdx(prev => prev - 1);
-            setWildcardPhase("reason");
-          } else {
-            setWildcardPhase("done");
-          }
-        }, 3000);
-        return () => clearTimeout(t);
       }
     }
   }, [step, wildcardPhase, wildcardIdx, wildcards.length]);
 
   const allQualified = useMemo(
-    () => [...autoQualified, ...wildcards],
+    () => [...autoQualified, ...wildcards.filter(w => !w.isEliminated)],
     [autoQualified, wildcards],
   );
 
@@ -536,7 +542,11 @@ export default function DrawBracketManager({
 
       // Send to Firestore Bracket
       const mId = matchKey.replace("-home", "").replace("-away", "");
-      const existingMatch = bracket.find((b) => b.id === mId) || { id: mId, round: mId.split('-')[0] };
+      let roundName = mId.split('-')[0];
+      if (roundName === 'r16') roundName = 'Round of 16';
+      else if (roundName === 'qf') roundName = 'Quarter-Finals';
+      else if (roundName === 'sf') roundName = 'Semi-Finals';
+      const existingMatch = bracket.find((b) => b.id === mId) || { id: mId, round: roundName };
       if (matchKey.includes("home")) {
         await handleSaveBracket({
           ...existingMatch,
@@ -558,7 +568,6 @@ export default function DrawBracketManager({
 
       {step === "timelapse" && (
         <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-6xl mx-auto px-4">
-          {matchFinished && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} colors={['#ccff00', '#ffffff', '#000000']} />}
           <h2 className="text-fc-neon-green font-display font-black text-2xl uppercase tracking-widest mb-12">
             Dynamic Tournament Simulator
           </h2>
@@ -868,32 +877,63 @@ export default function DrawBracketManager({
                       })()}
                     </div>
 
-                    <div className="bg-white/5 border border-white/10 p-6 rounded-xl w-full max-w-lg mb-6 shadow-xl relative overflow-hidden">
-                      <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-fc-neon-green to-transparent opacity-50"></div>
-                      <p className="text-white/80 font-mono text-sm leading-relaxed text-left relative z-10">
-                        {wildcards[wildcardIdx]?.wildcardReason ? (
-                          <>
-                            &gt; Manual Admin Selection...
-                            <br />
-                            &gt; Admin Note: <span className="text-fc-neon-green">{wildcards[wildcardIdx].wildcardReason}</span>
-                            <br />
-                            &gt; Status: <span className={wildcards[wildcardIdx].isEliminated ? "bg-red-500 text-white px-1 rounded font-bold" : "bg-fc-neon-green text-black px-1 rounded font-bold"}>{wildcards[wildcardIdx].isEliminated ? "Eliminated" : "Selected"}</span> by Tournament Admin.
-                          </>
-                        ) : (
-                          <>
-                            &gt; System Analysis...
-                            <br />
-                            &gt; Points: <span className="text-white">{wildcards[wildcardIdx].points} PTS</span>
-                            <br />
-                            &gt; Goal Difference: <span className="text-white">{wildcards[wildcardIdx].gd >= 0 ? "+" : ""}{wildcards[wildcardIdx].gd}</span>
-                            <br />
-                            &gt; Goals Scored: <span className="text-white">{wildcards[wildcardIdx].gf}</span>
-                            <br />
-                            &gt; Status: <span className={wildcards[wildcardIdx].isEliminated ? "bg-red-500 text-white px-1 rounded font-bold" : "bg-fc-neon-green text-black px-1 rounded font-bold"}>{wildcards[wildcardIdx].isEliminated ? "Eliminated" : "Selected"}</span> due to statistics.
-                          </>
+                      <div className="bg-white/5 border border-white/10 p-6 rounded-xl w-full max-w-lg mb-6 shadow-xl relative overflow-hidden flex flex-col items-center">
+                        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-fc-neon-green to-transparent opacity-50"></div>
+                        <div className="w-full relative z-10 mb-4 bg-white/5 rounded-xl border border-white/10 p-4">
+                          <h4 className="text-fc-neon-green font-bold text-xs uppercase tracking-widest mb-3 border-b border-white/10 pb-2">
+                            Wildcard Evaluation
+                          </h4>
+                          <div className="grid grid-cols-2 gap-4 text-xs">
+                            <div className="flex flex-col">
+                              <span className="text-white/50 uppercase tracking-widest text-[10px]">Group</span>
+                              <span className="text-white font-bold">{wildcards[wildcardIdx].group || "N/A"}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-white/50 uppercase tracking-widest text-[10px]">Points</span>
+                              <span className="text-white font-bold">{wildcards[wildcardIdx].points} PTS</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-white/50 uppercase tracking-widest text-[10px]">Goal Diff</span>
+                              <span className="text-white font-bold">{wildcards[wildcardIdx].gd >= 0 ? "+" : ""}{wildcards[wildcardIdx].gd}</span>
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-white/50 uppercase tracking-widest text-[10px]">Goals Scored</span>
+                              <span className="text-white font-bold">{wildcards[wildcardIdx].gf}</span>
+                            </div>
+                          </div>
+                          <div className="mt-4 pt-3 border-t border-white/10 flex justify-between items-center">
+                            <span className="text-white/50 uppercase tracking-widest text-[10px]">Decision</span>
+                            <span className={wildcards[wildcardIdx].isEliminated ? "bg-red-500 text-white px-2 py-1 rounded font-bold uppercase tracking-widest text-[10px]" : "bg-fc-neon-green text-black px-2 py-1 rounded font-bold uppercase tracking-widest text-[10px]"}>
+                              {wildcards[wildcardIdx].isEliminated ? "Eliminated" : "Selected"}
+                            </span>
+                          </div>
+                        </div>
+                        
+                        {wildcards[wildcardIdx].group && groupStandings[wildcards[wildcardIdx].group] && (
+                          <div className="w-full text-left text-xs bg-black/40 p-3 rounded-xl border border-white/5 mb-2">
+                             <div className="text-white/50 uppercase tracking-widest text-[10px] mb-2">{wildcards[wildcardIdx].group} Standings</div>
+                             <div className="grid grid-cols-[1fr_auto_auto_auto] gap-3 border-b border-white/10 pb-2 mb-2 font-bold text-white/50 text-[10px] uppercase tracking-widest">
+                               <span>Team</span>
+                               <span className="text-center w-6">PTS</span>
+                               <span className="text-center w-6">GD</span>
+                               <span className="text-center w-6">GF</span>
+                             </div>
+                             <div className="space-y-1">
+                               {groupStandings[wildcards[wildcardIdx].group].map((st, idx) => (
+                                 <div key={st.id} className={`grid grid-cols-[1fr_auto_auto_auto] gap-3 items-center p-1 rounded ${st.id === wildcards[wildcardIdx].id ? 'bg-white/10' : ''}`}>
+                                   <div className="flex items-center gap-2 truncate">
+                                      <span className="text-white/30 text-[10px] font-mono">{idx + 1}</span>
+                                      <span className={`font-bold truncate ${st.id === wildcards[wildcardIdx].id ? 'text-fc-neon-green' : 'text-white'}`}>{st.name}</span>
+                                   </div>
+                                   <span className="text-center w-6 font-bold text-white">{st.points}</span>
+                                   <span className="text-center w-6 text-white/70">{st.gd >= 0 ? "+" : ""}{st.gd}</span>
+                                   <span className="text-center w-6 text-white/70">{st.gf}</span>
+                                 </div>
+                               ))}
+                             </div>
+                          </div>
                         )}
-                      </p>
-                    </div>
+                      </div>
 
                     {(wildcardPhase === "country" || wildcardPhase === "name") && (
                       <motion.div
@@ -913,6 +953,23 @@ export default function DrawBracketManager({
                            </motion.span>
                         )}
                       </motion.div>
+                    )}
+                    
+                    {wildcardPhase === "name" && (
+                      <motion.button 
+                        initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                        onClick={() => {
+                          if (wildcardIdx > 0) {
+                            setWildcardIdx(prev => prev - 1);
+                            setWildcardPhase("reason");
+                          } else {
+                            setWildcardPhase("done");
+                          }
+                        }}
+                        className="mt-8 px-6 py-3 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-fc-neon-green transition-all"
+                      >
+                        {wildcardIdx > 0 ? "Reveal Next Spot?" : "Finish Wildcards"}
+                      </motion.button>
                     )}
                   </motion.div>
                 )}
@@ -1060,6 +1117,9 @@ export default function DrawBracketManager({
 
       {step === "bracket_draw" && (
         <div className="flex flex-col items-center min-h-[400px] w-full max-w-6xl mx-auto">
+          {pots.pot1.length === 0 && pots.pot2.length === 0 && (
+            <Confetti width={width} height={height} recycle={false} numberOfPieces={800} colors={['#ccff00', '#ffffff', '#000000']} />
+          )}
           <div className="flex justify-between items-center w-full mb-8 relative">
             <div className="flex flex-col items-center p-6 bg-black/40 border border-fc-purple-light/30 rounded-2xl w-full max-w-sm">
               <h3 className="text-fc-purple-light font-display font-black text-xl uppercase tracking-widest mb-4">
