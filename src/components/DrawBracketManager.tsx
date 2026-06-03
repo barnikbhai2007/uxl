@@ -219,14 +219,25 @@ export default function DrawBracketManager({
   const { autoQualified, thirdPlaceFinishers } = useMemo(() => {
     const aq: Team[] = [];
     const thirds: Team[] = [];
-    Object.keys(groupStandings).forEach((g) => {
-      if (g === "None") return;
-      const groupTeams = groupStandings[g];
-      aq.push(...groupTeams.slice(0, 2));
-      if (groupTeams.length > 2) {
-        thirds.push(groupTeams[2]);
-      }
-    });
+    const validGroups = Object.keys(groupStandings).filter(g => g !== "None");
+
+    if (validGroups.length > 0) {
+      validGroups.forEach((g) => {
+        const groupTeams = groupStandings[g];
+        aq.push(...groupTeams.slice(0, 2));
+        if (groupTeams.length > 2) {
+          thirds.push(groupTeams[2]);
+        }
+      });
+    } else {
+      // Fallback: If no groups were configured, take top teams from global standings
+      const sortedStandings = [...standings].sort((a, b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        return (b.gf || 0) - (a.gf || 0);
+      });
+      aq.push(...sortedStandings.slice(0, 8));
+    }
 
     thirds.sort((a, b) => {
       if (b.points !== a.points) return b.points - a.points;
@@ -235,10 +246,11 @@ export default function DrawBracketManager({
     });
 
     return { autoQualified: aq, thirdPlaceFinishers: thirds };
-  }, [groupStandings]);
+  }, [groupStandings, standings]);
 
   const wildcards = useMemo(() => {
-    const needed = Math.max(0, 16 - autoQualified.length);
+    const targetBracketSize = autoQualified.length <= 8 ? 8 : 16;
+    const needed = Math.max(0, targetBracketSize - autoQualified.length);
     return thirdPlaceFinishers.slice(0, needed);
   }, [thirdPlaceFinishers, autoQualified.length]);
 
@@ -285,11 +297,11 @@ export default function DrawBracketManager({
   });
 
   const handleDividePots = () => {
-    // 8 and 8
+    const half = Math.floor(allQualified.length / 2);
     const shuffled = [...allQualified].sort(() => Math.random() - 0.5);
     setPots({
-      pot1: shuffled.slice(0, 8),
-      pot2: shuffled.slice(8, 16),
+      pot1: shuffled.slice(0, half),
+      pot2: shuffled.slice(half),
     });
     setPotPhase("ready");
   };
@@ -365,7 +377,7 @@ export default function DrawBracketManager({
                 Match Results
               </h3>
               
-              <div className="w-full relative h-[400px] overflow-hidden">
+              <div className="w-full relative h-[500px] overflow-hidden flex flex-col justify-end pb-4">
                 <AnimatePresence mode="popLayout" initial={false}>
                   {finishedMatches
                     .slice(
@@ -381,13 +393,13 @@ export default function DrawBracketManager({
                       const dHomeScore = isCurrent ? animHomeScore : (m.homeScore || 0);
                       const dAwayScore = isCurrent ? animAwayScore : (m.awayScore || 0);
 
-                      let homeStatus = "text-white";
-                      let awayStatus = "text-white";
+                      let isHomeWinner = false;
+                      let isAwayWinner = false;
                       
                       // if past match OR finished current match, highlight winner
                       if (absoluteIdx < currentMatchIdx || (isCurrent && matchFinished)) {
-                         if (dHomeScore > dAwayScore) homeStatus = "text-fc-neon-green";
-                         if (dAwayScore > dHomeScore) awayStatus = "text-fc-neon-green";
+                         if (dHomeScore > dAwayScore) isHomeWinner = true;
+                         if (dAwayScore > dHomeScore) isAwayWinner = true;
                       }
 
                       return (
@@ -396,37 +408,55 @@ export default function DrawBracketManager({
                           layout
                           initial={{ opacity: 0, scale: 0.8, y: 50 }}
                           animate={{
-                            opacity: isCurrent ? 1 : 0.4,
-                            scale: isCurrent ? 1 : 0.9,
+                            opacity: isCurrent ? 1 : 0.6,
+                            scale: isCurrent ? 1 : 0.95,
                             y: 0,
                           }}
                           exit={{ opacity: 0, scale: 0.8, y: -50 }}
                           transition={{ type: "spring", bounce: 0.4, duration: 0.8 }}
                           className={`bg-white/5 border ${
                             isCurrent && !matchFinished
-                              ? "border-fc-neon-green/50 shadow-[0_0_15px_rgba(204,255,0,0.2)] animate-pulse"
+                              ? "border-fc-neon-green/50 shadow-[0_0_15px_rgba(204,255,0,0.2)]"
                               : "border-white/10"
-                          } rounded-2xl p-4 mb-4 w-full max-w-md mx-auto flex justify-between items-center`}
+                          } rounded-2xl p-4 mb-3 w-full max-w-lg mx-auto flex justify-between items-center relative overflow-hidden`}
                         >
-                          <span className={`font-bold truncate max-w-[120px] ${homeStatus}`}>
-                            {home?.name || "TBD"}
-                          </span>
-                          <div className="flex flex-col items-center">
+                          <div className="absolute top-0 left-0 bg-white/10 text-white/50 text-[8px] font-bold px-2 py-0.5 rounded-br-lg">
+                            M# {m.matchNumber || (absoluteIdx + 1)}
+                          </div>
+                      
+                          <div className="flex items-center gap-3 w-1/3 mt-2">
+                             <div className="w-10 h-10 rounded block flex-shrink-0 bg-white/10 flex items-center justify-center text-sm font-bold overflow-hidden shadow-md">
+                               {home?.logoUrl ? <img src={home.logoUrl} alt={home.name} className="w-full h-full object-cover" /> : (home?.name[0] || '?')}
+                             </div>
+                             <span className={`font-bold truncate text-sm transition-all ${isHomeWinner ? 'bg-fc-neon-green text-black px-2 py-0.5 rounded -rotate-2 scale-110 shadow-lg' : 'text-white'}`}>
+                               {home?.name || "TBD"}
+                             </span>
+                          </div>
+                          
+                          <div className="flex flex-col items-center w-1/3 mt-2">
                             <span className="text-[9px] text-white/50 mb-1">
                               {new Date(m.date).toLocaleDateString()}
                             </span>
-                            <div className="font-mono font-black text-fc-neon-green text-2xl text-center min-w-[60px] bg-black/40 px-3 py-1 rounded-lg">
-                              {dHomeScore} - {dAwayScore}
+                            <div className="font-display font-black text-white text-3xl text-center min-w-[80px] bg-black/40 px-3 py-1 rounded-xl shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)] flex items-center justify-center gap-2">
+                              <span>{dHomeScore}</span>
+                              <span className="text-white/20 text-lg">-</span>
+                              <span>{dAwayScore}</span>
                             </div>
                             {isCurrent && matchFinished && dHomeScore !== dAwayScore && (
-                              <motion.div initial={{scale:0}} animate={{scale:1}} className="text-[9px] text-fc-neon-green mt-1 font-bold uppercase">
+                              <motion.div initial={{scale:0}} animate={{scale:1}} className="text-[10px] text-fc-neon-green mt-1 font-bold uppercase tracking-widest bg-fc-neon-green/10 px-2 rounded-full">
                                 Winner Decided
                               </motion.div>
                             )}
                           </div>
-                          <span className={`font-bold truncate max-w-[120px] text-right ${awayStatus}`}>
-                            {away?.name || "TBD"}
-                          </span>
+
+                          <div className="flex items-center justify-end gap-3 w-1/3 mt-2">
+                             <span className={`font-bold truncate text-sm text-right transition-all transform origin-right ${isAwayWinner ? 'bg-fc-neon-green text-black px-2 py-0.5 rounded rotate-2 scale-110 shadow-lg' : 'text-white'}`}>
+                               {away?.name || "TBD"}
+                             </span>
+                             <div className="w-10 h-10 rounded block flex-shrink-0 bg-white/10 flex items-center justify-center text-sm font-bold overflow-hidden shadow-md">
+                               {away?.logoUrl ? <img src={away.logoUrl} alt={away.name} className="w-full h-full object-cover" /> : (away?.name[0] || '?')}
+                             </div>
+                          </div>
                         </motion.div>
                       );
                     })}
@@ -712,8 +742,7 @@ export default function DrawBracketManager({
               Divide into 2 Pots
             </button>
             <p className="text-white/40 mt-4 text-xs">
-              Total 16 Teams will be distributed into Pot 1 (8 Teams) & Pot 2 (8
-              Teams)
+              Total {allQualified.length} Teams will be distributed into Pot 1 ({Math.floor(allQualified.length / 2)} Teams) & Pot 2 ({Math.ceil(allQualified.length / 2)} Teams)
             </p>
           </motion.div>
         </div>
