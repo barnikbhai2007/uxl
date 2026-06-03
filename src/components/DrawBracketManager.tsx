@@ -487,33 +487,38 @@ export default function DrawBracketManager({
     Record<string, Team>
   >({});
 
+  const hasExternalAssignmentsRef = useRef(false);
+
   useEffect(() => {
     const newAssignments: Record<string, Team> = {};
-    let hasValidAssignments = false;
+    let hasExternalAssignments = false;
 
-    // Build assignments from the confirmed bracket using teams list
     bracket.forEach(m => {
       if (m.round === 'Round of 16' || m.round === 'r16') {
         const i = m.id.replace('r16-', '');
         if (m.homeTeamId) {
           const t = teams.find(t => t.id === m.homeTeamId);
           if (t) newAssignments[`r16-${i}-home`] = t;
+          hasExternalAssignments = true;
         }
         if (m.awayTeamId) {
           const t = teams.find(t => t.id === m.awayTeamId);
           if (t) newAssignments[`r16-${i}-away`] = t;
+          hasExternalAssignments = true;
         }
       }
     });
 
-    if (Object.keys(newAssignments).length > 0) {
-      hasValidAssignments = true;
+    if (hasExternalAssignments) {
       setBracketAssignments(prev => ({ ...prev, ...newAssignments }));
-    } else {
-      setBracketAssignments({});
-      setCurrentPick({ pot: 1, index: 0 });
-      setPots({ pot1: [], pot2: [] });
-      setPotPhase("divide");
+      hasExternalAssignmentsRef.current = true;
+    } else if (hasExternalAssignmentsRef.current) {
+       // Bracket was externally reset, we should clear our local state
+       setBracketAssignments({});
+       setCurrentPick({ pot: 1, index: 0 });
+       setPots({ pot1: [], pot2: [] });
+       setPotPhase("divide");
+       hasExternalAssignmentsRef.current = false;
     }
   }, [bracket, teams]);
 
@@ -1121,16 +1126,11 @@ export default function DrawBracketManager({
 
           <button
             onClick={() => {
-              setPotPhase("wrapping");
-              setTimeout(() => {
-                setPotPhase("ready");
-                setStep("bracket_draw");
-              }, 1200);
+              setStep("bracket_draw");
             }}
-            disabled={potPhase === 'wrapping'}
-            className="px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-fc-neon-green transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)] disabled:opacity-50"
+            className="px-8 py-4 bg-white text-black font-black uppercase tracking-widest rounded-xl hover:bg-fc-neon-green transition-all shadow-[0_0_20px_rgba(255,255,255,0.2)]"
           >
-            {potPhase === 'wrapping' ? 'Wrapping Teams...' : 'Wrap Names & Begin Draw'}
+            Lock Pots & Begin Draw
           </button>
         </div>
       )}
@@ -1146,11 +1146,13 @@ export default function DrawBracketManager({
                 Pot 1
               </h3>
               <div className="flex flex-wrap gap-2 justify-center mb-6 min-h-[60px]">
-                {pots.pot1.map((_, i) => (
+                {pots.pot1.map((p, i) => (
                   <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-white/10 border border-white/20 animate-pulse"
-                  />
+                    key={p.id}
+                    className="bg-white/5 pt-1 pb-2 px-3 rounded border border-white/10 flex flex-col items-center"
+                  >
+                    <span className="font-bold text-white text-xs">{p.name}</span>
+                  </div>
                 ))}
               </div>
               <button
@@ -1171,11 +1173,13 @@ export default function DrawBracketManager({
                 Pot 2
               </h3>
               <div className="flex flex-wrap gap-2 justify-center mb-6 min-h-[60px]">
-                {pots.pot2.map((_, i) => (
+                {pots.pot2.map((p, i) => (
                   <div
-                    key={i}
-                    className="w-8 h-8 rounded-full bg-white/10 border border-white/20 animate-pulse"
-                  />
+                    key={p.id}
+                    className="bg-white/5 pt-1 pb-2 px-3 rounded border border-white/10 flex flex-col items-center"
+                  >
+                    <span className="font-bold text-white text-xs">{p.name}</span>
+                  </div>
                 ))}
               </div>
               <button

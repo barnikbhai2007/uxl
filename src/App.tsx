@@ -5156,7 +5156,7 @@ export default function App() {
          INITIAL_BRACKET.forEach(m => bracketDataMap[m.id!] = { ...m });
          const snapshot = await fetchWithCache('cache_bracket', q, false, 0);
          snapshot.forEach((data: any) => { bracketDataMap[data.id] = data; });
-         setBracket(Object.values(bracketDataMap));
+         setBracket(INITIAL_BRACKET.map(m => bracketDataMap[m.id!]));
       } else if (type === 'config') {
          localStorage.removeItem('cache_config');
          const data = await fetchWithCache('cache_config', doc(db, 'config', 'system'), true, 0);
@@ -5473,6 +5473,9 @@ export default function App() {
       } else if (type === 'bracket') {
         const bSnap = await getDocs(collection(db, 'bracket'));
         bSnap.docs.forEach(d => batch.delete(d.ref));
+        INITIAL_BRACKET.forEach(match => {
+          batch.set(doc(db, 'bracket', match.id!), match);
+        });
       } else if (type === 'registrations') {
         const rSnap = await getDocs(collection(db, 'registrations'));
         rSnap.docs.forEach(d => batch.delete(d.ref));
@@ -6207,7 +6210,7 @@ export default function App() {
         const data = docSnap.data();
         bracketDataMap[docSnap.id] = { ...data, id: docSnap.id } as BracketMatch;
       });
-      setBracket(Object.values(bracketDataMap));
+      setBracket(INITIAL_BRACKET.map(m => bracketDataMap[m.id!]));
     }, (error) => {
       console.error("Bracket sync error:", error);
     });
