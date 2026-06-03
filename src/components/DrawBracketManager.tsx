@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "motion/react";
+import Confetti from "react-confetti";
+import { useWindowSize } from "react-use";
 import { Match, BracketMatch, Registration, Config, Team } from "../types";
 import {
   calculateStats,
@@ -67,6 +69,7 @@ export default function DrawBracketManager({
   handleSaveBracket,
   handleUpdateConfig,
 }: DrawBracketManagerProps) {
+  const { width, height } = useWindowSize();
   const [step, setStep] = useState<
     | "timelapse"
     | "tournament_stats"
@@ -140,15 +143,15 @@ export default function DrawBracketManager({
   }, [finishedMatches, currentMatchIdx, matchFinished]);
 
   const goalScorers = useMemo(
-    () => calculateStats(teams, liveMatches).slice(0, 3),
+    () => calculateStats(teams, liveMatches).slice(0, 16),
     [teams, liveMatches],
   );
   const cleanSheets = useMemo(
-    () => calculateCleanSheets(teams, liveMatches).slice(0, 3),
+    () => calculateCleanSheets(teams, liveMatches).slice(0, 16),
     [teams, liveMatches],
   );
   const motms = useMemo(
-    () => calculateMotmLeaders(liveMatches).slice(0, 3),
+    () => calculateMotmLeaders(liveMatches).slice(0, 16),
     [liveMatches],
   );
 
@@ -239,19 +242,21 @@ export default function DrawBracketManager({
        groupStats[g].maxPts = Math.max(groupStats[g].maxPts, pts);
     });
     
-    let hardestGroup = "N/A";
-    let easiestGroup = "N/A";
+    let hardestGroup = config.groupOfDeath || "N/A";
+    let easiestGroup = config.easiestGroup || "N/A";
     let minSpread = 999;
     let maxSpread = -1;
     
-    Object.keys(groupStats).forEach(g => {
-       const stat = groupStats[g];
-       if (stat.teamsCount > 1) {
-          const spread = stat.maxPts - stat.minPts;
-          if (spread < minSpread) { minSpread = spread; hardestGroup = `Group ${g}`; }
-          if (spread > maxSpread) { maxSpread = spread; easiestGroup = `Group ${g}`; }
-       }
-    });
+    if (!config.groupOfDeath || !config.easiestGroup) {
+      Object.keys(groupStats).forEach(g => {
+         const stat = groupStats[g];
+         if (stat.teamsCount > 1) {
+            const spread = stat.maxPts - stat.minPts;
+            if (!config.groupOfDeath && spread < minSpread) { minSpread = spread; hardestGroup = `Group ${g}`; }
+            if (!config.easiestGroup && spread > maxSpread) { maxSpread = spread; easiestGroup = `Group ${g}`; }
+         }
+      });
+    }
     
     let mostPossessionTeam = "N/A";
     let highestAvgPossession = 0;
@@ -284,6 +289,10 @@ export default function DrawBracketManager({
     const biggestWinHomeName = teams.find(t => t.id === highestDiffMatch.homeTeamId)?.name || "Home";
     const biggestWinAwayName = teams.find(t => t.id === highestDiffMatch.awayTeamId)?.name || "Away";
 
+    const allCleanSheets = calculateCleanSheets(teams, allMatches);
+    const allGoalScorers = calculateStats(teams, allMatches);
+    const topScorerTeamName = allGoalScorers.length > 0 ? teams.find(t => t.id === allGoalScorers[0].teamId)?.name : "N/A";
+
     return [
       { label: "Matches Played", value: allMatches.length },
       { label: "Total Goals", value: totalGoals },
@@ -294,15 +303,15 @@ export default function DrawBracketManager({
       },
       {
         label: "Most Possession",
-        value: highestAvgPossession > 0 ? `${mostPossessionTeam}` : "N/A",
+        value: highestAvgPossession > 0 ? `${mostPossessionTeam} (${Math.round(highestAvgPossession)}%)` : "N/A",
       },
       {
         label: "Most Shots Taken",
-        value: highestShots > 0 ? `${mostShotsTeam}` : "N/A",
+        value: highestShots > 0 ? `${mostShotsTeam} (${highestShots})` : "N/A",
       },
       {
         label: "Most Offsides",
-        value: highestOffside > 0 ? `${mostOffsideTeam}` : "N/A",
+        value: highestOffside > 0 ? `${mostOffsideTeam} (${highestOffside})` : "N/A",
       },
       {
         label: "Group of Death",
@@ -314,18 +323,18 @@ export default function DrawBracketManager({
       },
       { 
         label: "Top Scorer Player", 
-        value: goalScorers.length > 0 ? goalScorers[0].playerName : "N/A" 
+        value: allGoalScorers.length > 0 ? `${allGoalScorers[0].playerName} (${allGoalScorers[0].goals} Goals)` : "N/A" 
       },
       { 
         label: "Top Team Goalscorer", 
-        value: goalScorers.length > 0 ? `${goalScorers[0].playerName} (${goalScorers[0].gamerName})` : "N/A" 
+        value: allGoalScorers.length > 0 ? `${allGoalScorers[0].playerName} | ${topScorerTeamName} (${allGoalScorers[0].goals} Goals)` : "N/A" 
       },
-      { 
-        label: "Total Attendees", 
-        value: registrations.length 
+      {
+        label: "Most Clean Sheets",
+        value: allCleanSheets.length > 0 ? `${allCleanSheets[0].gamerName} (${allCleanSheets[0].cleanSheets} CS)` : "N/A",
       },
     ];
-  }, [matches, goalScorers, cleanSheets, motms, registrations, teams]);
+  }, [matches, registrations, teams, config]);
 
   const [bestThirdsPhase, setBestThirdsPhase] = useState<
     | "analyzing"
@@ -385,8 +394,22 @@ export default function DrawBracketManager({
   const wildcards = useMemo(() => {
     const targetBracketSize = autoQualified.length <= 8 ? 8 : 16;
     const needed = Math.max(0, targetBracketSize - autoQualified.length);
-    return thirdPlaceFinishers.slice(0, needed);
-  }, [thirdPlaceFinishers, autoQualified.length]);
+
+    if (config?.wildcardsSelected && config.wildcardsSelected.length > 0) {
+      return config.wildcardsSelected.map((wc, index) => {
+         const t = teams.find(team => team.id === wc.teamId);
+         if (t) {
+            return { ...t, wildcardReason: wc.reason, isEliminated: index >= needed };
+         }
+         return null;
+      }).filter(t => t !== null) as (Team & { wildcardReason?: string, isEliminated?: boolean })[];
+    }
+
+    return thirdPlaceFinishers.slice(0, Math.max(needed, thirdPlaceFinishers.length)).map((t, index) => ({
+      ...t,
+      isEliminated: index >= needed
+    }));
+  }, [thirdPlaceFinishers, autoQualified.length, config, teams]);
 
   const [wildcardIdx, setWildcardIdx] = useState(0);
   const [wildcardPhase, setWildcardPhase] = useState<"analyzing" | "reason" | "country" | "name" | "done">("analyzing");
@@ -396,6 +419,7 @@ export default function DrawBracketManager({
       if (wildcardPhase === "analyzing") {
         const t = setTimeout(() => {
           if (wildcards.length > 0) {
+            setWildcardIdx(wildcards.length - 1); // Start from bottom
             setWildcardPhase("reason");
           } else {
             setWildcardPhase("done");
@@ -410,13 +434,13 @@ export default function DrawBracketManager({
         return () => clearTimeout(t);
       } else if (wildcardPhase === "name") {
         const t = setTimeout(() => {
-          if (wildcardIdx < wildcards.length - 1) {
-            setWildcardIdx(prev => prev + 1);
+          if (wildcardIdx > 0) {
+            setWildcardIdx(prev => prev - 1);
             setWildcardPhase("reason");
           } else {
             setWildcardPhase("done");
           }
-        }, 4000);
+        }, 3000);
         return () => clearTimeout(t);
       }
     }
@@ -467,8 +491,8 @@ export default function DrawBracketManager({
     }
   }, [bracket]);
 
-  const [drawnTeam, setDrawnTeam] = useState<Team | null>(null);
-  const [drawnTeamPhase, setDrawnTeamPhase] = useState<"country" | "name">("country");
+  const [activeDrawMatch, setActiveDrawMatch] = useState<string | null>(null);
+  const [activeDrawPhase, setActiveDrawPhase] = useState<"country" | "name" | null>(null);
 
   const handleDrawFromPot = async (potIndex: 1 | 2) => {
     const activePot = potIndex === 1 ? pots.pot1 : pots.pot2;
@@ -501,70 +525,40 @@ export default function DrawBracketManager({
       }
     }
 
-    setDrawnTeam(team);
-    setDrawnTeamPhase("country");
-    setTimeout(() => setDrawnTeamPhase("name"), 2000);
+    // pre-assign to active highlight
+    setBracketAssignments((prev) => ({ ...prev, [matchKey]: team }));
+    setActiveDrawMatch(matchKey);
+    setActiveDrawPhase("country");
+    setTimeout(() => setActiveDrawPhase("name"), 2000);
     setTimeout(async () => {
-      setDrawnTeam(null);
-      setBracketAssignments((prev) => ({ ...prev, [matchKey]: team }));
+      setActiveDrawPhase(null);
+      setActiveDrawMatch(null);
 
       // Send to Firestore Bracket
       const mId = matchKey.replace("-home", "").replace("-away", "");
+      const existingMatch = bracket.find((b) => b.id === mId) || { id: mId, round: mId.split('-')[0] };
       if (matchKey.includes("home")) {
         await handleSaveBracket({
-          id: mId,
+          ...existingMatch,
           homeTeamId: team.id,
           homeTeamName: team.name,
-        });
+        } as BracketMatch);
       } else {
         await handleSaveBracket({
-          id: mId,
+          ...existingMatch,
           awayTeamId: team.id,
           awayTeamName: team.name,
-        });
+        } as BracketMatch);
       }
     }, 4500);
   };
 
   return (
     <div className="text-white">
-      <AnimatePresence>
-        {drawnTeam && (
-          <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md"
-          >
-            <motion.div 
-              initial={{ scale: 0.8, y: 50, opacity: 0 }}
-              animate={{ scale: 1, y: 0, opacity: 1 }}
-              className="bg-fc-purple-dark border-2 border-fc-neon-green/50 p-12 rounded-3xl shadow-[0_0_50px_rgba(204,255,0,0.2)] flex flex-col items-center"
-            >
-              <div className="text-fc-neon-green font-bold uppercase tracking-widest text-sm mb-8 animate-pulse text-center w-full">
-                Player Selected
-              </div>
-              
-              <div className="flex flex-col items-center justify-center min-w-[300px] min-h-[150px]">
-                <span className={`text-3xl font-bold uppercase tracking-widest transition-all ${drawnTeamPhase === "name" ? 'bg-white text-black px-4 py-1 rounded shadow-lg -rotate-2 scale-110 mb-4' : 'text-white/50 mb-0'}`}>
-                  {drawnTeam.country || "Unknown"}
-                </span>
-                
-                {drawnTeamPhase === "name" && (
-                   <motion.span 
-                     initial={{ opacity: 0, scale: 0.5, y: 20 }} 
-                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                     className="text-7xl font-display font-black text-black bg-fc-neon-green px-6 py-2 rounded mt-4 shadow-[0_0_30px_rgba(204,255,0,0.5)] rotate-1"
-                   >
-                     {drawnTeam.name}
-                   </motion.span>
-                )}
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {step === "timelapse" && (
         <div className="flex flex-col items-center justify-center min-h-[400px] w-full max-w-6xl mx-auto px-4">
+          {matchFinished && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} colors={['#ccff00', '#ffffff', '#000000']} />}
           <h2 className="text-fc-neon-green font-display font-black text-2xl uppercase tracking-widest mb-12">
             Dynamic Tournament Simulator
           </h2>
@@ -678,41 +672,11 @@ export default function DrawBracketManager({
                      <Goal className="w-5 h-5 text-fc-neon-green" />
                      <h4 className="font-bold uppercase tracking-widest text-xs">Top Scorers</h4>
                    </div>
-                   <AnimatePresence mode="popLayout">
-                     {goalScorers.map((s, i) => (
-                       <motion.div
-                         key={s.playerName + s.gamerName}
-                         layout
-                         initial={{ opacity: 0, x: -20 }}
-                         animate={{ opacity: 1, x: 0 }}
-                         exit={{ opacity: 0, x: 20 }}
-                         className="flex items-center justify-between bg-black/40 p-2 rounded-lg mb-2 text-sm"
-                       >
-                         <div className="flex items-center gap-3">
-                           <span className="font-bold text-white/40 w-4 font-sans">#{i+1}</span>
-                           <div className="flex flex-col">
-                             <span className="font-bold text-white leading-tight">{s.playerName}</span>
-                             <span className="text-[10px] text-white/50">{s.gamerName} | {teams.find(t => t.id === s.teamId)?.name}</span>
-                           </div>
-                         </div>
-                         <span className="text-fc-neon-green font-sans font-bold">{s.goals}</span>
-                       </motion.div>
-                     ))}
-                   </AnimatePresence>
-                </div>
-
-                {/* Clean Sheets */}
-                <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                   <div className="flex items-center gap-3 mb-4 text-white/60">
-                     <Shield className="w-5 h-5 text-blue-400" />
-                     <h4 className="font-bold uppercase tracking-widest text-xs">Clean Sheets</h4>
-                   </div>
-                   <AnimatePresence mode="popLayout">
-                     {cleanSheets.map((s, i) => {
-                       const gkName = teams.find(t => t.id === s.teamId)?.goalkeeper || "Team GK";
-                       return (
+                   <div className="max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                     <AnimatePresence mode="popLayout">
+                       {goalScorers.map((s, i) => (
                          <motion.div
-                           key={s.gamerName}
+                           key={s.playerName + s.gamerName}
                            layout
                            initial={{ opacity: 0, x: -20 }}
                            animate={{ opacity: 1, x: 0 }}
@@ -722,41 +686,77 @@ export default function DrawBracketManager({
                            <div className="flex items-center gap-3">
                              <span className="font-bold text-white/40 w-4 font-sans">#{i+1}</span>
                              <div className="flex flex-col">
-                               <span className="font-bold text-white leading-tight">{gkName}</span>
+                               <span className="font-bold text-white leading-tight">{s.playerName}</span>
                                <span className="text-[10px] text-white/50">{s.gamerName} | {teams.find(t => t.id === s.teamId)?.name}</span>
                              </div>
                            </div>
-                           <span className="text-blue-400 font-sans font-bold">{s.cleanSheets}</span>
+                           <span className="text-fc-neon-green font-sans font-bold">{s.goals}</span>
                          </motion.div>
-                       );
-                     })}
-                   </AnimatePresence>
+                       ))}
+                     </AnimatePresence>
+                   </div>
+                </div>
+
+                {/* Clean Sheets */}
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col max-h-[300px]">
+                   <div className="flex items-center gap-3 mb-4 text-white/60 shrink-0">
+                     <Shield className="w-5 h-5 text-blue-400" />
+                     <h4 className="font-bold uppercase tracking-widest text-xs">Clean Sheets</h4>
+                   </div>
+                   <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+                     <AnimatePresence mode="popLayout">
+                       {cleanSheets.map((s, i) => {
+                         const gkName = teams.find(t => t.id === s.teamId)?.goalkeeper || "Team GK";
+                         return (
+                           <motion.div
+                             key={s.gamerName}
+                             layout
+                             initial={{ opacity: 0, x: -20 }}
+                             animate={{ opacity: 1, x: 0 }}
+                             exit={{ opacity: 0, x: 20 }}
+                             className="flex items-center justify-between bg-black/40 p-2 rounded-lg mb-2 text-sm"
+                           >
+                             <div className="flex items-center gap-3">
+                               <span className="font-bold text-white/40 w-4 font-sans">#{i+1}</span>
+                               <div className="flex flex-col">
+                                 <span className="font-bold text-white leading-tight">{gkName}</span>
+                                 <span className="text-[10px] text-white/50">{s.gamerName} | {teams.find(t => t.id === s.teamId)?.name}</span>
+                               </div>
+                             </div>
+                             <span className="text-blue-400 font-sans font-bold">{s.cleanSheets}</span>
+                           </motion.div>
+                         );
+                       })}
+                     </AnimatePresence>
+                   </div>
                 </div>
 
                  {/* MOTMs */}
-                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4">
-                   <div className="flex items-center gap-3 mb-4 text-white/60">
+                 <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col max-h-[300px]">
+                   <div className="flex items-center gap-3 mb-4 text-white/60 shrink-0">
                      <Star className="w-5 h-5 text-yellow-400" />
                      <h4 className="font-bold uppercase tracking-widest text-xs">Man of the Match</h4>
                    </div>
-                   <AnimatePresence mode="popLayout">
-                     {motms.map((s, i) => (
-                       <motion.div
-                         key={s.playerName}
-                         layout
-                         initial={{ opacity: 0, x: -20 }}
-                         animate={{ opacity: 1, x: 0 }}
-                         exit={{ opacity: 0, x: 20 }}
-                         className="flex items-center justify-between bg-black/40 p-2 rounded-lg mb-2 text-sm"
-                       >
-                         <div className="flex items-center gap-3">
-                           <span className="font-bold text-white/40 w-4">#{i+1}</span>
-                           <span className="font-bold text-white">{s.playerName}</span>
-                         </div>
-                         <span className="text-yellow-400 font-sans font-bold">{s.awards}</span>
-                       </motion.div>
-                     ))}
-                   </AnimatePresence>
+                   <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+                     <AnimatePresence mode="popLayout">
+                       {motms.map((s, i) => (
+                         <motion.div
+                           key={s.playerName}
+                           layout
+                           initial={{ opacity: 0, x: -20 }}
+                           animate={{ opacity: 1, x: 0 }}
+                           exit={{ opacity: 0, x: 20 }}
+                           className="flex items-center justify-between bg-black/40 p-2 rounded-lg mb-2 text-sm"
+                         >
+                           <div className="flex items-center gap-3">
+                             <span className="font-bold text-white/40 w-4">#{i+1}</span>
+                             <span className="font-bold text-white">{s.playerName}</span>
+                           </div>
+                           <span className="text-yellow-400 font-sans font-bold">{s.awards}</span>
+                         </motion.div>
+                       ))}
+                     </AnimatePresence>
+                   </div>
                 </div>
               </div>
             </div>
@@ -773,6 +773,7 @@ export default function DrawBracketManager({
 
       {step === "tournament_stats" && (
         <div className="flex flex-col items-center justify-center min-h-[400px]">
+          {statsPhase >= 12 && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} colors={['#ccff00', '#ffffff', '#000000']} />}
           <h2 className="text-fc-neon-green font-display font-black text-2xl uppercase tracking-widest mb-12">
             Tournament Statistics
           </h2>
@@ -821,6 +822,7 @@ export default function DrawBracketManager({
 
       {step === "best_thirds" && (
         <div className="flex flex-col items-center justify-center min-h-[400px]">
+          {wildcardPhase === "done" && <Confetti width={width} height={height} recycle={false} numberOfPieces={500} colors={['#ccff00', '#ffffff', '#000000']} />}
           <h2 className="text-fc-neon-green font-display font-black text-2xl uppercase tracking-widest mb-12">
             Wildcard Selection
           </h2>
@@ -855,21 +857,41 @@ export default function DrawBracketManager({
                     className="flex flex-col items-center w-full"
                   >
                     <div className="text-fc-neon-green font-bold uppercase tracking-widest text-sm mb-4">
-                      Wildcard Selected ({wildcardIdx + 1} of {wildcards.length})
+                      {(() => {
+                        const spot = wildcardIdx + 1;
+                        if (spot === 11 || spot === 12 || spot === 13) return `${spot}th Spot`;
+                        const last = spot % 10;
+                        if (last === 1) return `${spot}st Spot`;
+                        if (last === 2) return `${spot}nd Spot`;
+                        if (last === 3) return `${spot}rd Spot`;
+                        return `${spot}th Spot`;
+                      })()}
                     </div>
 
                     <div className="bg-white/5 border border-white/10 p-6 rounded-xl w-full max-w-lg mb-6 shadow-xl relative overflow-hidden">
                       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-fc-neon-green to-transparent opacity-50"></div>
                       <p className="text-white/80 font-mono text-sm leading-relaxed text-left relative z-10">
-                        &gt; System Analysis...
-                        <br />
-                        &gt; Points: <span className="text-white">{wildcards[wildcardIdx].points} PTS</span>
-                        <br />
-                        &gt; Goal Difference: <span className="text-white">{wildcards[wildcardIdx].gd >= 0 ? "+" : ""}{wildcards[wildcardIdx].gd}</span>
-                        <br />
-                        &gt; Goals Scored: <span className="text-white">{wildcards[wildcardIdx].gf}</span>
-                        <br />
-                        &gt; Status: <span className="bg-fc-neon-green text-black px-1 rounded font-bold">Selected</span> due to outstanding statistics.
+                        {wildcards[wildcardIdx]?.wildcardReason ? (
+                          <>
+                            &gt; Manual Admin Selection...
+                            <br />
+                            &gt; Admin Note: <span className="text-fc-neon-green">{wildcards[wildcardIdx].wildcardReason}</span>
+                            <br />
+                            &gt; Status: <span className={wildcards[wildcardIdx].isEliminated ? "bg-red-500 text-white px-1 rounded font-bold" : "bg-fc-neon-green text-black px-1 rounded font-bold"}>{wildcards[wildcardIdx].isEliminated ? "Eliminated" : "Selected"}</span> by Tournament Admin.
+                          </>
+                        ) : (
+                          <>
+                            &gt; System Analysis...
+                            <br />
+                            &gt; Points: <span className="text-white">{wildcards[wildcardIdx].points} PTS</span>
+                            <br />
+                            &gt; Goal Difference: <span className="text-white">{wildcards[wildcardIdx].gd >= 0 ? "+" : ""}{wildcards[wildcardIdx].gd}</span>
+                            <br />
+                            &gt; Goals Scored: <span className="text-white">{wildcards[wildcardIdx].gf}</span>
+                            <br />
+                            &gt; Status: <span className={wildcards[wildcardIdx].isEliminated ? "bg-red-500 text-white px-1 rounded font-bold" : "bg-fc-neon-green text-black px-1 rounded font-bold"}>{wildcards[wildcardIdx].isEliminated ? "Eliminated" : "Selected"}</span> due to statistics.
+                          </>
+                        )}
                       </p>
                     </div>
 
@@ -1107,12 +1129,12 @@ export default function DrawBracketManager({
                     </span>
 
                     <div
-                      className={`flex justify-between items-center p-2 rounded ${homeTeam ? "bg-fc-purple-light/20 border border-fc-purple-light/30" : "bg-white/5 border border-transparent"}`}
+                      className={`flex justify-between items-center p-2 rounded ${homeTeam ? (activeDrawMatch === homeKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-purple-light/20 border border-fc-purple-light/30") : "bg-white/5 border border-transparent"}`}
                     >
-                      <span className="text-xs font-bold truncate max-w-[100px] text-white">
-                        {homeTeam ? homeTeam.name : "TBD"}
+                      <span className={`text-xs font-bold truncate max-w-[100px] ${activeDrawMatch === homeKey ? "text-black" : "text-white"}`}>
+                        {homeTeam ? (activeDrawMatch === homeKey ? (activeDrawPhase === "country" ? homeTeam.country : homeTeam.name) : homeTeam.name) : "TBD"}
                       </span>
-                      {homeTeam && (
+                      {homeTeam && activeDrawMatch !== homeKey && (
                         <span className="text-[10px] text-white/40">
                           {homeTeam.country}
                         </span>
@@ -1124,12 +1146,12 @@ export default function DrawBracketManager({
                     </div>
 
                     <div
-                      className={`flex justify-between items-center p-2 rounded ${awayTeam ? "bg-fc-neon-green/20 border border-fc-neon-green/30" : "bg-white/5 border border-transparent"}`}
+                      className={`flex justify-between items-center p-2 rounded ${awayTeam ? (activeDrawMatch === awayKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-neon-green/20 border border-fc-neon-green/30") : "bg-white/5 border border-transparent"}`}
                     >
-                      <span className="text-xs font-bold truncate max-w-[100px] text-white">
-                        {awayTeam ? awayTeam.name : "TBD"}
+                      <span className={`text-xs font-bold truncate max-w-[100px] ${activeDrawMatch === awayKey ? "text-black" : "text-white"}`}>
+                        {awayTeam ? (activeDrawMatch === awayKey ? (activeDrawPhase === "country" ? awayTeam.country : awayTeam.name) : awayTeam.name) : "TBD"}
                       </span>
-                      {awayTeam && (
+                      {awayTeam && activeDrawMatch !== awayKey && (
                         <span className="text-[10px] text-white/40">
                           {awayTeam.country}
                         </span>

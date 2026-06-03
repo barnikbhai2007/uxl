@@ -1,12 +1,187 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { collection, getDocs, writeBatch } from 'firebase/firestore';
-import { db } from '../supabase_mock';
+import { collection, getDocs, writeBatch, db } from '../supabase_mock';
 import { Registration, Config, Team } from '../types';
 import { WORLD_CUP_TEAMS } from '../constants';
 
 import { Match, BracketMatch } from '../types';
 import DrawBracketManager from './DrawBracketManager';
+import { Save, Plus, Trash2, ArrowUp, ArrowDown } from 'lucide-react';
+
+function WildcardsAdminTab({ config, teams, handleUpdateConfig }: { config: Config, teams: Team[], handleUpdateConfig: (config: Config) => Promise<void> }) {
+  const [wildcards, setWildcards] = useState<{ teamId: string, reason: string }[]>(config.wildcardsSelected || []);
+  const [groupOfDeath, setGroupOfDeath] = useState(config.groupOfDeath || "");
+  const [easiestGroup, setEasiestGroup] = useState(config.easiestGroup || "");
+
+  const handleAdd = () => {
+    setWildcards([...wildcards, { teamId: '', reason: 'Outstanding performance in a highly competitive group.' }]);
+  };
+
+  const handleRemove = (index: number) => {
+    setWildcards(wildcards.filter((_, i) => i !== index));
+  };
+
+  const handleMoveUp = (index: number) => {
+    if (index === 0) return;
+    const updated = [...wildcards];
+    const temp = updated[index - 1];
+    updated[index - 1] = updated[index];
+    updated[index] = temp;
+    setWildcards(updated);
+  };
+
+  const handleMoveDown = (index: number) => {
+    if (index === wildcards.length - 1) return;
+    const updated = [...wildcards];
+    const temp = updated[index + 1];
+    updated[index + 1] = updated[index];
+    updated[index] = temp;
+    setWildcards(updated);
+  };
+
+  const handleChange = (index: number, field: 'teamId' | 'reason', value: string) => {
+    const updated = [...wildcards];
+    updated[index] = { ...updated[index], [field]: value };
+    setWildcards(updated);
+  };
+
+  const handleSave = async () => {
+    await handleUpdateConfig({ ...config, wildcardsSelected: wildcards, groupOfDeath, easiestGroup });
+    alert("Manual configurations saved successfully!");
+  };
+
+  const nonAutoQualified = useMemo(() => {
+    // Assuming top 2 qualify automatically...
+    const groups: Record<string, Team[]> = {};
+    teams.forEach(t => {
+      const g = t.group || "None";
+      if (!groups[g]) groups[g] = [];
+      groups[g].push(t);
+    });
+    const thirdsAndBelow: Team[] = [];
+    Object.keys(groups).forEach(g => {
+      if (g === "None") return;
+      const sorted = groups[g].sort((a,b) => {
+        if (b.points !== a.points) return b.points - a.points;
+        if (b.gd !== a.gd) return b.gd - a.gd;
+        return (b.gf || 0) - (a.gf || 0);
+      });
+      if (sorted.length > 2) {
+        thirdsAndBelow.push(...sorted.slice(2));
+      }
+    });
+    return thirdsAndBelow.length > 0 ? thirdsAndBelow : teams;
+  }, [teams]);
+
+  return (
+    <div className="bg-white/5 border border-white/10 rounded-2xl p-8 min-h-[500px]">
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green">Manual Wildcard Selection</h2>
+          <p className="text-white/50 text-xs mt-1">Select players who didn't automatically qualify to give them a wildcard spot in the Round of 16.</p>
+        </div>
+        <button onClick={handleSave} className="flex items-center gap-2 px-6 py-2 bg-fc-neon-green text-black uppercase font-bold text-xs rounded hover:bg-white transition-all">
+          <Save className="w-4 h-4" /> Save Wildcards
+        </button>
+      </div>
+
+      <div className="space-y-4">
+        {wildcards.map((wc, i) => {
+          const spot = i + 1;
+          let spotLabel = `${spot}th Spot`;
+          if (spot === 1) spotLabel = "1st Spot";
+          else if (spot === 2) spotLabel = "2nd Spot";
+          else if (spot === 3) spotLabel = "3rd Spot";
+          else if (spot !== 11 && spot !== 12 && spot !== 13) {
+            const last = spot % 10;
+            if (last === 1) spotLabel = `${spot}st Spot`;
+            if (last === 2) spotLabel = `${spot}nd Spot`;
+            if (last === 3) spotLabel = `${spot}rd Spot`;
+          }
+
+          return (
+          <div key={i} className="flex flex-col md:flex-row gap-4 items-start md:items-center bg-black/40 p-4 border border-white/10 rounded-xl">
+             <div className="flex items-center gap-2 font-bold text-fc-neon-green bg-white/5 border border-white/10 px-3 py-2 rounded">
+               <div className="flex flex-col">
+                 <button disabled={i === 0} onClick={() => handleMoveUp(i)} className="text-white/50 hover:text-white disabled:opacity-30">
+                   <ArrowUp className="w-3 h-3" />
+                 </button>
+                 <button disabled={i === wildcards.length - 1} onClick={() => handleMoveDown(i)} className="text-white/50 hover:text-white disabled:opacity-30">
+                   <ArrowDown className="w-3 h-3" />
+                 </button>
+               </div>
+               <span className="whitespace-nowrap min-w-[70px] text-center text-xs">{spotLabel}</span>
+             </div>
+             <div className="flex-1 w-full relative">
+               <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Select Player</label>
+               <select 
+                 className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
+                 value={wc.teamId}
+                 onChange={(e) => handleChange(i, 'teamId', e.target.value)}
+               >
+                 <option value="" disabled>Choose Player...</option>
+                 {nonAutoQualified.map(t => (
+                   <option key={t.id} value={t.id}>{t.name} ({t.group})</option>
+                 ))}
+               </select>
+             </div>
+             
+             <div className="flex-[2] w-full relative">
+               <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Reason</label>
+               <input 
+                 type="text" 
+                 value={wc.reason}
+                 onChange={(e) => handleChange(i, 'reason', e.target.value)}
+                 className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
+                 placeholder="Reason for wildcard..."
+               />
+             </div>
+             
+             <button onClick={() => handleRemove(i)} className="bg-red-500/20 text-red-500 p-4 rounded hover:bg-red-500 hover:text-white transition-all">
+               <Trash2 className="w-5 h-5" />
+             </button>
+          </div>
+        )})}
+      </div>
+
+      <button onClick={handleAdd} className="mt-6 flex items-center justify-center gap-2 w-full py-4 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white border border-white/10 border-dashed rounded-xl uppercase font-bold text-xs transition-all">
+        <Plus className="w-4 h-4" /> Add Wildcard Spot
+      </button>
+
+      <div className="mt-8 p-4 bg-fc-purple-light/20 border border-fc-purple-light/50 rounded-xl mb-8">
+         <p className="text-white/70 text-xs leading-relaxed">
+           <strong>Note:</strong> When you specify wildcards here, the Draw system will use these selections explicitly instead of automatically picking the best 3rd place finishers based on statistics. Make sure you select the exact amount needed (usually 2 for a 16-team bracket if 14 qualify automatically).
+         </p>
+      </div>
+
+      <div className="mb-6 border-t border-white/10 pt-8">
+        <h2 className="text-xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green mb-6">Group Awards (Manual)</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-black/40 p-4 border border-white/10 rounded-xl relative">
+            <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Group of Death</label>
+            <input 
+              type="text" 
+              value={groupOfDeath}
+              onChange={(e) => setGroupOfDeath(e.target.value)}
+              className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
+              placeholder="e.g. Group A"
+            />
+          </div>
+          <div className="bg-black/40 p-4 border border-white/10 rounded-xl relative">
+            <label className="text-[10px] text-white/50 uppercase font-bold tracking-widest absolute -top-2 left-2 bg-black px-1">Easiest Group</label>
+            <input 
+              type="text" 
+              value={easiestGroup}
+              onChange={(e) => setEasiestGroup(e.target.value)}
+              className="w-full bg-black/50 border border-white/20 rounded pt-4 pb-2 px-3 text-white font-bold h-[52px]"
+              placeholder="e.g. Group D"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 interface DrawAdminPanelProps {
   registrations: Registration[];
@@ -19,7 +194,7 @@ interface DrawAdminPanelProps {
 }
 
 export default function DrawAdminPanel({ registrations, config, handleUpdateConfig, matches, bracket, teams, handleSaveBracket }: DrawAdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'group' | 'bracket'>('group');
+  const [activeTab, setActiveTab] = useState<'group' | 'bracket' | 'wildcards'>('group');
   const approvedPlayers = useMemo(() => registrations.filter(r => r.status === 'approved'), [registrations]);
   
   const [numPots, setNumPots] = useState(3);
@@ -119,6 +294,14 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
           >
             Bracket Draw
           </button>
+          <button 
+            onClick={() => setActiveTab('wildcards')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+              activeTab === 'wildcards' ? 'bg-fc-neon-green text-black' : 'text-white/50 hover:text-white'
+            }`}
+          >
+            Wildcards
+          </button>
         </div>
       </div>
       
@@ -131,6 +314,12 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
           teams={teams}
           handleSaveBracket={handleSaveBracket}
           handleUpdateConfig={handleUpdateConfig}
+        />
+      ) : activeTab === 'wildcards' ? (
+        <WildcardsAdminTab 
+          config={config} 
+          teams={teams} 
+          handleUpdateConfig={handleUpdateConfig} 
         />
       ) : (
         <>

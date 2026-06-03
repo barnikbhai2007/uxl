@@ -125,6 +125,10 @@ export interface Config {
   groupLabels?: Record<string, string>;
   lockedCountries?: string[];
   drawAdminEnabled?: boolean;
+  checkedInPlayers?: string[];
+  wildcardsSelected?: { teamId: string; reason: string }[];
+  groupOfDeath?: string;
+  easiestGroup?: string;
 }
 
 export interface MatchReport {
