@@ -3,13 +3,21 @@ import { motion, AnimatePresence } from 'motion/react';
 import { Registration, Config, Team } from '../types';
 import { WORLD_CUP_TEAMS } from '../constants';
 
+import { Match, BracketMatch } from '../types';
+import DrawBracketManager from './DrawBracketManager';
+
 interface DrawAdminPanelProps {
   registrations: Registration[];
   config: Config;
   handleUpdateConfig: (config: Config) => Promise<void>;
+  matches: Match[];
+  bracket: BracketMatch[];
+  teams: Team[];
+  handleSaveBracket: (m: BracketMatch) => Promise<void>;
 }
 
-export default function DrawAdminPanel({ registrations, config, handleUpdateConfig }: DrawAdminPanelProps) {
+export default function DrawAdminPanel({ registrations, config, handleUpdateConfig, matches, bracket, teams, handleSaveBracket }: DrawAdminPanelProps) {
+  const [activeTab, setActiveTab] = useState<'group' | 'bracket'>('group');
   const approvedPlayers = useMemo(() => registrations.filter(r => r.status === 'approved'), [registrations]);
   
   const [numPots, setNumPots] = useState(3);
@@ -92,9 +100,39 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
     <div className="bg-white/5 border border-white/10 rounded-2xl p-8 min-h-[500px]">
       <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
         <h3 className="text-2xl font-display font-black text-white uppercase tracking-widest text-fc-neon-green">Live Draw Studio</h3>
+        <div className="flex bg-black/40 p-1 rounded-xl border border-white/10">
+          <button 
+            onClick={() => setActiveTab('group')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+              activeTab === 'group' ? 'bg-fc-neon-green text-black' : 'text-white/50 hover:text-white'
+            }`}
+          >
+            Group Draw
+          </button>
+          <button 
+            onClick={() => setActiveTab('bracket')}
+            className={`px-6 py-2 rounded-lg text-xs font-bold uppercase tracking-widest transition-all ${
+              activeTab === 'bracket' ? 'bg-fc-neon-green text-black' : 'text-white/50 hover:text-white'
+            }`}
+          >
+            Bracket Draw
+          </button>
+        </div>
       </div>
       
-      <div className="mb-10 p-6 bg-black/40 border border-white/10 rounded-xl text-white/80 font-sans text-sm md:text-base leading-relaxed">
+      {activeTab === 'bracket' ? (
+        <DrawBracketManager 
+          registrations={registrations} 
+          config={config} 
+          matches={matches}
+          bracket={bracket}
+          teams={teams}
+          handleSaveBracket={handleSaveBracket}
+          handleUpdateConfig={handleUpdateConfig}
+        />
+      ) : (
+        <>
+          <div className="mb-10 p-6 bg-black/40 border border-white/10 rounded-xl text-white/80 font-sans text-sm md:text-base leading-relaxed">
         <h4 className="text-fc-neon-green font-bold text-lg mb-4 uppercase tracking-wider">Tournament Format</h4>
         
         <h5 className="font-bold text-white mb-2 uppercase tracking-wide">Group Stage</h5>
@@ -319,6 +357,8 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
              </button>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   );

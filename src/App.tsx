@@ -30,6 +30,9 @@ import DrawAdminPanel from './components/DrawAdminPanel';
 
 const WORLD_CUP_FLAGS = new Map(WORLD_CUP_TEAMS.map(t => [t.name, t.flag]));
 
+const rawApiUrl = (import.meta as any).env?.VITE_API_URL || "";
+const VITE_API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
+
 const cropToSquareImage = (file: File, size: number = 400): Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -95,14 +98,8 @@ const compressImage = (file: File): Promise<string> => {
 
 
 const INITIAL_BRACKET: BracketMatch[] = [
-  { id: 'qual-0', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qual-1', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qual-2', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qual-3', round: 'Qualifier Round', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qf-0', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qf-1', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qf-2', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
-  { id: 'qf-3', round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 },
+  ...Array.from({ length: 8 }).map((_, i) => ({ id: `r16-${i}`, round: 'Round of 16', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 })),
+  ...Array.from({ length: 4 }).map((_, i) => ({ id: `qf-${i}`, round: 'Quarter-Finals', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 })),
   { id: 'sf-0', round: 'Semi-Finals', homeTeamName: 'Winner QF1', awayTeamName: 'Winner QF2', homeScore: 0, awayScore: 0 },
   { id: 'sf-1', round: 'Semi-Finals', homeTeamName: 'Winner QF3', awayTeamName: 'Winner QF4', homeScore: 0, awayScore: 0 },
   { id: 'final', round: 'Grand Final', homeTeamName: 'Finalist 1', awayTeamName: 'Finalist 2', homeScore: 0, awayScore: 0 },
@@ -231,6 +228,16 @@ interface PlayerGoalStats {
   goals: number;
 }
 
+const canonicalizePlayerName = (name: string) => {
+  if (!name) return '';
+  return name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[0-9]/g, '').trim().toLowerCase();
+};
+
+const formatPlayerName = (name: string) => {
+  if (!name) return '';
+  return name.replace(/[0-9]/g, '').trim(); 
+};
+
 const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { teamId: string })[] => {
   const statsMap: Record<string, PlayerGoalStats & { teamId: string }> = {};
   const teamsMap = new Map(teams.map(t => [t.id, t]));
@@ -242,11 +249,12 @@ const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { t
 
       if (homeTeam && m.homeScorers) {
         m.homeScorers.forEach(s => {
-          const key = `${s.playerName}-${homeTeam.id}`;
+          const canonicalName = canonicalizePlayerName(s.playerName);
+          const key = `${canonicalName}-${homeTeam.id}`;
           if (!statsMap[key]) {
             statsMap[key] = {
               teamId: homeTeam.id,
-              playerName: s.playerName,
+              playerName: formatPlayerName(s.playerName),
               gamerName: homeTeam.fcName || homeTeam.name,
               gamerFullName: homeTeam.fullName,
               goals: 0
@@ -258,11 +266,12 @@ const calculateStats = (teams: Team[], matches: Match[]): (PlayerGoalStats & { t
 
       if (awayTeam && m.awayScorers) {
         m.awayScorers.forEach(s => {
-          const key = `${s.playerName}-${awayTeam.id}`;
+          const canonicalName = canonicalizePlayerName(s.playerName);
+          const key = `${canonicalName}-${awayTeam.id}`;
           if (!statsMap[key]) {
             statsMap[key] = {
               teamId: awayTeam.id,
-              playerName: s.playerName,
+              playerName: formatPlayerName(s.playerName),
               gamerName: awayTeam.fcName || awayTeam.name,
               gamerFullName: awayTeam.fullName,
               goals: 0
@@ -334,13 +343,18 @@ interface MotmStats {
 
 const calculateMotmLeaders = (matches: Match[]): MotmStats[] => {
   const tallies: Record<string, number> = {};
+  const displayNames: Record<string, string> = {};
   matches.forEach(m => {
     if (m.status === 'finished' && m.manOfTheMatch) {
-      tallies[m.manOfTheMatch] = (tallies[m.manOfTheMatch] || 0) + 1;
+        const canonical = canonicalizePlayerName(m.manOfTheMatch);
+        if (canonical) {
+          tallies[canonical] = (tallies[canonical] || 0) + 1;
+          if (!displayNames[canonical]) displayNames[canonical] = formatPlayerName(m.manOfTheMatch);
+        }
     }
   });
   return Object.entries(tallies)
-    .map(([playerName, awards]) => ({ playerName, awards }))
+    .map(([canonical, awards]) => ({ playerName: displayNames[canonical], awards }))
     .sort((a, b) => b.awards - a.awards);
 };
 
@@ -2171,7 +2185,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const handleTestAi = async () => {
       setIsTestingAi(true);
       try {
-        const response = await fetch('/api/test-ai');
+        const response = await fetch(`${VITE_API_URL}/api/test-ai`);
         const data = await response.json();
         if (data.success) {
           alert(data.message);
@@ -2432,7 +2446,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             <h2 className="text-lg md:text-2xl font-display font-bold  leading-none text-white tracking-tight truncate">Live Draw Admin</h2>
           </div>
           <div className="p-4 md:p-8">
-            <DrawAdminPanel registrations={registrations} config={config} handleUpdateConfig={handleUpdateConfig} />
+            <DrawAdminPanel 
+              registrations={registrations} 
+              config={config} 
+              handleUpdateConfig={handleUpdateConfig} 
+              matches={matches}
+              bracket={bracket}
+              teams={teams}
+              handleSaveBracket={handleSaveBracket}
+            />
           </div>
         </motion.div>
       );
@@ -2575,7 +2597,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         Live Bracket Editor
                       </h3>
                       <div className="space-y-4">
-                      {['Qualifier Round', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
+                      {['Round of 16', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
                         const roundMatches = bracket.filter(m => m.round === round);
                         if (roundMatches.length === 0) return null;
                         return (
@@ -3237,7 +3259,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                   <p className="text-xs text-white/50 mb-6">Enable or disable the draw admin (Password: Priyam@2000+admin). If enabled, draw admin has a dedicated panel for pots and live draws.</p>
                 </div>
-                <DrawAdminPanel registrations={registrations} config={config} handleUpdateConfig={handleUpdateConfig} />
+                <DrawAdminPanel 
+                  registrations={registrations} 
+                  config={config} 
+                  handleUpdateConfig={handleUpdateConfig}
+                  matches={matches}
+                  bracket={bracket}
+                  teams={teams}
+                  handleSaveBracket={handleSaveBracket}
+                />
               </div>
             )}
 
@@ -4208,7 +4238,7 @@ export default function App() {
   const handleDeleteNews = async (id: string | number) => {
     if (!isAdmin || !confirm('Are you sure you want to delete this news article?')) return;
     try {
-      const response = await fetch(`/api/news/${id}`, { method: 'DELETE' });
+      const response = await fetch(`${VITE_API_URL}/api/news/${id}`, { method: 'DELETE' });
       const data = await response.json();
       if (!response.ok || !data.success) throw new Error(data.error || 'Failed to delete news');
       setNewsFeed(prev => prev.filter(n => n.id !== id));
@@ -4221,7 +4251,7 @@ export default function App() {
   useEffect(() => {
     const fetchNews = async () => {
       try {
-        const response = await fetch('/api/news');
+        const response = await fetch(`${VITE_API_URL}/api/news`);
         const { data, success } = await response.json();
         if (success && data) {
           console.log("[News] Fetched news data length:", data.length, data);
@@ -4396,7 +4426,10 @@ export default function App() {
     // Previously saved man of the matches from all tournament matches
     matches.forEach(m => {
       if (m.manOfTheMatch && m.manOfTheMatch.trim()) {
-        list.add(m.manOfTheMatch.trim());
+        const canonical = canonicalizePlayerName(m.manOfTheMatch);
+        if (canonical) {
+          list.add(formatPlayerName(m.manOfTheMatch));
+        }
       }
     });
     return Array.from(list).sort((a, b) => a.localeCompare(b));
@@ -5113,6 +5146,7 @@ export default function App() {
          localStorage.removeItem('cache_bracket');
          const q = query(collection(db, 'bracket'));
          const bracketDataMap: Record<string, BracketMatch> = {};
+         INITIAL_BRACKET.forEach(m => bracketDataMap[m.id!] = { ...m });
          const snapshot = await fetchWithCache('cache_bracket', q, false, 0);
          snapshot.forEach((data: any) => { bracketDataMap[data.id] = data; });
          setBracket(Object.values(bracketDataMap));
@@ -5159,7 +5193,7 @@ export default function App() {
           homePlayer: homeT?.name || homeT?.fcName,
           awayPlayer: awayT?.name || awayT?.fcName
         };
-        fetch('/api/generate-news', {
+        fetch(`${VITE_API_URL}/api/generate-news`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -5509,7 +5543,7 @@ export default function App() {
       // Send the available teams to the AI so it can properly resolve their IDs
       const teamsContext = teams.map(t => ({ id: t.id, name: t.name, fcName: t.fcName }));
 
-      const response = await fetch('/api/admin-ai-command', {
+      const response = await fetch(`${VITE_API_URL}/api/admin-ai-command`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ command, teams: teamsContext })
@@ -5580,7 +5614,7 @@ export default function App() {
       // 1. Fetch AI credentials securely from our server
       setAiAnalysisResult("Connecting to secure key vault...");
       const token = localStorage.getItem("auth_token");
-      const keyResponse = await fetch('/api/ai-key', {
+      const keyResponse = await fetch(`${VITE_API_URL}/api/ai-key`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       const keyData = await keyResponse.json();
@@ -5712,7 +5746,7 @@ export default function App() {
 
       // 5. Submit the rich analysis data and lightweight image to the server for persistent record storage and achievements
       setAiAnalysisResult("Submitting results and processing tournament achievements...");
-      const response = await fetch('/api/analyze-match', {
+      const response = await fetch(`${VITE_API_URL}/api/analyze-match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -5970,7 +6004,7 @@ export default function App() {
               homePlayer: homeT?.name || homeT?.fcName,
               awayPlayer: awayT?.name || awayT?.fcName
             };
-            fetch('/api/generate-news', {
+            fetch(`${VITE_API_URL}/api/generate-news`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -6155,6 +6189,7 @@ export default function App() {
   useEffect(() => {
     const unsubBracket = onSnapshot(collection(db, 'bracket'), (snapshot) => {
       const bracketDataMap: Record<string, BracketMatch> = {};
+      INITIAL_BRACKET.forEach(m => bracketDataMap[m.id!] = { ...m });
       snapshot.docs.forEach((docSnap) => {
         const data = docSnap.data();
         bracketDataMap[docSnap.id] = { ...data, id: docSnap.id } as BracketMatch;
@@ -6724,8 +6759,8 @@ export default function App() {
                                 <p className="text-[#555555] text-center py-4 text-xs font-sans font-bold tracking-normal">No goals recorded yet</p>
                               ) : (
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  {myStats.map(s => (
-                                    <div key={s.playerName} className="p-4 bg-white/[0.03] border-t-2 border-[#3B82F6] border border-x-[#1E1E1E] border-b-[#1E1E1E]">
+                                  {myStats.map((s, i) => (
+                                    <div key={`${s.playerName}-${i}`} className="p-4 bg-white/[0.03] border-t-2 border-[#3B82F6] border border-x-[#1E1E1E] border-b-[#1E1E1E]">
                                       <div className="flex flex-col mb-4">
                                         <span className="font-display font-extrabold text-white text-2xl">{s.playerName}</span>
                                         <div className="text-[#3B82F6] font-sans text-[10px] small-caps font-bold tracking-[0.1em] mt-0.5">FORWARD</div>
@@ -7116,7 +7151,7 @@ export default function App() {
                       }
 
                       return (
-                        <div key={leader.playerName} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-2xl border ${styleClass} transition-all`}>
+                        <div key={`${leader.playerName}-${index}`} className={`flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0 justify-between p-4 rounded-2xl border ${styleClass} transition-all`}>
                           <div className="flex items-center gap-4">
                             <span className={`text-lg font-bold ${rankClass}`}>#{index + 1}</span>
                             <span className="text-base font-bold tracking-normal text-white">{leader.playerName}</span>
@@ -7612,14 +7647,14 @@ export default function App() {
               className="w-full overflow-x-auto pb-8"
             >
               <div className="flex gap-16 min-w-[1000px] px-4 py-8">
-                {/* Qualifier Round */}
-                <div className="flex flex-col justify-around gap-16">
-                  <h3 className="text-fc-neon-green font-bold tracking-normal text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Qualifier Round</h3>
-                  {Array.from({ length: 4 }).map((_, i) => {
-                    const matchId = `qual-${i}`;
+                {/* Round of 16 */}
+                <div className="flex flex-col justify-around gap-4">
+                  <h3 className="text-fc-neon-green font-bold tracking-normal text-[10px] mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Round of 16</h3>
+                  {Array.from({ length: 8 }).map((_, i) => {
+                    const matchId = `r16-${i}`;
                     const match = getBracketMatch(matchId);
                     return (
-                      <div key={`hub-qual-${i}`} className="relative">
+                      <div key={`hub-r16-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-fc-purple-light/20' : ''} relative z-10 gap-6`}>
                             <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
@@ -7630,22 +7665,26 @@ export default function App() {
                             <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
-                        {/* Connector Line - Straight to Quarterfinal */}
-                        <div className={`absolute -right-16 top-1/2 w-16 h-[1px] bg-white/20`} />
+                        {/* Connector Line - Converging to Quarterfinal */}
+                        <div className="absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20" />
+                        {i % 2 === 0 ? (
+                          <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(50%+8px)] bg-white/20" />
+                        ) : (
+                          <div className="absolute -right-8 bottom-1/2 w-[1px] h-[calc(50%+8px)] bg-white/20" />
+                        )}
                       </div>
                     );
                   })}
                 </div>
 
                 {/* Quarter Finals */}
-                <div className="flex flex-col justify-center gap-16">
+                <div className="flex flex-col justify-around gap-8">
                   <h3 className="text-fc-neon-green font-bold tracking-normal text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Quarter-Finals</h3>
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qf-${i}`;
                     const match = getBracketMatch(matchId);
-                    const isDashed = i === 1 || i === 3;
                     return (
-                      <div key={`hub-qf-${i}`} className="relative">
+                      <div key={`hub-qf-${i}`} className="relative my-4">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
                             <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap">
@@ -7660,12 +7699,15 @@ export default function App() {
                             <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
-                        {/* Connector Line */}
-                        <div className={`absolute -right-8 top-1/2 w-8 h-[1px] ${isDashed ? 'border-t border-dashed border-white/40' : 'bg-white/20'}`} />
+                        {/* Horizontal inbound connector */}
+                        <div className="absolute -left-8 top-1/2 w-8 h-[1px] bg-white/20" />
+                        
+                        {/* Connector Line to Semis */}
+                        <div className="absolute -right-8 top-1/2 w-8 h-[1px] bg-white/20" />
                         {i % 2 === 0 ? (
                           <div className="absolute -right-8 top-1/2 w-[1px] h-[calc(50%+32px)] bg-white/20" />
                         ) : (
-                          <div className={`absolute -right-8 bottom-1/2 w-[1px] h-[calc(50%+32px)] ${isDashed ? 'border-r border-dashed border-white/40' : 'bg-white/20'}`} />
+                          <div className="absolute -right-8 bottom-1/2 w-[1px] h-[calc(50%+32px)] bg-white/20" />
                         )}
                       </div>
                     );
@@ -7673,7 +7715,7 @@ export default function App() {
                 </div>
 
                 {/* Semi Finals */}
-                <div className="flex flex-col justify-center gap-32">
+                <div className="flex flex-col justify-around gap-16">
                   <h3 className="text-fc-neon-green font-bold tracking-normal text-xs mb-4 text-center bg-fc-neon-green/10 py-1 rounded border border-fc-neon-green/20">Semi-Finals</h3>
                   {Array.from({ length: 2 }).map((_, i) => {
                     const matchId = `sf-${i}`;
