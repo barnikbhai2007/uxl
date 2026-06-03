@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { collection, getDocs, writeBatch } from 'firebase/firestore';
+import { db } from '../supabase_mock';
 import { Registration, Config, Team } from '../types';
 import { WORLD_CUP_TEAMS } from '../constants';
 
@@ -352,7 +354,16 @@ export default function DrawAdminPanel({ registrations, config, handleUpdateConf
           </div>
           
           <div className="mt-12 flex justify-center">
-             <button onClick={() => { setPots([]); setIsWrapped(false); }} className="px-6 py-2 text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">
+             <button onClick={async () => { 
+                setPots([]); 
+                setIsWrapped(false); 
+                try {
+                  const bSnap = await getDocs(collection(db, 'bracket'));
+                  const batch = writeBatch(db);
+                  bSnap.docs.forEach(d => batch.delete(d.ref));
+                  await batch.commit();
+                } catch(e) {}
+             }} className="px-6 py-2 text-white/40 hover:text-white border border-white/10 hover:border-white/30 rounded-xl transition-all text-xs font-bold uppercase tracking-widest">
                Reset Draw
              </button>
           </div>
