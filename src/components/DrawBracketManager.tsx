@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "motion/react";
 import Confetti from "react-confetti";
 import { useWindowSize } from "react-use";
 import { Match, BracketMatch, Registration, Config, Team } from "../types";
+import { WORLD_CUP_TEAMS } from "../constants";
 import {
   calculateStats,
   calculateCleanSheets,
@@ -487,15 +488,34 @@ export default function DrawBracketManager({
   >({});
 
   useEffect(() => {
-    // If external bracket is cleared, clear local state
-    const hasAnyAssignments = bracket.some(b => b.homeTeamId || b.awayTeamId);
-    if (!hasAnyAssignments) {
+    const newAssignments: Record<string, Team> = {};
+    let hasValidAssignments = false;
+
+    // Build assignments from the confirmed bracket using teams list
+    bracket.forEach(m => {
+      if (m.round === 'Round of 16' || m.round === 'r16') {
+        const i = m.id.replace('r16-', '');
+        if (m.homeTeamId) {
+          const t = teams.find(t => t.id === m.homeTeamId);
+          if (t) newAssignments[`r16-${i}-home`] = t;
+        }
+        if (m.awayTeamId) {
+          const t = teams.find(t => t.id === m.awayTeamId);
+          if (t) newAssignments[`r16-${i}-away`] = t;
+        }
+      }
+    });
+
+    if (Object.keys(newAssignments).length > 0) {
+      hasValidAssignments = true;
+      setBracketAssignments(prev => ({ ...prev, ...newAssignments }));
+    } else {
       setBracketAssignments({});
       setCurrentPick({ pot: 1, index: 0 });
       setPots({ pot1: [], pot2: [] });
       setPotPhase("divide");
     }
-  }, [bracket]);
+  }, [bracket, teams]);
 
   const [activeDrawMatch, setActiveDrawMatch] = useState<string | null>(null);
   const [activeDrawPhase, setActiveDrawPhase] = useState<"country" | "name" | null>(null);
@@ -1189,31 +1209,57 @@ export default function DrawBracketManager({
                     </span>
 
                     <div
-                      className={`flex justify-between items-center p-2 rounded ${homeTeam ? (activeDrawMatch === homeKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-purple-light/20 border border-fc-purple-light/30") : "bg-white/5 border border-transparent"}`}
+                      className={`flex justify-between items-center p-2 rounded relative ${homeTeam ? (activeDrawMatch === homeKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-purple-light/20 border border-fc-purple-light/30") : "bg-white/5 border border-transparent"}`}
                     >
                       <span className={`text-xs font-bold truncate max-w-[100px] ${activeDrawMatch === homeKey ? "text-black" : "text-white"}`}>
-                        {homeTeam ? (activeDrawMatch === homeKey ? (activeDrawPhase === "country" ? homeTeam.country : homeTeam.name) : homeTeam.name) : "TBD"}
+                        {homeTeam ? (
+                           activeDrawMatch === homeKey ? (
+                             activeDrawPhase === "country" ? (
+                               <motion.span
+                                 initial={{ scale: 0.2, opacity: 0 }}
+                                 animate={{ scale: [1, 3, 3, 1], opacity: 1 }}
+                                 transition={{ duration: 1.8, ease: "easeInOut" }}
+                                 className="absolute inset-0 flex items-center justify-center z-50 text-3xl drop-shadow-2xl bg-fc-neon-green rounded"
+                               >
+                                 {WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country)?.flag || '🌍'}
+                               </motion.span>
+                             ) : homeTeam.name
+                           ) : homeTeam.name
+                        ) : "TBD"}
                       </span>
                       {homeTeam && activeDrawMatch !== homeKey && (
                         <span className="text-[10px] text-white/40">
-                          {homeTeam.country}
+                          {WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country)?.flag || homeTeam.country}
                         </span>
                       )}
                     </div>
 
-                    <div className="text-center text-[10px] text-white/30 font-bold uppercase w-full">
+                    <div className="text-center text-[10px] text-white/30 font-bold uppercase w-full my-1">
                       VS
                     </div>
 
                     <div
-                      className={`flex justify-between items-center p-2 rounded ${awayTeam ? (activeDrawMatch === awayKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-neon-green/20 border border-fc-neon-green/30") : "bg-white/5 border border-transparent"}`}
+                      className={`flex justify-between items-center p-2 rounded relative ${awayTeam ? (activeDrawMatch === awayKey ? "bg-fc-neon-green text-black shadow-[0_0_15px_rgba(204,255,0,0.4)] animate-pulse" : "bg-fc-neon-green/20 border border-fc-neon-green/30") : "bg-white/5 border border-transparent"}`}
                     >
                       <span className={`text-xs font-bold truncate max-w-[100px] ${activeDrawMatch === awayKey ? "text-black" : "text-white"}`}>
-                        {awayTeam ? (activeDrawMatch === awayKey ? (activeDrawPhase === "country" ? awayTeam.country : awayTeam.name) : awayTeam.name) : "TBD"}
+                        {awayTeam ? (
+                           activeDrawMatch === awayKey ? (
+                             activeDrawPhase === "country" ? (
+                               <motion.span
+                                 initial={{ scale: 0.2, opacity: 0 }}
+                                 animate={{ scale: [1, 3, 3, 1], opacity: 1 }}
+                                 transition={{ duration: 1.8, ease: "easeInOut" }}
+                                 className="absolute inset-0 flex items-center justify-center z-50 text-3xl drop-shadow-2xl bg-fc-neon-green rounded"
+                               >
+                                 {WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country)?.flag || '🌍'}
+                               </motion.span>
+                             ) : awayTeam.name
+                           ) : awayTeam.name
+                        ) : "TBD"}
                       </span>
                       {awayTeam && activeDrawMatch !== awayKey && (
                         <span className="text-[10px] text-white/40">
-                          {awayTeam.country}
+                           {WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country)?.flag || awayTeam.country}
                         </span>
                       )}
                     </div>

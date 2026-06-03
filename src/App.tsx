@@ -2387,6 +2387,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
       await handleSaveBracket({
         id: editingMatchId,
+        homeTeamId: editHomeName,
+        awayTeamId: editAwayName,
         homeTeamName: resolveName(editHomeName),
         awayTeamName: resolveName(editAwayName),
         round: editRound,
@@ -4186,7 +4188,9 @@ export default function App() {
   const handleResetSingleMatch = async (matchId: string) => {
     if (!isAdmin) return;
     try {
-      const matchRef = doc(db, 'matches', matchId);
+      const isBracketMatch = matchId.startsWith('r16-') || matchId.startsWith('qf-') || matchId.startsWith('sf-') || matchId === 'final' || matchId === 'third-place';
+      const collectionName = isBracketMatch ? 'bracket' : 'matches';
+      const matchRef = doc(db, collectionName, matchId);
       const resetData = {
         homeScore: 0,
         awayScore: 0,
@@ -4200,12 +4204,16 @@ export default function App() {
       };
       await updateDoc(matchRef, resetData);
       
-      setDbMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...resetData } as Match : m));
-      try {
-        localStorage.removeItem('cache_matches');
-        const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 30000);
-        setDbMatches(data);
-      } catch(e) {}
+      if (isBracketMatch) {
+         setBracket(prev => prev.map(m => m.id === matchId ? { ...m, ...resetData } as BracketMatch : m));
+      } else {
+         setDbMatches(prev => prev.map(m => m.id === matchId ? { ...m, ...resetData } as Match : m));
+         try {
+           localStorage.removeItem('cache_matches');
+           const data = await fetchWithCache('cache_matches', collection(db, 'matches'), false, 30000);
+           setDbMatches(data);
+         } catch(e) {}
+      }
       
       alert("Match reset back to scheduled status.");
     } catch (e) {
@@ -5400,14 +5408,20 @@ export default function App() {
     if (!isAdmin) return;
     try {
       const bSnap = await getDocs(collection(db, 'bracket'));
-      if (!bSnap.empty) return; // Bracket already seeded! Do not overwrite.
+      const existingIds = bSnap.docs.map(d => d.id);
       
       const batch = writeBatch(db);
+      let needsCommit = false;
       for (const match of INITIAL_BRACKET) {
-        const docRef = doc(db, 'bracket', match.id);
-        batch.set(docRef, match);
+        if (!existingIds.includes(match.id!)) {
+          const docRef = doc(db, 'bracket', match.id!);
+          batch.set(docRef, match);
+          needsCommit = true;
+        }
       }
-      await batch.commit();
+      if (needsCommit) {
+         await batch.commit();
+      }
     } catch (error) {
       console.error("Bracket seeding failed:", error);
     }
@@ -7487,11 +7501,11 @@ export default function App() {
                   <div className="mt-4 flex flex-wrap gap-4 px-4 pb-4">
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-2xl bg-green-500/20 border border-green-500/30"></span>
-                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Quarterfinal</span>
+                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Round of 16 (Auto)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-2xl bg-yellow-500/20 border border-yellow-500/30"></span>
-                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Round of 8</span>
+                      <span className="text-[10px] font-bold text-white/40 tracking-normal">Round of 16 (Wildcard)</span>
                     </div>
                     <div className="flex items-center gap-2">
                       <span className="w-3 h-3 rounded-2xl bg-[#EF4444]/20 border border-[#EF4444]/30"></span>
@@ -8033,7 +8047,7 @@ export default function App() {
             handleAnalyzeQualification={handleAnalyzeQualification}
             handleUpdateConfig={handleUpdateConfig}
             setAdminEditingRegistration={setAdminEditingRegistration}
-            teams={dbTeams}
+            teams={standings}
             matches={matches}
             handleRandomizeGroups={handleRandomizeGroups}
             handleClearGroups={handleClearGroups}
