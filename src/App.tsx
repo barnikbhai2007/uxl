@@ -2020,6 +2020,26 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     refreshCache: (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => Promise<void>
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin'>('bracket');
+
+    const getBracketTeamFlag = (teamName?: string, teamId?: string) => {
+      if (!teamName || teamName === 'TBD') return '';
+      const norm = (s: string) => s.replace(/⭐/g, '').trim().toLowerCase();
+      const tNameNorm = norm(teamName);
+      const foundTeam = teams.find(t => 
+        (teamId && t.id === teamId) || 
+        (t.fcName && norm(t.fcName) === tNameNorm) || 
+        (t.name && norm(t.name) === tNameNorm)
+      );
+      if (foundTeam?.country) {
+        return WORLD_CUP_FLAGS.get(foundTeam.country) || '🌍';
+      }
+      // Fallback search directly in flags
+      for (const [key, flag] of WORLD_CUP_FLAGS.entries()) {
+        if (norm(key) === tNameNorm) return flag;
+      }
+      return '';
+    };
+
     const [newAllowedNameInput, setNewAllowedNameInput] = useState('');
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
@@ -2801,11 +2821,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                     <div className="flex items-center justify-between group">
                                       <div className="flex-1 space-y-2">
                                         <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-2xl">
-                                          <span className="text-xs font-bold text-white/90">{match.homeTeamName}</span>
+                                          <span className="text-xs font-bold text-white/90 flex items-center gap-1.5">
+                                            {getBracketTeamFlag(match.homeTeamName, match.homeTeamId) && (
+                                              <span className="text-base select-none">{getBracketTeamFlag(match.homeTeamName, match.homeTeamId)}</span>
+                                            )}
+                                            <span>{match.homeTeamName}</span>
+                                          </span>
                                           <span className="text-lg font-display font-bold  text-fc-neon-green">{match.homeScore}</span>
                                         </div>
                                         <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-2xl">
-                                          <span className="text-xs font-bold text-white/90">{match.awayTeamName}</span>
+                                          <span className="text-xs font-bold text-white/90 flex items-center gap-1.5">
+                                            {getBracketTeamFlag(match.awayTeamName, match.awayTeamId) && (
+                                              <span className="text-base select-none">{getBracketTeamFlag(match.awayTeamName, match.awayTeamId)}</span>
+                                            )}
+                                            <span>{match.awayTeamName}</span>
+                                          </span>
                                           <span className="text-lg font-display font-bold  text-fc-neon-green">{match.awayScore}</span>
                                         </div>
                                       </div>
@@ -4042,9 +4072,18 @@ const NewsFeed = ({ articles, isAdmin, isEditingMode, onDelete }: { articles: an
   );
 };
 
+const addStarToPriyam = (name: string): string => {
+  if (!name) return name;
+  const trimmed = name.trim();
+  if (trimmed.toLowerCase().includes('priyam') && !trimmed.includes('⭐') && !trimmed.toLowerCase().includes('@')) {
+    return trimmed + ' ⭐';
+  }
+  return trimmed;
+};
+
 const DEFAULT_PLAYERS = [
   "Ayush", "Aryan", "Sagnick", "Sagnik", "Samriddha", 
-  "Biswadeb", "Souvik", "Priyam", "Barnik", "Pritam", 
+  "Biswadeb", "Souvik", "Priyam ⭐", "Barnik", "Pritam", 
   "Soumajit", "Ranajay", "Ankit", "Sonu", "Sougata", 
   "Sougata JR", "Sayantan", "Utsab", "Animesh", "Rajat"
 ];
@@ -4704,7 +4743,13 @@ export default function App() {
       return nameA.localeCompare(nameB);
     });
   }, [dbTeams, config.groupAssignments]);
-  const matches = useMemo(() => dbMatches, [dbMatches]);
+  const matches = useMemo(() => {
+    return dbMatches.map(m => ({
+      ...m,
+      homeTeamName: addStarToPriyam(m.homeTeamName || ''),
+      awayTeamName: addStarToPriyam(m.awayTeamName || '')
+    }));
+  }, [dbMatches]);
   const hofStats = useMemo(() => {
     const monthMatches = matches;
     
@@ -5124,10 +5169,10 @@ export default function App() {
       const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
-        name: data.fcName,
-        shortName: data.fcName.substring(0, 3).toUpperCase(),
-        fullName: data.name,
-        fcName: data.fcName,
+        name: addStarToPriyam(data.fcName),
+        shortName: addStarToPriyam(data.fcName).substring(0, 3).toUpperCase(),
+        fullName: addStarToPriyam(data.name),
+        fcName: addStarToPriyam(data.fcName),
         ovr: data.teamOvr,
         uid: data.id,
         logoUrl: data.logoUrl,
@@ -5590,8 +5635,8 @@ export default function App() {
         localStorage.removeItem('cache_teams');
         const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
         const teamsList: Team[] = teamsData.map((data: any) => ({
-          id: data.id, name: data.fcName, shortName: data.fcName.substring(0, 3).toUpperCase(),
-          fullName: data.name, fcName: data.fcName, ovr: data.teamOvr, uid: data.id,
+          id: data.id, name: addStarToPriyam(data.fcName), shortName: addStarToPriyam(data.fcName).substring(0, 3).toUpperCase(),
+          fullName: addStarToPriyam(data.name), fcName: addStarToPriyam(data.fcName), ovr: data.teamOvr, uid: data.id,
           logoUrl: data.logoUrl, goalkeeper: data.goalkeeper, country: data.country, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
         }));
         setDbTeams(teamsList);
@@ -5802,10 +5847,10 @@ export default function App() {
       const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
-        name: data.fcName,
-        shortName: data.fcName.substring(0, 3).toUpperCase(),
-        fullName: data.name,
-        fcName: data.fcName,
+        name: addStarToPriyam(data.fcName),
+        shortName: addStarToPriyam(data.fcName).substring(0, 3).toUpperCase(),
+        fullName: addStarToPriyam(data.name),
+        fcName: addStarToPriyam(data.fcName),
         ovr: data.teamOvr,
         uid: data.id,
         logoUrl: data.logoUrl,
@@ -6565,10 +6610,34 @@ export default function App() {
     return bracketMatch;
   };
 
+  const getBracketTeamFlag = (teamName?: string, teamId?: string) => {
+    if (!teamName || teamName === 'TBD') return '';
+    const norm = (s: string) => s.replace(/⭐/g, '').trim().toLowerCase();
+    const tNameNorm = norm(teamName);
+    const foundTeam = teams.find(t => 
+      (teamId && t.id === teamId) || 
+      (t.fcName && norm(t.fcName) === tNameNorm) || 
+      (t.name && norm(t.name) === tNameNorm)
+    );
+    if (foundTeam?.country) {
+      return WORLD_CUP_FLAGS.get(foundTeam.country) || '🌍';
+    }
+    // Fallback search directly in flags
+    for (const [key, flag] of WORLD_CUP_FLAGS.entries()) {
+      if (norm(key) === tNameNorm) return flag;
+    }
+    return '';
+  };
+
   const getBracketMatch = (id: string) => {
     const bracketMatch = bracket.find(m => m.id === id);
     if (bracketMatch) {
-      return resolveLinkedScores(bracketMatch);
+      const resolved = resolveLinkedScores(bracketMatch);
+      return {
+        ...resolved,
+        homeTeamName: addStarToPriyam(resolved.homeTeamName),
+        awayTeamName: addStarToPriyam(resolved.awayTeamName)
+      };
     }
     
     return { id, round: '', homeTeamName: 'TBD', awayTeamName: 'TBD', homeScore: 0, awayScore: 0 };
@@ -6732,7 +6801,13 @@ export default function App() {
       unsubscribeRegs = onSnapshot(q, (snapshot) => {
         const regs: Registration[] = [];
         snapshot.forEach((doc) => {
-          regs.push({ ...doc.data(), id: doc.id } as Registration);
+          const data = doc.data() as Registration;
+          regs.push({
+            ...data,
+            id: doc.id,
+            fcName: addStarToPriyam(data.fcName),
+            name: addStarToPriyam(data.name)
+          } as Registration);
         });
         if (_mounted) setRegistrations(regs);
       });
@@ -6752,7 +6827,13 @@ export default function App() {
       const unsubscribe = onSnapshot(doc(db, 'registrations', user.uid), (doc) => {
         if (doc.exists()) {
           setHasRegistered(true);
-          setMyRegistrationData({ ...doc.data(), id: doc.id } as Registration);
+          const data = doc.data() as Registration;
+          setMyRegistrationData({
+            ...data,
+            id: doc.id,
+            fcName: addStarToPriyam(data.fcName),
+            name: addStarToPriyam(data.name)
+          } as Registration);
         } else {
           setHasRegistered(false);
           setMyRegistrationData(null);
@@ -7894,16 +7975,24 @@ export default function App() {
                   {Array.from({ length: 8 }).map((_, i) => {
                     const matchId = `r16-${i}`;
                     const match = getBracketMatch(matchId);
+                    const homeFlag = getBracketTeamFlag(match.homeTeamName, match.homeTeamId);
+                    const awayFlag = getBracketTeamFlag(match.awayTeamName, match.awayTeamId);
                     return (
                       <div key={`hub-r16-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className={`p-2 flex justify-between items-center text-sm ${i % 2 === 0 ? 'bg-fc-purple-light/20' : ''} relative z-10 gap-6`}>
-                            <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                            <span className="font-mono font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap flex items-center gap-1.5">
+                              {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
+                              <span>{match.homeTeamName || 'TBD'}</span>
+                            </span>
+                            <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-fc-purple-light/20' : ''} gap-6`}>
-                            <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                            <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap flex items-center gap-1.5">
+                              {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
+                              <span>{match.awayTeamName || 'TBD'}</span>
+                            </span>
+                            <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line - Converging to Quarterfinal */}
@@ -7924,20 +8013,24 @@ export default function App() {
                   {Array.from({ length: 4 }).map((_, i) => {
                     const matchId = `qf-${i}`;
                     const match = getBracketMatch(matchId);
+                    const homeFlag = getBracketTeamFlag(match.homeTeamName, match.homeTeamId);
+                    const awayFlag = getBracketTeamFlag(match.awayTeamName, match.awayTeamId);
                     return (
                       <div key={`hub-qf-${i}`} className="relative my-4">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap">
-                              {match.homeTeamName || 'TBD'}
+                            <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap flex items-center gap-1.5">
+                              {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
+                              <span>{match.homeTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-mono font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap">
-                              {match.awayTeamName || 'TBD'}
+                            <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap flex items-center gap-1.5">
+                              {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
+                              <span>{match.awayTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Horizontal inbound connector */}
@@ -7962,16 +8055,24 @@ export default function App() {
                     const matchId = `sf-${i}`;
                     const match = getBracketMatch(matchId);
                     const isDashed = i === 1;
+                    const homeFlag = getBracketTeamFlag(match.homeTeamName, match.homeTeamId);
+                    const awayFlag = getBracketTeamFlag(match.awayTeamName, match.awayTeamId);
                     return (
                       <div key={`hub-sf-${i}`} className="relative">
                         <div className="w-fit min-w-[160px] bg-white/5 border border-fc-neon-green/30 rounded-2xl overflow-hidden shadow-lg transition-all group/match relative">
                           <div className="p-2 flex justify-between items-center text-sm relative z-10 gap-6">
-                            <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                            <span className="font-mono font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap flex items-center gap-1.5">
+                              {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
+                              <span>{match.homeTeamName || 'TBD'}</span>
+                            </span>
+                            <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
-                            <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                            <span className="font-mono font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap flex items-center gap-1.5">
+                              {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
+                              <span>{match.awayTeamName || 'TBD'}</span>
+                            </span>
+                            <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -7995,16 +8096,24 @@ export default function App() {
                     <h3 className="text-yellow-400 font-bold tracking-normal text-xs mb-4 text-center bg-yellow-400/10 py-1 rounded border border-yellow-400/20 shadow-[0_0_15px_rgba(234,179,8,0.2)]">Grand Final</h3>
                     {(() => {
                       const match = getBracketMatch('final');
+                      const homeFlag = getBracketTeamFlag(match.homeTeamName, match.homeTeamId);
+                      const awayFlag = getBracketTeamFlag(match.awayTeamName, match.awayTeamId);
                       return (
                         <div className="w-fit min-w-[200px] bg-gradient-to-br from-fc-neon-green/20 to-fc-purple-base/20 border border-yellow-500/50 rounded-2xl overflow-hidden shadow-[0_0_30px_rgba(234,179,8,0.15)] p-1 transition-all group/match relative">
                           <div className="bg-fc-purple-dark rounded-2xl overflow-hidden relative z-10">
                             <div className="p-4 flex justify-between items-center gap-8">
-                              <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                              <span className="font-mono font-extrabold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap flex items-center gap-1.5">
+                                {homeFlag && <span className="text-lg select-none">{homeFlag}</span>}
+                                <span>{match.homeTeamName || 'TBD'}</span>
+                              </span>
+                              <span className="font-display font-extrabold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
                             </div>
                             <div className="p-4 flex justify-between items-center border-t border-white/5 gap-8">
-                              <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                              <span className="font-mono font-extrabold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap flex items-center gap-1.5">
+                                {awayFlag && <span className="text-lg select-none">{awayFlag}</span>}
+                                <span>{match.awayTeamName || 'TBD'}</span>
+                              </span>
+                              <span className="font-display font-extrabold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>
@@ -8016,16 +8125,24 @@ export default function App() {
                     <h3 className="text-orange-400 font-bold tracking-normal text-[10px] mb-4 text-center bg-orange-400/10 py-1 rounded border border-orange-400/20">3rd Place Match</h3>
                     {(() => {
                       const match = getBracketMatch('third-place');
+                      const homeFlag = getBracketTeamFlag(match.homeTeamName, match.homeTeamId);
+                      const awayFlag = getBracketTeamFlag(match.awayTeamName, match.awayTeamId);
                       return (
                         <div className="w-fit min-w-[200px] bg-white/5 border border-orange-500/30 rounded-2xl overflow-hidden shadow-lg p-1 transition-all group/match relative">
                           <div className="bg-[#0A0A0A] rounded-2xl overflow-hidden relative z-10">
                             <div className="p-3 flex justify-between items-center gap-8">
-                              <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap">{match.homeTeamName || 'TBD'}</span>
-                              <span className="font-mono font-extrabold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap flex items-center gap-1.5">
+                                {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
+                                <span>{match.homeTeamName || 'TBD'}</span>
+                              </span>
+                              <span className="font-display font-extrabold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
                             </div>
                             <div className="p-3 flex justify-between items-center border-t border-white/5 gap-8">
-                              <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap">{match.awayTeamName || 'TBD'}</span>
-                              <span className="font-mono font-extrabold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
+                              <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap flex items-center gap-1.5">
+                                {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
+                                <span>{match.awayTeamName || 'TBD'}</span>
+                              </span>
+                              <span className="font-display font-extrabold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
                             </div>
                           </div>
                         </div>

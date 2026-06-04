@@ -17,7 +17,7 @@ export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: nu
   "BARNIK": { fcName: "brokenaqua", uid: "858045300533792768", ovr: 121, fullName: "Barnik", goalkeeper: "Donnarumma" },
   "PRITAM": { fcName: "Pritam", uid: "1058620361900937216", ovr: 120, fullName: "Pritam ghosh", goalkeeper: "Bounou" },
   "DIBYAJOTI": { fcName: "dibya7334", uid: "998821168026656769", ovr: 121, fullName: "Dibyajyoti Sarkar", goalkeeper: "Muselera" },
-  "PRIYAM": { fcName: "Priyam2007", uid: "713327705700397056", ovr: 120, fullName: "Priyam Paul", goalkeeper: "Courtois" },
+  "PRIYAM": { fcName: "Priyam2007 ⭐", uid: "713327705700397056", ovr: 120, fullName: "Priyam Paul ⭐", goalkeeper: "Courtois" },
   "SAGNIK": { fcName: "Kundes", uid: "1031556959882035200", ovr: 119, fullName: "Sagnik Kundu", goalkeeper: "Robert Sanchez" },
   "SAGNICK": { fcName: "AYU45", uid: "881759190897385472", ovr: 116, fullName: "Sagnick Roy", goalkeeper: "Savic" },
   "ABHROJEET": { fcName: "Abhrojeet", uid: "1000048169385328640", ovr: 115, fullName: "Abhrojeet Kundu", goalkeeper: "Savic" },
