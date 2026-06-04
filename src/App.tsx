@@ -650,6 +650,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </span>
               <div className="flex flex-col items-center">
                  <span className="text-[10px] font-sans font-bold text-[#A0A0A0]">VS</span>
+                 {match.homePenalties !== undefined && match.homePenalties !== null && match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                   <span className="text-[9px] font-bold text-yellow-400 mt-1 whitespace-nowrap bg-yellow-500/15 border border-yellow-500/20 px-1.5 py-0.5 rounded">
+                     ({match.homePenalties}-{match.awayPenalties} PK)
+                   </span>
+                 )}
                  <div className="h-4 w-[1px] bg-white/[0.08] my-1" />
               </div>
               <span className={`text-4xl font-display font-extrabold tabular-nums ${displayStatus === 'finished' ? (match.awayScore! > match.homeScore! ? 'text-[#10B981]' : 'text-[#A0A0A0]') : 'text-white'}`}>
@@ -916,16 +921,46 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   {match.isDNF ? (
                     <span className="text-4xl md:text-6xl font-bold text-red-500 tracking-tight">DNF</span>
                   ) : isEditingMode && isAdmin ? (
-                    <div className="flex items-center gap-2">
-                      <input type="number" min="0" defaultValue={match.homeScore ?? 0} onBlur={(e) => {
-                          const val = parseInt(e.target.value);
-                          addLogAndUpdate('homeScore', isNaN(val) ? 0 : val, 'Home Score');
-                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-bold text-white" />
-                      <span className="text-2xl text-white/20">VS</span>
-                      <input type="number" min="0" defaultValue={match.awayScore ?? 0} onBlur={(e) => {
-                          const val = parseInt(e.target.value);
-                          addLogAndUpdate('awayScore', isNaN(val) ? 0 : val, 'Away Score');
-                      }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-bold text-white" />
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <input type="number" min="0" defaultValue={match.homeScore ?? 0} onBlur={(e) => {
+                            const val = parseInt(e.target.value);
+                            addLogAndUpdate('homeScore', isNaN(val) ? 0 : val, 'Home Score');
+                        }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-bold text-white" />
+                        <span className="text-2xl text-white/20">VS</span>
+                        <input type="number" min="0" defaultValue={match.awayScore ?? 0} onBlur={(e) => {
+                            const val = parseInt(e.target.value);
+                            addLogAndUpdate('awayScore', isNaN(val) ? 0 : val, 'Away Score');
+                        }} className="w-16 h-16 md:w-20 md:h-20 bg-white/10 rounded-2xl text-center text-4xl md:text-6xl font-bold text-white" />
+                      </div>
+                      <div className="flex flex-col items-center gap-1.5 mt-2 border-t border-white/5 pt-2 w-full">
+                        <span className="text-[10px] font-bold text-white/40 tracking-normal">Penalties (Optional PK Shootout)</span>
+                        <div className="flex items-center gap-2 justify-center">
+                          <input 
+                            type="number" 
+                            min="0" 
+                            placeholder="PK" 
+                            defaultValue={match.homePenalties !== undefined && match.homePenalties !== null ? match.homePenalties : ''} 
+                            onBlur={(e) => {
+                              const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                              addLogAndUpdate('homePenalties', val === '' || isNaN(val as number) ? null : val, 'Home Penalties');
+                            }} 
+                            className="w-14 h-10 bg-white/10 border border-white/10 rounded-xl text-center text-sm font-bold text-fc-neon-green placeholder:text-white/20 outline-none focus:border-fc-neon-green/50" 
+                          />
+                          <span className="text-xs text-white/20 font-bold">-</span>
+                          <input 
+                            type="number" 
+                            min="0" 
+                            placeholder="PK" 
+                            defaultValue={match.awayPenalties !== undefined && match.awayPenalties !== null ? match.awayPenalties : ''} 
+                            onBlur={(e) => {
+                              const val = e.target.value === '' ? '' : parseInt(e.target.value);
+                              addLogAndUpdate('awayPenalties', val === '' || isNaN(val as number) ? null : val, 'Away Penalties');
+                            }} 
+                            className="w-14 h-10 bg-white/10 border border-white/10 rounded-xl text-center text-sm font-bold text-fc-neon-green placeholder:text-white/20 outline-none focus:border-fc-neon-green/50" 
+                          />
+                        </div>
+                      </div>
                     </div>
                   ) : (
                     <>
@@ -935,6 +970,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     </>
                   )}
                 </div>
+                {!(isEditingMode && isAdmin) && match.homePenalties !== undefined && match.homePenalties !== null && match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                  <div className="text-sm font-bold text-yellow-400 bg-yellow-500/10 border border-yellow-500/20 px-3 py-1 rounded-2xl mt-1">
+                    Penalty Shootout: {match.homePenalties} - {match.awayPenalties} PK
+                  </div>
+                )}
                 {match.rescheduled && displayStatus !== 'rescheduled' && (
                   <div className="text-[8px] md:text-[10px] font-bold tracking-[0.2em] text-orange-400 mb-2">
                     Rescheduled Match
@@ -2422,6 +2462,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const [editRound, setEditRound] = useState('');
     const [editHomeScore, setEditHomeScore] = useState(0);
     const [editAwayScore, setEditAwayScore] = useState(0);
+    const [editHomePenalties, setEditHomePenalties] = useState<number | ''>('');
+    const [editAwayPenalties, setEditAwayPenalties] = useState<number | ''>('');
     const [editLinkedMatchId, setEditLinkedMatchId] = useState('');
     const firstInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -2432,6 +2474,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       setEditRound(match.round || '');
       setEditHomeScore(match.homeScore || 0);
       setEditAwayScore(match.awayScore || 0);
+      setEditHomePenalties(match.homePenalties !== undefined && match.homePenalties !== null ? match.homePenalties : '');
+      setEditAwayPenalties(match.awayPenalties !== undefined && match.awayPenalties !== null ? match.awayPenalties : '');
       setEditLinkedMatchId(match.linkedMatchId || '');
       setTimeout(() => firstInputRef.current?.focus(), 100);
     };
@@ -2460,7 +2504,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         round: finalRound,
         homeScore: editHomeScore,
         awayScore: editAwayScore,
-        linkedMatchId: editLinkedMatchId || undefined
+        homePenalties: editHomePenalties === '' ? null : Number(editHomePenalties),
+        awayPenalties: editAwayPenalties === '' ? null : Number(editAwayPenalties),
+        linkedMatchId: ""
       });
       setEditingMatchId(null);
     };
@@ -2475,59 +2521,6 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       await handleAdminAiCommand(aiCommand);
       setAiCommand('');
       setIsAiLoading(false);
-    };
-
-    const handleGenerateFixturesFromBracket = async () => {
-      if (!window.confirm("This will auto-generate matches in the Fixtures tab for any bracket slots that are not currently linked. Proceed?")) return;
-      try {
-        const batch = writeBatch(db);
-        let updates = 0;
-        for (const bMatch of bracket) {
-          if (!bMatch.linkedMatchId) {
-             const randomId = Math.random().toString(36).substring(2);
-             const newMatchRef = doc(db, 'matches', randomId);
-             const homeTeam = teams.find(t => t.name === bMatch.homeTeamName || (bMatch.homeTeamId && t.id === bMatch.homeTeamId));
-             const awayTeam = teams.find(t => t.name === bMatch.awayTeamName || (bMatch.awayTeamId && t.id === bMatch.awayTeamId));
-             
-             const matchRoundStr = String(bMatch.round);
-             let matchType: Match['type'] = 'qualifier';
-             if (matchRoundStr === 'r16') matchType = 'qualifier';
-             else if (matchRoundStr === 'qf') matchType = 'quarterfinal';
-             else if (matchRoundStr === 'sf') matchType = 'semifinal';
-             else if (matchRoundStr.toLowerCase().includes('final') && !matchRoundStr.toLowerCase().includes('quarter') && !matchRoundStr.toLowerCase().includes('semi')) {
-                 matchType = 'final';
-             }
-             
-             const matchData: Match = {
-               id: newMatchRef.id,
-               matchNumber: matches.length + updates + 1,
-               date: 'TBD',
-               homeTeamId: homeTeam ? homeTeam.id : 'TBD',
-               awayTeamId: awayTeam ? awayTeam.id : 'TBD',
-               status: 'scheduled',
-               type: matchType,
-               leg: bMatch.leg
-             };
-             batch.set(newMatchRef, matchData);
-             
-             const bracketRef = doc(db, 'bracket', bMatch.id);
-             batch.update(bracketRef, { linkedMatchId: newMatchRef.id });
-             updates++;
-          }
-        }
-
-        if (updates > 0) {
-          await batch.commit();
-          await refreshCache('matches');
-          await refreshCache('bracket');
-          alert(`Successfully generated and linked ${updates} fixtures from bracket.`);
-        } else {
-          alert("No unlinked bracket matches found.");
-        }
-      } catch(e) {
-        console.error(e);
-        alert("Error syncing bracket to fixtures.");
-      }
     };
 
     if (!isAdmin && !isDrawAdmin) {
@@ -2719,26 +2712,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           <Layout className="w-6 h-6" />
                           Live Bracket Editor
                         </h3>
-                        <button 
-                          onClick={handleGenerateFixturesFromBracket}
-                          className="bg-fc-purple-light/20 text-white hover:bg-fc-neon-green hover:text-black hover:border-fc-neon-green transition-all px-4 py-2 rounded-2xl border border-white/20 text-[10px] font-bold"
-                        >
-                          Generate Fixtures
-                        </button>
                       </div>
                       <div className="space-y-4">
                       {['Round of 16', 'Quarter-Finals', 'Semi-Finals', 'Grand Final', '3rd Place Match'].map(round => {
                         const resolveLinkedScoresLocal = (bracketMatch: BracketMatch) => {
-                          if (bracketMatch.linkedMatchId) {
-                            const fixtureMatch = matches.find(m => m.id === bracketMatch.linkedMatchId);
-                            if (fixtureMatch) {
-                              return {
-                                ...bracketMatch,
-                                homeScore: fixtureMatch.homeScore !== undefined ? fixtureMatch.homeScore : bracketMatch.homeScore,
-                                awayScore: fixtureMatch.awayScore !== undefined ? fixtureMatch.awayScore : bracketMatch.awayScore
-                              };
-                            }
-                          }
                           return bracketMatch;
                         };
                         const roundMatches = bracket.filter(m => {
@@ -2782,39 +2759,27 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                           teams={teams} 
                                         />
                                       </div>
-                                      <div className="space-y-2">
-                                        <label className="text-[9px] font-bold text-white/40">Link to Existing Match (Optional)</label>
-                                        <select
-                                          value={editLinkedMatchId}
-                                          onChange={e => setEditLinkedMatchId(e.target.value)}
-                                          className="w-full border p-2.5 rounded-2xl bg-fc-purple-dark text-white border-white/5 text-xs"
-                                        >
-                                          <option value="">-- No Match Linked --</option>
-                                          {matches.map(m => {
-                                            const homeTeam = teams.find(t => t.id === m.homeTeamId);
-                                            const awayTeam = teams.find(t => t.id === m.awayTeamId);
-                                            const matchLabel = m.matchday ? `Matchday ${m.matchday}` : (m.type || 'Match');
-                                            return (
-                                              <option key={`link-${m.id}`} value={m.id}>
-                                                {matchLabel} - {homeTeam?.name || m.homeTeamId || 'TBD'} vs {awayTeam?.name || m.awayTeamId || 'TBD'} ({m.homeScore ?? '-'}-{m.awayScore ?? '-'} - {m.status})
-                                              </option>
-                                            );
-                                          })}
-                                        </select>
-                                      </div>
-                                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                         <div className="space-y-2">
                                           <label className="text-[9px] font-bold text-white/40">Home Score</label>
                                           <input type="number" value={editHomeScore} onChange={e => setEditHomeScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
                                         <div className="space-y-2">
+                                          <label className="text-[9px] font-bold text-white/40">Home PK (Optional)</label>
+                                          <input type="number" placeholder="Pen" value={editHomePenalties} onChange={e => setEditHomePenalties(e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
+                                        </div>
+                                        <div className="space-y-2">
                                           <label className="text-[9px] font-bold text-white/40">Away Score</label>
                                           <input type="number" value={editAwayScore} onChange={e => setEditAwayScore(Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
-                                        <div className="flex items-end gap-2">
-                                          <button onClick={saveMatch} className="h-11 flex-1 bg-green-500 text-black font-bold text-[10px] tracking-normal rounded-2xl hover:bg-green-400 transition-all">Save</button>
-                                          <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-bold text-[10px] tracking-normal rounded-2xl hover:bg-white/20 transition-all">Cancel</button>
+                                        <div className="space-y-2">
+                                          <label className="text-[9px] font-bold text-white/40">Away PK (Optional)</label>
+                                          <input type="number" placeholder="Pen" value={editAwayPenalties} onChange={e => setEditAwayPenalties(e.target.value === '' ? '' : Number(e.target.value))} className="w-full bg-fc-purple-dark/40 border border-white/10 rounded-2xl p-3 text-sm text-white focus:border-fc-neon-green/50 outline-none" />
                                         </div>
+                                      </div>
+                                      <div className="flex justify-end gap-2 mt-2">
+                                        <button onClick={saveMatch} className="h-11 px-6 bg-green-500 text-black font-bold text-[10px] tracking-normal rounded-2xl hover:bg-green-400 transition-all">Save</button>
+                                        <button onClick={() => setEditingMatchId(null)} className="h-11 px-4 bg-white/10 text-white font-bold text-[10px] tracking-normal rounded-2xl hover:bg-white/20 transition-all">Cancel</button>
                                       </div>
                                     </div>
                                   ) : (
@@ -2827,7 +2792,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                             )}
                                             <span>{match.homeTeamName}</span>
                                           </span>
-                                          <span className="text-lg font-display font-bold  text-fc-neon-green">{match.homeScore}</span>
+                                          <div className="flex items-center gap-2">
+                                            {match.homePenalties !== undefined && match.homePenalties !== null && (
+                                              <span className="text-[10px] text-yellow-400 font-bold bg-yellow-500/15 border border-yellow-500/20 px-1.5 py-0.5 rounded mr-1">({match.homePenalties} PK)</span>
+                                            )}
+                                            <span className="text-lg font-display font-bold text-fc-neon-green">{match.homeScore}</span>
+                                          </div>
                                         </div>
                                         <div className="flex justify-between items-center bg-fc-purple-dark/20 p-2 px-3 rounded-2xl">
                                           <span className="text-xs font-bold text-white/90 flex items-center gap-1.5">
@@ -2836,7 +2806,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                             )}
                                             <span>{match.awayTeamName}</span>
                                           </span>
-                                          <span className="text-lg font-display font-bold  text-fc-neon-green">{match.awayScore}</span>
+                                          <div className="flex items-center gap-2">
+                                            {match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                                              <span className="text-[10px] text-yellow-400 font-bold bg-yellow-500/15 border border-yellow-500/20 px-1.5 py-0.5 rounded mr-1">({match.awayPenalties} PK)</span>
+                                            )}
+                                            <span className="text-lg font-display font-bold text-fc-neon-green">{match.awayScore}</span>
+                                          </div>
                                         </div>
                                       </div>
                                       <button onClick={() => startEditingMatch(match)} className="ml-4 md:ml-6 p-3 md:p-4 rounded-2xl bg-white/5 hover:bg-white/10 text-fc-neon-green hover:text-white transition-all opacity-100 md:opacity-0 md:group-hover:opacity-100">
@@ -5449,36 +5424,10 @@ export default function App() {
     setIsSavingBracket(true);
     try {
       // 1. Save local/remote bracket state
-      await setDoc(doc(db, 'bracket', bracketMatch.id), bracketMatch, { merge: true });
-
-      // 2. Sync to corresponding linked fixture if existing
-      const existingBracketMatch = bracket.find(b => b.id === bracketMatch.id);
-      const targetLinkedId = bracketMatch.linkedMatchId !== undefined ? bracketMatch.linkedMatchId : existingBracketMatch?.linkedMatchId;
-      
-      if (targetLinkedId) {
-        const updateData: any = {};
-        if (bracketMatch.homeTeamId !== undefined) {
-          updateData.homeTeamId = bracketMatch.homeTeamId;
-        }
-        if (bracketMatch.awayTeamId !== undefined) {
-          updateData.awayTeamId = bracketMatch.awayTeamId;
-        }
-        if (bracketMatch.homeScore !== undefined) {
-          updateData.homeScore = bracketMatch.homeScore;
-        }
-        if (bracketMatch.awayScore !== undefined) {
-          updateData.awayScore = bracketMatch.awayScore;
-        }
-        
-        if (updateData.homeScore !== undefined || updateData.awayScore !== undefined) {
-          updateData.status = 'finished';
-        }
-
-        if (Object.keys(updateData).length > 0) {
-          await setDoc(doc(db, 'matches', targetLinkedId), updateData, { merge: true });
-          await refreshCache('matches');
-        }
-      }
+      await setDoc(doc(db, 'bracket', bracketMatch.id), {
+        ...bracketMatch,
+        linkedMatchId: "" // explicitly clear/remove any link
+      }, { merge: true });
 
       await refreshCache('bracket');
     } catch (error) {
@@ -6597,16 +6546,6 @@ export default function App() {
   };
 
   const resolveLinkedScores = (bracketMatch: BracketMatch) => {
-    if (bracketMatch.linkedMatchId) {
-      const fixtureMatch = dbMatches.find(m => m.id === bracketMatch.linkedMatchId);
-      if (fixtureMatch) {
-        return {
-          ...bracketMatch,
-          homeScore: fixtureMatch.homeScore !== undefined ? fixtureMatch.homeScore : bracketMatch.homeScore,
-          awayScore: fixtureMatch.awayScore !== undefined ? fixtureMatch.awayScore : bracketMatch.awayScore
-        };
-      }
-    }
     return bracketMatch;
   };
 
@@ -6737,17 +6676,34 @@ export default function App() {
     const unsubBracket = onSnapshot(collection(db, 'bracket'), (snapshot) => {
       const bracketDataMap: Record<string, BracketMatch> = {};
       INITIAL_BRACKET.forEach(m => bracketDataMap[m.id!] = { ...m });
+      
+      const rawLinkedMatches: { id: string }[] = [];
       snapshot.docs.forEach((docSnap) => {
         const data = docSnap.data();
-        bracketDataMap[docSnap.id] = { ...data, id: docSnap.id } as BracketMatch;
+        if (data.linkedMatchId) {
+          rawLinkedMatches.push({ id: docSnap.id });
+        }
+        bracketDataMap[docSnap.id] = { ...data, id: docSnap.id, linkedMatchId: "" } as BracketMatch;
       });
       setBracket(INITIAL_BRACKET.map(m => bracketDataMap[m.id!]));
+
+      if (rawLinkedMatches.length > 0 && (isAdmin || isDrawAdmin)) {
+        const batch = writeBatch(db);
+        rawLinkedMatches.forEach(item => {
+          batch.update(doc(db, 'bracket', item.id), { linkedMatchId: "" });
+        });
+        batch.commit().then(() => {
+          console.log(`Auto-unlinked ${rawLinkedMatches.length} legacy matches in background.`);
+        }).catch(err => {
+          console.error("Failed to auto-unlink matches in background:", err);
+        });
+      }
     }, (error) => {
       console.error("Bracket sync error:", error);
     });
 
     return () => unsubBracket();
-  }, []);
+  }, [isAdmin, isDrawAdmin]);
 
   useEffect(() => {
     const unsubGuesses = onSnapshot(collection(db, 'statsGuesses'), (snapshot) => {
@@ -7985,14 +7941,24 @@ export default function App() {
                               {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
                               <span>{match.homeTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <div className="flex items-center gap-1.5">
+                              {match.homePenalties !== undefined && match.homePenalties !== null && (
+                                <span className="text-[9px] text-[#F59E0B] font-bold bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1 py-0.5 rounded">({match.homePenalties})</span>
+                              )}
+                              <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            </div>
                           </div>
                           <div className={`p-2 flex justify-between items-center text-sm border-t border-white/5 ${i % 2 !== 0 ? 'bg-fc-purple-light/20' : ''} gap-6`}>
                             <span className="font-display font-extrabold text-fc-neon-green whitespace-nowrap flex items-center gap-1.5">
                               {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
                               <span>{match.awayTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <div className="flex items-center gap-1.5">
+                              {match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                                <span className="text-[9px] text-[#F59E0B] font-bold bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1 py-0.5 rounded">({match.awayPenalties})</span>
+                              )}
+                              <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            </div>
                           </div>
                         </div>
                         {/* Connector Line - Converging to Quarterfinal */}
@@ -8023,14 +7989,24 @@ export default function App() {
                               {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
                               <span>{match.homeTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <div className="flex items-center gap-1.5">
+                              {match.homePenalties !== undefined && match.homePenalties !== null && (
+                                <span className="text-[9px] text-[#F59E0B] font-bold bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1 py-0.5 rounded">({match.homePenalties})</span>
+                              )}
+                              <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            </div>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
                             <span className="font-display font-extrabold transition-colors text-fc-neon-green whitespace-nowrap flex items-center gap-1.5">
                               {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
                               <span>{match.awayTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <div className="flex items-center gap-1.5">
+                              {match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                                <span className="text-[9px] text-[#F59E0B] font-bold bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1 py-0.5 rounded">({match.awayPenalties})</span>
+                              )}
+                              <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            </div>
                           </div>
                         </div>
                         {/* Horizontal inbound connector */}
@@ -8065,14 +8041,24 @@ export default function App() {
                               {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
                               <span>{match.homeTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            <div className="flex items-center gap-1.5">
+                              {match.homePenalties !== undefined && match.homePenalties !== null && (
+                                <span className="text-[9px] text-[#F59E0B] font-bold bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1 py-0.5 rounded">({match.homePenalties})</span>
+                              )}
+                              <span className="font-display font-extrabold text-fc-neon-green">{match.homeScore ?? '-'}</span>
+                            </div>
                           </div>
                           <div className="p-2 flex justify-between items-center text-sm border-t border-white/5 gap-6">
                             <span className="font-display font-extrabold text-fc-neon-green transition-colors whitespace-nowrap flex items-center gap-1.5">
                               {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
                               <span>{match.awayTeamName || 'TBD'}</span>
                             </span>
-                            <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            <div className="flex items-center gap-1.5">
+                              {match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                                <span className="text-[9px] text-[#F59E0B] font-bold bg-[#F59E0B]/10 border border-[#F59E0B]/20 px-1 py-0.5 rounded">({match.awayPenalties})</span>
+                              )}
+                              <span className="font-display font-extrabold text-fc-neon-green">{match.awayScore ?? '-'}</span>
+                            </div>
                           </div>
                         </div>
                         {/* Connector Line */}
@@ -8106,14 +8092,24 @@ export default function App() {
                                 {homeFlag && <span className="text-lg select-none">{homeFlag}</span>}
                                 <span>{match.homeTeamName || 'TBD'}</span>
                               </span>
-                              <span className="font-display font-extrabold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
+                              <div className="flex items-center gap-2">
+                                {match.homePenalties !== undefined && match.homePenalties !== null && (
+                                  <span className="text-xs text-[#F2F2F2] font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/20">({match.homePenalties} PK)</span>
+                                )}
+                                <span className="font-display font-extrabold text-2xl text-yellow-400">{match.homeScore ?? '-'}</span>
+                              </div>
                             </div>
                             <div className="p-4 flex justify-between items-center border-t border-white/5 gap-8">
                               <span className="font-display font-extrabold text-base tracking-tight text-white transition-colors whitespace-nowrap flex items-center gap-1.5">
                                 {awayFlag && <span className="text-lg select-none">{awayFlag}</span>}
                                 <span>{match.awayTeamName || 'TBD'}</span>
                               </span>
-                              <span className="font-display font-extrabold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
+                              <div className="flex items-center gap-2">
+                                {match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                                  <span className="text-xs text-[#F2F2F2] font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/20">({match.awayPenalties} PK)</span>
+                                )}
+                                <span className="font-display font-extrabold text-2xl text-yellow-400">{match.awayScore ?? '-'}</span>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -8135,14 +8131,24 @@ export default function App() {
                                 {homeFlag && <span className="text-base select-none">{homeFlag}</span>}
                                 <span>{match.homeTeamName || 'TBD'}</span>
                               </span>
-                              <span className="font-display font-extrabold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
+                              <div className="flex items-center gap-2">
+                                {match.homePenalties !== undefined && match.homePenalties !== null && (
+                                  <span className="text-xs text-[#F2F2F2] font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/20">({match.homePenalties} PK)</span>
+                                )}
+                                <span className="font-display font-extrabold text-lg text-orange-400">{match.homeScore ?? '-'}</span>
+                              </div>
                             </div>
                             <div className="p-3 flex justify-between items-center border-t border-white/5 gap-8">
                               <span className="font-display font-extrabold text-sm tracking-tight text-orange-400 transition-colors whitespace-nowrap flex items-center gap-1.5">
                                 {awayFlag && <span className="text-base select-none">{awayFlag}</span>}
                                 <span>{match.awayTeamName || 'TBD'}</span>
                               </span>
-                              <span className="font-display font-extrabold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
+                              <div className="flex items-center gap-2">
+                                {match.awayPenalties !== undefined && match.awayPenalties !== null && (
+                                  <span className="text-xs text-[#F2F2F2] font-bold bg-white/10 px-1.5 py-0.5 rounded border border-white/20">({match.awayPenalties} PK)</span>
+                                )}
+                                <span className="font-display font-extrabold text-lg text-orange-400">{match.awayScore ?? '-'}</span>
+                              </div>
                             </div>
                           </div>
                         </div>

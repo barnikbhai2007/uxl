@@ -50,6 +50,8 @@ export interface Match {
   awayTeamId: string;
   homeScore?: number;
   awayScore?: number;
+  homePenalties?: number;
+  awayPenalties?: number;
   homeScorers?: Scorer[];
   awayScorers?: Scorer[];
   editLogs?: MatchEditLog[];
@@ -77,6 +79,8 @@ export interface BracketMatch {
   awayTeamName?: string;
   homeScore?: number;
   awayScore?: number;
+  homePenalties?: number;
+  awayPenalties?: number;
   winnerId?: string;
   nextMatchId?: string;
   round: string | number;
