@@ -1373,7 +1373,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm appearance-none cursor-pointer"
                   >
                     <option value="">Select your name</option>
-                    {config.allowedNames.map(name => (
+                    {Array.from(new Set(config.allowedNames || [])).map(name => (
                       <option key={name} value={name}>{name}</option>
                     ))}
                     {/* Add current name if not in allowed list */}
@@ -1488,17 +1488,15 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
               </div>
 
-              {config?.mode !== 'all_in_random' && (
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
-                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
-                  <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
-                    {formData.logoUrl ? (
-                      <img src={formData.logoUrl} className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
-                    ) : <Plus className="w-6 h-6" />}
-                  </label>
-                </div>
-              )}
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
+                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
+                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
+                  {formData.logoUrl ? (
+                    <img src={formData.logoUrl} className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
+                  ) : <Plus className="w-6 h-6" />}
+                </label>
+              </div>
               <div className="md:col-span-2 pt-4">
                 <button 
                   type="submit" 
@@ -1854,24 +1852,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           </div>
 
           <div className="p-6 md:p-8 overflow-y-auto max-h-[70vh] hide-scrollbar">
-            {!user || user.isAnonymous ? (
-              <div className="text-center py-12 space-y-6">
-                <div className="w-20 h-20 bg-fc-purple-light/30 rounded-2xl flex items-center justify-center mx-auto">
-                  <LogIn className="w-10 h-10 text-fc-neon-green" />
-                </div>
-                <div className="space-y-2">
-                  <h3 className="text-2xl font-display font-bold text-white ">Google Sign-In Required</h3>
-                  <p className="text-white/40 text-sm max-w-xs mx-auto">To ensure secure registration and verify your identity, please sign in with your Google account.</p>
-                </div>
-                <button 
-                  onClick={() => handleRegister({} as any)} 
-                  className="w-full py-4 bg-fc-neon-green text-black hover:bg-fc-neon-green text-black text-black rounded-2xl font-bold text-xs tracking-[0.2em] transition-all flex items-center justify-center gap-3 shadow-xl shadow-fc-neon-green/20"
-                >
-                  <LogIn className="w-4 h-4" />
-                  Continue with Google
-                </button>
-              </div>
-            ) : hasRegistered ? (
+            {hasRegistered ? (
               <div className="text-center py-8 space-y-6">
                 <div className="w-16 h-16 bg-green-500/20 rounded-2xl flex items-center justify-center mx-auto">
                   <Check className="w-8 h-8 text-green-500" />
@@ -1920,7 +1901,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                     >
                       <option value="">-- Select Your Name --</option>
-                      {config.allowedNames.map(name => {
+                      {Array.from(new Set(config.allowedNames || [])).map(name => {
                         const isTaken = existingRegistrations?.some(r => r.name.toLowerCase().trim() === name.toLowerCase().trim());
                         return (
                           <option key={name} value={name} disabled={isTaken}>
@@ -2033,41 +2014,39 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                 </div>
 
-                {config?.mode !== 'all_in_random' && (
-                  <div className="md:col-span-2 space-y-2">
-                    <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional)</label>
-                    <div className="relative">
-                      <input 
-                        type="file"
-                        accept="image/*"
-                        onChange={handleFileChange}
-                        className="hidden"
-                        id="logo-upload"
-                      />
-                      <label 
-                        htmlFor="logo-upload"
-                        className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
-                      >
-                        {formData.logoUrl ? (
-                          <div className="flex flex-col items-center gap-2">
-                            <img src={formData.logoUrl} alt="Preview" className="w-24 h-24 rounded-[16px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
-                            <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Photo Selected</span>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional)</label>
+                  <div className="relative">
+                    <input 
+                      type="file"
+                      accept="image/*"
+                      onChange={handleFileChange}
+                      className="hidden"
+                      id="logo-upload"
+                    />
+                    <label 
+                      htmlFor="logo-upload"
+                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
+                    >
+                      {formData.logoUrl ? (
+                        <div className="flex flex-col items-center gap-2">
+                          <img src={formData.logoUrl} alt="Preview" className="w-24 h-24 rounded-[16px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
+                          <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Photo Selected</span>
+                        </div>
+                      ) : (
+                        <>
+                          <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
+                            {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
                           </div>
-                        ) : (
-                          <>
-                            <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
-                              {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
-                            </div>
-                            <div className="text-left">
-                              <p className="text-sm font-bold text-white">Click to Upload Photo</p>
-                              <p className="text-[10px] text-white/30 font-bold">PNG, JPG</p>
-                            </div>
-                          </>
-                        )}
-                      </label>
-                    </div>
+                          <div className="text-left">
+                            <p className="text-sm font-bold text-white">Click to Upload Photo</p>
+                            <p className="text-[10px] text-white/30 font-bold">PNG, JPG</p>
+                          </div>
+                        </>
+                      )}
+                    </label>
                   </div>
-                )}
+                </div>
                 <div className="md:col-span-2 pt-4">
                   <button 
                     type="submit"
@@ -3422,7 +3401,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       onKeyDown={async (e) => {
                         if (e.key === 'Enter') {
                           const name = newAllowedNameInput.trim();
-                          if (name) {
+                          if (name && !(config.allowedNames || []).includes(name)) {
                             const newNames = [...(config.allowedNames || []), name];
                             await handleUpdateConfig({ ...config, allowedNames: newNames });
                             setNewAllowedNameInput('');
@@ -3433,7 +3412,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     <button 
                       onClick={async () => {
                         const name = newAllowedNameInput.trim();
-                        if (name) {
+                        if (name && !(config.allowedNames || []).includes(name)) {
                           const newNames = [...(config.allowedNames || []), name];
                           await handleUpdateConfig({ ...config, allowedNames: newNames });
                           setNewAllowedNameInput('');
@@ -3446,7 +3425,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                   
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-6">
-                    {(config.allowedNames || []).map((name, idx) => (
+                    {Array.from(new Set(config.allowedNames || [])).map((name, idx) => (
                       <div key={idx} className="flex items-center justify-between p-3 bg-white/5 border border-white/10 rounded-xl">
                         <span className="text-sm text-white font-bold">{name}</span>
                         <button 
@@ -4244,7 +4223,7 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           ? configData.allowedNames
           : DEFAULT_PLAYERS;
         
-        const available = basePlayers.filter(p => !takenNames.has(p.toLowerCase().trim())).sort((a,b) => a.localeCompare(b));
+        const available = Array.from(new Set(basePlayers)).filter(p => !takenNames.has(p.toLowerCase().trim())).sort((a,b) => a.localeCompare(b));
         setAvailablePlayers(available);
         if (available.length > 0) {
           setSelectedPlayer(prev => {
@@ -8457,14 +8436,10 @@ export default function App() {
                      </div>
                    ) : (
                      <button
-                       onClick={async () => {
+                       onClick={() => {
                           if (!user || user.isAnonymous) {
-                            try {
-                              setShowLoginModal(true);
-                            } catch (e) {
-                              console.error("Login failed", e);
-                              return;
-                            }
+                            setShowLoginModal(true);
+                            return;
                           }
                           setIsRegistrationModalOpen(true);
                         }}
