@@ -1,0 +1,75 @@
+399:  return (
+474:              return (
+497:              return (
+526:  return (
+586:        return (
+612:      return (
+621:    return (
+773:      return (
+788:    return (
+1262:    return (
+1386:                      return (
+1463:      return () => document.removeEventListener('mousedown', handleClickOutside);
+1489:    return (
+1553:                  return (
+1614:    return (
+1744:    return (
+1843:                        return (
+1923:                      return (
+2405:      return (
+2527:      return (
+2544:      return (
+2578:    return (
+2746:                        return (
+3100:                        return (
+3391:                    return (
+3584:                          return (
+3716:                                    return (
+3871:    if (!team) return (
+3881:    return (
+4007:  if (!articles || articles.length === 0) return (
+4046:  return (
+4248:  return (
+4367:    return () => clearInterval(timer);
+4370:  return (
+4395:    return () => window.removeEventListener('quotaExceeded', handleQuotaError);
+4461:    return (
+4631:                return (
+4744:    return () => clearInterval(interval);
+4932:    return () => unsub();
+4992:    return () => {
+5009:    return () => {
+5210:    return (user as any)?.role === 'draw_admin' && config?.drawAdminEnabled !== false;
+5242:    return () => {
+5290:      return (
+5342:      return (
+5368:    return (
+5535:        if (a.date !== b.date) return (a.date || '').localeCompare(b.date || '');
+5536:        return (a.matchNumber || 0) - (b.matchNumber || 0);
+6679:    return () => {
+6709:      return () => unsubscribe();
+6742:    return () => unsubBracket();
+6752:    return () => unsubGuesses();
+6809:    return () => {
+6842:      return () => {
+6883:    return () => unsubscribe();
+7001:  return (
+7211:                    return (
+7219:                     return (
+7228:                    return (
+7238:                    return (
+7253:                    return (
+7264:                  return (
+7362:                                  return (
+7375:                                return (
+7489:                                   return (
+7570:                      return (
+7605:                                return (
+7728:                          return (
+7887:                        return (
+7896:                        return (
+7973:                    return (
+8021:                    return (
+8073:                    return (
+8124:                      return (
+8163:                      return (

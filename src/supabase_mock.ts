@@ -652,6 +652,22 @@ export async function deleteDoc(ref: DocRef) {
   }
 }
 
+export async function truncateCollections(collections: string[]) {
+  collections.forEach(c => {
+    invalidateQueryCache(c);
+    localEmitter.dispatchEvent(new CustomEvent('db_change', { detail: c }));
+  });
+  
+  try {
+    await apiFetch("/api/db/truncate", {
+      method: "POST",
+      body: JSON.stringify({ collections })
+    });
+  } catch (err) {
+    console.error("Truncate failed", err);
+  }
+}
+
 export function onSnapshot(ref: any, callback: any, errorCb?: any) {
   const isDoc = ref instanceof DocRef;
   const collectionName = isDoc

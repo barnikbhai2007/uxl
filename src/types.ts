@@ -69,6 +69,15 @@ export interface Match {
   evidenceUploadedBy?: string;
   evidenceTimestamp?: any;
   evidenceImage?: string;
+  challengeLevelHome?: 'easy' | 'moderate' | 'hard' | 'bonus';
+  challengeLevelAway?: 'easy' | 'moderate' | 'hard' | 'bonus';
+  challengeCompletedHome?: boolean;
+  challengeCompletedAway?: boolean;
+  drawStatus?: 'pending_opponent' | 'accepted' | 'cancelled';
+  drawExpiresAt?: string;
+  drawnByTeamId?: string;
+  penaltyPointsHome?: number;
+  penaltyPointsAway?: number;
 }
 
 export interface BracketMatch {
@@ -116,6 +125,7 @@ export interface AppContent {
 }
 
 export interface Config {
+  mode?: 'world_cup' | 'all_in_random';
   registrationEnabled: boolean;
   tabVisibility?: Record<string, boolean>;
   hiddenDates?: string[];

@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -23,10 +23,11 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { auth, db, signIn, logout, handleFirestoreError, OperationType, getCollectionMeta } from './supabase_mock';
-import { onAuthStateChanged, User, supabase } from './supabase_mock';
+import { onAuthStateChanged, User, supabase, truncateCollections } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, getDocsWithDelta, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ScheduleRandomizer } from './ScheduleRandomizer';
 import DrawAdminPanel from './components/DrawAdminPanel';
+import { RandomMatchDraw } from './components/RandomMatchDraw';
 
 const WORLD_CUP_FLAGS = new Map(WORLD_CUP_TEAMS.map(t => [t.name, t.flag]));
 
@@ -152,51 +153,89 @@ const getMatchesFromSchedule = (teams: Team[]): Match[] => {
   });
 };
 
-const calculateStandings = (teams: Team[], matches: Match[]): Team[] => {
+const calculateStandings = (teams: Team[], matches: Match[], mode?: string): Team[] => {
   const standings = teams.map(t => ({ ...t, played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: [] as string[] }));
   const standingsMap = new Map(standings.map(t => [t.id, t]));
   
   // Sort matches by matchNumber to ensure form is chronological
   const sortedMatches = [...matches].sort((a, b) => (a.matchNumber || 0) - (b.matchNumber || 0));
 
+  const getPtsForChallenge = (level?: string) => {
+    switch (level) {
+      case 'easy': return 1;
+      case 'moderate': return 2;
+      case 'hard': return 3;
+      case 'bonus': return 5;
+      default: return 0;
+    }
+  };
+
   sortedMatches.forEach(m => {
+    // Note: Deduct points for missed draw accepts
+    if (mode === 'all_in_random') {
+      if (m.drawStatus === 'pending_opponent' && new Date(m.drawExpiresAt || 0) < new Date()) {
+        const teamToPenalize = m.homeTeamId === m.drawnByTeamId ? m.awayTeamId : m.homeTeamId;
+        const penalizeStandings = standingsMap.get(teamToPenalize);
+        if (penalizeStandings) penalizeStandings.points -= 3;
+      }
+    }
+
     // Determine if this is a league match based on matchday (e.g. 1-10 are league, 11+ are knockout)
     const isLeagueMatch = (m.matchday || 0) <= 20; 
 
-    if (m.status === 'finished' && isLeagueMatch && m.homeScore !== undefined && m.homeScore !== null && m.awayScore !== undefined && m.awayScore !== null) {
+    if (m.status === 'finished') {
       const home = standingsMap.get(m.homeTeamId);
       const away = standingsMap.get(m.awayTeamId);
       
       if (home && away) {
         home.played++;
         away.played++;
-        home.gf += m.homeScore;
-        home.ga += m.awayScore;
-        away.gf += m.awayScore;
-        away.ga += m.homeScore;
-        
-        if (m.homeScore > m.awayScore) {
-          home.won++;
-          home.points += 3;
-          home.form.push('W');
-          away.lost++;
-          away.form.push('L');
-        } else if (m.homeScore < m.awayScore) {
-          away.won++;
-          away.points += 3;
-          away.form.push('W');
-          home.lost++;
-          home.form.push('L');
-        } else {
-          home.drawn++;
-          away.drawn++;
-          home.points += 1;
-          home.form.push('D');
-          away.points += 1;
-          away.form.push('D');
+
+        if (mode === 'all_in_random') {
+          if (m.challengeCompletedHome) {
+            const hPts = getPtsForChallenge(m.challengeLevelHome);
+            home.points += hPts;
+            home.form.push('W');
+          } else {
+            home.form.push('L');
+          }
+
+          if (m.challengeCompletedAway) {
+            const aPts = getPtsForChallenge(m.challengeLevelAway);
+            away.points += aPts;
+            away.form.push('W');
+          } else {
+            away.form.push('L');
+          }
+        } else if (isLeagueMatch && m.homeScore !== undefined && m.homeScore !== null && m.awayScore !== undefined && m.awayScore !== null) {
+          home.gf += m.homeScore;
+          home.ga += m.awayScore;
+          away.gf += m.awayScore;
+          away.ga += m.homeScore;
+          
+          if (m.homeScore > m.awayScore) {
+            home.won++;
+            home.points += 3;
+            home.form.push('W');
+            away.lost++;
+            away.form.push('L');
+          } else if (m.homeScore < m.awayScore) {
+            away.won++;
+            away.points += 3;
+            away.form.push('W');
+            home.lost++;
+            home.form.push('L');
+          } else {
+            home.drawn++;
+            away.drawn++;
+            home.points += 1;
+            home.form.push('D');
+            away.points += 1;
+            away.form.push('D');
+          }
+          home.gd = home.gf - home.ga;
+          away.gd = away.gf - away.ga;
         }
-        home.gd = home.gf - home.ga;
-        away.gd = away.gf - away.ga;
       }
     }
   });
@@ -679,7 +718,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     );
   };
 
-  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent, isAdmin, resetMatch, currentUser, myRegistrationData }: { 
+  const MatchDetailsModal = ({ match, onClose, teams, copiedId, copyToClipboard, updateMatch, deleteMatch, isEditingMode, siteContent, isAdmin, resetMatch, currentUser, myRegistrationData, config }: { 
     match: Match & { _overrideStatus?: string }, 
     onClose: () => void,
     teams: Team[],
@@ -692,7 +731,8 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     isAdmin?: boolean,
     resetMatch?: (id: string) => Promise<void> | void,
     currentUser?: any,
-    myRegistrationData?: any
+    myRegistrationData?: any,
+    config?: Config
   }) => {
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [localHomeScorers, setLocalHomeScorers] = useState<any[]>(match.homeScorers ? JSON.parse(JSON.stringify(match.homeScorers)) : []);
@@ -995,6 +1035,38 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                    displayStatus === 'rescheduled' ? 'rescheduled' :
                    (displayStatus === 'live' || displayStatus === 'ongoing') ? 'LIVE' : 'UPCOMING'}
                 </div>
+
+                {config?.mode === 'all_in_random' && (match.challengeLevelHome || match.challengeLevelAway) && (
+                   <div className="w-full mt-4 flex justify-between items-center bg-white/5 border border-white/10 p-3 rounded-2xl gap-4">
+                      {/* Home Challenge */}
+                      <div className="flex-1 text-center">
+                         <p className="text-[10px] text-white/40 uppercase mb-1">{match.challengeLevelHome || 'No'} Challenge</p>
+                         {(isEditingMode && isAdmin) ? (
+                            <label className="flex items-center justify-center gap-2 text-xs text-white cursor-pointer hover:bg-white/5 p-1 rounded">
+                               <input type="checkbox" checked={!!match.challengeCompletedHome} onChange={(e) => addLogAndUpdate('challengeCompletedHome', e.target.checked, 'Home Challenge Completed')} />
+                               Completed
+                            </label>
+                         ) : (
+                            <p className={`text-xs font-bold ${match.challengeCompletedHome ? 'text-green-400' : 'text-red-400'}`}>{match.challengeCompletedHome ? 'Completed' : 'Failed'}</p>
+                         )}
+                      </div>
+
+                      <div className="w-px h-8 bg-white/10" />
+
+                      {/* Away Challenge */}
+                      <div className="flex-1 text-center">
+                         <p className="text-[10px] text-white/40 uppercase mb-1">{match.challengeLevelAway || 'No'} Challenge</p>
+                         {(isEditingMode && isAdmin) ? (
+                            <label className="flex items-center justify-center gap-2 text-xs text-white cursor-pointer hover:bg-white/5 p-1 rounded">
+                               <input type="checkbox" checked={!!match.challengeCompletedAway} onChange={(e) => addLogAndUpdate('challengeCompletedAway', e.target.checked, 'Away Challenge Completed')} />
+                               Completed
+                            </label>
+                         ) : (
+                            <p className={`text-xs font-bold ${match.challengeCompletedAway ? 'text-green-400' : 'text-red-400'}`}>{match.challengeCompletedAway ? 'Completed' : 'Failed'}</p>
+                         )}
+                      </div>
+                   </div>
+                )}
 
                 {isEditingMode && isAdmin && (
                   <div className="mt-4 flex flex-col items-center gap-2">
@@ -2059,7 +2131,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleClearGroups: () => Promise<void>,
     refreshCache: (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin' | 'mode'>('bracket');
 
     const getBracketTeamFlag = (teamName?: string, teamId?: string) => {
       if (!teamName || teamName === 'TBD') return '';
@@ -2668,6 +2740,12 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'backup' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Backup
+            </button>
+            <button 
+              onClick={() => setActiveTab('mode')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'mode' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              App Mode
             </button>
           </div>
         </div>
@@ -3777,6 +3855,37 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
               </div>
             )}
+
+            {activeTab === 'mode' && (
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
+                <div className="flex items-center justify-between mb-8">
+                  <h3 className="text-xl font-display font-bold text-white">App Mode Settings</h3>
+                </div>
+                
+                <div className="bg-fc-purple-dark/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
+                   <h4 className="font-bold text-white text-sm mb-2">Switch Application View</h4>
+                   <p className="text-white/40 text-xs leading-relaxed mb-6">
+                     Toggle between the standard World Cup mode and the experimental Custom League mode.
+                   </p>
+                   
+                   <div className="flex items-center gap-4">
+                     <button
+                       onClick={() => handleUpdateConfig({ ...config, mode: 'world_cup' })}
+                       className={`flex-1 py-4 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${config.mode !== 'all_in_random' ? 'bg-fc-neon-green text-black' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'}`}
+                     >
+                       WORLD CUP MODE
+                     </button>
+                     <button
+                       onClick={() => handleUpdateConfig({ ...config, mode: 'all_in_random' })}
+                       className={`flex-1 py-4 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${config.mode === 'all_in_random' ? 'bg-[#3B82F6] text-white' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'}`}
+                     >
+                       ALL IN RANDOM MODE
+                     </button>
+                   </div>
+                </div>
+              </div>
+            )}
+
           </div>
           
           <div className="absolute left-[9999px] top-0 pointer-events-none">
@@ -4421,6 +4530,37 @@ export default function App() {
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
 
   const renderStatsTab = () => {
+    
+    // Calculate lucky/unlucky gamers
+    let luckiest: { gamer: string; points: number } | null = null;
+    let unluckiest: { gamer: string; points: number } | null = null;
+
+    if (config.mode === 'all_in_random') {
+      const luckyScores: Record<string, number> = {};
+      const getPts = (lvl: string) => lvl === 'easy' ? 1 : lvl === 'moderate' ? 2 : lvl === 'hard' ? 3 : lvl === 'bonus' ? 5 : 0;
+      
+      matches.forEach(m => {
+        if (m.challengeLevelHome) {
+          const t = teams.find(t => t.id === m.homeTeamId);
+          if (t && t.fcName) {
+            luckyScores[t.fcName] = (luckyScores[t.fcName] || 0) + getPts(m.challengeLevelHome);
+          }
+        }
+        if (m.challengeLevelAway) {
+          const t = teams.find(t => t.id === m.awayTeamId);
+          if (t && t.fcName) {
+            luckyScores[t.fcName] = (luckyScores[t.fcName] || 0) + getPts(m.challengeLevelAway);
+          }
+        }
+      });
+
+      const sortedGamers = Object.entries(luckyScores).sort((a, b) => b[1] - a[1]);
+      if (sortedGamers.length > 0) {
+        luckiest = { gamer: sortedGamers[0][0], points: sortedGamers[0][1] };
+        unluckiest = { gamer: sortedGamers[sortedGamers.length - 1][0], points: sortedGamers[sortedGamers.length - 1][1] };
+      }
+    }
+
     return (
       <motion.div
         key="stats"
@@ -4429,6 +4569,32 @@ export default function App() {
         exit={{ opacity: 0, x: -20 }}
         className="space-y-6"
       >
+        {config.mode === 'all_in_random' && luckiest && unluckiest && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+            <div className="bg-green-500/10 border border-green-500/20 rounded-3xl p-6 flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-green-500 text-black flex items-center justify-center shrink-0">
+                <Sparkles className="w-8 h-8" />
+              </div>
+              <div>
+                <p className="text-green-500 text-[10px] font-bold tracking-widest uppercase mb-1">Luckiest Gamer</p>
+                <p className="text-2xl font-black text-white">{luckiest.gamer}</p>
+                <p className="text-green-400/60 text-xs mt-1">Rolled {luckiest.points} potential challenge points</p>
+              </div>
+            </div>
+            
+            <div className="bg-red-500/10 border border-red-500/20 rounded-3xl p-6 flex items-center gap-6">
+              <div className="w-16 h-16 rounded-2xl bg-red-500 text-white flex items-center justify-center shrink-0">
+                <AlertCircle className="w-8 h-8" />
+              </div>
+              <div>
+                <p className="text-red-500 text-[10px] font-bold tracking-widest uppercase mb-1">Most Unluckiest</p>
+                <p className="text-2xl font-black text-white">{unluckiest.gamer}</p>
+                <p className="text-red-400/60 text-xs mt-1">Rolled only {unluckiest.points} potential challenge points</p>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Top Scorers Section */}
         <div className="flex items-center gap-4 mb-4 mt-2">
           <div className="p-3 bg-fc-purple-light/30 rounded-2xl border border-fc-neon-green/50/30">
@@ -4834,7 +5000,7 @@ export default function App() {
     };
   }, [matches, teams]);
   
-  const standings = useMemo(() => calculateStandings(teams, matches), [teams, matches]);
+  const standings = useMemo(() => calculateStandings(teams, matches, config.mode), [teams, matches, config.mode]);
   
   const groupedStandings = useMemo(() => {
     if (config.groupType !== 'many') return null;
@@ -4979,7 +5145,7 @@ export default function App() {
     if (!isAdmin) return;
     try {
       const statuses: Record<string, string> = {};
-      const currentStandings = calculateStandings(teams, matches);
+      const currentStandings = calculateStandings(teams, matches, config.mode);
 
       if (config.groupType === 'many') {
         const K = 2;
@@ -5951,20 +6117,7 @@ export default function App() {
           });
         });
       } else if (type === 'all') {
-        const mSnap = await getDocs(collection(db, 'matches'));
-        mSnap.docs.forEach(d => batch.delete(d.ref));
-        
-        const bSnap = await getDocs(collection(db, 'bracket'));
-        bSnap.docs.forEach(d => batch.delete(d.ref));
-        
-        const rSnap = await getDocs(collection(db, 'registrations'));
-        rSnap.docs.forEach(d => batch.delete(d.ref));
-        
-        const uSnap = await getDocs(collection(db, 'users'));
-        uSnap.docs.forEach(d => {
-          if (d.id !== user?.uid) batch.delete(d.ref);
-        });
-        
+        await truncateCollections(['matches', 'bracket', 'registrations', 'users', 'stats', 'user_achievements', 'match_reports', 'motm_leaderboard']);
         batch.set(doc(db, 'stats', 'global'), { visitCount: 0 });
       }
       
@@ -5987,7 +6140,12 @@ export default function App() {
         await refreshCache('teams');
       }
       
-      alert(`${type.charAt(0).toUpperCase() + type.slice(1)} reset successful!`);
+      if (type === 'all') {
+        alert('TOTAL PURGE successful! The page will now reload.');
+        window.location.reload();
+      } else {
+        alert(`${type.charAt(0).toUpperCase() + type.slice(1)} reset successful!`);
+      }
     } catch (error) {
       console.error("Reset failed:", error);
       alert(`Reset failed: ${error instanceof Error ? error.message : String(error)}`);
@@ -6964,6 +7122,22 @@ export default function App() {
   return (
     <>
       <div className="min-h-screen bg-fc-purple-dark text-white font-sans selection:bg-fc-neon-green/30 relative overflow-hidden">
+      {config.mode === 'all_in_random' && (
+        <div className="bg-[#3B82F6]/90 border-b border-[#3B82F6]/50 p-3 text-center z-50 relative backdrop-blur-sm shadow-lg flex flex-col md:flex-row items-center justify-center gap-4">
+          <p className="text-white font-bold text-xs">
+            <span className="tracking-widest uppercase mr-2 opacity-60">Mode Active</span>
+            ALL ONE IN RANDOM
+          </p>
+          {isAdmin && (
+            <button 
+              onClick={() => handleUpdateConfig({ ...config, mode: undefined })}
+              className="px-3 py-1 bg-white text-[#3B82F6] rounded-lg text-[10px] font-bold hover:bg-white/90 transition-colors"
+            >
+              Exit Mode
+            </button>
+          )}
+        </div>
+      )}
       {hasQuotaError && (
         <div className="bg-red-500/20 border-b border-red-500/50 p-4 text-center z-50 relative backdrop-blur-sm">
           <p className="text-red-200 font-bold max-w-4xl mx-auto">
@@ -7059,6 +7233,8 @@ export default function App() {
               { id: 'registration', label: 'Registration', icon: Layout },
               { id: 'campaign', label: 'My Campaign', icon: UserIcon },
             ].filter(tab => {
+              if (config.mode === 'all_in_random' && tab.id === 'news') return false;
+              if (tab.id === 'bracket') return config.groupType !== 'single';
               if (tab.id === 'registration') return config.registrationEnabled;
               if (tab.id === 'campaign') return !!user;
 
@@ -7135,6 +7311,15 @@ export default function App() {
                     >
                       Stats
                     </button>
+                    {config.mode === 'all_in_random' && (
+                      <button 
+                        onClick={() => setCampaignTab('draw')}
+                        className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit flex items-center gap-1 ${campaignTab === 'draw' ? 'bg-[#3B82F6] text-white shadow-lg shadow-[#3B82F6]/40' : 'text-[#3B82F6]/60 hover:text-[#3B82F6]'}`}
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        Draw Match
+                      </button>
+                    )}
                     <button 
                       onClick={() => setCampaignTab('history')}
                       className={`px-4 py-2 rounded-2xl text-[9px] font-bold tracking-normal transition-all whitespace-nowrap min-w-fit ${campaignTab === 'history' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/40' : 'text-white/40 hover:text-white/60'}`}
@@ -7226,7 +7411,14 @@ export default function App() {
 
                   return (
                     <div className="space-y-8">
-                      {campaignTab === 'edit' ? (
+                      {campaignTab === 'draw' && config.mode === 'all_in_random' ? (
+                        <RandomMatchDraw
+                          myTeam={myTeam}
+                          allTeams={teams}
+                          myMatches={myMatches}
+                          config={config}
+                        />
+                      ) : campaignTab === 'edit' ? (
                          <div className="bg-white/5 border border-white/10 rounded-[2rem] p-8 text-center">
                             <Shield className="w-16 h-16 text-fc-neon-green/20 mx-auto mb-6" />
                             <h3 className="text-xl font-display font-bold text-white ">Security Shield Active</h3>
@@ -8326,6 +8518,7 @@ export default function App() {
             resetMatch={handleResetSingleMatch}
             currentUser={user}
             myRegistrationData={myRegistrationData}
+            config={config}
           />
         )}
         {isRegistrationModalOpen && (

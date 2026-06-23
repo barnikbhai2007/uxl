@@ -241,6 +241,19 @@ app.delete("/api/db/delete", async (req, res) => {
   }
 });
 
+app.post("/api/db/truncate", async (req, res) => {
+  try {
+    const { collections } = req.body;
+    for (const c of collections) {
+      await runD1Query("DELETE FROM documents WHERE collection = ?", [c]);
+      await runD1Query("INSERT OR REPLACE INTO collection_meta (collection, updated_at) VALUES (?, ?)", [c, Date.now()]);
+    }
+    res.json({ success: true });
+  } catch (e: any) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 app.get("/api/db/meta/:collection", async (req, res) => {
   try {
     const { collection } = req.params;
