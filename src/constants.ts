@@ -25,6 +25,39 @@ export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: nu
   "ANIMESH": { fcName: "Ashish..Won", uid: "646962951897718784", ovr: 119, fullName: "Animesh", goalkeeper: "Courtois" }
 };
 
+export const MANAGERS_LIST = [
+  { name: 'Pep Guardiola', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/29/Juve_Man_City_%284%29_%28cropped%29.jpg' },
+  { name: 'Carlo Ancelotti', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/61/Carlo_Ancelotti_2016.jpg' },
+  { name: 'Jürgen Klopp', flag: '🇩🇪', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/82/J%C3%BCrgen_Klopp%2C_Liverpool_vs._Chelsea%2C_UEFA_Super_Cup_2019-08-14_04.jpg' },
+  { name: 'Sir Alex Ferguson', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7b/Sir_Alex_Ferguson.jpg' },
+  { name: 'José Mourinho', flag: '🇵🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/3d/Jos%C3%A9_Mourinho_2019.jpg' },
+  { name: 'Zinedine Zidane', flag: '🇫🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f3/Zinedine_Zidane_by_Tasnim_03.jpg' },
+  { name: 'Arsène Wenger', flag: '🇫🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/2/22/Ars%C3%A8ne_Wenger_in_2015.jpg' },
+  { name: 'Diego Simeone', flag: '🇦🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/87/Diego_Simeone_2017.jpg' },
+  { name: 'Johan Cruyff', flag: '🇳🇱', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Johan_Cruyff_1974c.jpg' },
+  { name: 'Marcello Lippi', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/ed/Marcello_Lippi_2010.jpg' },
+  { name: 'Vicente del Bosque', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f2/Vicente_del_Bosque_2012.png' },
+  { name: 'Antonio Conte', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/c/c5/Antonio_Conte_2018.jpg' },
+  { name: 'Thomas Tuchel', flag: '🇩🇪', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/ba/Thomas_Tuchel_2019.jpg' },
+  { name: 'Xabi Alonso', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/7e/Xabi_Alonso_2015_%28cropped%29.jpg' },
+  { name: 'Lionel Scaloni', flag: '🇦🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/4b/Leo_Scaloni.jpg' },
+  { name: 'Marcelo Bielsa', flag: '🇦🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/5f/Marcelo_Bielsa_2011.jpg' },
+  { name: 'Mikel Arteta', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/13/Mikel_Arteta_2021_%28cropped%29.jpg' },
+  { name: 'Mauricio Pochettino', flag: '🇦🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/de/Mauricio_Pochettino_2016.jpg' },
+  { name: 'Unai Emery', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/74/Unai_Emery_2018.jpg' },
+  { name: 'Louis van Gaal', flag: '🇳🇱', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/7/76/Louis_van_Gaal_2014.jpg' },
+  { name: 'Roberto Mancini', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/eb/Roberto_Mancini_2017.jpg' },
+  { name: 'Hansi Flick', flag: '🇩🇪', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/4/40/Hansi_Flick_2019_%282%29.jpg' },
+  { name: 'Julian Nagelsmann', flag: '🇩🇪', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/5/53/Julian_Nagelsmann_2019.jpg' },
+  { name: 'Erik ten Hag', flag: '🇳🇱', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/91/Erik_ten_Hag_2019.jpg' },
+  { name: 'Massimiliano Allegri', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/3/35/Massimiliano_Allegri_2015.jpg' },
+  { name: 'Luiz Felipe Scolari', flag: '🇧🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/18/Felipao3.jpg' },
+  { name: 'Didier Deschamps', flag: '🇫🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/e/e5/Didier_Deschamps_2018.jpg' },
+  { name: 'Gareth Southgate', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/1/13/Gareth_Southgate_2018.jpg' },
+  { name: 'Ralf Rangnick', flag: '🇩🇪', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/6/6f/Ralf_Rangnick_2019.jpg' },
+  { name: 'Claudio Ranieri', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/df/Claudio_Ranieri_2016.jpg' }
+];
+
 export const WORLD_CUP_TEAMS = [
   { name: 'Algeria', flag: '🇩🇿' },
   { name: 'Argentina', flag: '🇦🇷' },

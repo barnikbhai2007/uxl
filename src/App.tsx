@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle } from 'lucide-react';
-import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS } from './constants';
+import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS, MANAGERS_LIST } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { 
@@ -29,7 +29,7 @@ import { ScheduleRandomizer } from './ScheduleRandomizer';
 import DrawAdminPanel from './components/DrawAdminPanel';
 import { RandomMatchDraw } from './components/RandomMatchDraw';
 
-const WORLD_CUP_FLAGS = new Map(WORLD_CUP_TEAMS.map(t => [t.name, t.flag]));
+const WORLD_CUP_FLAGS = new Map([...WORLD_CUP_TEAMS, ...MANAGERS_LIST].map(t => [t.name, t.flag]));
 
 const rawApiUrl = (import.meta as any).env?.VITE_API_URL || "";
 const VITE_API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
@@ -474,7 +474,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
               {team.fullName}
               {team.country && (
                 <span className="text-3xl md:text-4xl shadow-sm" title={team.country}>
-                  {WORLD_CUP_TEAMS.find(t => t.name === team.country)?.flag || '🌍'}
+                  {WORLD_CUP_FLAGS.get(team.country) || '🌍'}
                 </span>
               )}
             </h2>
@@ -1442,16 +1442,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 />
               </div>
               <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold tracking-normal text-white/40">World Cup Country / Flag</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">{config?.mode === 'all_in_random' ? 'Manager / Coach' : 'World Cup Country / Flag'}</label>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-2 hide-scrollbar">
                   {(() => {
+                    const activeList = config?.mode === 'all_in_random' ? MANAGERS_LIST : WORLD_CUP_TEAMS;
                     const takenCountries = registrations
                       ? registrations
                           .filter(r => r.id !== registration.id)
                           .map(r => r.country?.toLowerCase().trim())
                           .filter(Boolean) as string[]
                       : [];
-                    return WORLD_CUP_TEAMS.map((team) => {
+                    return activeList.map((team) => {
                       const isTaken = takenCountries.includes(team.name.toLowerCase().trim());
                       const isSelected = formData.country?.toLowerCase().trim() === team.name.toLowerCase().trim();
                       const isLocked = config?.lockedCountries?.includes(team.name);
@@ -1460,7 +1461,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           key={team.name}
                           type="button"
                           disabled={(isTaken || isLocked) && !isSelected}
-                          onClick={() => setFormData({...formData, country: team.name})}
+                          onClick={() => {
+                            const newLogoUrl = (config?.mode === 'all_in_random' && 'photoUrl' in team) ? (team as any).photoUrl : formData.logoUrl;
+                            setFormData({...formData, country: team.name, logoUrl: newLogoUrl});
+                          }}
                           className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
                             isSelected 
                               ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)] font-bold' 
@@ -1469,7 +1473,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                 : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
                           }`}
                         >
-                          <span className="text-xl">{team.flag}</span>
+                          {'photoUrl' in team && config?.mode === 'all_in_random' ? (
+                            <img src={(team as any).photoUrl} alt={team.name} className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+                          ) : (
+                            <span className="text-xl">{team.flag}</span>
+                          )}
                           <span className="text-xs font-bold truncate">{team.name}</span>
                           {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
                           {isLocked && !isSelected && <span className="text-[9px] ml-auto text-yellow-400 font-bold uppercase tracking-widest">Locked</span>}
@@ -1480,15 +1488,17 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 </div>
               </div>
 
-              <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
-                <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
-                <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
-                  {formData.logoUrl ? (
-                    <img src={formData.logoUrl} className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
-                  ) : <Plus className="w-6 h-6" />}
-                </label>
-              </div>
+              {config?.mode !== 'all_in_random' && (
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
+                  <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
+                  <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
+                    {formData.logoUrl ? (
+                      <img src={formData.logoUrl} className="max-h-32 max-w-full w-auto rounded-2xl object-contain border-2 border-fc-neon-green/50 shadow-lg" />
+                    ) : <Plus className="w-6 h-6" />}
+                  </label>
+                </div>
+              )}
               <div className="md:col-span-2 pt-4">
                 <button 
                   type="submit" 
@@ -1796,7 +1806,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (!formData.country) {
-        alert("Please select a World Cup country.");
+        alert(config?.mode === 'all_in_random' ? "Please select a Manager." : "Please select a World Cup country.");
         return;
       }
       if (!formData.logoUrl) {
@@ -1986,9 +1996,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   />
                 </div>
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold tracking-normal text-white/40">World Cup Country</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">{config?.mode === 'all_in_random' ? 'Manager / Coach' : 'World Cup Country'}</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
-                    {WORLD_CUP_TEAMS.map((team) => {
+                    {(config?.mode === 'all_in_random' ? MANAGERS_LIST : WORLD_CUP_TEAMS).map((team) => {
                       const isTaken = takenCountries.some(tc => tc.toLowerCase().trim() === team.name.toLowerCase().trim());
                       const isSelected = formData.country && formData.country.toLowerCase().trim() === team.name.toLowerCase().trim();
                       const isLocked = config?.lockedCountries?.includes(team.name);
@@ -1997,7 +2007,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                           key={team.name}
                           type="button"
                           disabled={(isTaken || isLocked) && !isSelected}
-                          onClick={() => setFormData({...formData, country: team.name})}
+                          onClick={() => {
+                            const newLogoUrl = (config?.mode === 'all_in_random' && 'photoUrl' in team) ? (team as any).photoUrl : formData.logoUrl;
+                            setFormData({...formData, country: team.name, logoUrl: newLogoUrl});
+                          }}
                           className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
                             isSelected 
                               ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)]' 
@@ -2006,7 +2019,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                 : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
                           }`}
                         >
-                          <span className="text-xl">{team.flag}</span>
+                          {'photoUrl' in team && config?.mode === 'all_in_random' ? (
+                            <img src={(team as any).photoUrl} alt={team.name} className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
+                          ) : (
+                            <span className="text-xl">{team.flag}</span>
+                          )}
                           <span className="text-xs font-bold truncate">{team.name}</span>
                           {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
                           {isLocked && !isSelected && <span className="text-[9px] ml-auto text-yellow-400 font-bold uppercase tracking-widest">Locked</span>}
@@ -2016,39 +2033,41 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   </div>
                 </div>
 
-                <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional)</label>
-                  <div className="relative">
-                    <input 
-                      type="file"
-                      accept="image/*"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="logo-upload"
-                    />
-                    <label 
-                      htmlFor="logo-upload"
-                      className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
-                    >
-                      {formData.logoUrl ? (
-                        <div className="flex flex-col items-center gap-2">
-                          <img src={formData.logoUrl} alt="Preview" className="w-24 h-24 rounded-[16px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
-                          <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Photo Selected</span>
-                        </div>
-                      ) : (
-                        <>
-                          <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
-                            {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                {config?.mode !== 'all_in_random' && (
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional)</label>
+                    <div className="relative">
+                      <input 
+                        type="file"
+                        accept="image/*"
+                        onChange={handleFileChange}
+                        className="hidden"
+                        id="logo-upload"
+                      />
+                      <label 
+                        htmlFor="logo-upload"
+                        className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all group"
+                      >
+                        {formData.logoUrl ? (
+                          <div className="flex flex-col items-center gap-2">
+                            <img src={formData.logoUrl} alt="Preview" className="w-24 h-24 rounded-[16px] object-cover border-2 border-fc-neon-green/50 shadow-lg" />
+                            <span className="text-[10px] font-bold text-fc-neon-green tracking-normal">Photo Selected</span>
                           </div>
-                          <div className="text-left">
-                            <p className="text-sm font-bold text-white">Click to Upload Photo</p>
-                            <p className="text-[10px] text-white/30 font-bold">PNG, JPG</p>
-                          </div>
-                        </>
-                      )}
-                    </label>
+                        ) : (
+                          <>
+                            <div className="p-3 bg-white/5 rounded-2xl group-hover:bg-fc-purple-light/30 group-hover:text-fc-neon-green transition-all">
+                              {isCompressing ? <Loader2 className="w-6 h-6 animate-spin" /> : <Plus className="w-6 h-6" />}
+                            </div>
+                            <div className="text-left">
+                              <p className="text-sm font-bold text-white">Click to Upload Photo</p>
+                              <p className="text-[10px] text-white/30 font-bold">PNG, JPG</p>
+                            </div>
+                          </>
+                        )}
+                      </label>
+                    </div>
                   </div>
-                </div>
+                )}
                 <div className="md:col-span-2 pt-4">
                   <button 
                     type="submit"
@@ -3454,11 +3473,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {activeTab === 'countries' && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-display font-bold text-white">Country Locking</h3>
+                  <h3 className="text-xl font-display font-bold text-white">{config.mode === 'all_in_random' ? 'Manager Locking' : 'Country Locking'}</h3>
                 </div>
-                <p className="text-xs text-white/50 mb-6">Lock specific countries to prevent them from being selected during registration.</p>
+                <p className="text-xs text-white/50 mb-6">Lock specific {config.mode === 'all_in_random' ? 'managers' : 'countries'} to prevent them from being selected during registration.</p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {WORLD_CUP_TEAMS.map((team) => {
+                  {(config.mode === 'all_in_random' ? MANAGERS_LIST : WORLD_CUP_TEAMS).map((team) => {
                     const isLocked = (config.lockedCountries || []).includes(team.name);
                     return (
                       <button
@@ -3865,7 +3884,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                 <div className="bg-fc-purple-dark/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
                    <h4 className="font-bold text-white text-sm mb-2">Switch Application View</h4>
                    <p className="text-white/40 text-xs leading-relaxed mb-6">
-                     Toggle between the standard World Cup mode and the experimental Custom League mode.
+                     Toggle between the standard World Cup mode and the ALL IN RANDOM mode.
                    </p>
                    
                    <div className="flex items-center gap-4">
@@ -4427,31 +4446,37 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
   );
 }
 
-const FLAGS = ['🇧🇷', '🇫🇷', '🇩🇪', '🇪🇸', '🇵🇹', '🇦🇷', '🇮🇹', '🇳🇱', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🇧🇪', '🇺🇾', '🇭🇷'];
-
-const RotatingFlag = () => {
+const RotatingFlag = ({ mode }: { mode: string | undefined }) => {
+  const isManagerMode = mode === 'all_in_random';
+  const displayItems = isManagerMode 
+    ? MANAGERS_LIST.slice(0, 10).map(m => m.photoUrl) 
+    : ['🇧🇷', '🇫🇷', '🇩🇪', '🇪🇸', '🇵🇹', '🇦🇷', '🇮🇹', '🇳🇱', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🇧🇪', '🇺🇾', '🇭🇷'];
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
-      setIndex((prev) => (prev + 1) % FLAGS.length);
+      setIndex((prev) => (prev + 1) % displayItems.length);
     }, 2000);
     return () => clearInterval(timer);
-  }, []);
+  }, [displayItems.length]);
 
   return (
     <div className="relative inline-block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 ml-3 md:ml-4 align-middle">
       <AnimatePresence mode="popLayout">
-        <motion.span
-          key={index}
+        <motion.div
+          key={displayItems[index]}
           initial={{ opacity: 0, y: 20, scale: 0.8, rotate: -20 }}
           animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
           exit={{ opacity: 0, y: -20, scale: 0.8, rotate: 20 }}
           transition={{ duration: 0.4, type: "spring", bounce: 0.4 }}
           className="absolute inset-0 flex items-center justify-center text-5xl sm:text-6xl md:text-8xl drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
         >
-          {FLAGS[index]}
-        </motion.span>
+          {isManagerMode ? (
+            <img src={displayItems[index]} alt="Manager" className="w-full h-full object-cover rounded-full shadow-lg border-2 border-fc-neon-green" referrerPolicy="no-referrer" />
+          ) : (
+            displayItems[index]
+          )}
+        </motion.div>
       </AnimatePresence>
     </div>
   );
@@ -7173,8 +7198,8 @@ export default function App() {
             </div>
             
             <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-black text-white leading-[1.05] tracking-tight mb-6 drop-shadow-sm flex items-center flex-wrap">
-              <EditableText id="hero_title_main" defaultText="UXI: World's Game" />
-              <RotatingFlag />
+              <EditableText id="hero_title_main" defaultText={config?.mode === 'all_in_random' ? "UXI: All One in Random" : "UXI: World's Game"} />
+              <RotatingFlag mode={config?.mode} />
             </h1>
             
             <p className="text-white/50 font-sans text-sm md:text-base lg:text-lg max-w-xl leading-relaxed">
