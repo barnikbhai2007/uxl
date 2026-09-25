@@ -282,16 +282,18 @@ app.post("/api/db/bump_meta", async (req, res) => {
 // Auth Routes
 // -------------------------------------------------------------
 app.post("/api/auth/login", (req, res) => {
-  const adminPassword = process.env.ADMIN_PASSWORD || "Broken@2000";
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  const drawAdminPassword = process.env.DRAW_ADMIN_PASSWORD;
   const { username, password, role } = req.body;
   
   if (role === 'admin' || username === 'admin') {
-    console.log("LOGIN ATTEMPT password:", password);
-    if ((password || '').trim() === 'Broken@2000') {
+    const suppliedPassword = (password || '').trim();
+
+    if (adminPassword && suppliedPassword === adminPassword.trim()) {
       const display = username === 'admin' ? 'Admin' : (username || 'Admin');
       const token = jwt.sign({ uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: display }, JWT_SECRET, { expiresIn: '30d' });
       return res.json({ success: true, token, user: { uid: "admin_user", email: "admin@uxl.com", role: "admin", displayName: display } });
-    } else if ((password || '').trim() === 'Priyam@2000+admin') {
+    } else if (drawAdminPassword && suppliedPassword === drawAdminPassword.trim()) {
       const display = 'Draw Admin';
       const token = jwt.sign({ uid: "draw_admin", email: "draw_admin@uxl.com", role: "draw_admin", displayName: display }, JWT_SECRET, { expiresIn: '30d' });
       return res.json({ success: true, token, user: { uid: "draw_admin", email: "draw_admin@uxl.com", role: "draw_admin", displayName: display } });
