@@ -102,3 +102,5 @@ jobs:
             pm2 status
 
           EOF
+
+# deployment trigger
