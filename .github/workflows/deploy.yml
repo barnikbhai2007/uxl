@@ -70,6 +70,7 @@ jobs:
 
             echo "=== Installing dependencies ==="
 
+            rm -rf node_modules
             npm ci
 
             echo "=== Building frontend ==="
