@@ -344,7 +344,7 @@ app.get("/api/ai-key", async (req, res) => {
 async function getAiConfig() {
   return { 
     key: process.env.GROQ_API_KEY, 
-    model: "meta-llama/llama-4-scout-17b-16e-instruct", 
+    model: "qwen/qwen3.8-27b", 
     source: "Groq" 
   };
 }
