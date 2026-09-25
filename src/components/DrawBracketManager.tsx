@@ -851,20 +851,20 @@ export default function DrawBracketManager({
               const activeQuestions = triviaQuestions.length > 0 ? triviaQuestions : [
                 {
                   id: 'default-1',
-                  question: 'Which country has historically won the most FIFA World Cup tournaments?',
-                  options: ['Germany', 'Brazil', 'Italy', 'Argentina'],
+                  question: 'Which club won the Premier League with an undefeated record in the 2003–04 season (The Invincibles)?',
+                  options: ['Manchester United', 'Arsenal', 'Chelsea', 'Liverpool'],
                   correctOption: '2'
                 },
                 {
                   id: 'default-2',
-                  question: 'Who scored the famous "Hand of God" goal in 1986?',
-                  options: ['Pele', 'Diego Maradona', 'Lionel Messi', 'Zinedine Zidane'],
+                  question: 'Who is the all-time top goalscorer in Premier League history?',
+                  options: ['Wayne Rooney', 'Alan Shearer', 'Harry Kane', 'Thierry Henry'],
                   correctOption: '2'
                 },
                 {
                   id: 'default-3',
-                  question: 'Which player has won the most Ballon d\'Or awards in football history?',
-                  options: ['Cristiano Ronaldo', 'Lionel Messi', 'Michel Platini', 'Johan Cruyff'],
+                  question: 'Which manager won a record 13 Premier League titles with Manchester United?',
+                  options: ['Arsène Wenger', 'Sir Alex Ferguson', 'José Mourinho', 'Pep Guardiola'],
                   correctOption: '2'
                 }
               ];
@@ -1154,15 +1154,19 @@ export default function DrawBracketManager({
                         }`}
                       >
                         {(() => {
-                          const flagEmoji = WORLD_CUP_TEAMS.find(t => t.name === wildcards[wildcardIdx].country)?.flag || '🌍';
+                          const plTeam = WORLD_CUP_TEAMS.find(t => t.name === wildcards[wildcardIdx].country);
                           return (
-                            <motion.span
+                            <motion.div
                               initial={{ scale: 0.4, opacity: 0 }}
                               animate={{ scale: 1.1, opacity: 1 }}
-                              className="text-6xl mb-4 filter drop-shadow-lg"
+                              className="w-16 h-16 mb-4 filter drop-shadow-lg flex items-center justify-center"
                             >
-                              {flagEmoji}
-                            </motion.span>
+                              {plTeam?.logoUrl ? (
+                                <img src={plTeam.logoUrl} alt={plTeam.name} className="w-16 h-16 object-contain" />
+                              ) : (
+                                <span className="text-6xl">{plTeam?.flag || '🦁'}</span>
+                              )}
+                            </motion.div>
                           );
                         })()}
 
@@ -1463,10 +1467,15 @@ export default function DrawBracketManager({
                               animate={{ opacity: 1 }}
                               className="flex items-center gap-1.5 w-full justify-center"
                             >
-                              <span className="text-xl animate-bounce">
-                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[homeKey].country)?.flag || '🌍'}
-                              </span>
-                              <span className="text-[9px] uppercase tracking-wider text-black/60 truncate">
+                              {(() => {
+                                const pl = WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[homeKey].country);
+                                return pl?.logoUrl ? (
+                                  <img src={pl.logoUrl} alt={bracketAssignments[homeKey].country} className="w-5 h-5 object-contain" />
+                                ) : (
+                                  <span className="text-xl">{pl?.flag || '🦁'}</span>
+                                );
+                              })()}
+                              <span className="text-[9px] uppercase tracking-wider text-black/80 font-bold truncate">
                                 {bracketAssignments[homeKey].country}
                               </span>
                             </motion.div>
@@ -1479,9 +1488,14 @@ export default function DrawBracketManager({
                               <span className="text-xs truncate max-w-[90px] text-gray-950 font-black">
                                 {bracketAssignments[homeKey].name}
                               </span>
-                              <span className="text-base shrink-0">
-                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[homeKey].country)?.flag || '🌍'}
-                              </span>
+                              {(() => {
+                                const pl = WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[homeKey].country);
+                                return pl?.logoUrl ? (
+                                  <img src={pl.logoUrl} alt={bracketAssignments[homeKey].country} className="w-4 h-4 object-contain shrink-0" />
+                                ) : (
+                                  <span className="text-base shrink-0">{pl?.flag || '🦁'}</span>
+                                );
+                              })()}
                             </motion.div>
                           )}
                         </motion.div>
@@ -1491,8 +1505,15 @@ export default function DrawBracketManager({
                             {homeTeam ? homeTeam.name : "TBD"}
                           </span>
                           {homeTeam && (
-                            <span className="text-[10px] text-white/40 font-bold shrink-0 ml-1">
-                              {WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country)?.flag || homeTeam.country}
+                            <span className="text-[10px] text-white/60 font-bold shrink-0 ml-1 flex items-center gap-1">
+                              {(() => {
+                                const pl = WORLD_CUP_TEAMS.find(t => t.name === homeTeam.country);
+                                return pl?.logoUrl ? (
+                                  <img src={pl.logoUrl} alt={homeTeam.country} className="w-3.5 h-3.5 object-contain inline-block" />
+                                ) : (
+                                  <span>{pl?.flag || '🦁'}</span>
+                                );
+                              })()}
                             </span>
                           )}
                         </>
@@ -1528,10 +1549,15 @@ export default function DrawBracketManager({
                               animate={{ opacity: 1 }}
                               className="flex items-center gap-1.5 w-full justify-center"
                             >
-                              <span className="text-xl animate-bounce">
-                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[awayKey].country)?.flag || '🌍'}
-                              </span>
-                              <span className="text-[9px] uppercase tracking-wider text-black/60 truncate">
+                              {(() => {
+                                const pl = WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[awayKey].country);
+                                return pl?.logoUrl ? (
+                                  <img src={pl.logoUrl} alt={bracketAssignments[awayKey].country} className="w-5 h-5 object-contain" />
+                                ) : (
+                                  <span className="text-xl">{pl?.flag || '🦁'}</span>
+                                );
+                              })()}
+                              <span className="text-[9px] uppercase tracking-wider text-black/80 font-bold truncate">
                                 {bracketAssignments[awayKey].country}
                               </span>
                             </motion.div>
@@ -1544,9 +1570,14 @@ export default function DrawBracketManager({
                               <span className="text-xs truncate max-w-[90px] text-gray-950 font-black">
                                 {bracketAssignments[awayKey].name}
                               </span>
-                              <span className="text-base shrink-0">
-                                {WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[awayKey].country)?.flag || '🌍'}
-                              </span>
+                              {(() => {
+                                const pl = WORLD_CUP_TEAMS.find(t => t.name === bracketAssignments[awayKey].country);
+                                return pl?.logoUrl ? (
+                                  <img src={pl.logoUrl} alt={bracketAssignments[awayKey].country} className="w-4 h-4 object-contain shrink-0" />
+                                ) : (
+                                  <span className="text-base shrink-0">{pl?.flag || '🦁'}</span>
+                                );
+                              })()}
                             </motion.div>
                           )}
                         </motion.div>
@@ -1556,8 +1587,15 @@ export default function DrawBracketManager({
                             {awayTeam ? awayTeam.name : "TBD"}
                           </span>
                           {awayTeam && (
-                            <span className="text-[10px] text-white/40 font-bold shrink-0 ml-1">
-                              {WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country)?.flag || awayTeam.country}
+                            <span className="text-[10px] text-white/60 font-bold shrink-0 ml-1 flex items-center gap-1">
+                              {(() => {
+                                const pl = WORLD_CUP_TEAMS.find(t => t.name === awayTeam.country);
+                                return pl?.logoUrl ? (
+                                  <img src={pl.logoUrl} alt={awayTeam.country} className="w-3.5 h-3.5 object-contain inline-block" />
+                                ) : (
+                                  <span>{pl?.flag || '🦁'}</span>
+                                );
+                              })()}
                             </span>
                           )}
                         </>

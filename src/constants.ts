@@ -26,88 +26,306 @@ export const TEAM_DETAILS: Record<string, { fcName: string, uid: string, ovr: nu
 };
 
 export const MANAGERS_LIST = [
-  { name: 'Pep Guardiola', flag: '🇪🇸', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager1&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Carlo Ancelotti', flag: '🇮🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager2&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Jürgen Klopp', flag: '🇩🇪', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager3&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Sir Alex Ferguson', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager4&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'José Mourinho', flag: '🇵🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager5&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Zinedine Zidane', flag: '🇫🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager6&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Arsène Wenger', flag: '🇫🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager7&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Diego Simeone', flag: '🇦🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager8&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Johan Cruyff', flag: '🇳🇱', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager9&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Marcello Lippi', flag: '🇮🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager10&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Vicente del Bosque', flag: '🇪🇸', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager11&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Antonio Conte', flag: '🇮🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager12&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Thomas Tuchel', flag: '🇩🇪', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager13&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Xabi Alonso', flag: '🇪🇸', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager14&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Lionel Scaloni', flag: '🇦🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager15&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Marcelo Bielsa', flag: '🇦🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager16&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Mikel Arteta', flag: '🇪🇸', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager17&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Mauricio Pochettino', flag: '🇦🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager18&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Unai Emery', flag: '🇪🇸', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager19&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Louis van Gaal', flag: '🇳🇱', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager20&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Roberto Mancini', flag: '🇮🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager21&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Hansi Flick', flag: '🇩🇪', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager22&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Julian Nagelsmann', flag: '🇩🇪', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager23&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Erik ten Hag', flag: '🇳🇱', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager24&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Massimiliano Allegri', flag: '🇮🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager25&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Luiz Felipe Scolari', flag: '🇧🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager26&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Didier Deschamps', flag: '🇫🇷', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager27&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Gareth Southgate', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager28&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Ralf Rangnick', flag: '🇩🇪', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager29&backgroundColor=b6e3f4,c0aede,d1d4f9' },
-  { name: 'Claudio Ranieri', flag: '🇮🇹', photoUrl: 'https://api.dicebear.com/9.x/avataaars/svg?seed=Manager30&backgroundColor=b6e3f4,c0aede,d1d4f9' }
+  { name: 'Pep Guardiola', flag: '🇪🇸', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Josep_Guardiola_2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2797_%28cropped%29.jpg/500px-Josep_Guardiola_2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2797_%28cropped%29.jpg' },
+  { name: 'Carlo Ancelotti', flag: '🇮🇹', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b3/Carlo_Ancelotti_Brazil_V_Morocco_13_June_2026-47.jpg/500px-Carlo_Ancelotti_Brazil_V_Morocco_13_June_2026-47.jpg' },
+  { name: 'Jürgen Klopp', flag: '🇩🇪', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6e/2022-07-21_Fu%C3%9Fball%2C_M%C3%A4nner%2CFreundschaftsspiel%2C_RB_Leipzig_-_FC_Liverpool_1DX_2243_by_Stepro_%28cropped%29_%28cropped%29.jpg/500px-2022-07-21_Fu%C3%9Fball%2C_M%C3%A4nner%2CFreundschaftsspiel%2C_RB_Leipzig_-_FC_Liverpool_1DX_2243_by_Stepro_%28cropped%29_%28cropped%29.jpg' },
+  { name: 'Sir Alex Ferguson', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/03/Alex_Ferguson_2012.jpg' },
+  { name: 'José Mourinho', flag: '🇵🇹', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e1/Jos%C3%A9_Mourinho_20250206_%281%29.jpg/500px-Jos%C3%A9_Mourinho_20250206_%281%29.jpg' },
+  { name: 'Zinedine Zidane', flag: '🇫🇷', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/f3/Zinedine_Zidane_by_Tasnim_03.jpg' },
+  { name: 'Arsène Wenger', flag: '🇫🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/87/25th_Laureus_World_Sports_Awards_-_Red_Carpet_-_Ars%C3%A8ne_Wenger_-_240422_192850_%28cropped%29.jpg/500px-25th_Laureus_World_Sports_Awards_-_Red_Carpet_-_Ars%C3%A8ne_Wenger_-_240422_192850_%28cropped%29.jpg' },
+  { name: 'Diego Simeone', flag: '🇦🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/25th_Laureus_World_Sports_Awards_-_Red_Carpet_-_Diego_Simeone_-_240422_192621-2_%28cropped%29.jpg/500px-25th_Laureus_World_Sports_Awards_-_Red_Carpet_-_Diego_Simeone_-_240422_192621-2_%28cropped%29.jpg' },
+  { name: 'Johan Cruyff', flag: '🇳🇱', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/cb/Johan_Cruijff_%281974%29.jpg/500px-Johan_Cruijff_%281974%29.jpg' },
+  { name: 'Marcello Lippi', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/8/8d/Marcello_Lippi_at_China-Iran_press_conference_20190123.jpg' },
+  { name: 'Vicente del Bosque', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b7/Vicente_del_Bosque_Euro_2012_final.jpg' },
+  { name: 'Antonio Conte', flag: '🇮🇹', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c6/20150616_Antonio_Conte.jpg/500px-20150616_Antonio_Conte.jpg' },
+  { name: 'Thomas Tuchel', flag: '🇩🇪', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/57/Thomas_Tuchel_England_v_Ghana_23_June_2026-081.jpg/500px-Thomas_Tuchel_England_v_Ghana_23_June_2026-081.jpg' },
+  { name: 'Xabi Alonso', flag: '🇪🇸', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/b/b6/Los_Caminos_del_f%C3%BAtbol._Xabi_Alonso_%2839666778464%29_%28cropped%29.jpg' },
+  { name: 'Lionel Scaloni', flag: '🇦🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/5a/Lionel_Scaloni_Argentina_v_Spain_19_July_2026-239_%28cropped%29.jpg/500px-Lionel_Scaloni_Argentina_v_Spain_19_July_2026-239_%28cropped%29.jpg' },
+  { name: 'Marcelo Bielsa', flag: '🇦🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/ed/Marcelo_Bielsa_2018_%28cropped%29.jpg/500px-Marcelo_Bielsa_2018_%28cropped%29.jpg' },
+  { name: 'Mikel Arteta', flag: '🇪🇸', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Mikel_Arteta_2021_%28cropped%29.png/500px-Mikel_Arteta_2021_%28cropped%29.png' },
+  { name: 'Mauricio Pochettino', flag: '🇦🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/Mauricio_Pochettino_USMNT_v_Belgium_Mar_28_2026-2.jpg/500px-Mauricio_Pochettino_USMNT_v_Belgium_Mar_28_2026-2.jpg' },
+  { name: 'Unai Emery', flag: '🇪🇸', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Unai_Emery_-_Sevilla_%28cropped%29.jpg/500px-Unai_Emery_-_Sevilla_%28cropped%29.jpg' },
+  { name: 'Louis van Gaal', flag: '🇳🇱', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/0/09/Louis_van_Gaal_2014.jpg' },
+  { name: 'Roberto Mancini', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Roberto_Mancini_Saudi_Arabia-South_Korea_match_2023_AFC_Asian_Cup.jpg' },
+  { name: 'Hansi Flick', flag: '🇩🇪', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/04/2022_Hansi_Flick_%28cropped%29.jpg/500px-2022_Hansi_Flick_%28cropped%29.jpg' },
+  { name: 'Julian Nagelsmann', flag: '🇩🇪', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Julian_Nagelsmann_Ecuador_v_Germany_25_June_2026-047_%283x4_close-up_cropped%29.jpg/500px-Julian_Nagelsmann_Ecuador_v_Germany_25_June_2026-047_%283x4_close-up_cropped%29.jpg' },
+  { name: 'Erik ten Hag', flag: '🇳🇱', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/f/fc/%D0%9E%D1%82%D0%BA%D1%80%D1%8B%D1%82%D0%B0%D1%8F_%D1%82%D1%80%D0%B5%D0%BD%D0%B8%D1%80%D0%BE%D0%B2%D0%BA%D0%B0_%C2%AB%D0%90%D1%8F%D0%BA%D1%81%D0%B0%C2%BB_%D0%BF%D0%B5%D1%80%D0%B5%D0%B4_%D0%BC%D0%B0%D1%82%D1%87%D0%B5%D0%BC_%D1%81_%C2%AB%D0%94%D0%B8%D0%BD%D0%B0%D0%BC%D0%BE%C2%BB._27_%D0%B0%D0%B2%D0%B3%D1%83%D1%81%D1%82%D0%B0_2018_%D0%B3%D0%BE%D0%B4%D0%B0_%E2%80%94_900304_%28Erik_ten_Hag%29.jpg' },
+  { name: 'Massimiliano Allegri', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/9/90/Incontro_con_le_squadre_finaliste_della_Coppa_Italia_di_calcio_Frecciarossa_Atalanta_-_Juventus_01_-_Massimiliano_Allegri_%28cropped%29.jpg' },
+  { name: 'Luiz Felipe Scolari', flag: '🇧🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/1/19/Felip%C3%A3o_cropped.jpg/500px-Felip%C3%A3o_cropped.jpg' },
+  { name: 'Didier Deschamps', flag: '🇫🇷', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/9/95/Didier_Deschamps_France_v_Senegal_16_June_2026-294.jpg/500px-Didier_Deschamps_France_v_Senegal_16_June_2026-294.jpg' },
+  { name: 'Gareth Southgate', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bc/Southgate_2023.jpg/500px-Southgate_2023.jpg' },
+  { name: 'Ralf Rangnick', flag: '🇩🇪', photoUrl: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/bb/2022-07-30_Fu%C3%9Fball%2C_M%C3%A4nner%2C_DFL-Supercup%2C_RB_Leipzig_-_FC_Bayern_M%C3%BCnchen_1DX_3148_by_Stepro.jpg/500px-2022-07-30_Fu%C3%9Fball%2C_M%C3%A4nner%2C_DFL-Supercup%2C_RB_Leipzig_-_FC_Bayern_M%C3%BCnchen_1DX_3148_by_Stepro.jpg' },
+  { name: 'Claudio Ranieri', flag: '🇮🇹', photoUrl: 'https://upload.wikimedia.org/wikipedia/commons/d/df/Ranieri2023_%28cropped%29.png' }
 ];
 
-export const WORLD_CUP_TEAMS = [
-  { name: 'Algeria', flag: '🇩🇿' },
-  { name: 'Argentina', flag: '🇦🇷' },
-  { name: 'Australia', flag: '🇦🇺' },
-  { name: 'Austria', flag: '🇦🇹' },
-  { name: 'Belgium', flag: '🇧🇪' },
-  { name: 'Bosnia and Herzegovina', flag: '🇧🇦' },
-  { name: 'Brazil', flag: '🇧🇷' },
-  { name: 'Cabo Verde', flag: '🇨🇻' },
-  { name: 'Canada', flag: '🇨🇦' },
-  { name: 'Colombia', flag: '🇨🇴' },
-  { name: 'Congo DR', flag: '🇨🇩' },
-  { name: 'Croatia', flag: '🇭🇷' },
-  { name: 'Curaçao', flag: '🇨🇼' },
-  { name: 'Czechia', flag: '🇨🇿' },
-  { name: "Côte d'Ivoire", flag: '🇨🇮' },
-  { name: 'Ecuador', flag: '🇪🇨' },
-  { name: 'Egypt', flag: '🇪🇬' },
-  { name: 'England', flag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿' },
-  { name: 'France', flag: '🇫🇷' },
-  { name: 'Germany', flag: '🇩🇪' },
-  { name: 'Ghana', flag: '🇬🇭' },
-  { name: 'Haiti', flag: '🇭🇹' },
-  { name: 'IR Iran', flag: '🇮🇷' },
-  { name: 'Iraq', flag: '🇮🇶' },
-  { name: 'Japan', flag: '🇯🇵' },
-  { name: 'Jordan', flag: '🇯🇴' },
-  { name: 'Korea Republic', flag: '🇰🇷' },
-  { name: 'Mexico', flag: '🇲🇽' },
-  { name: 'Morocco', flag: '🇲🇦' },
-  { name: 'Netherlands', flag: '🇳🇱' },
-  { name: 'New Zealand', flag: '🇳🇿' },
-  { name: 'Norway', flag: '🇳🇴' },
-  { name: 'Panama', flag: '🇵🇦' },
-  { name: 'Paraguay', flag: '🇵🇾' },
-  { name: 'Portugal', flag: '🇵🇹' },
-  { name: 'Qatar', flag: '🇶🇦' },
-  { name: 'Saudi Arabia', flag: '🇸🇦' },
-  { name: 'Scotland', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿' },
-  { name: 'Senegal', flag: '🇸🇳' },
-  { name: 'South Africa', flag: '🇿🇦' },
-  { name: 'Spain', flag: '🇪🇸' },
-  { name: 'Sweden', flag: '🇸🇪' },
-  { name: 'Switzerland', flag: '🇨🇭' },
-  { name: 'Tunisia', flag: '🇹🇳' },
-  { name: 'Türkiye', flag: '🇹🇷' },
-  { name: 'USA', flag: '🇺🇸' },
-  { name: 'Uruguay', flag: '🇺🇾' },
-  { name: 'Uzbekistan', flag: '🇺🇿' }
+export interface PremierLeagueClub {
+  name: string;
+  shortName: string;
+  flag: string;
+  logoUrl: string;
+  stadium: string;
+  primaryColor: string;
+  manager: string;
+  managerFlag: string;
+  managerNationality: string;
+  managerPhoto: string;
+}
+
+export const PREMIER_LEAGUE_TEAMS: PremierLeagueClub[] = [
+  { 
+    name: 'Arsenal', 
+    shortName: 'ARS', 
+    flag: '🔴', 
+    logoUrl: 'https://crests.football-data.org/57.png', 
+    stadium: 'Emirates Stadium', 
+    primaryColor: '#EF0107',
+    manager: 'Mikel Arteta',
+    managerFlag: '🇪🇸',
+    managerNationality: 'Spain',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b8/Mikel_Arteta_2021_%28cropped%29.png/500px-Mikel_Arteta_2021_%28cropped%29.png'
+  },
+  { 
+    name: 'Aston Villa', 
+    shortName: 'AVL', 
+    flag: '🦁', 
+    logoUrl: 'https://crests.football-data.org/58.png', 
+    stadium: 'Villa Park', 
+    primaryColor: '#670E36',
+    manager: 'Unai Emery',
+    managerFlag: '🇪🇸',
+    managerNationality: 'Spain',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/07/Unai_Emery_-_Sevilla_%28cropped%29.jpg/500px-Unai_Emery_-_Sevilla_%28cropped%29.jpg'
+  },
+  { 
+    name: 'AFC Bournemouth', 
+    shortName: 'BOU', 
+    flag: '🍒', 
+    logoUrl: 'https://crests.football-data.org/1044.png', 
+    stadium: 'Vitality Stadium', 
+    primaryColor: '#DA291C',
+    manager: 'Andoni Iraola',
+    managerFlag: '🇪🇸',
+    managerNationality: 'Spain',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/26/Andoni_Iraola_in_a_press_conference_for_AFC_Bournemouth%2C_2026_%28cropped%29.webp/500px-Andoni_Iraola_in_a_press_conference_for_AFC_Bournemouth%2C_2026_%28cropped%29.webp'
+  },
+  { 
+    name: 'Brentford', 
+    shortName: 'BRE', 
+    flag: '🐝', 
+    logoUrl: 'https://crests.football-data.org/402.png', 
+    stadium: 'Gtech Community Stadium', 
+    primaryColor: '#E30613',
+    manager: 'Thomas Frank',
+    managerFlag: '🇩🇰',
+    managerNationality: 'Denmark',
+    managerPhoto: 'https://upload.wikimedia.org/wikipedia/commons/f/f7/Thomas_Frank_%28cropped%29.jpeg'
+  },
+  { 
+    name: 'Brighton & Hove Albion', 
+    shortName: 'BHA', 
+    flag: '🕊️', 
+    logoUrl: 'https://crests.football-data.org/397.png', 
+    stadium: 'Amex Stadium', 
+    primaryColor: '#0057B8',
+    manager: 'Fabian Hürzeler',
+    managerFlag: '🇩🇪',
+    managerNationality: 'Germany',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/8/81/Fabian_H%C3%BCrzeler_24012026_%288%29.jpg/500px-Fabian_H%C3%BCrzeler_24012026_%288%29.jpg'
+  },
+  { 
+    name: 'Chelsea', 
+    shortName: 'CHE', 
+    flag: '🔵', 
+    logoUrl: 'https://crests.football-data.org/61.png', 
+    stadium: 'Stamford Bridge', 
+    primaryColor: '#034694',
+    manager: 'Enzo Maresca',
+    managerFlag: '🇮🇹',
+    managerNationality: 'Italy',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/a/a4/Enzo_maresca_chelsea_gent_2024_%28extracted%29.jpg/500px-Enzo_maresca_chelsea_gent_2024_%28extracted%29.jpg'
+  },
+  { 
+    name: 'Crystal Palace', 
+    shortName: 'CRY', 
+    flag: '🦅', 
+    logoUrl: 'https://crests.football-data.org/354.png', 
+    stadium: 'Selhurst Park', 
+    primaryColor: '#1B458F',
+    manager: 'Oliver Glasner',
+    managerFlag: '🇦🇹',
+    managerNationality: 'Austria',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0b/2022128173931_2022-05-08_Fussball_Eintracht_Frankfurt_vs_Borussia_M%C3%B6nchengladbach_-_Sven_-_1D_X_MK_II_-_2395_-_B70I8506_%28cropped%29.jpg/500px-2022128173931_2022-05-08_Fussball_Eintracht_Frankfurt_vs_Borussia_M%C3%B6nchengladbach_-_Sven_-_1D_X_MK_II_-_2395_-_B70I8506_%28cropped%29.jpg'
+  },
+  { 
+    name: 'Everton', 
+    shortName: 'EVE', 
+    flag: '🍬', 
+    logoUrl: 'https://crests.football-data.org/62.png', 
+    stadium: 'Goodison Park', 
+    primaryColor: '#003399',
+    manager: 'Sean Dyche',
+    managerFlag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    managerNationality: 'England',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/65/Sean_Dyche_-_Toffee_TV_EFC.png/500px-Sean_Dyche_-_Toffee_TV_EFC.png'
+  },
+  { 
+    name: 'Fulham', 
+    shortName: 'FUL', 
+    flag: '⚪', 
+    logoUrl: 'https://crests.football-data.org/63.png', 
+    stadium: 'Craven Cottage', 
+    primaryColor: '#000000',
+    manager: 'Marco Silva',
+    managerFlag: '🇵🇹',
+    managerNationality: 'Portugal',
+    managerPhoto: 'https://upload.wikimedia.org/wikipedia/commons/9/99/Marco_Silva_20042025_%282%29_%28cropped%29.jpg'
+  },
+  { 
+    name: 'Ipswich Town', 
+    shortName: 'IPS', 
+    flag: '🚜', 
+    logoUrl: 'https://crests.football-data.org/349.png', 
+    stadium: 'Portman Road', 
+    primaryColor: '#00448A',
+    manager: 'Kieran McKenna',
+    managerFlag: '🇬🇧',
+    managerNationality: 'Northern Ireland',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/7/75/Kieran_McKenna_Crop.jpg/500px-Kieran_McKenna_Crop.jpg'
+  },
+  { 
+    name: 'Leicester City', 
+    shortName: 'LEI', 
+    flag: '🦊', 
+    logoUrl: 'https://crests.football-data.org/338.png', 
+    stadium: 'King Power Stadium', 
+    primaryColor: '#003090',
+    manager: 'Steve Cooper',
+    managerFlag: '🏴󠁧󠁢󠁷󠁬󠁳󠁿',
+    managerNationality: 'Wales',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e7/Steve_Cooper.jpg/500px-Steve_Cooper.jpg'
+  },
+  { 
+    name: 'Liverpool', 
+    shortName: 'LIV', 
+    flag: '🔴', 
+    logoUrl: 'https://crests.football-data.org/64.png', 
+    stadium: 'Anfield', 
+    primaryColor: '#C8102E',
+    manager: 'Arne Slot',
+    managerFlag: '🇳🇱',
+    managerNationality: 'Netherlands',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/5/58/Arne_Slot_in_2024.jpg/500px-Arne_Slot_in_2024.jpg'
+  },
+  { 
+    name: 'Manchester City', 
+    shortName: 'MCI', 
+    flag: '🩵', 
+    logoUrl: 'https://crests.football-data.org/65.png', 
+    stadium: 'Etihad Stadium', 
+    primaryColor: '#6CABDD',
+    manager: 'Pep Guardiola',
+    managerFlag: '🇪🇸',
+    managerNationality: 'Spain',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Josep_Guardiola_2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2797_%28cropped%29.jpg/500px-Josep_Guardiola_2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2797_%28cropped%29.jpg'
+  },
+  { 
+    name: 'Manchester United', 
+    shortName: 'MUN', 
+    flag: '👹', 
+    logoUrl: 'https://crests.football-data.org/66.png', 
+    stadium: 'Old Trafford', 
+    primaryColor: '#DA291C',
+    manager: 'Ruben Amorim',
+    managerFlag: '🇵🇹',
+    managerNationality: 'Portugal',
+    managerPhoto: 'https://upload.wikimedia.org/wikipedia/commons/3/37/RubenAmorim4.png'
+  },
+  { 
+    name: 'Newcastle United', 
+    shortName: 'NEW', 
+    flag: '⚪', 
+    logoUrl: 'https://crests.football-data.org/67.png', 
+    stadium: "St. James' Park", 
+    primaryColor: '#241F20',
+    manager: 'Eddie Howe',
+    managerFlag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    managerNationality: 'England',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/d3/Eddie_Howe_24052026_%281%29.jpg/500px-Eddie_Howe_24052026_%281%29.jpg'
+  },
+  { 
+    name: 'Nottingham Forest', 
+    shortName: 'NFO', 
+    flag: '🌳', 
+    logoUrl: 'https://crests.football-data.org/351.png', 
+    stadium: 'City Ground', 
+    primaryColor: '#DD0000',
+    manager: 'Nuno Espírito Santo',
+    managerFlag: '🇵🇹',
+    managerNationality: 'Portugal',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/4/4c/Nuno_Esp%C3%ADrito_Santo_%28cropped%29.jpg/500px-Nuno_Esp%C3%ADrito_Santo_%28cropped%29.jpg'
+  },
+  { 
+    name: 'Southampton', 
+    shortName: 'SOU', 
+    flag: '🔴', 
+    logoUrl: 'https://crests.football-data.org/340.png', 
+    stadium: "St. Mary's Stadium", 
+    primaryColor: '#D71920',
+    manager: 'Russell Martin',
+    managerFlag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    managerNationality: 'Scotland',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/3/32/Russell_Martin_2019.jpg/500px-Russell_Martin_2019.jpg'
+  },
+  { 
+    name: 'Tottenham Hotspur', 
+    shortName: 'TOT', 
+    flag: '⚪', 
+    logoUrl: 'https://crests.football-data.org/73.png', 
+    stadium: 'Tottenham Hotspur Stadium', 
+    primaryColor: '#132257',
+    manager: 'Ange Postecoglou',
+    managerFlag: '🇦🇺',
+    managerNationality: 'Australia',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/d/da/Ange_Postecoglou_%28cropped%29.jpg/500px-Ange_Postecoglou_%28cropped%29.jpg'
+  },
+  { 
+    name: 'West Ham United', 
+    shortName: 'WHU', 
+    flag: '⚒️', 
+    logoUrl: 'https://crests.football-data.org/563.png', 
+    stadium: 'London Stadium', 
+    primaryColor: '#7A263A',
+    manager: 'Julen Lopetegui',
+    managerFlag: '🇪🇸',
+    managerNationality: 'Spain',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/e/e5/Julen_Lopetegui_Canada_v_Qatar_18_June_2026-056_%28cropped%29.jpg/500px-Julen_Lopetegui_Canada_v_Qatar_18_June_2026-056_%28cropped%29.jpg'
+  },
+  { 
+    name: 'Wolverhampton Wanderers', 
+    shortName: 'WOL', 
+    flag: '🐺', 
+    logoUrl: 'https://crests.football-data.org/76.png', 
+    stadium: 'Molineux Stadium', 
+    primaryColor: '#FDB913',
+    manager: "Gary O'Neil",
+    managerFlag: '🏴󠁧󠁢󠁥󠁮󠁧󠁿',
+    managerNationality: 'England',
+    managerPhoto: 'https://thumb.wikimedia.org/wikipedia/commons/thumb/2/20/GON_220826.jpg/500px-GON_220826.jpg'
+  }
 ];
+
+export const getClubManager = (clubNameOrManager: string | undefined): PremierLeagueClub | null => {
+  if (!clubNameOrManager) return null;
+  const norm = clubNameOrManager.replace(/⭐/g, '').trim().toLowerCase();
+  return PREMIER_LEAGUE_TEAMS.find(c => 
+    c.name.toLowerCase() === norm || 
+    c.shortName.toLowerCase() === norm ||
+    c.manager.toLowerCase() === norm
+  ) || null;
+};
+
+export const PL_TEAMS = PREMIER_LEAGUE_TEAMS;
+export const WORLD_CUP_TEAMS = PREMIER_LEAGUE_TEAMS;
 
 export const INITIAL_TEAMS: Team[] = TEAMS_LIST.map((name, index) => {
   const details = TEAM_DETAILS[name];

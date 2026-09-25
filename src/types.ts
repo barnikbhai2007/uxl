@@ -117,6 +117,8 @@ export interface Registration {
   logoUrl?: string;
   goalkeeper: string;
   country?: string;
+  managerName?: string;
+  managerPhoto?: string;
 }
 
 export interface AppContent {
@@ -125,7 +127,7 @@ export interface AppContent {
 }
 
 export interface Config {
-  mode?: 'world_cup' | 'all_in_random';
+  mode?: 'premier_league' | 'all_in_random' | 'world_cup' | 'durga_puja';
   registrationEnabled: boolean;
   tabVisibility?: Record<string, boolean>;
   hiddenDates?: string[];
@@ -145,6 +147,9 @@ export interface Config {
   autoQualifiedSelected?: string[];
   groupOfDeath?: string;
   easiestGroup?: string;
+  customManagers?: { name: string; flag: string; photoUrl: string }[];
+  managerPhotos?: Record<string, string>;
+  managerFlags?: Record<string, string>;
 }
 
 export interface MatchReport {

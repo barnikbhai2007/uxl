@@ -28,8 +28,77 @@ import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, get
 import { ScheduleRandomizer } from './ScheduleRandomizer';
 import DrawAdminPanel from './components/DrawAdminPanel';
 import { RandomMatchDraw } from './components/RandomMatchDraw';
+import { PremierLeagueHeaderBanner, PremierLeagueLogo } from './components/PremierLeagueDecorations';
+import { PREMIER_LEAGUE_TEAMS, getClubManager } from './constants';
+import { ClubSpotsSelector } from './components/ClubSpotsSelector';
 
 const WORLD_CUP_FLAGS = new Map([...WORLD_CUP_TEAMS, ...MANAGERS_LIST].map(t => [t.name, t.flag]));
+
+export const getClubLogo = (name: string | undefined): string | null => {
+  if (!name) return null;
+  const tNameNorm = name.replace(/⭐/g, '').trim().toLowerCase();
+  const found = PREMIER_LEAGUE_TEAMS.find(t => t.name.toLowerCase() === tNameNorm || t.shortName.toLowerCase() === tNameNorm);
+  return found?.logoUrl || null;
+};
+
+const getCountryOrManagerFlag = (name: string | undefined, config?: Config) => {
+  const fallback = '🦁';
+  if (!name) return fallback;
+  if (config?.managerFlags?.[name]) return config.managerFlags[name];
+  
+  // Look in custom managers
+  const custom = config?.customManagers || [];
+  const foundCustom = custom.find((m: any) => m.name.toLowerCase() === name.toLowerCase());
+  if (foundCustom) return foundCustom.flag || fallback;
+
+  const tNameNorm = name.replace(/⭐/g, '').trim().toLowerCase();
+  const foundPredefined = [...PREMIER_LEAGUE_TEAMS, ...MANAGERS_LIST].find(t => t.name.toLowerCase() === tNameNorm);
+  return foundPredefined?.flag || fallback;
+};
+
+const REAL_MANAGER_FALLBACK = 'https://thumb.wikimedia.org/wikipedia/commons/thumb/6/60/Josep_Guardiola_2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2797_%28cropped%29.jpg/500px-Josep_Guardiola_2023-10-04_Fu%C3%9Fball%2C_M%C3%A4nner%2C_UEFA_Champions_League%2C_RB_Leipzig_-_Manchester_City_FC_1DX_2797_%28cropped%29.jpg';
+
+const getManagerPhoto = (name: string | undefined, config?: Config) => {
+  if (!name) return REAL_MANAGER_FALLBACK;
+  const norm = name.replace(/⭐/g, '').trim().toLowerCase();
+
+  // If club name or manager matches Premier League team, return that official manager's real photo
+  const clubMatch = PREMIER_LEAGUE_TEAMS.find(c => 
+    c.name.toLowerCase() === norm || 
+    c.shortName.toLowerCase() === norm ||
+    c.manager.toLowerCase() === norm
+  );
+  if (clubMatch?.managerPhoto) return clubMatch.managerPhoto;
+
+  if (config?.managerPhotos?.[name]) return config.managerPhotos[name];
+
+  const custom = config?.customManagers || [];
+  const foundCustom = custom.find((m: any) => m.name.toLowerCase() === norm);
+  if (foundCustom?.photoUrl) return foundCustom.photoUrl;
+
+  const foundPredefined = MANAGERS_LIST.find(m => m.name.toLowerCase() === norm);
+  return foundPredefined?.photoUrl || REAL_MANAGER_FALLBACK;
+};
+
+const getMergedManagers = (config?: Config) => {
+  const custom = config?.customManagers || [];
+  const merged = MANAGERS_LIST.map(m => ({
+    name: m.name,
+    flag: config?.managerFlags?.[m.name] || m.flag,
+    photoUrl: config?.managerPhotos?.[m.name] || m.photoUrl
+  }));
+  
+  custom.forEach((c: any) => {
+    if (!merged.find(m => m.name.toLowerCase() === c.name.toLowerCase())) {
+      merged.push({
+        name: c.name,
+        flag: c.flag || '🌍',
+        photoUrl: c.photoUrl
+      });
+    }
+  });
+  return merged;
+};
 
 const rawApiUrl = (import.meta as any).env?.VITE_API_URL || "";
 const VITE_API_URL = rawApiUrl.endsWith("/") ? rawApiUrl.slice(0, -1) : rawApiUrl;
@@ -397,7 +466,7 @@ const calculateMotmLeaders = (matches: Match[]): MotmStats[] => {
     .sort((a, b) => b.awards - a.awards);
 };
 
-const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer }: { team: Team, matches: Match[], teams: Team[], onClose: () => void, isAdmin?: boolean, resetPlayer?: (id: string) => void }) => {
+const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer, config }: { team: Team, matches: Match[], teams: Team[], onClose: () => void, isAdmin?: boolean, resetPlayer?: (id: string) => void, config?: Config }) => {
   const [confirmReset, setConfirmReset] = useState(false);
   const teamMatches = matches.filter(m => m.homeTeamId === team.id || m.awayTeamId === team.id);
   const finishedMatches = teamMatches.filter(m => m.status === 'finished').sort((a, b) => b.matchNumber - a.matchNumber);
@@ -474,7 +543,7 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
               {team.fullName}
               {team.country && (
                 <span className="text-3xl md:text-4xl shadow-sm" title={team.country}>
-                  {WORLD_CUP_FLAGS.get(team.country) || '🌍'}
+                  {getCountryOrManagerFlag(team.country, config)}
                 </span>
               )}
             </h2>
@@ -482,6 +551,31 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer 
               <span className="px-3 py-1 bg-white/10 rounded-2xl text-xs font-bold tracking-normal text-white/60">FC: {team.fcName}</span>
               <span className="px-3 py-1 bg-fc-neon-green/20 border border-fc-neon-green/50/30 rounded-2xl text-xs font-bold tracking-normal text-fc-neon-green">OVR {team.ovr}</span>
             </div>
+
+            {(() => {
+              const club = getClubManager(team.country);
+              if (!club) return null;
+              return (
+                <div className="flex items-center gap-3 p-2 px-3.5 rounded-xl bg-black/40 border border-[#00ff85]/30 mt-2 max-w-fit shadow-md">
+                  <img 
+                    src={club.managerPhoto} 
+                    alt={club.manager} 
+                    className="w-10 h-10 rounded-full object-cover border border-[#00ff85] shadow"
+                    referrerPolicy="no-referrer"
+                  />
+                  <div className="text-left">
+                    <span className="text-[9px] font-black text-[#00ff85] uppercase tracking-wider block">
+                      Official Manager
+                    </span>
+                    <p className="text-xs font-bold text-white flex items-center gap-1.5 leading-tight">
+                      <span>{club.manager}</span>
+                      <span>{club.managerFlag}</span>
+                      <span className="text-[10px] text-white/50">({club.managerNationality})</span>
+                    </p>
+                  </div>
+                </div>
+              );
+            })()}
           </div>
         </div>
 
@@ -1323,8 +1417,22 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const handleSubmit = async (e: React.FormEvent) => {
       e.preventDefault();
       if (isCompressing) return;
+
+      const chosenCountry = formData.country?.trim();
+      if (chosenCountry && chosenCountry.toLowerCase() !== (registration.country || '').toLowerCase()) {
+        const isLocked = config?.lockedCountries?.some(c => c.toLowerCase() === chosenCountry.toLowerCase());
+        const isClaimed = registrations?.some(r => r.country?.toLowerCase() === chosenCountry.toLowerCase() && r.userId !== registration.userId);
+        if (isLocked || isClaimed) {
+          alert(`${chosenCountry} is permanently locked and already claimed! Please choose another open club spot.`);
+          return;
+        }
+      }
+
+      const clubInfo = getClubManager(chosenCountry);
       await handleUpdateRegistration({
         ...formData,
+        managerName: clubInfo ? clubInfo.manager : (formData as any).managerName,
+        managerPhoto: clubInfo ? clubInfo.managerPhoto : (formData as any).managerPhoto,
         age: Number(formData.age),
         teamOvr: Number(formData.teamOvr)
       } as Registration);
@@ -1344,7 +1452,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+          className="relative w-full max-w-4xl bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
         >
           <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
             <div className="flex justify-between items-start mb-4 md:mb-6">
@@ -1441,55 +1549,26 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                   className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                 />
               </div>
+
+              {/* 20 Club Spots Selector */}
               <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold tracking-normal text-white/40">{config?.mode === 'all_in_random' ? 'Manager / Coach' : 'World Cup Country / Flag'}</label>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 max-h-48 overflow-y-auto pr-2 hide-scrollbar">
-                  {(() => {
-                    const activeList = config?.mode === 'all_in_random' ? MANAGERS_LIST : WORLD_CUP_TEAMS;
-                    const takenCountries = registrations
-                      ? registrations
-                          .filter(r => r.id !== registration.id)
-                          .map(r => r.country?.toLowerCase().trim())
-                          .filter(Boolean) as string[]
-                      : [];
-                    return activeList.map((team) => {
-                      const isTaken = takenCountries.includes(team.name.toLowerCase().trim());
-                      const isSelected = formData.country?.toLowerCase().trim() === team.name.toLowerCase().trim();
-                      const isLocked = config?.lockedCountries?.includes(team.name);
-                      return (
-                        <button
-                          key={team.name}
-                          type="button"
-                          disabled={(isTaken || isLocked) && !isSelected}
-                          onClick={() => {
-                            const newLogoUrl = (config?.mode === 'all_in_random' && 'photoUrl' in team) ? (team as any).photoUrl : formData.logoUrl;
-                            setFormData({...formData, country: team.name, logoUrl: newLogoUrl});
-                          }}
-                          className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
-                            isSelected 
-                              ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)] font-bold' 
-                              : (isTaken || isLocked)
-                                ? 'bg-white/5 border-transparent text-white/30 cursor-not-allowed opacity-50'
-                                : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
-                          }`}
-                        >
-                          {'photoUrl' in team && config?.mode === 'all_in_random' ? (
-                            <img src={(team as any).photoUrl} alt={team.name} className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
-                          ) : (
-                            <span className="text-xl">{team.flag}</span>
-                          )}
-                          <span className="text-xs font-bold truncate">{team.name}</span>
-                          {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
-                          {isLocked && !isSelected && <span className="text-[9px] ml-auto text-yellow-400 font-bold uppercase tracking-widest">Locked</span>}
-                        </button>
-                      );
+                <ClubSpotsSelector
+                  selectedClubName={formData.country}
+                  existingRegistrations={registrations}
+                  config={config}
+                  currentUserId={registration.userId}
+                  onSelectClub={(club) => {
+                    setFormData({
+                      ...formData,
+                      country: club.name,
+                      logoUrl: club.logoUrl
                     });
-                  })()}
-                </div>
+                  }}
+                />
               </div>
 
               <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-bold tracking-normal text-white/40">Logo Photo</label>
+                <label className="text-[10px] font-bold tracking-normal text-white/40">{config?.mode === 'all_in_random' ? 'Manager Photo (Upload)' : 'Logo Photo'}</label>
                 <input type="file" accept="image/*" onChange={handleFileChange} className="hidden" id="edit-logo-upload" />
                 <label htmlFor="edit-logo-upload" className="flex items-center justify-center gap-3 w-full bg-white/5 border border-dashed border-white/20 rounded-2xl p-8 cursor-pointer hover:bg-white/10 hover:border-fc-neon-green/50/50 transition-all">
                   {formData.logoUrl ? (
@@ -1513,7 +1592,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     );
   };
 
-  const TeamSearchableSelect = ({ label, value, onChange, teams, placeholder = "Search teammate...", showTbdOption = true }: { label: string, value: string, onChange: (val: string) => void, teams: Team[], placeholder?: string, showTbdOption?: boolean }) => {
+  const TeamSearchableSelect = ({ label, value, onChange, teams, placeholder = "Search teammate...", showTbdOption = true, config }: { label: string, value: string, onChange: (val: string) => void, teams: Team[], placeholder?: string, showTbdOption?: boolean, config?: Config }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -1659,7 +1738,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                         </p>
                         {team.country && (
                           <div className="flex items-center gap-1 mt-0.5">
-                            <span className="text-xs">{WORLD_CUP_FLAGS.get(team.country) || '🌍'}</span>
+                            <span className="text-xs">{getCountryOrManagerFlag(team.country, config)}</span>
                             <span className="text-[9px] text-white/40">{team.country}</span>
                           </div>
                         )}
@@ -1686,7 +1765,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     );
   };
 
-  const AddMatchModal = ({ onClose, onSave, teams, initialDate = '2026-05-TBD', initialHome = '', initialAway = '' }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, teams: Team[], initialDate?: string, initialHome?: string, initialAway?: string }) => {
+  const AddMatchModal = ({ onClose, onSave, teams, initialDate = '2026-05-TBD', initialHome = '', initialAway = '', config }: { onClose: () => void, onSave: (data: { date: string, home: string, away: string }) => void, teams: Team[], initialDate?: string, initialHome?: string, initialAway?: string, config?: Config }) => {
     const [date, setDate] = useState(initialDate);
     const [home, setHome] = useState(initialHome);
     const [away, setAway] = useState(initialAway);
@@ -1719,6 +1798,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               onChange={setHome} 
               teams={teams} 
               placeholder="Search home player..."
+              config={config}
             />
 
             <TeamSearchableSelect 
@@ -1727,6 +1807,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               onChange={setAway} 
               teams={teams} 
               placeholder="Search away player..."
+              config={config}
             />
           </div>
 
@@ -1804,18 +1885,31 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const handleSubmit = (e: React.FormEvent) => {
       e.preventDefault();
       if (!formData.country) {
-        alert(config?.mode === 'all_in_random' ? "Please select a Manager." : "Please select a World Cup country.");
+        alert("Please select your Premier League club from the 20 available spots.");
         return;
       }
-      if (!formData.logoUrl) {
-        alert("Please upload a logo/photo before submitting.");
+
+      const chosenNorm = formData.country.trim().toLowerCase();
+      const isLocked = config?.lockedCountries?.some(c => c.toLowerCase() === chosenNorm);
+      const isClaimed = existingRegistrations?.some(
+        r => r.country?.toLowerCase() === chosenNorm && r.userId !== user?.uid
+      );
+      if (isLocked || isClaimed) {
+        alert(`${formData.country} is permanently locked and has already been claimed! Please choose another open club spot.`);
         return;
       }
+
+      const clubInfo = getClubManager(formData.country);
+      const finalLogo = formData.logoUrl || clubInfo?.logoUrl || '';
+
       if (isCompressing) {
         return;
       }
       handleRegister({
         ...formData,
+        logoUrl: finalLogo,
+        managerName: clubInfo ? clubInfo.manager : (formData as any).managerName,
+        managerPhoto: clubInfo ? clubInfo.managerPhoto : (formData as any).managerPhoto,
         age: Number(formData.age),
         teamOvr: Number(formData.teamOvr)
       });
@@ -1834,13 +1928,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           initial={{ scale: 0.9, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.9, opacity: 0, y: 20 }}
-          className="relative w-full max-w-lg bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+          className="relative w-full max-w-4xl bg-fc-purple-base border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
         >
           <div className="p-6 md:p-8 border-b border-white/5 bg-gradient-to-b from-fc-neon-green/10 to-transparent">
             <div className="flex justify-between items-start mb-4 md:mb-6">
               <div>
                 <h2 className="text-2xl md:text-3xl font-display font-bold  text-white tracking-tight leading-none mb-2">Tournament Registration</h2>
-                <p className="text-fc-neon-green/60 text-[10px] font-bold tracking-[0.2em]">Join THE WORLD'S GAME</p>
+                <p className="text-[#00ff85] text-[10px] font-bold tracking-[0.2em] uppercase">✨ Official 2025/26 Premier League Hub</p>
               </div>
               <button 
                 onClick={onClose}
@@ -1976,46 +2070,25 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 text-white focus:border-fc-neon-green/50 outline-none transition-all text-sm"
                   />
                 </div>
+                {/* 20 Club Spots Selector */}
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold tracking-normal text-white/40">{config?.mode === 'all_in_random' ? 'Manager / Coach' : 'World Cup Country'}</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-60 overflow-y-auto pr-2 hide-scrollbar">
-                    {(config?.mode === 'all_in_random' ? MANAGERS_LIST : WORLD_CUP_TEAMS).map((team) => {
-                      const isTaken = takenCountries.some(tc => tc.toLowerCase().trim() === team.name.toLowerCase().trim());
-                      const isSelected = formData.country && formData.country.toLowerCase().trim() === team.name.toLowerCase().trim();
-                      const isLocked = config?.lockedCountries?.includes(team.name);
-                      return (
-                        <button
-                          key={team.name}
-                          type="button"
-                          disabled={(isTaken || isLocked) && !isSelected}
-                          onClick={() => {
-                            const newLogoUrl = (config?.mode === 'all_in_random' && 'photoUrl' in team) ? (team as any).photoUrl : formData.logoUrl;
-                            setFormData({...formData, country: team.name, logoUrl: newLogoUrl});
-                          }}
-                          className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
-                            isSelected 
-                              ? 'bg-fc-neon-green/20 border-fc-neon-green text-white shadow-[0_0_15px_rgba(202,255,0,0.2)]' 
-                              : (isTaken || isLocked)
-                                ? 'bg-white/5 border-transparent text-white/30 cursor-not-allowed opacity-50'
-                                : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80 hover:bg-white/10'
-                          }`}
-                        >
-                          {'photoUrl' in team && config?.mode === 'all_in_random' ? (
-                            <img src={(team as any).photoUrl} alt={team.name} className="w-8 h-8 rounded-full object-cover shrink-0" referrerPolicy="no-referrer" />
-                          ) : (
-                            <span className="text-xl">{team.flag}</span>
-                          )}
-                          <span className="text-xs font-bold truncate">{team.name}</span>
-                          {isTaken && !isSelected && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Taken</span>}
-                          {isLocked && !isSelected && <span className="text-[9px] ml-auto text-yellow-400 font-bold uppercase tracking-widest">Locked</span>}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  <ClubSpotsSelector
+                    selectedClubName={formData.country}
+                    existingRegistrations={existingRegistrations}
+                    config={config}
+                    currentUserId={user?.uid}
+                    onSelectClub={(club) => {
+                      setFormData({
+                        ...formData,
+                        country: club.name,
+                        logoUrl: club.logoUrl
+                      });
+                    }}
+                  />
                 </div>
 
                 <div className="md:col-span-2 space-y-2">
-                  <label className="text-[10px] font-bold tracking-normal text-white/40">Team Logo / Photo (Optional)</label>
+                  <label className="text-[10px] font-bold tracking-normal text-white/40">{config?.mode === 'all_in_random' ? 'Manager Photo (Upload)' : 'Team Logo (Optional)'}</label>
                   <div className="relative">
                     <input 
                       type="file"
@@ -2129,7 +2202,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     handleClearGroups: () => Promise<void>,
     refreshCache: (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => Promise<void>
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin' | 'mode'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin' | 'mode' | 'managers_admin'>('bracket');
 
     const getBracketTeamFlag = (teamName?: string, teamId?: string) => {
       if (!teamName || teamName === 'TBD') return '';
@@ -2141,7 +2214,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         (t.name && norm(t.name) === tNameNorm)
       );
       if (foundTeam?.country) {
-        return WORLD_CUP_FLAGS.get(foundTeam.country) || '🌍';
+        return getCountryOrManagerFlag(foundTeam.country, config);
       }
       // Fallback search directly in flags
       for (const [key, flag] of WORLD_CUP_FLAGS.entries()) {
@@ -2154,6 +2227,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     const [downloadingRegistration, setDownloadingRegistration] = useState<Registration | null>(null);
     const cardRef = useRef<HTMLDivElement>(null);
+
+    const [managerSearch, setManagerSearch] = useState('');
+    const [editingManagerName, setEditingManagerName] = useState('');
+    const [managerFlagEdit, setManagerFlagEdit] = useState('');
+    const [newManagerName, setNewManagerName] = useState('');
+    const [newManagerFlag, setNewManagerFlag] = useState('🌍');
+    const [isSavingManager, setIsSavingManager] = useState(false);
     const [adminUsers, setAdminUsers] = useState<any[]>([]);
 
     const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null);
@@ -2720,12 +2800,21 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             >
               Allowed Names
             </button>
-            <button 
-              onClick={() => setActiveTab('countries')}
-              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'countries' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
-            >
-              Country Locking
-            </button>
+            {config.mode === 'all_in_random' ? (
+              <button 
+                onClick={() => setActiveTab('managers_admin')}
+                className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'managers_admin' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              >
+                Manager Portraits
+              </button>
+            ) : (
+              <button 
+                onClick={() => setActiveTab('countries')}
+                className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'countries' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+              >
+                Club Locking 🦁
+              </button>
+            )}
             <button 
               onClick={() => setActiveTab('draw_admin')}
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'draw_admin' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
@@ -2827,12 +2916,14 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                           value={editHomeName} 
                                           onChange={setEditHomeName} 
                                           teams={teams} 
+                                          config={config}
                                         />
                                         <TeamSearchableSelect 
                                           label="Away Team" 
                                           value={editAwayName} 
                                           onChange={setEditAwayName} 
                                           teams={teams} 
+                                          config={config}
                                         />
                                       </div>
                                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -3452,33 +3543,378 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {activeTab === 'countries' && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-display font-bold text-white">{config.mode === 'all_in_random' ? 'Manager Locking' : 'Country Locking'}</h3>
+                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-2">
+                    {config.mode === 'all_in_random' ? 'Manager Locking' : (
+                      <>
+                        <span className="text-2xl">🦁</span> Premier League Club Locking
+                      </>
+                    )}
+                  </h3>
                 </div>
-                <p className="text-xs text-white/50 mb-6">Lock specific {config.mode === 'all_in_random' ? 'managers' : 'countries'} to prevent them from being selected during registration.</p>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {(config.mode === 'all_in_random' ? MANAGERS_LIST : WORLD_CUP_TEAMS).map((team) => {
-                    const isLocked = (config.lockedCountries || []).includes(team.name);
+                <p className="text-xs text-white/50 mb-6">
+                  Permanently lock specific Premier League club spots to prevent them from being registered or changed. Once locked, players cannot select the club.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                  {PREMIER_LEAGUE_TEAMS.map((team, idx) => {
+                    const isLocked = (config.lockedCountries || []).some(
+                      c => c.toLowerCase() === team.name.toLowerCase()
+                    );
                     return (
                       <button
                         key={team.name}
                         onClick={async () => {
+                          const current = config.lockedCountries || [];
                           const newLocked = isLocked 
-                            ? (config.lockedCountries || []).filter(c => c !== team.name)
-                            : [...(config.lockedCountries || []), team.name];
+                            ? current.filter(c => c.toLowerCase() !== team.name.toLowerCase())
+                            : [...current, team.name];
                           await handleUpdateConfig({ ...config, lockedCountries: newLocked });
                         }}
-                        className={`flex items-center gap-2 p-3 rounded-2xl border transition-all ${
+                        className={`flex items-center gap-3 p-3 rounded-2xl border text-left transition-all relative overflow-hidden ${
                           isLocked 
-                            ? 'bg-red-500/20 border-red-500 text-white font-bold' 
+                            ? 'bg-red-500/20 border-red-500 text-white shadow-[0_0_15px_rgba(239,68,68,0.2)]' 
                             : 'bg-white/5 border-white/10 hover:border-white/30 text-white/80'
                         }`}
                       >
-                        <span className="text-xl">{team.flag}</span>
-                        <span className="text-xs font-bold">{team.name}</span>
-                        {isLocked && <span className="text-[9px] ml-auto text-red-400 font-bold uppercase tracking-widest">Locked</span>}
+                        <div className="w-10 h-10 rounded-xl bg-black/40 p-1 flex items-center justify-center border border-white/10 shrink-0">
+                          <img src={team.logoUrl} alt={team.name} className="w-full h-full object-contain" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-1">
+                            <span className="text-xs font-bold truncate text-white">{team.name}</span>
+                            <span className="text-[9px] font-mono text-white/40">#{idx + 1}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <img 
+                              src={team.managerPhoto} 
+                              alt={team.manager} 
+                              className="w-4 h-4 rounded-full object-cover border border-white/20 shrink-0"
+                              referrerPolicy="no-referrer"
+                            />
+                            <span className="text-[10px] text-white/60 truncate">{team.manager}</span>
+                          </div>
+                        </div>
+                        {isLocked ? (
+                          <span className="text-[9px] px-2 py-0.5 rounded bg-red-500 text-white font-black uppercase tracking-wider shrink-0">
+                            🔒 Locked
+                          </span>
+                        ) : (
+                          <span className="text-[9px] px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold uppercase tracking-wider shrink-0">
+                            Open
+                          </span>
+                        )}
                       </button>
                     );
                   })}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'managers_admin' && (
+              <div className="space-y-8 animate-none">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                    <div>
+                      <h3 className="text-xl font-display font-bold text-white flex items-center gap-2 animate-none">
+                        <span>💼</span> Manager Portraits & Database Portal
+                      </h3>
+                      <p className="text-xs text-white/50 mt-1">
+                        Directly add, upload photos, or customize flags for all managers. Updates take effect immediately.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Panel: Creation & Selective Editing */}
+                    <div className="space-y-6 lg:col-span-1">
+                      {/* Form 1: Create a brand new Custom Manager */}
+                      <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 space-y-4">
+                        <h4 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2 border-b border-white/10 pb-2">
+                          <Plus className="w-4 h-4 text-fc-neon-green" /> Create New Manager Entry
+                        </h4>
+                        
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase font-bold tracking-wider text-white/40">Full Name</label>
+                          <input
+                            type="text"
+                            value={newManagerName}
+                            onChange={(e) => setNewManagerName(e.target.value)}
+                            placeholder="e.g. Pep Guardiola"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-fc-neon-green/40 outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase font-bold tracking-wider text-white/40">Flag / Emoji</label>
+                          <input
+                            type="text"
+                            value={newManagerFlag}
+                            onChange={(e) => setNewManagerFlag(e.target.value)}
+                            placeholder="🇳🇱"
+                            className="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-fc-neon-green/40 outline-none"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[10px] uppercase font-bold tracking-wider text-white/40">Manager Portrait</label>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            id="admin-new-manager-photo"
+                            className="hidden"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                try {
+                                  setIsSavingManager(true);
+                                  const cropped = await cropToSquareImage(file, 400);
+                                  const custom = config.customManagers || [];
+                                  if (!newManagerName.trim()) {
+                                    alert("Please fill in the manager full name first!");
+                                    return;
+                                  }
+                                  const duplicate = custom.find((m: any) => m.name.toLowerCase() === newManagerName.trim().toLowerCase());
+                                  if (duplicate) {
+                                    alert("A custom manager with this name already exists.");
+                                    return;
+                                  }
+                                  const updated = [
+                                    ...custom,
+                                    {
+                                      name: newManagerName.trim(),
+                                      flag: newManagerFlag.trim(),
+                                      photoUrl: cropped
+                                    }
+                                  ];
+                                  await handleUpdateConfig({
+                                    ...config,
+                                    customManagers: updated
+                                  });
+                                  setNewManagerName('');
+                                  setNewManagerFlag('🌍');
+                                  alert("Custom manager profile created with photo successfully!");
+                                } catch (err) {
+                                  console.error(err);
+                                } finally {
+                                  setIsSavingManager(false);
+                                }
+                              }
+                            }}
+                          />
+                          <label
+                            htmlFor="admin-new-manager-photo"
+                            className="flex flex-col items-center justify-center border border-dashed border-white/20 rounded-xl p-5 cursor-pointer hover:bg-white/5 transition-colors text-center"
+                          >
+                            <Upload className="w-5 h-5 text-white/30 mb-2" />
+                            <span className="text-xs text-white/60 font-bold">Upload Custom File & Save</span>
+                          </label>
+                        </div>
+                      </div>
+
+                      {/* Editing panel (rendered if a manager row is clicked in the catalog) */}
+                      {editingManagerName && (
+                        <div className="bg-fc-neon-green/5 border border-fc-neon-green/20 rounded-2xl p-5 space-y-4">
+                          <div className="flex items-center justify-between border-b border-white/15 pb-2">
+                            <h4 className="text-sm font-bold text-fc-neon-green uppercase tracking-wider">
+                              Configure: {editingManagerName}
+                            </h4>
+                            <button
+                              onClick={() => {
+                                setEditingManagerName('');
+                                setManagerFlagEdit('');
+                              }}
+                              className="text-white/40 hover:text-white"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-bold tracking-wider text-white/40">Custom Flag</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="text"
+                                value={managerFlagEdit}
+                                onChange={(e) => setManagerFlagEdit(e.target.value)}
+                                placeholder="e.g. 🇪🇸"
+                                className="flex-1 bg-white/5 border border-white/10 rounded-xl p-3 text-sm text-white focus:border-fc-neon-green/40 outline-none"
+                              />
+                              <button
+                                onClick={async () => {
+                                  const updatedFlags = {
+                                    ...(config.managerFlags || {}),
+                                    [editingManagerName]: managerFlagEdit
+                                  };
+                                  await handleUpdateConfig({
+                                    ...config,
+                                    managerFlags: updatedFlags
+                                  });
+                                  alert("Flag updated successfully!");
+                                }}
+                                className="px-4 py-2 bg-fc-neon-green text-black uppercase text-[10px] font-bold rounded-xl"
+                              >
+                                Save Flag
+                              </button>
+                            </div>
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-[10px] uppercase font-bold tracking-wider text-white/40">Custom Portrait Upload</label>
+                            <input
+                              type="file"
+                              accept="image/*"
+                              id="admin-edit-manager-photo"
+                              className="hidden"
+                              onChange={async (e) => {
+                                const file = e.target.files?.[0];
+                                if (file) {
+                                  try {
+                                    setIsSavingManager(true);
+                                    const cropped = await cropToSquareImage(file, 400);
+                                    const updatedPhotos = {
+                                      ...(config.managerPhotos || {}),
+                                      [editingManagerName]: cropped
+                                    };
+                                    await handleUpdateConfig({
+                                      ...config,
+                                      managerPhotos: updatedPhotos
+                                    });
+                                    alert("Manager portrait photo updated successfully!");
+                                  } catch (err) {
+                                    console.error(err);
+                                  } finally {
+                                    setIsSavingManager(false);
+                                  }
+                                }
+                              }}
+                            />
+                            <label
+                              htmlFor="admin-edit-manager-photo"
+                              className="flex flex-col items-center justify-center border border-dashed border-fc-neon-green/30 rounded-xl p-5 cursor-pointer hover:bg-white/5 transition-colors text-center bg-zinc-900/40"
+                            >
+                              <Upload className="w-5 h-5 text-fc-neon-green mb-2" />
+                              <span className="text-xs text-white/80 font-bold">Select and Crop Square Photo</span>
+                            </label>
+                          </div>
+
+                          <div className="flex gap-2 pt-2">
+                            <button
+                              onClick={async () => {
+                                if (confirm("Are you sure you want to revert all customizations for " + editingManagerName + "?")) {
+                                  const updatedPhotos = { ...(config.managerPhotos || {}) };
+                                  const updatedFlags = { ...(config.managerFlags || {}) };
+                                  delete updatedPhotos[editingManagerName];
+                                  delete updatedFlags[editingManagerName];
+                                  
+                                  const customFiltered = (config.customManagers || []).filter((m: any) => m.name.toLowerCase() !== editingManagerName.toLowerCase());
+
+                                  await handleUpdateConfig({
+                                    ...config,
+                                    managerPhotos: updatedPhotos,
+                                    managerFlags: updatedFlags,
+                                    customManagers: customFiltered
+                                  });
+                                  setEditingManagerName('');
+                                  alert("Customizations removed.");
+                                }
+                              }}
+                              className="w-full py-2 bg-red-600/20 text-red-400 border border-red-500/30 rounded-xl text-xs font-bold hover:bg-red-600 hover:text-white transition-all"
+                            >
+                              Reset / Delete Manager
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Right Panel: Portrait and Manager List Catalog */}
+                    <div className="lg:col-span-2 space-y-4">
+                      <div className="flex items-center gap-3">
+                        <div className="relative flex-1">
+                          <input
+                            type="text"
+                            value={managerSearch}
+                            onChange={(e) => setManagerSearch(e.target.value)}
+                            placeholder="Filter manager database..."
+                            className="w-full bg-white/5 border border-white/10 rounded-2xl p-4 pl-12 text-sm text-white focus:border-fc-neon-green/50 outline-none"
+                          />
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                        </div>
+                        {managerSearch && (
+                          <button
+                            onClick={() => setManagerSearch('')}
+                            className="p-3 bg-white/5 border border-white/10 rounded-2xl text-xs text-white font-bold"
+                          >
+                            Clear
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+                        {(() => {
+                          const query = managerSearch.trim().toLowerCase();
+                          const list = getMergedManagers(config);
+                          const filtered = list.filter(m => m.name.toLowerCase().includes(query));
+
+                          if (filtered.length === 0) {
+                            return (
+                              <div className="col-span-full p-12 text-center border border-dashed border-white/10 rounded-2xl text-white/30">
+                                No managers found matching "{managerSearch}". Create him on the left!
+                              </div>
+                            );
+                          }
+
+                          return filtered.map((item) => {
+                            const isBeingEdited = editingManagerName.toLowerCase() === item.name.toLowerCase();
+                            const currentPhoto = getManagerPhoto(item.name, config);
+                            const hasCustomization = !!(config.managerPhotos?.[item.name] || config.managerFlags?.[item.name]);
+                            const isCustomCreated = !(MANAGERS_LIST.find(m => m.name.toLowerCase() === item.name.toLowerCase()));
+
+                            return (
+                              <div
+                                key={item.name}
+                                onClick={() => {
+                                  setEditingManagerName(item.name);
+                                  setManagerFlagEdit(item.flag);
+                                }}
+                                className={`relative group p-4 rounded-2xl border cursor-pointer transition-all ${
+                                  isBeingEdited
+                                    ? 'bg-fc-neon-green/10 border-fc-neon-green shadow-lg shadow-fc-neon-green/5'
+                                    : 'bg-white/5 border-white/10 hover:border-white/30 hover:bg-white/[0.08]'
+                                }`}
+                              >
+                                {hasCustomization && (
+                                  <span className="absolute top-2 right-2 px-1.5 py-0.5 bg-fc-neon-green text-black text-[7px] font-extrabold uppercase rounded-md tracking-wider shadow">
+                                    Custom
+                                  </span>
+                                )}
+                                {isCustomCreated && (
+                                  <span className="absolute top-2 left-2 px-1.5 py-0.5 bg-blue-600 text-white text-[7px] font-extrabold uppercase rounded-md tracking-wider shadow">
+                                    New
+                                  </span>
+                                )}
+
+                                <div className="flex flex-col items-center text-center space-y-3 pt-2">
+                                  <div className="w-16 h-16 rounded-2xl overflow-hidden bg-white/5 border border-white/15 flex items-center justify-center shrink-0 relative shadow-inner">
+                                    <img src={currentPhoto} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                                  </div>
+
+                                  <div>
+                                    <p className="font-sans font-bold text-xs text-white line-clamp-1">
+                                      {item.name}
+                                    </p>
+                                    <div className="flex items-center justify-center gap-1.5 mt-1">
+                                      <span className="text-sm">{item.flag}</span>
+                                      <span className="text-[10px] text-white/40 font-bold lowercase">Click to custom</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          });
+                        })()}
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
@@ -3857,27 +4293,31 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             {activeTab === 'mode' && (
               <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-display font-bold text-white">App Mode Settings</h3>
+                  <h3 className="text-xl font-display font-bold text-white flex items-center gap-2">
+                    <span>🦁</span> Premier League & Tournament Theme Settings
+                  </h3>
                 </div>
                 
-                <div className="bg-fc-purple-dark/20 border border-white/5 rounded-2xl p-6 relative overflow-hidden group">
-                   <h4 className="font-bold text-white text-sm mb-2">Switch Application View</h4>
-                   <p className="text-white/40 text-xs leading-relaxed mb-6">
-                     Toggle between the standard World Cup mode and the ALL IN RANDOM mode.
+                <div className="bg-gradient-to-br from-[#240029] to-[#0c000e] border border-[#00ff85]/20 rounded-2xl p-6 relative overflow-hidden group">
+                   <h4 className="font-bold text-[#00ff85] text-sm mb-2 flex items-center gap-2">
+                     <span>🦁</span> Switch Application Theme
+                   </h4>
+                   <p className="text-white/60 text-xs leading-relaxed mb-6">
+                     Choose between the official 20-club Premier League matchday theme or the Manager All-In-Random mode.
                    </p>
                    
                    <div className="flex items-center gap-4">
                      <button
-                       onClick={() => handleUpdateConfig({ ...config, mode: 'world_cup' })}
-                       className={`flex-1 py-4 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${config.mode !== 'all_in_random' ? 'bg-fc-neon-green text-black' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'}`}
+                       onClick={() => handleUpdateConfig({ ...config, mode: 'premier_league' })}
+                       className={`flex-1 py-4 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${config.mode !== 'all_in_random' ? 'bg-[#00ff85] text-[#38003c] shadow-lg shadow-[#00ff85]/25 font-black' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'}`}
                      >
-                       WORLD CUP MODE
+                       🦁 PREMIER LEAGUE THEME
                      </button>
                      <button
                        onClick={() => handleUpdateConfig({ ...config, mode: 'all_in_random' })}
-                       className={`flex-1 py-4 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${config.mode === 'all_in_random' ? 'bg-[#3B82F6] text-white' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'}`}
+                       className={`flex-1 py-4 rounded-2xl text-[10px] font-bold tracking-[0.2em] transition-all flex items-center justify-center gap-2 ${config.mode === 'all_in_random' ? 'bg-[#ea580c] text-white shadow-lg font-black' : 'bg-white/10 text-white/40 hover:bg-white/20 hover:text-white'}`}
                      >
-                       ALL IN RANDOM MODE
+                       💼 ALL IN RANDOM MODE
                      </button>
                    </div>
                 </div>
@@ -3888,14 +4328,16 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
           
           <div className="absolute left-[9999px] top-0 pointer-events-none">
              {downloadingRegistration && (
-                <div ref={cardRef} className="w-[800px] h-[1200px] bg-gradient-to-br from-[#0a0a0c] to-[#121218] text-white p-16 flex flex-col items-center border-[16px] border-fc-neon-green relative shadow-2xl">
-                   <div className="absolute top-0 left-0 w-full h-[400px] bg-fc-neon-green/10 -skew-y-6 transform origin-top-left -z-10" />
+                <div ref={cardRef} className="w-[800px] h-[1200px] bg-gradient-to-br from-[#120017] via-[#240029] to-[#050007] text-white p-16 flex flex-col items-center border-[16px] border-[#00ff85] relative shadow-2xl">
+                   <div className="absolute top-0 left-0 w-full h-[400px] bg-[#00ff85]/10 -skew-y-6 transform origin-top-left -z-10" />
                    
-                   <h1 className="text-7xl font-black italic tracking-tighter text-fc-neon-green mt-8 mb-16 uppercase shadow-lg">UX Leagues</h1>
+                   <h1 className="text-7xl font-black italic tracking-tighter text-[#00ff85] mt-8 mb-16 uppercase shadow-lg flex items-center gap-4">
+                     <span>🦁</span> PREMIER LEAGUE
+                   </h1>
                    
-                   <div className="w-[450px] h-[450px] rounded-[64px] overflow-hidden border-8 border-fc-neon-green/50 mb-16 shadow-[0_0_100px_rgba(201,168,76,0.2)] bg-black/50 p-4">
+                   <div className="w-[450px] h-[450px] rounded-[64px] overflow-hidden border-8 border-[#00ff85]/50 mb-16 shadow-[0_0_100px_rgba(0,255,133,0.2)] bg-black/50 p-4">
                       {downloadingRegistration.logoUrl ? (
-                         <img src={downloadingRegistration.logoUrl} className="w-full h-full object-cover rounded-[48px]" alt="Player" referrerPolicy="no-referrer" />
+                         <img src={downloadingRegistration.logoUrl} className="w-full h-full object-contain rounded-[48px]" alt="Player" referrerPolicy="no-referrer" />
                       ) : (
                          <div className="w-full h-full rounded-[48px] bg-white/5 flex items-center justify-center">
                             <Users className="w-32 h-32 text-white/10" />
@@ -3905,20 +4347,20 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                    
                    <div className="w-full text-center space-y-4 mb-16">
                       <h2 className="text-6xl font-black tracking-tight text-white uppercase">{downloadingRegistration.name}</h2>
-                      <p className="text-4xl text-fc-neon-green font-mono tracking-widest">{downloadingRegistration.fcName}</p>
+                      <p className="text-4xl text-[#00ff85] font-mono tracking-widest">{downloadingRegistration.fcName}</p>
                       <p className="text-2xl text-white/40 font-bold mt-4 uppercase">Registration ID: {downloadingRegistration.id.substring(0, 8)}</p>
                    </div>
                    
                    <div className="grid grid-cols-2 gap-8 w-full max-w-[600px] mt-auto mb-8">
                      <div className="bg-white/5 p-8 rounded-[32px] border border-white/10 text-center relative overflow-hidden">
-                        <div className="absolute inset-0 bg-fc-purple-light/20 blur-2xl" />
+                        <div className="absolute inset-0 bg-[#38003c]/40 blur-2xl" />
                         <p className="text-2xl text-white/40 font-bold mb-4 relative">AGE</p>
                         <p className="text-7xl font-black text-white relative">{downloadingRegistration.age}</p>
                      </div>
-                     <div className="bg-fc-neon-green/10 p-8 rounded-[32px] border border-fc-neon-green/30 text-center relative overflow-hidden">
-                        <div className="absolute inset-0 bg-fc-neon-green/20 blur-2xl" />
-                        <p className="text-2xl text-fc-neon-green/60 font-bold mb-4 relative tracking-widest">OVR</p>
-                        <p className="text-7xl font-black text-fc-neon-green relative">{downloadingRegistration.teamOvr}</p>
+                     <div className="bg-[#00ff85]/10 p-8 rounded-[32px] border border-[#00ff85]/30 text-center relative overflow-hidden">
+                        <div className="absolute inset-0 bg-[#00ff85]/20 blur-2xl" />
+                        <p className="text-2xl text-[#00ff85]/80 font-bold mb-4 relative tracking-widest">OVR</p>
+                        <p className="text-7xl font-black text-[#00ff85] relative">{downloadingRegistration.teamOvr}</p>
                      </div>
                    </div>
                    
@@ -3927,7 +4369,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                       <DummyQRCode />
                    </div>
                    <div className="absolute bottom-16 left-16">
-                      <p className="text-xl font-bold text-white/20 whitespace-normal w-48 text-left leading-tight">OFFICIAL PLAYER PASSPORT</p>
+                      <p className="text-xl font-bold text-white/30 whitespace-normal w-48 text-left leading-tight uppercase tracking-wider">OFFICIAL PREMIER LEAGUE PASSPORT 🦁</p>
                    </div>
                 </div>
              )}
@@ -4219,9 +4661,9 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
         });
 
         const configData = configSnap.exists() ? configSnap.data() : null;
-        const basePlayers = configData?.allowedNames && configData.allowedNames.length > 0
+        const basePlayers = (configData?.allowedNames && configData.allowedNames.length > 0
           ? configData.allowedNames
-          : DEFAULT_PLAYERS;
+          : DEFAULT_PLAYERS) as string[];
         
         const available = Array.from(new Set(basePlayers)).filter(p => !takenNames.has(p.toLowerCase().trim())).sort((a,b) => a.localeCompare(b));
         setAvailablePlayers(available);
@@ -4425,35 +4867,47 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
   );
 }
 
-const RotatingFlag = ({ mode }: { mode: string | undefined }) => {
+const RotatingFlag = ({ mode, config }: { mode: string | undefined, config?: Config }) => {
   const isManagerMode = mode === 'all_in_random';
   const displayItems = isManagerMode 
-    ? MANAGERS_LIST.slice(0, 10).map(m => m.photoUrl) 
-    : ['🇧🇷', '🇫🇷', '🇩🇪', '🇪🇸', '🇵🇹', '🇦🇷', '🇮🇹', '🇳🇱', '🏴󠁧󠁢󠁥󠁮󠁧󠁿', '🇧🇪', '🇺🇾', '🇭🇷'];
+    ? getMergedManagers(config).slice(0, 15).map(m => ({ type: 'image', src: getManagerPhoto(m.name, config), alt: m.name }))
+    : PREMIER_LEAGUE_TEAMS.map(t => ({ type: 'logo', src: t.logoUrl, alt: t.name }));
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setIndex((prev) => (prev + 1) % displayItems.length);
-    }, 2000);
+    }, 2200);
     return () => clearInterval(timer);
   }, [displayItems.length]);
 
+  const current = displayItems[index];
+
   return (
-    <div className="relative inline-block w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 ml-3 md:ml-4 align-middle">
+    <div className="relative inline-block w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 ml-3 md:ml-4 align-middle">
       <AnimatePresence mode="popLayout">
         <motion.div
-          key={displayItems[index]}
-          initial={{ opacity: 0, y: 20, scale: 0.8, rotate: -20 }}
+          key={current?.src || index}
+          initial={{ opacity: 0, y: 15, scale: 0.85, rotate: -10 }}
           animate={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-          exit={{ opacity: 0, y: -20, scale: 0.8, rotate: 20 }}
-          transition={{ duration: 0.4, type: "spring", bounce: 0.4 }}
-          className="absolute inset-0 flex items-center justify-center text-5xl sm:text-6xl md:text-8xl drop-shadow-[0_0_15px_rgba(255,255,255,0.2)]"
+          exit={{ opacity: 0, y: -15, scale: 0.85, rotate: 10 }}
+          transition={{ duration: 0.45, type: "spring", bounce: 0.35 }}
+          className="absolute inset-0 flex items-center justify-center p-1.5"
         >
           {isManagerMode ? (
-            <img src={displayItems[index]} alt="Manager" className="w-full h-full object-cover rounded-full shadow-lg border-2 border-fc-neon-green" referrerPolicy="no-referrer" />
+            <img 
+              src={current.src} 
+              alt={current.alt} 
+              className="w-full h-full object-cover rounded-full shadow-lg border-2 border-[#00ff85]" 
+              referrerPolicy="no-referrer" 
+            />
           ) : (
-            displayItems[index]
+            <img 
+              src={current.src} 
+              alt={current.alt} 
+              title={current.alt}
+              className="w-full h-full object-contain filter drop-shadow-[0_0_14px_rgba(0,255,133,0.35)]" 
+            />
           )}
         </motion.div>
       </AnimatePresence>
@@ -5962,7 +6416,24 @@ export default function App() {
     if (!user || user.uid !== reg.userId) return;
     setIsSubmittingRegistration(true);
     try {
-      await setDoc(doc(db, 'registrations', reg.id), reg, { merge: true });
+      const clubInfo = getClubManager(reg.country);
+      const updatedReg = {
+        ...reg,
+        managerName: clubInfo ? clubInfo.manager : reg.managerName,
+        managerPhoto: clubInfo ? clubInfo.managerPhoto : reg.managerPhoto
+      };
+
+      await setDoc(doc(db, 'registrations', reg.id), updatedReg, { merge: true });
+
+      if (reg.country) {
+        const currentLocked = config.lockedCountries || [];
+        if (!currentLocked.some(c => c.toLowerCase() === reg.country?.toLowerCase())) {
+          const updatedLocked = [...currentLocked, reg.country];
+          await setDoc(doc(db, 'config', 'global'), { lockedCountries: updatedLocked }, { merge: true });
+          setConfig(prev => ({ ...prev, lockedCountries: updatedLocked }));
+        }
+      }
+
       const teamsData = await fetchWithCache('cache_teams', query(collection(db, 'registrations'), where('status', '==', 'approved')), false, 300000);
       const teamsList: Team[] = teamsData.map((data: any) => ({
         id: data.id,
@@ -5975,7 +6446,7 @@ export default function App() {
         logoUrl: data.logoUrl,
         goalkeeper: data.goalkeeper,
         country: data.country,
-        played: 0, won: 0, drawn: 0, lost: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
+        played: 0, won: 0, lost: 0, drawn: 0, gf: 0, ga: 0, gd: 0, points: 0, form: []
       }));
       setDbTeams(teamsList);
     } catch (error) {
@@ -6658,17 +7129,48 @@ export default function App() {
 
     if (!currentUser) return;
 
+    const chosenClub = regData.country?.trim();
+    if (chosenClub) {
+      const isAlreadyLocked = (config.lockedCountries || []).some(
+        c => c.toLowerCase() === chosenClub.toLowerCase()
+      );
+      const isAlreadyTaken = registrations.some(
+        r => r.country?.toLowerCase() === chosenClub.toLowerCase() && r.userId !== currentUser.uid
+      );
+      if (isAlreadyLocked || isAlreadyTaken) {
+        alert(`${chosenClub} is permanently locked and has already been claimed! Please select another open club spot.`);
+        return;
+      }
+    }
+
     setIsSubmittingRegistration(true);
     try {
       const regId = currentUser.uid;
+      const clubInfo = getClubManager(chosenClub);
+      const managerName = clubInfo ? clubInfo.manager : (regData as any).managerName;
+      const managerPhoto = clubInfo ? clubInfo.managerPhoto : (regData as any).managerPhoto;
+
       await setDoc(doc(db, 'registrations', regId), {
         ...regData,
         id: regId,
         userId: currentUser.uid,
         email: currentUser.email,
         status: 'pending',
+        managerName: managerName || null,
+        managerPhoto: managerPhoto || null,
         timestamp: serverTimestamp()
       });
+
+      // Permanently lock the selected team forever!
+      if (chosenClub) {
+        const currentLocked = config.lockedCountries || [];
+        if (!currentLocked.some(c => c.toLowerCase() === chosenClub.toLowerCase())) {
+          const updatedLocked = [...currentLocked, chosenClub];
+          await setDoc(doc(db, 'config', 'global'), { lockedCountries: updatedLocked }, { merge: true });
+          setConfig(prev => ({ ...prev, lockedCountries: updatedLocked }));
+        }
+      }
+
       setHasRegistered(true);
     } catch (error) {
       console.error("Registration failed:", error);
@@ -6721,7 +7223,7 @@ export default function App() {
       (t.name && norm(t.name) === tNameNorm)
     );
     if (foundTeam?.country) {
-      return WORLD_CUP_FLAGS.get(foundTeam.country) || '🌍';
+      return getCountryOrManagerFlag(foundTeam.country, config);
     }
     // Fallback search directly in flags
     for (const [key, flag] of WORLD_CUP_FLAGS.entries()) {
@@ -7153,15 +7655,18 @@ export default function App() {
       {/* Background Decor */}
       <div className="absolute inset-0 pointer-events-none opacity-20">
         <div className="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:40px_40px]" />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#080808] via-transparent to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0a000e] via-transparent to-transparent" />
       </div>
 
+      {/* Premier League Official Top Banner */}
+      <PremierLeagueHeaderBanner />
+
       {/* Header */}
-      <header className="relative w-full bg-gradient-to-br from-[#050505] to-[#111] py-16 md:py-24 md:rounded-b-3xl border-b border-white/5 shadow-[0_20px_60px_rgba(0,0,0,0.5)] mb-8 overflow-hidden">
-        {/* Soft Modern BG glow elements instead of emojis */}
+      <header className="relative w-full bg-gradient-to-br from-[#240029] via-[#16001d] to-[#0c0010] py-16 md:py-24 md:rounded-b-3xl border-b border-[#00ff85]/20 shadow-[0_20px_60px_rgba(0,0,0,0.6)] mb-8 overflow-hidden">
+        {/* Soft Modern BG glow elements */}
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSIjZmZmIiBmaWxsLW9wYWNpdHk9IjAuMDIiPjwvcmVjdD4KPHBhdGggZD0iTTAgMEw4IDhaTThgMGwtOCA4IiBzdHJva2U9IiMzMzMiIHN0cm9rZS13aWR0aD0iMSIgb3BhY2l0eT0iMC4yIj48L3BhdGg+Cjwvc3ZnPg==')] opacity-30 mask-image-[radial-gradient(ellipse_at_center,black_10%,transparent_70%)] pointer-events-none"></div>
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#3B82F6] blur-[150px] opacity-[0.10] pointer-events-none rounded-full transform translate-x-1/3 -translate-y-1/3"></div>
-        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-[#10B981] blur-[120px] opacity-[0.08] rounded-full pointer-events-none z-0"></div>
+        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-[#00ff85] blur-[150px] opacity-[0.10] pointer-events-none rounded-full transform translate-x-1/3 -translate-y-1/3"></div>
+        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-[#38003c] blur-[120px] opacity-[0.25] rounded-full pointer-events-none z-0"></div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
           <motion.div 
@@ -7169,20 +7674,20 @@ export default function App() {
             animate={{ y: 0, opacity: 1 }}
             className="text-left w-full relative max-w-3xl"
           >
-            <div className="highlighter-yellow mb-6">
-              <span className="w-1.5 h-1.5 rounded-full bg-black/60 animate-pulse shrink-0 mr-1.5" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00ff85]/10 border border-[#00ff85]/30 text-[#00ff85] mb-6">
+              <span className="w-1.5 h-1.5 rounded-full bg-[#00ff85] animate-pulse shrink-0" />
               <span className="text-[10px] font-sans font-black tracking-widest uppercase truncate">
-                <EditableText id="hero_status" defaultText="GLOBAL LEAGUE ACTIVE" />
+                <EditableText id="hero_status" defaultText="✨ PREMIER LEAGUE · 2025/26 OFFICIAL HUB" />
               </span>
             </div>
             
             <h1 className="font-display text-5xl sm:text-6xl md:text-8xl font-black text-white leading-[1.05] tracking-tight mb-6 drop-shadow-sm flex items-center flex-wrap">
-              <EditableText id="hero_title_main" defaultText={config?.mode === 'all_in_random' ? "UXI: All One in Random" : "UXI: World's Game"} />
-              <RotatingFlag mode={config?.mode} />
+              <EditableText id="hero_title_main" defaultText={config?.mode === 'all_in_random' ? "UXI: All One in Random" : "UXI: Premier League"} />
+              <RotatingFlag mode={config?.mode} config={config} />
             </h1>
             
-            <p className="text-white/50 font-sans text-sm md:text-base lg:text-lg max-w-xl leading-relaxed">
-              <EditableText id="hero_desc" defaultText="The ultimate competitive e-sports football tournament. Track fixtures, live leaderboards, and detailed player statistics in real-time." />
+            <p className="text-white/60 font-sans text-sm md:text-base lg:text-lg max-w-xl leading-relaxed">
+              <EditableText id="hero_desc" defaultText="The definitive Premier League tournament hub. Track 20 official clubs, live fixtures, official tables, and knockout brackets in real-time." />
             </p>
           </motion.div>
 
@@ -7197,7 +7702,7 @@ export default function App() {
                 {(isAdmin || isDrawAdmin) && (
                   <button
                     onClick={() => setIsAdminModalOpen(true)}
-                    className="px-3 py-2 bg-white/10 hover:bg-[#3B82F6] text-white font-sans font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 border border-white/5 shadow-sm"
+                    className="px-3 py-2 bg-[#00ff85]/20 hover:bg-[#00ff85] text-white hover:text-black font-sans font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 border border-[#00ff85]/30 shadow-sm"
                   >
                     <Settings className="w-4 h-4" />
                     <span className="hidden sm:inline">Admin</span>
@@ -7214,7 +7719,7 @@ export default function App() {
             ) : (
               <button 
                 onClick={() => setShowLoginModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-white/[0.05] hover:bg-[#3B82F6] border border-white/10 text-white font-sans font-bold rounded-2xl transition-all text-xs tracking-widest shadow-lg hover:shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:-translate-y-0.5 uppercase"
+                className="flex items-center gap-2 px-5 py-2.5 bg-[#00ff85] hover:bg-[#00ff85]/90 text-[#38003c] font-sans font-extrabold rounded-2xl transition-all text-xs tracking-widest shadow-lg hover:shadow-[0_0_20px_rgba(0,255,133,0.4)] hover:-translate-y-0.5 uppercase"
               >
                 <LogIn className="w-4 h-4" />
                 Player Login
@@ -7251,20 +7756,20 @@ export default function App() {
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`group relative px-4 py-2.5 md:px-6 md:py-3 flex items-center justify-center gap-2 transition-all duration-300 rounded-2xl text-xs md:text-sm font-sans font-bold whitespace-nowrap overflow-hidden border ${
                   activeTab === tab.id 
-                    ? 'text-[#3B82F6] border-[#3B82F6]/50 bg-[#3B82F6]/10 shadow-[0_4px_20px_rgba(59,130,246,0.2)]' 
+                    ? 'text-[#00ff85] border-[#00ff85]/60 bg-[#00ff85]/10 shadow-[0_4px_25px_rgba(0,255,133,0.25)]' 
                     : 'text-white/60 border-white/10 bg-white/[0.02] hover:bg-white/[0.05] hover:text-white hover:border-white/20 hover:shadow-[0_4px_20px_rgba(255,255,255,0.05)]'
                 }`}
               >
                 {activeTab === tab.id && (
                   <motion.div
                     layoutId="activeTabGlow"
-                    className="absolute inset-0 bg-gradient-to-tr from-[#3B82F6]/20 to-transparent z-0 blur-md"
+                    className="absolute inset-0 bg-gradient-to-tr from-[#38003c]/40 via-[#00ff85]/20 to-transparent z-0 blur-md"
                     transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
                   />
                 )}
                 
                 <div className={`relative flex items-center justify-center w-6 h-6 rounded-lg transition-transform duration-300 ${
-                  activeTab === tab.id ? 'bg-[#3B82F6] text-white scale-110 shadow-lg' : 'bg-white/10 text-white/60 group-hover:bg-white/20'
+                  activeTab === tab.id ? 'bg-[#00ff85] text-[#38003c] font-black scale-110 shadow-lg shadow-[#00ff85]/30' : 'bg-white/10 text-white/60 group-hover:bg-white/20'
                 }`}>
                   <tab.icon className="w-3.5 h-3.5 relative z-20" />
                 </div>
@@ -7782,7 +8287,7 @@ export default function App() {
                                         <div className="flex flex-col min-w-0">
                                           <div className="flex items-center gap-1.5 min-w-0">
                                             {team.country && (
-                                              <span className="text-xs shrink-0">{WORLD_CUP_FLAGS.get(team.country) || '🌍'}</span>
+                                              <span className="text-xs shrink-0">{getCountryOrManagerFlag(team.country, config)}</span>
                                             )}
                                             <span className="font-sans font-bold text-xs md:text-sm text-white truncate max-w-[120px] md:max-w-none">
                                               {team.fullName}
@@ -7908,7 +8413,7 @@ export default function App() {
                                     <div className="flex items-center gap-2">
                                       {team.country && (
                                         <span className="text-sm shadow-sm" title={team.country}>
-                                          {WORLD_CUP_FLAGS.get(team.country) || '🌍'}
+                                          {getCountryOrManagerFlag(team.country, config)}
                                         </span>
                                       )}
                                       <span className="font-sans font-bold whitespace-nowrap truncate pr-1 text-sm md:text-base text-white">
@@ -8541,6 +9046,7 @@ export default function App() {
             initialDate={addMatchInitialData.date}
             initialHome={addMatchInitialData.home}
             initialAway={addMatchInitialData.away}
+            config={config}
           />
         )}
         {isEditingProfile && myRegistrationData && (
@@ -8606,6 +9112,7 @@ export default function App() {
             onClose={() => setSelectedTeam(null)}
             isAdmin={isAdmin}
             resetPlayer={handleResetPlayer}
+            config={config}
           />
         )}
 

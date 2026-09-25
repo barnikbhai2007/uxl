@@ -13,6 +13,7 @@ interface RandomMatchDrawProps {
 
 export const RandomMatchDraw: React.FC<RandomMatchDrawProps> = ({ myTeam, allTeams, myMatches, config }) => {
   const [drawing, setDrawing] = useState(false);
+  const [drawnMatch, setDrawnMatch] = useState<Partial<Match> | null>(null);
 
   // Filter approved opponents
   const approvedOpponents = allTeams.filter(t => t.id !== myTeam.id && t.status === 'approved');

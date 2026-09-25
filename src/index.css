@@ -6,11 +6,15 @@
   --font-sans: "Londrina Solid", sans-serif;
   --font-mono: ui-monospace, SFMono-Regular, monospace;
   
-  --color-fc-purple-dark: #000000;
-  --color-fc-purple-base: #111111;
-  --color-fc-purple-light: #222222;
-  --color-fc-neon-green: #3B82F6;
-  --color-fc-neon-green-dark: #2563EB;
+  --color-fc-purple-dark: #0f0507;
+  --color-fc-purple-base: #1b070d;
+  --color-fc-purple-light: #2c0e16;
+  --color-fc-neon-green: #e11d48;
+  --color-fc-neon-green-dark: #be123c;
+  --color-festive-gold: #f59e0b;
+  --color-festive-amber: #d97706;
+  --color-festive-saffron: #ea580c;
+  --color-festive-crimson: #991b1b;
 }
 
 h1, h2, h3, h4, h5, h6, .font-display {
@@ -24,7 +28,9 @@ html {
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-fc-purple-dark);
+  background-color: #0f0507;
+  background-image: radial-gradient(circle at 50% -20%, #4a0d18 0%, #170408 50%, #0c0305 100%);
+  background-attachment: fixed;
   color: white;
   letter-spacing: 0.03em !important;
 }
@@ -35,6 +41,23 @@ body {
 
 .rounded-sm {
   border-radius: 1rem !important;
+}
+
+@keyframes floatDown {
+  0% {
+    transform: translateY(-20px) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.7;
+  }
+  85% {
+    opacity: 0.7;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0;
+  }
 }
 
 /* Schoolbook-style Highlighter Markers */
@@ -58,17 +81,17 @@ body {
 }
 
 .highlighter-green {
-  background: rgba(134, 239, 172, 0.95) !important; /* Realistic neon-green school marker */
-  color: #05160c !important;
+  background: rgba(251, 191, 36, 0.95) !important; /* Golden Marigold marker */
+  color: #1a080c !important;
   font-weight: 800 !important;
   font-family: var(--font-sans) !important;
-  border-radius: 2px 4px 2px 3px !important; /* Irregular bounds */
+  border-radius: 2px 4px 2px 3px !important;
   padding: 0.15rem 0.5rem !important;
   display: inline-flex !important;
   align-items: center !important;
   border: none !important;
   transform: rotate(1.2deg) !important;
-  box-shadow: 0 2px 8px rgba(34, 197, 94, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3) !important;
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 .highlighter-green:hover {
@@ -77,8 +100,8 @@ body {
 }
 
 .highlighter-pink {
-  background: rgba(244, 114, 182, 0.95) !important; /* Realistic neon-pink school marker */
-  color: #1e0210 !important;
+  background: rgba(244, 63, 94, 0.95) !important; /* Sindoor Crimson marker */
+  color: #ffffff !important;
   font-weight: 800 !important;
   font-family: var(--font-sans) !important;
   border-radius: 4px 2px 3px 2px !important;
@@ -87,7 +110,7 @@ body {
   align-items: center !important;
   border: none !important;
   transform: rotate(-0.8deg) !important;
-  box-shadow: 0 2px 8px rgba(236, 72, 153, 0.2) !important;
+  box-shadow: 0 2px 8px rgba(225, 29, 72, 0.3) !important;
   transition: transform 0.2s ease, filter 0.2s ease;
 }
 .highlighter-pink:hover {
@@ -96,8 +119,8 @@ body {
 }
 
 input[type="text"], input[type="number"], input[type="password"], textarea, select {
-  background-color: #111111 !important;
-  border: 1px solid #333333 !important;
+  background-color: #1b070d !important;
+  border: 1px solid #3d141e !important;
   font-family: var(--font-sans) !important;
   font-weight: 500 !important;
   color: #FFFFFF !important;
@@ -108,8 +131,8 @@ input[type="text"], input[type="number"], input[type="password"], textarea, sele
 }
 
 input[type="text"]:focus, input[type="number"]:focus, input[type="password"]:focus, textarea:focus, select:focus {
-  border-color: #3B82F6 !important;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2) !important;
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25) !important;
 }
 
 button {
@@ -120,15 +143,15 @@ button {
 }
 
 button.bg-fc-neon-green {
-  background-color: #3B82F6 !important;
+  background: linear-gradient(135deg, #e11d48 0%, #ea580c 50%, #f59e0b 100%) !important;
   color: #FFFFFF !important;
   border: none !important;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(225, 29, 72, 0.4) !important;
 }
 
 button.bg-fc-neon-green:hover {
   transform: translateY(-2px) !important;
-  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.6) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.6) !important;
 }
 
 .hide-scrollbar::-webkit-scrollbar {
