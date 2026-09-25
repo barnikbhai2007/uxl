@@ -1,0 +1,49 @@
+name: Deploy UXL
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$SSH_PRIVATE_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh-keyscan -p "$VPS_PORT" "$VPS_HOST" >> ~/.ssh/known_hosts
+
+          ssh -i ~/.ssh/deploy_key \
+            -p "$VPS_PORT" \
+            "$VPS_USER@$VPS_HOST" << 'EOF'
+              set -e
+
+              if [ ! -d /opt/uxl/.git ]; then
+                sudo mkdir -p /opt/uxl
+                sudo chown -R "$USER:$USER" /opt/uxl
+                git clone https://github.com/barnikbhai2007/uxl.git /opt/uxl
+              fi
+
+              cd /opt/uxl
+
+              git fetch origin
+              git reset --hard origin/main
+
+              npm ci
+              npm run build
+
+              pm2 restart uxl --update-env || \
+              pm2 start "npx tsx server.ts" --name uxl --cwd /opt/uxl --update-env
+
+              pm2 save
+          EOF
