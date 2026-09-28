@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin, Lock } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS, MANAGERS_LIST } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess, Announcement, DirectChatMessage } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,11 +31,12 @@ import { RandomMatchDraw } from './components/RandomMatchDraw';
 import { PremierLeagueHeaderBanner, PremierLeagueLogo } from './components/PremierLeagueDecorations';
 import { PREMIER_LEAGUE_TEAMS, getClubManager } from './constants';
 import { ClubSpotsSelector } from './components/ClubSpotsSelector';
-import { soundService, requestBrowserNotificationPermission, sendBrowserNotification } from './utils/notificationSound';
+import { soundService, requestBrowserNotificationPermission, sendBrowserNotification, enablePushNotifications, sendPushTestNotification } from './utils/notificationSound';
 import { AdminAnnouncementModal } from './components/AdminAnnouncementModal';
 import { NotificationCenter } from './components/NotificationCenter';
 import { OpponentDirectChatModal } from './components/OpponentDirectChatModal';
 import { AnnouncementsViewModal } from './components/AnnouncementsViewModal';
+import { ChatsAndAnnouncementsTab } from './components/ChatsAndAnnouncementsTab';
 
 const WORLD_CUP_FLAGS = new Map([...WORLD_CUP_TEAMS, ...MANAGERS_LIST].map(t => [t.name, t.flag]));
 
@@ -2092,11 +2093,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     existingRegistrations={existingRegistrations}
                     config={config}
                     currentUserId={user?.uid}
-               currentUserIds={Array.from(new Set([
-                 user?.uid,
-                 myRegistrationData?.id,
-                 myRegistrationData?.userId,
-               ].filter((value): value is string => Boolean(value))))}
+                    currentUserIds={user?.uid ? [user.uid] : []}
                     onSelectClub={(club) => {
                       setFormData({
                         ...formData,
@@ -4981,7 +4978,9 @@ export default function App() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState<'fixtures' | 'trivia' | 'stats' | 'table' | 'bracket' | 'registration' | 'campaign'>('fixtures');
+  const [activeTab, setActiveTab] = useState<'fixtures' | 'chats' | 'trivia' | 'stats' | 'table' | 'bracket' | 'news' | 'registration' | 'campaign'>('fixtures');
+  const [chatsTabFilter, setChatsTabFilter] = useState<'all' | 'upcoming' | 'finished' | 'announcements'>('all');
+  const [chatsTabSearch, setChatsTabSearch] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
@@ -7417,34 +7416,45 @@ export default function App() {
 
       if (event.collection === 'match_chats' && (event.action === 'set' || event.action === 'update')) {
         const latest = event.data as DirectChatMessage;
-        const isForMe =
-          (user && latest.recipientId === user.uid) ||
-          (myRegistrationData && (
-            latest.recipientId === myRegistrationData.id ||
-            latest.recipientId === myRegistrationData.userId
-          ));
-        const isFromOther =
-          (!user || latest.senderId !== user.uid) &&
-          (!myRegistrationData || (
-            latest.senderId !== myRegistrationData.id &&
-            latest.senderId !== myRegistrationData.userId
-          ));
+        const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId].filter(Boolean);
+        const isForMe = myIds.includes(latest.recipientId) || (latest.recipientUserId && myIds.includes(latest.recipientUserId));
+        const isFromOther = !myIds.includes(latest.senderId);
 
         if (isForMe && isFromOther) {
           soundService.playMessageChime();
+          void sendBrowserNotification(`Match Chat: ${latest.senderName}`, {
+            body: latest.text,
+            tag: `match-chat-${latest.id}`,
+            data: { url: '/' }
+          });
+          if (activeChatOpponentId !== latest.senderId) {
+            setChatToast({
+              senderName: latest.senderName,
+              text: latest.text,
+              matchId: latest.matchId,
+              opponentId: latest.senderId
+            });
+            setTimeout(() => setChatToast(null), 8000);
+          }
         }
       }
 
-      if (event.collection === 'announcements' && event.action === 'set') {
+      if (event.collection === 'announcements' && (event.action === 'set' || event.action === 'update')) {
         const announcement = event.data as Announcement;
         soundService.playAnnouncementChime();
+        void sendBrowserNotification(`📢 ${announcement.title || 'Official Announcement'}`, {
+          body: announcement.content,
+          tag: `announcement-${announcement.id}`,
+          data: { url: '/' }
+        });
       }
     });
 
     return stop;
-  }, [user?.uid, myRegistrationData?.id, myRegistrationData?.userId]);
+  }, [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, activeChatOpponentId]);
 
   // Real-time Announcements Listener
+  const prevAnnouncementsCountRef = useRef(0);
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'announcements'), (snapshot) => {
       const list: Announcement[] = [];
@@ -7456,6 +7466,26 @@ export default function App() {
         if (!a.pinned && b.pinned) return 1;
         return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
       });
+
+      if (prevAnnouncementsCountRef.current > 0 && list.length > prevAnnouncementsCountRef.current) {
+        const newest = list[0];
+        if (newest) {
+          soundService.playAnnouncementChime();
+          void sendBrowserNotification(`📢 ${newest.title || 'Official Announcement'}`, {
+            body: newest.content,
+            tag: `announcement-${newest.id}`,
+            data: { url: '/' }
+          });
+          setChatToast({
+            senderName: `📢 Notice: ${newest.title}`,
+            text: newest.content,
+            matchId: '',
+            opponentId: ''
+          });
+          setTimeout(() => setChatToast(null), 9000);
+        }
+      }
+      prevAnnouncementsCountRef.current = list.length;
       setAnnouncements(list);
     }, (error) => {
       console.error("Error syncing announcements:", error);
@@ -7475,10 +7505,18 @@ export default function App() {
 
       if (prevMessagesCountRef.current > 0 && msgs.length > prevMessagesCountRef.current) {
         const latest = msgs[msgs.length - 1];
-        const isForMe = (user && latest.recipientId === user.uid) || (myRegistrationData && (latest.recipientId === myRegistrationData.id || latest.recipientId === myRegistrationData.userId));
-        const isFromOther = (!user || latest.senderId !== user.uid) && (!myRegistrationData || latest.senderId !== myRegistrationData.id);
+        const savedGuestName = typeof localStorage !== 'undefined' ? localStorage.getItem('chat_guest_name') : '';
+        const savedGuestUid = typeof localStorage !== 'undefined' ? localStorage.getItem('chat_guest_uid') : '';
+        const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, savedGuestUid].filter(Boolean);
+        const isFromOther = !myIds.includes(latest.senderId) && (!savedGuestName || latest.senderName !== savedGuestName);
 
-        if (isForMe && isFromOther) {
+        if (isFromOther) {
+          soundService.playMessageChime();
+          void sendBrowserNotification(`⚽ Match Chat: ${latest.senderName}`, {
+            body: latest.text,
+            tag: `match-chat-${latest.id}`,
+            data: { url: '/' }
+          });
           if (activeChatOpponentId !== latest.senderId) {
             setChatToast({
               senderName: latest.senderName,
@@ -7486,7 +7524,7 @@ export default function App() {
               matchId: latest.matchId,
               opponentId: latest.senderId
             });
-            setTimeout(() => setChatToast(null), 7000);
+            setTimeout(() => setChatToast(null), 8000);
           }
         }
       }
@@ -7498,6 +7536,60 @@ export default function App() {
     return () => unsub();
   }, [user, myRegistrationData, activeChatOpponentId]);
 
+  const handleSendMatchChatMessage = async (
+    matchId: string,
+    text: string,
+    recipientId?: string,
+    recipientName?: string
+  ) => {
+    const targetMatch = matches.find(m => m.id === matchId);
+    const isFinished = targetMatch ? (
+      targetMatch.status === 'finished' || 
+      (targetMatch.homeScore !== undefined && targetMatch.awayScore !== undefined && targetMatch.homeScore !== null)
+    ) : false;
+
+    if (isFinished) {
+      alert("Match is finished. Chat is closed and locked.");
+      return;
+    }
+
+    let guestUid = '';
+    let savedGuestName = '';
+    if (typeof localStorage !== 'undefined') {
+      guestUid = localStorage.getItem('chat_guest_uid') || '';
+      if (!guestUid) {
+        guestUid = `guest-${uuidv4().slice(0, 8)}`;
+        localStorage.setItem('chat_guest_uid', guestUid);
+      }
+      savedGuestName = localStorage.getItem('chat_guest_name') || '';
+    }
+
+    const myId = user?.uid || guestUid || `guest-${Date.now()}`;
+    const myName = myRegistrationData?.name || myRegistrationData?.fcName || user?.displayName || savedGuestName || 'Player';
+    const myClubName = myRegistrationData?.country || 'Premier League Club';
+    const myClubLogo = myRegistrationData?.logoUrl || getClubLogo(myClubName);
+
+    const newId = uuidv4();
+    const newMsg: DirectChatMessage = {
+      id: newId,
+      channelId: `match_${matchId}`,
+      matchId: matchId,
+      senderId: myId,
+      senderName: myName,
+      senderClub: myClubName,
+      senderPhoto: myClubLogo || undefined,
+      recipientId: recipientId || '',
+      recipientName: recipientName || 'Match Chat',
+      text: text.trim(),
+      createdAt: new Date().toISOString(),
+      matchScored: isFinished,
+      read: false
+    };
+
+    await setDoc(doc(db, 'match_chats', newId), newMsg);
+    soundService.playMessageChime();
+  };
+
   const handleAddAnnouncement = async (annData: Omit<Announcement, 'id' | 'createdAt'>) => {
     if (!isAdmin) return;
     const newId = uuidv4();
@@ -7507,6 +7599,12 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
     await setDoc(doc(db, 'announcements', newId), newAnn);
+    soundService.playAnnouncementChime();
+    void sendBrowserNotification(`📢 ${newAnn.title}`, {
+      body: newAnn.content,
+      tag: `announcement-${newAnn.id}`,
+      data: { url: '/' }
+    });
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
@@ -7533,6 +7631,7 @@ export default function App() {
     const oppReg = registrations.find(r => r.id === oppId || r.userId === oppId);
     const oppTeam = teams.find(t => t.id === oppId);
     const oppName = oppReg?.name || oppTeam?.name || 'Opponent';
+    const oppUserId = oppReg?.userId || '';
 
     const myClubName = myRegistrationData?.country || 'My Club';
     const myManager = myRegistrationData?.managerName || getClubManager(myClubName)?.manager;
@@ -7541,8 +7640,13 @@ export default function App() {
 
     const isMatchScored = activeChatMatch ? (
       activeChatMatch.status === 'finished' || 
-      (activeChatMatch.homeScore !== undefined && activeChatMatch.awayScore !== undefined)
+      (activeChatMatch.homeScore !== undefined && activeChatMatch.awayScore !== undefined && activeChatMatch.homeScore !== null)
     ) : false;
+
+    if (isMatchScored) {
+      alert("This match is finished. Chat is closed and archived.");
+      return;
+    }
 
     const newId = uuidv4();
     const newMsg: DirectChatMessage = {
@@ -7554,6 +7658,7 @@ export default function App() {
       senderClub: myClubName,
       senderPhoto: myPhoto,
       recipientId: oppId,
+      recipientUserId: oppUserId,
       recipientName: oppName,
       text,
       createdAt: new Date().toISOString(),
@@ -7568,18 +7673,33 @@ export default function App() {
     if (!activeChatOpponentId || !user) return [];
     const myId = user.uid;
     const myRegId = myRegistrationData?.id;
+    const myUserId = myRegistrationData?.userId;
     const oppId = activeChatOpponentId;
     const oppReg = registrations.find(r => r.id === oppId || r.userId === oppId);
     const oppUserId = oppReg?.userId;
+    const oppTeamId = teams.find(t => t.id === oppId)?.id;
+
+    const myAliases = new Set([myId, myRegId, myUserId].filter(Boolean));
+    const oppAliases = new Set([oppId, oppUserId, oppTeamId, oppReg?.id].filter(Boolean));
 
     return chatMessages.filter(m => {
-      const match1 = (m.senderId === myId || (myRegId && m.senderId === myRegId)) &&
-                     (m.recipientId === oppId || (oppUserId && m.recipientId === oppUserId));
-      const match2 = (m.senderId === oppId || (oppUserId && m.senderId === oppUserId)) &&
-                     (m.recipientId === myId || (myRegId && m.recipientId === myRegId));
-      return match1 || match2;
+      // 1. Direct match ID match (if active match is selected)
+      if (activeChatMatch && m.matchId && m.matchId === activeChatMatch.id) {
+        return true;
+      }
+
+      // 2. Sender and recipient alias match
+      const isFromMeToOpp = myAliases.has(m.senderId) && (oppAliases.has(m.recipientId) || (m.recipientUserId && oppAliases.has(m.recipientUserId)));
+      const isFromOppToMe = oppAliases.has(m.senderId) && (myAliases.has(m.recipientId) || (m.recipientUserId && myAliases.has(m.recipientUserId)));
+
+      // 3. Channel ID match
+      const pair1 = [myId, oppId].sort().join('_');
+      const pair2 = myRegId ? [myRegId, oppId].sort().join('_') : null;
+      const isChannelMatch = m.channelId === pair1 || (pair2 && m.channelId === pair2);
+
+      return isFromMeToOpp || isFromOppToMe || isChannelMatch;
     });
-  }, [chatMessages, activeChatOpponentId, user, myRegistrationData, registrations]);
+  }, [chatMessages, activeChatOpponentId, activeChatMatch, user, myRegistrationData, registrations, teams]);
 
   const pinnedAnnouncement = useMemo(() => {
     return announcements.find(a => a.pinned) || announcements[0] || null;
@@ -7964,6 +8084,7 @@ export default function App() {
           <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 pointer-events-auto w-full md:w-auto overflow-x-auto hide-scrollbar pb-4 md:pb-0">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
+              { id: 'chats', label: 'Chats & Notice', icon: MessageSquare },
               { id: 'stats', label: 'Stats', icon: BarChart2 },
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
@@ -8005,6 +8126,12 @@ export default function App() {
                 <span className="relative z-20 tracking-wide">
                   {tab.label}
                 </span>
+                {tab.id === 'chats' && (announcements.length > 0 || chatMessages.length > 0) && (
+                  <span className="relative z-20 flex h-2 w-2 ml-0.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00ff85] opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00ff85]"></span>
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -8018,7 +8145,7 @@ export default function App() {
             initial={{ opacity: 0, y: 40, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 40, scale: 0.95 }}
-            className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-[400px] z-[9990] p-4 rounded-2xl bg-zinc-950/95 border border-fc-neon-green/60 shadow-[0_12px_45px_rgba(0,0,0,0.85)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white backdrop-blur-xl"
+            className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-[420px] z-[9990] p-4 rounded-2xl bg-zinc-950/95 border border-fc-neon-green/60 shadow-[0_12px_45px_rgba(0,0,0,0.85)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white backdrop-blur-xl"
           >
             <div className="flex items-center gap-3 min-w-0">
               <div className="p-2.5 rounded-xl bg-fc-neon-green/20 text-fc-neon-green shrink-0">
@@ -8027,22 +8154,25 @@ export default function App() {
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="font-bold text-sm text-fc-neon-green truncate">{chatToast.senderName}</span>
-                  <span className="text-[10px] text-white/50">messaged in match chat</span>
                 </div>
-                <p className="text-xs text-white/85 line-clamp-1 italic mt-0.5">"{chatToast.text}"</p>
+                <p className="text-xs text-white/85 line-clamp-2 italic mt-0.5 font-sans">"{chatToast.text}"</p>
               </div>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end pt-1 sm:pt-0">
               <button
                 onClick={() => {
-                  setActiveChatOpponentId(chatToast.opponentId);
-                  const found = matches.find(m => m.id === chatToast.matchId) || null;
-                  setActiveChatMatch(found);
+                  setActiveTab('chats');
+                  if (chatToast.matchId) {
+                    setTimeout(() => {
+                      const el = document.getElementById(`match-chat-${chatToast.matchId}`);
+                      if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }, 200);
+                  }
                   setChatToast(null);
                 }}
                 className="flex-1 sm:flex-initial px-4 py-2 bg-fc-neon-green text-black font-extrabold text-xs uppercase tracking-wider rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md text-center"
               >
-                Reply Now &rarr;
+                View Now &rarr;
               </button>
               <button
                 onClick={() => setChatToast(null)}
@@ -8060,6 +8190,31 @@ export default function App() {
       <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
 
         <AnimatePresence mode="wait">
+          {activeTab === 'chats' && (
+            <motion.div
+              key="chats"
+              initial={{ opacity: 0, y: 15 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -15 }}
+              className="w-full"
+            >
+              <ChatsAndAnnouncementsTab
+                announcements={announcements}
+                messages={chatMessages}
+                matches={matches}
+                teams={teams}
+                registrations={registrations}
+                currentUser={user}
+                myRegistrationData={myRegistrationData}
+                isAdmin={isAdmin}
+                onOpenAdminAnnouncementModal={() => setIsAdminAnnouncementModalOpen(true)}
+                onDeleteAnnouncement={handleDeleteAnnouncement}
+                onTogglePinAnnouncement={handleTogglePinAnnouncement}
+                onSendMessage={handleSendMatchChatMessage}
+              />
+            </motion.div>
+          )}
+
           {activeTab === 'campaign' && (
             <motion.div
               key="campaign"

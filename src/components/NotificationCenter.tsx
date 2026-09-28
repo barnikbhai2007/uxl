@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, BellRing, X, Megaphone, MessageSquare, Volume2, VolumeX, Shield, Check, ExternalLink, Sparkles, Pin } from 'lucide-react';
 import { Announcement, DirectChatMessage } from '../types';
-import { soundService, requestBrowserNotificationPermission, enablePushNotifications, sendPushTestNotification } from '../utils/notificationSound';
+import { soundService, requestBrowserNotificationPermission, sendBrowserNotification, enablePushNotifications, sendPushTestNotification } from '../utils/notificationSound';
 
 interface NotificationCenterProps {
   announcements: Announcement[];
@@ -68,7 +68,9 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
   // Filter unread
   const unreadAnnouncements = announcements.filter(a => !readAnnouncementIds.includes(a.id));
-  const myIncomingMessages = messages.filter(m => m.recipientId === currentUserId);
+  const myIncomingMessages = currentUserId 
+    ? messages.filter(m => m.recipientId === currentUserId || m.recipientUserId === currentUserId)
+    : messages.slice(-10);
   const unreadMessages = myIncomingMessages.filter(m => !readMessageIds.includes(m.id));
 
   const totalUnreadCount = unreadAnnouncements.length + unreadMessages.length;
@@ -78,9 +80,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     setPermission(res);
 
     if (res === 'granted') {
-      const pushEnabled = await enablePushNotifications(currentUserIds);
       soundService.playAnnouncementChime();
-
+      void sendBrowserNotification('🔔 Chrome Notifications Active', {
+        body: 'You will receive real-time notifications for official notices and match chats!',
+        tag: 'perm-granted-bell'
+      });
+      const pushEnabled = await enablePushNotifications(currentUserIds);
       if (pushEnabled) {
         void sendPushTestNotification();
       }

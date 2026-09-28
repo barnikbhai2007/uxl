@@ -213,6 +213,7 @@ export interface DirectChatMessage {
   senderClub?: string;
   senderPhoto?: string;
   recipientId: string;
+  recipientUserId?: string;
   recipientName: string;
   text: string;
   createdAt: string;

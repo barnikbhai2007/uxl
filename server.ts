@@ -203,12 +203,14 @@ app.get("/api/push/public-key", (_req, res) => {
 });
 
 app.post("/api/push/subscribe", async (req, res) => {
-  const uid = getAuthenticatedUid(req);
-  if (!uid) {
-    return res.status(401).json({ success: false, error: "Unauthorized" });
-  }
-
   try {
+    const authUid = getAuthenticatedUid(req);
+    const requestedUids = Array.isArray(req.body?.uids)
+      ? req.body.uids.filter((value: any): value is string => typeof value === "string" && value.length > 0)
+      : [];
+    const bodyUid = typeof req.body?.uid === "string" && req.body.uid.length > 0 ? req.body.uid : null;
+    const uid = authUid || bodyUid || requestedUids[0] || "guest";
+
     const subscription = req.body?.subscription || req.body;
     const endpoint = subscription?.endpoint;
     const keys = subscription?.keys;
@@ -222,10 +224,6 @@ app.post("/api/push/subscribe", async (req, res) => {
     ) {
       return res.status(400).json({ success: false, error: "Invalid push subscription" });
     }
-
-    const requestedUids = Array.isArray(req.body?.uids)
-      ? req.body.uids.filter((value: any): value is string => typeof value === "string" && value.length > 0)
-      : [];
 
     const uids = Array.from(new Set([uid, ...requestedUids]));
     const id = pushSubscriptionId(endpoint);
@@ -252,13 +250,15 @@ app.post("/api/push/subscribe", async (req, res) => {
 });
 
 app.post("/api/push/test", async (req, res) => {
-  const uid = getAuthenticatedUid(req);
-  if (!uid) {
-    return res.status(401).json({ success: false, error: "Unauthorized" });
-  }
+  const authUid = getAuthenticatedUid(req);
+  const requestedUids = Array.isArray(req.body?.uids)
+    ? req.body.uids.filter((value: any): value is string => typeof value === "string" && value.length > 0)
+    : [];
+  const uid = authUid || req.body?.uid || requestedUids[0];
+  const targetUids = uid ? [uid, ...requestedUids] : null;
 
-  await sendPushNotifications([uid], {
-    title: "UXI Push Test 🔔",
+  await sendPushNotifications(targetUids, {
+    title: "UXI Tournament Notifications 🔔",
     body: "Background push notifications are connected on this device.",
     url: "/",
     tag: "uxi-push-test",
@@ -472,17 +472,17 @@ app.post("/api/db/set", async (req, res) => {
     );
 
     if (collection === "match_chats") {
-      const targetUids = [data?.senderId, data?.recipientId].filter(
-        (value: any): value is string => typeof value === "string" && value.length > 0
-      );
       broadcastRealtime(
-        { type: "db_change", collection, action: "set", data },
-        Array.from(new Set(targetUids))
+        { type: "db_change", collection, action: "set", data }
       );
 
-      if (data?.recipientId) {
+      const recipientUids = [data?.recipientId, data?.recipientUserId].filter(
+        (value: any): value is string => typeof value === "string" && value.length > 0
+      );
+
+      if (recipientUids.length > 0) {
         void sendPushNotifications(
-          [data.recipientId],
+          recipientUids,
           {
             title: `Match Chat: ${data?.senderName || "Opponent"}`,
             body: String(data?.text || "You received a new message."),

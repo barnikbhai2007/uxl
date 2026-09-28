@@ -111,18 +111,24 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
-export async function sendPushTestNotification(): Promise<boolean> {
+export async function sendPushTestNotification(identityIds: string[] = []): Promise<boolean> {
   if (typeof window === 'undefined') return false;
 
   const token = localStorage.getItem('auth_token');
-  if (!token) return false;
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(`${PUSH_API_URL}/api/push/test`, {
       method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
+      body: JSON.stringify({
+        uids: Array.from(new Set(identityIds.filter(Boolean))),
+      }),
     });
 
     return response.ok;
@@ -142,7 +148,6 @@ export async function enablePushNotifications(identityIds: string[] = []): Promi
   }
 
   const token = localStorage.getItem('auth_token');
-  if (!token) return false;
 
   try {
     const registration = await registerNotificationServiceWorker();
@@ -165,12 +170,16 @@ export async function enablePushNotifications(identityIds: string[] = []): Promi
       });
     }
 
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    };
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const saveResponse = await fetch(`${PUSH_API_URL}/api/push/subscribe`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       body: JSON.stringify({
         subscription: subscription.toJSON(),
         uids: Array.from(new Set(identityIds.filter(Boolean))),
@@ -204,29 +213,37 @@ export async function requestBrowserNotificationPermission(): Promise<Notificati
 
 export async function sendBrowserNotification(title: string, options?: NotificationOptions) {
   if (typeof window === 'undefined' || !('Notification' in window)) return;
-  if (Notification.permission === 'granted') {
-    try {
-      if ('serviceWorker' in navigator) {
-        const registration = await registerNotificationServiceWorker() || await navigator.serviceWorker.getRegistration();
-        const activeRegistration = registration
-          ? await navigator.serviceWorker.ready.catch(() => registration)
-          : null;
-        if (activeRegistration && 'showNotification' in activeRegistration) {
-          await activeRegistration.showNotification(title, {
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
-            ...options
-          });
+  if (Notification.permission !== 'granted') return;
+
+  const defaultOptions: NotificationOptions = {
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
+    silent: false,
+    ...options,
+  };
+
+  try {
+    // Attempt ServiceWorker showNotification first with a fast 400ms timeout
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await Promise.race([
+          navigator.serviceWorker.ready,
+          registerNotificationServiceWorker(),
+          new Promise<null>((resolve) => setTimeout(() => resolve(null), 400))
+        ]);
+
+        if (registration && 'showNotification' in registration) {
+          await registration.showNotification(title, defaultOptions);
           return;
         }
+      } catch (swErr) {
+        // Fall through to standard Notification
       }
-      new Notification(title, {
-        icon: '/favicon.ico',
-        badge: '/favicon.ico',
-        ...options,
-      });
-    } catch (err) {
-      console.warn('Failed to send browser notification:', err);
     }
+
+    // Standard Notification constructor fallback
+    new Notification(title, defaultOptions);
+  } catch (err) {
+    console.warn('Failed to send browser notification:', err);
   }
 }

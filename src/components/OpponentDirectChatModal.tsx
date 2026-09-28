@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Send, Smile, Shield, Check, CheckCheck, Clock, 
-  MessageSquare, User, Trophy, Calendar, Sparkles, AlertCircle, History, Info
+  MessageSquare, User, Trophy, Calendar, Sparkles, AlertCircle, History, Info, Lock
 } from 'lucide-react';
 import { Team, Match, DirectChatMessage, Registration } from '../types';
 import { soundService } from '../utils/notificationSound';
@@ -379,42 +379,49 @@ export const OpponentDirectChatModal: React.FC<OpponentDirectChatModalProps> = (
           )}
         </AnimatePresence>
 
-        {/* Message Input Footer */}
-        <form
-          onSubmit={handleSend}
-          className="p-3 border-t border-white/10 bg-zinc-950 flex items-center gap-2"
-        >
-          <button
-            type="button"
-            onClick={() => setShowEmojiPicker(!showEmojiPicker)}
-            className={`p-2.5 rounded-xl border transition-all ${
-              showEmojiPicker
-                ? 'bg-fc-neon-green/20 text-fc-neon-green border-fc-neon-green/40'
-                : 'bg-white/5 text-white/60 hover:text-white border-white/10 hover:bg-white/10'
-            }`}
-            title="Emoji Picker"
+        {/* Message Input Footer: Active for upcoming matches, locked when match is done */}
+        {matchFinished ? (
+          <div className="p-4 border-t border-white/10 bg-zinc-950/90 flex items-center justify-center gap-2 text-white/50 text-xs font-semibold">
+            <Lock className="w-4 h-4 text-amber-400" />
+            <span>Match finished — chat is closed and archived (read-only)</span>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSend}
+            className="p-3 border-t border-white/10 bg-zinc-950 flex items-center gap-2"
           >
-            <Smile className="w-5 h-5" />
-          </button>
+            <button
+              type="button"
+              onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              className={`p-2.5 rounded-xl border transition-all ${
+                showEmojiPicker
+                  ? 'bg-fc-neon-green/20 text-fc-neon-green border-fc-neon-green/40'
+                  : 'bg-white/5 text-white/60 hover:text-white border-white/10 hover:bg-white/10'
+              }`}
+              title="Emoji Picker"
+            >
+              <Smile className="w-5 h-5" />
+            </button>
 
-          <input
-            ref={inputRef}
-            type="text"
-            placeholder={matchFinished ? "Send message to opponent (chat preserved)..." : "Message your opponent..."}
-            value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
-            className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-fc-neon-green transition-all"
-          />
+            <input
+              ref={inputRef}
+              type="text"
+              placeholder="Message your opponent..."
+              value={inputText}
+              onChange={(e) => setInputText(e.target.value)}
+              className="flex-1 bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/40 focus:outline-none focus:border-fc-neon-green transition-all"
+            />
 
-          <button
-            type="submit"
-            disabled={!inputText.trim() || isSending}
-            className="p-2.5 bg-fc-neon-green text-black font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none shadow-md shadow-fc-neon-green/20"
-            title="Send Message"
-          >
-            <Send className="w-5 h-5" />
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={!inputText.trim() || isSending}
+              className="p-2.5 bg-fc-neon-green text-black font-bold rounded-xl hover:brightness-110 active:scale-95 transition-all disabled:opacity-40 disabled:pointer-events-none shadow-md shadow-fc-neon-green/20 cursor-pointer"
+              title="Send Message"
+            >
+              <Send className="w-5 h-5" />
+            </button>
+          </form>
+        )}
       </motion.div>
     </div>,
     document.body
