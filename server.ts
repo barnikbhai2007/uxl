@@ -19,6 +19,79 @@ app.use(express.json({ limit: '10mb' }));
 
 const JWT_SECRET = process.env.JWT_SECRET || "some_random_secret_string";
 
+type RealtimeClient = {
+  id: number;
+  uid: string | null;
+  res: express.Response;
+};
+
+const realtimeClients = new Map<number, RealtimeClient>();
+let nextRealtimeClientId = 1;
+
+function sendRealtimeEvent(client: RealtimeClient, payload: any) {
+  try {
+    client.res.write(`event: uxl\\ndata: ${JSON.stringify(payload)}\\n\\n`);
+  } catch {
+    // The connection will be removed by the close handler.
+  }
+}
+
+function broadcastRealtime(payload: any, targetUids?: string[]) {
+  for (const [id, client] of realtimeClients) {
+    if (targetUids && targetUids.length > 0) {
+      if (!client.uid || !targetUids.includes(client.uid)) continue;
+    }
+    sendRealtimeEvent(client, payload);
+  }
+}
+
+// -------------------------------------------------------------
+// Instant realtime stream (SSE)
+// -------------------------------------------------------------
+app.get("/api/events", (req, res) => {
+  let uid: string | null = null;
+  const authHeader = req.headers.authorization;
+
+  if (authHeader) {
+    const token = authHeader.split(" ")[1];
+    try {
+      const decoded: any = jwt.verify(token, JWT_SECRET);
+      uid = typeof decoded?.uid === "string" ? decoded.uid : null;
+    } catch {
+      return res.status(401).json({ success: false, error: "Invalid token" });
+    }
+  }
+
+  res.status(200);
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-transform");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders?.();
+
+  const client: RealtimeClient = {
+    id: nextRealtimeClientId++,
+    uid,
+    res,
+  };
+
+  realtimeClients.set(client.id, client);
+  sendRealtimeEvent(client, { type: "connected", at: Date.now() });
+
+  const heartbeat = setInterval(() => {
+    try {
+      res.write(`: heartbeat ${Date.now()}\\n\\n`);
+    } catch {
+      clearInterval(heartbeat);
+    }
+  }, 15000);
+
+  req.on("close", () => {
+    clearInterval(heartbeat);
+    realtimeClients.delete(client.id);
+  });
+});
+
 // -------------------------------------------------------------
 // Cloudflare R2 Upload Client
 // -------------------------------------------------------------
@@ -203,6 +276,19 @@ app.post("/api/db/set", async (req, res) => {
       "INSERT INTO documents (collection, id, data) VALUES (?, ?, ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data",
       [collection, id, dataStr]
     );
+
+    if (collection === "match_chats") {
+      const targetUids = [data?.senderId, data?.recipientId].filter(
+        (value: any): value is string => typeof value === "string" && value.length > 0
+      );
+      broadcastRealtime(
+        { type: "db_change", collection, action: "set", data },
+        Array.from(new Set(targetUids))
+      );
+    } else if (collection === "announcements") {
+      broadcastRealtime({ type: "db_change", collection, action: "set", data });
+    }
+
     res.json({ success: true });
   } catch (e: any) {
     console.error("/api/db/set Error:", e);
@@ -225,6 +311,25 @@ app.post("/api/db/update", async (req, res) => {
       "UPDATE documents SET data = ? WHERE collection = ? AND id = ?",
       [newDataStr, collection, id]
     );
+
+    if (collection === "announcements") {
+      broadcastRealtime({
+        type: "db_change",
+        collection,
+        action: "update",
+        data: JSON.parse(newDataStr),
+      });
+    } else if (collection === "match_chats") {
+      const mergedData = JSON.parse(newDataStr);
+      const targetUids = [mergedData?.senderId, mergedData?.recipientId].filter(
+        (value: any): value is string => typeof value === "string" && value.length > 0
+      );
+      broadcastRealtime(
+        { type: "db_change", collection, action: "update", data: mergedData },
+        Array.from(new Set(targetUids))
+      );
+    }
+
     res.json({ success: true });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
@@ -235,6 +340,11 @@ app.delete("/api/db/delete", async (req, res) => {
   try {
     const { collection, id } = req.body;
     await runD1Query("DELETE FROM documents WHERE collection = ? AND id = ?", [collection, id]);
+
+    if (collection === "announcements" || collection === "match_chats") {
+      broadcastRealtime({ type: "db_change", collection, action: "delete", id });
+    }
+
     res.json({ success: true });
   } catch (e: any) {
     res.status(500).json({ success: false, error: e.message });
