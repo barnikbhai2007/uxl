@@ -3,12 +3,13 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, BellRing, X, Megaphone, MessageSquare, Volume2, VolumeX, Shield, Check, ExternalLink, Sparkles, Pin } from 'lucide-react';
 import { Announcement, DirectChatMessage } from '../types';
-import { soundService, requestBrowserNotificationPermission, sendBrowserNotification } from '../utils/notificationSound';
+import { soundService, requestBrowserNotificationPermission, sendBrowserNotification, enablePushNotifications } from '../utils/notificationSound';
 
 interface NotificationCenterProps {
   announcements: Announcement[];
   messages: DirectChatMessage[];
   currentUserId?: string;
+  currentUserIds?: string[];
   onOpenChatWithOpponent?: (opponentId: string, matchId?: string) => void;
   onViewAllAnnouncements?: () => void;
 }
@@ -17,6 +18,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   announcements,
   messages,
   currentUserId,
+  currentUserIds = [],
   onOpenChatWithOpponent,
   onViewAllAnnouncements,
 }) => {
@@ -47,6 +49,12 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     }
   }, []);
 
+  useEffect(() => {
+    if (permission === 'granted' && currentUserIds.length > 0) {
+      void enablePushNotifications(currentUserIds);
+    }
+  }, [permission, currentUserIds.join('|')]);
+
   // Lock body scroll when drawer is open
   useEffect(() => {
     if (isOpen && typeof document !== 'undefined') {
@@ -68,10 +76,14 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const handleRequestPermission = async () => {
     const res = await requestBrowserNotificationPermission();
     setPermission(res);
+
     if (res === 'granted') {
+      const pushEnabled = await enablePushNotifications(currentUserIds);
       soundService.playAnnouncementChime();
-      sendBrowserNotification('Notifications Enabled! 🔔', {
-        body: 'You will now receive live match updates, announcements, and direct messages from opponents.'
+      void sendBrowserNotification('Notifications Enabled! 🔔', {
+        body: pushEnabled
+          ? 'You will now receive live match updates, announcements, and direct messages even when UXI is in the background.'
+          : 'Browser permission is enabled, but background push setup failed. Please try enabling notifications again.'
       });
     }
   };
