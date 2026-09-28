@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, BellRing, X, Megaphone, MessageSquare, Volume2, VolumeX, Shield, Check, ExternalLink, Sparkles, Pin } from 'lucide-react';
 import { Announcement, DirectChatMessage } from '../types';
-import { soundService, requestBrowserNotificationPermission, sendBrowserNotification, enablePushNotifications } from '../utils/notificationSound';
+import { soundService, requestBrowserNotificationPermission, enablePushNotifications, sendPushTestNotification } from '../utils/notificationSound';
 
 interface NotificationCenterProps {
   announcements: Announcement[];
@@ -80,11 +80,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
     if (res === 'granted') {
       const pushEnabled = await enablePushNotifications(currentUserIds);
       soundService.playAnnouncementChime();
-      void sendBrowserNotification('Notifications Enabled! 🔔', {
-        body: pushEnabled
-          ? 'You will now receive live match updates, announcements, and direct messages even when UXI is in the background.'
-          : 'Browser permission is enabled, but background push setup failed. Please try enabling notifications again.'
-      });
+
+      if (pushEnabled) {
+        void sendPushTestNotification();
+      }
     }
   };
 
