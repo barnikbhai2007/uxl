@@ -34,7 +34,6 @@ import { ClubSpotsSelector } from './components/ClubSpotsSelector';
 import { soundService, requestBrowserNotificationPermission, sendBrowserNotification } from './utils/notificationSound';
 import { AdminAnnouncementModal } from './components/AdminAnnouncementModal';
 import { NotificationCenter } from './components/NotificationCenter';
-import { NotificationPermissionBanner } from './components/NotificationPermissionBanner';
 import { OpponentDirectChatModal } from './components/OpponentDirectChatModal';
 import { AnnouncementsViewModal } from './components/AnnouncementsViewModal';
 
@@ -7981,61 +7980,53 @@ export default function App() {
         </div>
       </nav>
 
-      {/* Main Content */}
-      <main className="max-w-5xl mx-auto px-4 py-12">
-        {/* Ask Users To Turn On Notifications & Direct Broadcast Announcement Bar */}
-        <NotificationPermissionBanner
-          pinnedAnnouncement={pinnedAnnouncement}
-          onOpenAnnouncement={(ann) => {
-            setSelectedAnnouncement(ann);
-            setIsAnnouncementsViewModalOpen(true);
-          }}
-        />
+      {/* Floating Opponent Chat Alert Toast (Discrete floating corner notification, never pushes or overlays fixtures) */}
+      <AnimatePresence>
+        {chatToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 40, scale: 0.95 }}
+            className="fixed bottom-4 right-4 left-4 sm:left-auto sm:w-[400px] z-[9990] p-4 rounded-2xl bg-zinc-950/95 border border-fc-neon-green/60 shadow-[0_12px_45px_rgba(0,0,0,0.85)] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white backdrop-blur-xl"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="p-2.5 rounded-xl bg-fc-neon-green/20 text-fc-neon-green shrink-0">
+                <MessageSquare className="w-5 h-5 animate-bounce" />
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-sm text-fc-neon-green truncate">{chatToast.senderName}</span>
+                  <span className="text-[10px] text-white/50">messaged in match chat</span>
+                </div>
+                <p className="text-xs text-white/85 line-clamp-1 italic mt-0.5">"{chatToast.text}"</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end pt-1 sm:pt-0">
+              <button
+                onClick={() => {
+                  setActiveChatOpponentId(chatToast.opponentId);
+                  const found = matches.find(m => m.id === chatToast.matchId) || null;
+                  setActiveChatMatch(found);
+                  setChatToast(null);
+                }}
+                className="flex-1 sm:flex-initial px-4 py-2 bg-fc-neon-green text-black font-extrabold text-xs uppercase tracking-wider rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md text-center"
+              >
+                Reply Now &rarr;
+              </button>
+              <button
+                onClick={() => setChatToast(null)}
+                className="p-2 text-white/40 hover:text-white rounded-xl hover:bg-white/10 shrink-0"
+                aria-label="Dismiss chat alert"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Floating Opponent Chat Alert Toast (Mobile Compatible) */}
-        <AnimatePresence>
-          {chatToast && (
-            <motion.div
-              initial={{ opacity: 0, y: -20, scale: 0.95 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -20, scale: 0.95 }}
-              className="mb-6 p-4 rounded-2xl bg-zinc-900/95 border border-fc-neon-green/50 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white backdrop-blur-xl"
-            >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="p-2.5 rounded-xl bg-fc-neon-green/20 text-fc-neon-green shrink-0">
-                  <MessageSquare className="w-5 h-5 animate-bounce" />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-sm text-fc-neon-green truncate">{chatToast.senderName}</span>
-                    <span className="text-[10px] text-white/40">messaged in match chat</span>
-                  </div>
-                  <p className="text-xs text-white/85 line-clamp-1 italic mt-0.5">"{chatToast.text}"</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end pt-1 sm:pt-0">
-                <button
-                  onClick={() => {
-                    setActiveChatOpponentId(chatToast.opponentId);
-                    const found = matches.find(m => m.id === chatToast.matchId) || null;
-                    setActiveChatMatch(found);
-                    setChatToast(null);
-                  }}
-                  className="flex-1 sm:flex-initial px-4 py-2 bg-fc-neon-green text-black font-extrabold text-xs uppercase tracking-wider rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md text-center"
-                >
-                  Reply Now &rarr;
-                </button>
-                <button
-                  onClick={() => setChatToast(null)}
-                  className="p-2 text-white/40 hover:text-white rounded-xl hover:bg-white/10 shrink-0"
-                  aria-label="Dismiss chat alert"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+      {/* Main Content */}
+      <main className="max-w-5xl mx-auto px-4 py-8 md:py-12">
 
         <AnimatePresence mode="wait">
           {activeTab === 'campaign' && (

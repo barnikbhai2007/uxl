@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   X, Send, Smile, Shield, Check, CheckCheck, Clock, 
@@ -119,8 +120,26 @@ export const OpponentDirectChatModal: React.FC<OpponentDirectChatModalProps> = (
 
   const matchFinished = isScored || match?.status === 'finished' || (match?.homeScore !== undefined && match?.awayScore !== undefined);
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/80 backdrop-blur-md">
+  // Lock body scroll when open
+  useEffect(() => {
+    if (isOpen && typeof document !== 'undefined') {
+      const orig = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = orig;
+      };
+    }
+  }, [isOpen]);
+
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div 
+      className="fixed inset-0 z-[99990] flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/85 backdrop-blur-md"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 25 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -397,6 +416,7 @@ export const OpponentDirectChatModal: React.FC<OpponentDirectChatModalProps> = (
           </button>
         </form>
       </motion.div>
-    </div>
+    </div>,
+    document.body
   );
 };

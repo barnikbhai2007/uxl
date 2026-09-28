@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { motion, AnimatePresence } from 'motion/react';
 import { Bell, BellRing, X, Megaphone, MessageSquare, Volume2, VolumeX, Shield, Check, ExternalLink, Sparkles, Pin } from 'lucide-react';
 import { Announcement, DirectChatMessage } from '../types';
@@ -23,6 +24,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [activeTab, setActiveTab] = useState<'all' | 'announcements' | 'messages'>('all');
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [mounted, setMounted] = useState(false);
   const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('read_announcements') || '[]');
@@ -39,18 +41,17 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   });
 
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setPermission(Notification.permission);
     }
   }, []);
 
-  // Lock body scroll on mobile when drawer is open
+  // Lock body scroll when drawer is open
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && typeof document !== 'undefined') {
       const originalOverflow = document.body.style.overflow;
-      if (window.innerWidth < 640) {
-        document.body.style.overflow = 'hidden';
-      }
+      document.body.style.overflow = 'hidden';
       return () => {
         document.body.style.overflow = originalOverflow;
       };
@@ -97,49 +98,59 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   };
 
   return (
-    <div className="relative">
-      {/* Bell Trigger Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2.5 sm:p-3 rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 text-white hover:text-fc-neon-green transition-all focus:outline-none touch-manipulation"
-        title="Notifications & Announcements"
-        aria-label="Open notifications"
-      >
-        {totalUnreadCount > 0 ? (
-          <BellRing className="w-5 h-5 text-fc-neon-green animate-wiggle" />
-        ) : (
-          <Bell className="w-5 h-5 text-white/70 hover:text-white" />
-        )}
+    <>
+      <div className="relative inline-flex items-center">
+        {/* Bell Trigger Button with comfortable 44px+ touch target */}
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsOpen(prev => !prev);
+          }}
+          className="relative p-2.5 sm:p-3 min-w-[42px] min-h-[42px] flex items-center justify-center rounded-2xl bg-white/5 hover:bg-white/10 active:scale-95 border border-white/10 text-white hover:text-fc-neon-green transition-all focus:outline-none touch-manipulation shadow-sm cursor-pointer"
+          title="Notifications & Announcements"
+          aria-label="Open notifications"
+        >
+          {totalUnreadCount > 0 ? (
+            <BellRing className="w-5 h-5 text-fc-neon-green animate-wiggle" />
+          ) : (
+            <Bell className="w-5 h-5 text-white/70 hover:text-white" />
+          )}
 
-        {totalUnreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[20px] h-[20px] text-[10px] font-extrabold bg-fc-neon-green text-black rounded-full flex items-center justify-center shadow-lg shadow-fc-neon-green/50 animate-pulse">
-            {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
-          </span>
-        )}
-      </button>
+          {totalUnreadCount > 0 && (
+            <span className="absolute -top-1 -right-1 px-1.5 py-0.5 min-w-[20px] h-[20px] text-[10px] font-extrabold bg-fc-neon-green text-black rounded-full flex items-center justify-center shadow-lg shadow-fc-neon-green/50 animate-pulse">
+              {totalUnreadCount > 9 ? '9+' : totalUnreadCount}
+            </span>
+          )}
+        </button>
+      </div>
 
-      {/* Notification Center: Fixed Slide-up Bottom Sheet on Mobile, Fixed Popover on Desktop */}
-      <AnimatePresence>
-        {isOpen && (
-          <>
-            {/* Backdrop for both mobile and desktop */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[120] bg-black/75 backdrop-blur-sm"
-              onClick={() => setIsOpen(false)}
-            />
+      {/* Render drawer via Portal directly into document.body to avoid clipping or stacking issues */}
+      {mounted && createPortal(
+        <AnimatePresence>
+          {isOpen && (
+            <div className="fixed inset-0 z-[99998] pointer-events-auto">
+              {/* Backdrop for both mobile and desktop */}
+              <motion.div
+                key="notification-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/80 backdrop-blur-md"
+                onClick={() => setIsOpen(false)}
+              />
 
-            <motion.div
-              initial={{ opacity: 0, y: 40 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 40 }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="fixed inset-x-0 bottom-0 sm:bottom-auto sm:inset-x-auto sm:top-16 sm:right-6 md:right-8 sm:w-96 w-full max-h-[88vh] sm:max-h-[80vh] rounded-t-[2rem] sm:rounded-3xl bg-zinc-950 border-t sm:border border-white/15 shadow-2xl z-[130] overflow-hidden flex flex-col"
-            >
+              {/* Notification Drawer: Slide-up Bottom Sheet on Mobile, Popover on Desktop */}
+              <motion.div
+                key="notification-drawer"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                transition={{ type: "spring", damping: 28, stiffness: 350 }}
+                className="fixed inset-x-0 bottom-0 sm:bottom-auto sm:top-20 sm:right-6 sm:inset-x-auto sm:w-[420px] w-full max-h-[85vh] sm:max-h-[80vh] rounded-t-[2rem] sm:rounded-3xl bg-zinc-950 border-t sm:border border-white/20 shadow-[0_20px_70px_rgba(0,0,0,0.9)] z-[99999] overflow-hidden flex flex-col"
+              >
               {/* Mobile Drawer Pull Indicator */}
-              <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
+              <div className="w-12 h-1.5 bg-white/25 rounded-full mx-auto mt-2.5 mb-1 sm:hidden shrink-0" />
 
               {/* Header */}
               <div className="p-4 border-b border-white/10 bg-gradient-to-r from-fc-purple-dark via-zinc-950 to-zinc-900 flex items-center justify-between">
@@ -149,7 +160,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   </div>
                   <div>
                     <h3 className="font-bold text-white text-sm">Notifications</h3>
-                    <p className="text-[10px] text-white/40">
+                    <p className="text-[10px] text-white/50">
                       {totalUnreadCount > 0 ? `${totalUnreadCount} new updates` : 'All caught up'}
                     </p>
                   </div>
@@ -165,7 +176,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                   )}
                   <button
                     onClick={() => setIsOpen(false)}
-                    className="p-2 text-white/40 hover:text-white rounded-xl hover:bg-white/5 active:scale-95 transition-all"
+                    className="p-2 text-white/60 hover:text-white rounded-xl hover:bg-white/10 active:scale-95 transition-all min-w-[36px] min-h-[36px] flex items-center justify-center"
                     aria-label="Close notification drawer"
                   >
                     <X className="w-5 h-5" />
@@ -375,9 +386,11 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
                 )}
               </div>
             </motion.div>
-          </>
+          </div>
         )}
-      </AnimatePresence>
-    </div>
-  );
+      </AnimatePresence>,
+      document.body
+    )}
+  </>
+);
 };
