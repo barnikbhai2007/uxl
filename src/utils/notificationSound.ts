@@ -101,6 +101,73 @@ export async function registerNotificationServiceWorker(): Promise<ServiceWorker
   }
 }
 
+const rawPushApiUrl = (import.meta as any).env?.VITE_API_URL || "";
+const PUSH_API_URL = rawPushApiUrl.endsWith("/") ? rawPushApiUrl.slice(0, -1) : rawPushApiUrl;
+
+function urlBase64ToUint8Array(base64String: string): Uint8Array {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = window.atob(base64);
+  return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
+}
+
+export async function enablePushNotifications(identityIds: string[] = []): Promise<boolean> {
+  if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+    return false;
+  }
+
+  if (Notification.permission !== 'granted') {
+    return false;
+  }
+
+  const token = localStorage.getItem('auth_token');
+  if (!token) return false;
+
+  try {
+    const registration = await registerNotificationServiceWorker();
+    if (!registration) return false;
+
+    const keyResponse = await fetch(`${PUSH_API_URL}/api/push/public-key`, {
+      cache: 'no-store',
+    });
+    if (!keyResponse.ok) throw new Error(`Failed to load push public key: HTTP ${keyResponse.status}`);
+
+    const keyData = await keyResponse.json();
+    if (!keyData?.publicKey) throw new Error('Push public key is missing');
+
+    let subscription = await registration.pushManager.getSubscription();
+
+    if (!subscription) {
+      subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
+      });
+    }
+
+    const saveResponse = await fetch(`${PUSH_API_URL}/api/push/subscribe`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({
+        subscription: subscription.toJSON(),
+        uids: Array.from(new Set(identityIds.filter(Boolean))),
+      }),
+    });
+
+    if (!saveResponse.ok) {
+      const errorText = await saveResponse.text().catch(() => '');
+      throw new Error(errorText || `HTTP ${saveResponse.status}`);
+    }
+
+    return true;
+  } catch (error) {
+    console.warn('Failed to enable Web Push notifications:', error);
+    return false;
+  }
+}
+
 export async function requestBrowserNotificationPermission(): Promise<NotificationPermission> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'denied';
