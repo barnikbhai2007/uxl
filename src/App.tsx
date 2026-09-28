@@ -22,7 +22,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { auth, db, signIn, logout, handleFirestoreError, OperationType, getCollectionMeta } from './supabase_mock';
+import { auth, db, signIn, logout, handleFirestoreError, OperationType, getCollectionMeta, startRealtimeSync } from './supabase_mock';
 import { onAuthStateChanged, User, supabase, truncateCollections } from './supabase_mock';
 import { collection, query, where, onSnapshot, doc, setDoc, serverTimestamp, getDoc, limit, getDocs, getDocsWithDelta, deleteDoc, updateDoc, getDocFromServer, increment, writeBatch, orderBy, arrayUnion } from './supabase_mock';
 import { ScheduleRandomizer } from './ScheduleRandomizer';
@@ -7405,6 +7405,48 @@ export default function App() {
     return () => unsubGuesses();
   }, []);
 
+  // Instant realtime notifications over the VPS SSE stream.
+  useEffect(() => {
+    const stop = startRealtimeSync((event) => {
+      if (event?.type !== 'db_change' || !event.data) return;
+
+      if (event.collection === 'match_chats' && (event.action === 'set' || event.action === 'update')) {
+        const latest = event.data as DirectChatMessage;
+        const isForMe =
+          (user && latest.recipientId === user.uid) ||
+          (myRegistrationData && (
+            latest.recipientId === myRegistrationData.id ||
+            latest.recipientId === myRegistrationData.userId
+          ));
+        const isFromOther =
+          (!user || latest.senderId !== user.uid) &&
+          (!myRegistrationData || (
+            latest.senderId !== myRegistrationData.id &&
+            latest.senderId !== myRegistrationData.userId
+          ));
+
+        if (isForMe && isFromOther) {
+          soundService.playMessageChime();
+          void sendBrowserNotification(`Match Chat: ${latest.senderName}`, {
+            body: latest.text,
+            tag: `match-chat-${latest.id}`,
+          });
+        }
+      }
+
+      if (event.collection === 'announcements' && event.action === 'set') {
+        const announcement = event.data as Announcement;
+        soundService.playAnnouncementChime();
+        void sendBrowserNotification(`Announcement: ${announcement.title}`, {
+          body: announcement.content,
+          tag: `announcement-${announcement.id}`,
+        });
+      }
+    });
+
+    return stop;
+  }, [user?.uid, myRegistrationData?.id, myRegistrationData?.userId]);
+
   // Real-time Announcements Listener
   useEffect(() => {
     const unsub = onSnapshot(collection(db, 'announcements'), (snapshot) => {
@@ -7440,10 +7482,6 @@ export default function App() {
         const isFromOther = (!user || latest.senderId !== user.uid) && (!myRegistrationData || latest.senderId !== myRegistrationData.id);
 
         if (isForMe && isFromOther) {
-          soundService.playMessageChime();
-          sendBrowserNotification(`Match Chat: ${latest.senderName}`, {
-            body: latest.text,
-          });
           if (activeChatOpponentId !== latest.senderId) {
             setChatToast({
               senderName: latest.senderName,
@@ -7472,10 +7510,6 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
     await setDoc(doc(db, 'announcements', newId), newAnn);
-    soundService.playAnnouncementChime();
-    sendBrowserNotification(`Announcement: ${newAnn.title}`, {
-      body: newAnn.content
-    });
   };
 
   const handleDeleteAnnouncement = async (id: string) => {
