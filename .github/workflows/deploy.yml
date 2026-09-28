@@ -70,16 +70,49 @@ jobs:
 
             echo "=== Installing dependencies ==="
 
-            rm -rf node_modules
+            # Do not delete a live node_modules tree in-place.
+            # A running PM2 process may still have files open inside it.
+            # Move it aside, install a completely fresh dependency tree, and
+            # remove the backup only after the new deployment is healthy.
+            NODE_MODULES_BACKUP="/opt/uxl/node_modules.previous.$(date +%s)"
+            if [ -d node_modules ]; then
+              mv node_modules "$NODE_MODULES_BACKUP"
+            fi
 
             # Keep the lockfile synchronized when a production dependency is added.
             npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-
             npm ci
 
             echo "=== Building frontend ==="
 
             npm run build
+
+            echo "=== Smoke testing production server ==="
+
+            SMOKE_LOG="/tmp/uxl-smoke.log"
+            NODE_ENV=production PORT=3101 npx tsx server.ts > "$SMOKE_LOG" 2>&1 &
+            SMOKE_PID=$!
+
+            SMOKE_OK=0
+            for i in {1..20}; do
+              if curl -fsS http://127.0.0.1:3101/ > /dev/null 2>&1; then
+                SMOKE_OK=1
+                break
+              fi
+              if ! kill -0 "$SMOKE_PID" > /dev/null 2>&1; then
+                break
+              fi
+              sleep 1
+            done
+
+            kill "$SMOKE_PID" > /dev/null 2>&1 || true
+            wait "$SMOKE_PID" > /dev/null 2>&1 || true
+
+            if [ "$SMOKE_OK" -ne 1 ]; then
+              echo "=== Production smoke test FAILED ==="
+              cat "$SMOKE_LOG"
+              exit 1
+            fi
 
             echo "=== Starting UXL ==="
 
@@ -101,6 +134,11 @@ jobs:
             fi
 
             pm2 save
+
+            # Fresh deployment is now active; old dependencies are no longer needed.
+            if [ -n "$NODE_MODULES_BACKUP" ] && [ -d "$NODE_MODULES_BACKUP" ]; then
+              rm -rf "$NODE_MODULES_BACKUP" || true
+            fi
 
             echo "=== Deployment complete ==="
 
