@@ -38,9 +38,7 @@ function sendRealtimeEvent(client: RealtimeClient, payload: any) {
 
 function broadcastRealtime(payload: any, targetUids?: string[]) {
   for (const [id, client] of realtimeClients) {
-    if (targetUids && targetUids.length > 0) {
-      if (!client.uid || !targetUids.includes(client.uid)) continue;
-    }
+    if (targetUids && (!client.uid || !targetUids.includes(client.uid))) continue;
     sendRealtimeEvent(client, payload);
   }
 }
@@ -80,7 +78,7 @@ app.get("/api/events", (req, res) => {
 
   const heartbeat = setInterval(() => {
     try {
-      res.write(`: heartbeat ${Date.now()}\\n\\n`);
+      res.write(`: heartbeat ${Date.now()}\n\n`);
     } catch {
       clearInterval(heartbeat);
     }
@@ -341,7 +339,7 @@ app.delete("/api/db/delete", async (req, res) => {
     const { collection, id } = req.body;
     await runD1Query("DELETE FROM documents WHERE collection = ? AND id = ?", [collection, id]);
 
-    if (collection === "announcements" || collection === "match_chats") {
+    if (collection === "announcements") {
       broadcastRealtime({ type: "db_change", collection, action: "delete", id });
     }
 
