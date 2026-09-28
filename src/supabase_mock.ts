@@ -773,7 +773,10 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
         
         const initialMeta = await getCollectionMeta(collectionName);
         const lastSeen = lastSeenMeta[collectionName] ?? 0;
-        const dataIsStale = (initialMeta ?? 0) > lastSeen;
+        // Chat and announcement collections must always refresh from the VPS on page load.
+        // Their contents can change while the tab/browser is closed.
+        const mustFetchFresh = collectionName === 'match_chats' || collectionName === 'announcements';
+        const dataIsStale = mustFetchFresh || (initialMeta ?? 0) > lastSeen;
 
         if (queryCacheStr && !dataIsStale) {
           const parsed = JSON.parse(queryCacheStr);
@@ -877,6 +880,17 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
           );
         }
         return;
+      }
+
+      // Apply the exact SSE document immediately, then reconcile with the VPS.
+      // This avoids waiting for a second metadata/query round-trip.
+      if (detail.action === 'set' || detail.action === 'update') {
+        const changed = detail.data;
+        if (changed?.id) {
+          updateGlobalCache(collectionName, changed.id, changed);
+        }
+      } else if (detail.action === 'delete' && detail.id) {
+        updateGlobalCache(collectionName, detail.id, null, true);
       }
 
       const snap = await getDocs(ref);
