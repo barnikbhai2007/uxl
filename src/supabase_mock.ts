@@ -5,6 +5,86 @@ export const supabase = {
   removeChannel: (channel: any) => {},
 };
 
+export function startRealtimeSync(onEvent?: (event: any) => void): () => void {
+  let stopped = false;
+  let controller: AbortController | null = null;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const parseChunk = (chunk: string) => {
+    const blocks = chunk.split(/\n\n/);
+    const remainder = blocks.pop() || "";
+
+    for (const block of blocks) {
+      let dataLine = "";
+      for (const line of block.split(/\n/)) {
+        if (line.startsWith("data:")) {
+          dataLine += line.slice(5).trimStart();
+        }
+      }
+      if (!dataLine) continue;
+
+      try {
+        const event = JSON.parse(dataLine);
+        if (event?.type === "db_change") {
+          localEmitter.dispatchEvent(new CustomEvent("db_remote_change", { detail: event }));
+        }
+        onEvent?.(event);
+      } catch (error) {
+        console.warn("Realtime event parse error:", error);
+      }
+    }
+
+    return remainder;
+  };
+
+  const connect = async () => {
+    if (stopped) return;
+
+    controller = new AbortController();
+    const token = localStorage.getItem("auth_token");
+
+    try {
+      const res = await fetch(`${VITE_API_URL}/api/events`, {
+        method: "GET",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        signal: controller.signal,
+        cache: "no-store",
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Realtime stream failed: HTTP ${res.status}`);
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+
+      while (!stopped) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        buffer = parseChunk(buffer);
+      }
+
+      if (!stopped) retryTimer = setTimeout(connect, 1000);
+    } catch (error: any) {
+      if (!stopped && error?.name !== "AbortError") {
+        console.warn("Realtime stream disconnected:", error?.message || error);
+        retryTimer = setTimeout(connect, 1500);
+      }
+    }
+  };
+
+  connect();
+
+  return () => {
+    stopped = true;
+    if (retryTimer) clearTimeout(retryTimer);
+    controller?.abort();
+  };
+}
+
 async function apiFetch(path: string, options: any = {}) {
   const token = localStorage.getItem("auth_token");
   const defaultHeaders: any = {
@@ -783,6 +863,55 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     }
   }, BASE_INTERVAL + JITTER);
 
+  const remoteHandler = async (e: any) => {
+    const detail = e.detail;
+    if (!_mounted || !detail || detail.collection !== collectionName) return;
+
+    try {
+      if (isDoc) {
+        const d = await getDoc(ref);
+        if (_mounted) {
+          callback(d.exists()
+            ? d
+            : { exists: () => false, id: ref.id, data: () => undefined }
+          );
+        }
+        return;
+      }
+
+      const snap = await getDocs(ref);
+      if (!_mounted) return;
+
+      const queryKey = (ref instanceof Query) ? JSON.stringify({c: ref.collectionName, f: ref.filters}) : ref.collectionName;
+      const cacheKeyStr = `sb_query_${queryKey}`;
+      const freshDocs = snap.docs.map((d: any) => ({
+        id: d.id,
+        data: () => d.data(),
+        exists: () => true,
+      }));
+
+      const toCache = snap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+      try { localStorage.setItem(cacheKeyStr, JSON.stringify(toCache)); } catch(e){}
+
+      initCache(collectionName);
+      snap.forEach((doc: any) => {
+        globalCache[collectionName][doc.id] = doc.data();
+      });
+      persistCache(collectionName);
+
+      const serverMeta = await getCollectionMeta(collectionName);
+      if (serverMeta) persistMetaTimestamp(collectionName, serverMeta);
+
+      callback({
+        docs: freshDocs,
+        empty: freshDocs.length === 0,
+        forEach: (cb: any) => freshDocs.forEach(cb)
+      });
+    } catch (error) {
+      if (errorCb) errorCb(error);
+    }
+  };
+
   const localHandler = (e: any) => {
     if (e.detail === collectionName && _mounted) {
       if (isDoc) {
@@ -797,6 +926,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     }
   };
   localEmitter.addEventListener('db_change', localHandler);
+  localEmitter.addEventListener('db_remote_change', remoteHandler);
 
   const onVisible = () => {
     if (!_mounted) return;
@@ -810,6 +940,7 @@ export function onSnapshot(ref: any, callback: any, errorCb?: any) {
     _mounted = false;
     clearInterval(timer);
     localEmitter.removeEventListener('db_change', localHandler);
+    localEmitter.removeEventListener('db_remote_change', remoteHandler);
     document.removeEventListener('visibilitychange', onVisible);
   };
 }
