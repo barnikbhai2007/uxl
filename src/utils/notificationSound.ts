@@ -111,6 +111,27 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)));
 }
 
+export async function sendPushTestNotification(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  const token = localStorage.getItem('auth_token');
+  if (!token) return false;
+
+  try {
+    const response = await fetch(`${PUSH_API_URL}/api/push/test`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.warn('Failed to send push test notification:', error);
+    return false;
+  }
+}
+
 export async function enablePushNotifications(identityIds: string[] = []): Promise<boolean> {
   if (typeof window === 'undefined' || !('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
     return false;
