@@ -27,6 +27,24 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   const [permission, setPermission] = useState<NotificationPermission>('default');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [guestUid, setGuestUid] = useState<string | null>(() => {
+    try {
+      const existing = localStorage.getItem('chat_guest_uid');
+      if (existing) return existing;
+      const generated = `guest-${crypto.randomUUID().slice(0, 8)}`;
+      localStorage.setItem('chat_guest_uid', generated);
+      return generated;
+    } catch {
+      return null;
+    }
+  });
+
+  const effectiveCurrentUserId = currentUserId || guestUid || undefined;
+  const pushIdentityIds = Array.from(new Set([
+    ...currentUserIds,
+    currentUserId,
+    guestUid,
+  ].filter((value): value is string => Boolean(value))));
   const [readAnnouncementIds, setReadAnnouncementIds] = useState<string[]>(() => {
     try {
       return JSON.parse(localStorage.getItem('read_announcements') || '[]');
@@ -50,10 +68,10 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
   }, []);
 
   useEffect(() => {
-    if (permission === 'granted' && currentUserIds.length > 0) {
-      void enablePushNotifications(currentUserIds);
+    if (permission === 'granted' && pushIdentityIds.length > 0) {
+      void enablePushNotifications(pushIdentityIds);
     }
-  }, [permission, currentUserIds.join('|')]);
+  }, [permission, pushIdentityIds.join('|')]);
 
   // Lock body scroll when drawer is open
   useEffect(() => {
@@ -85,7 +103,7 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
         body: 'You will receive real-time notifications for official notices and match chats!',
         tag: 'perm-granted-bell'
       });
-      const pushEnabled = await enablePushNotifications(currentUserIds);
+      const pushEnabled = await enablePushNotifications(pushIdentityIds);
       if (pushEnabled) {
         void sendPushTestNotification();
       }
