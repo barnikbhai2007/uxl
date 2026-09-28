@@ -86,8 +86,8 @@ export const NotificationCenter: React.FC<NotificationCenterProps> = ({
 
   // Filter unread
   const unreadAnnouncements = announcements.filter(a => !readAnnouncementIds.includes(a.id));
-  const myIncomingMessages = currentUserId 
-    ? messages.filter(m => m.recipientId === currentUserId || m.recipientUserId === currentUserId)
+  const myIncomingMessages = effectiveCurrentUserId
+    ? messages.filter(m => m.recipientId === effectiveCurrentUserId || m.recipientUserId === effectiveCurrentUserId)
     : messages.slice(-10);
   const unreadMessages = myIncomingMessages.filter(m => !readMessageIds.includes(m.id));
 
