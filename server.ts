@@ -30,7 +30,7 @@ let nextRealtimeClientId = 1;
 
 function sendRealtimeEvent(client: RealtimeClient, payload: any) {
   try {
-    client.res.write(`event: uxl\\ndata: ${JSON.stringify(payload)}\\n\\n`);
+    client.res.write(`event: uxl\ndata: ${JSON.stringify(payload)}\n\n`);
   } catch {
     // The connection will be removed by the close handler.
   }
