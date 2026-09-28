@@ -251,6 +251,22 @@ app.post("/api/push/subscribe", async (req, res) => {
   }
 });
 
+app.post("/api/push/test", async (req, res) => {
+  const uid = getAuthenticatedUid(req);
+  if (!uid) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+
+  await sendPushNotifications([uid], {
+    title: "UXI Push Test 🔔",
+    body: "Background push notifications are connected on this device.",
+    url: "/",
+    tag: "uxi-push-test",
+  });
+
+  res.json({ success: true });
+});
+
 app.delete("/api/push/subscribe", async (req, res) => {
   const uid = getAuthenticatedUid(req);
   if (!uid) {
