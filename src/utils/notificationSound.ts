@@ -91,6 +91,16 @@ class NotificationSoundService {
 export const soundService = new NotificationSoundService();
 
 // Browser notification helper
+export async function registerNotificationServiceWorker(): Promise<ServiceWorkerRegistration | null> {
+  if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return null;
+  try {
+    return await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  } catch (err) {
+    console.warn('Failed to register notification service worker:', err);
+    return null;
+  }
+}
+
 export async function requestBrowserNotificationPermission(): Promise<NotificationPermission> {
   if (typeof window === 'undefined' || !('Notification' in window)) {
     return 'denied';
@@ -109,9 +119,9 @@ export async function sendBrowserNotification(title: string, options?: Notificat
   if (Notification.permission === 'granted') {
     try {
       if ('serviceWorker' in navigator) {
-        const registration = await navigator.serviceWorker.getRegistration();
+        const registration = await registerNotificationServiceWorker() || await navigator.serviceWorker.getRegistration();
         if (registration && 'showNotification' in registration) {
-          registration.showNotification(title, {
+          await registration.showNotification(title, {
             icon: '/favicon.ico',
             badge: '/favicon.ico',
             ...options
