@@ -192,3 +192,30 @@ export interface StatGuess {
   options: string[];
   correctOption: string; // "1" | "2" | "3" | "4"
 }
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  category: 'general' | 'match' | 'urgent' | 'rule';
+  pinned?: boolean;
+  createdAt: string;
+  authorEmail?: string;
+  authorName?: string;
+}
+
+export interface DirectChatMessage {
+  id: string;
+  channelId: string; // [uidA, uidB].sort().join('_') or [teamA, teamB].sort().join('_')
+  matchId: string;
+  senderId: string;
+  senderName: string;
+  senderClub?: string;
+  senderPhoto?: string;
+  recipientId: string;
+  recipientName: string;
+  text: string;
+  createdAt: string;
+  matchScored?: boolean;
+  read?: boolean;
+}

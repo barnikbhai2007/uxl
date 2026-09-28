@@ -108,9 +108,50 @@
         "correctOption": { "type": "string" }
       },
       "required": ["id", "question", "options", "correctOption"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Admin tournament announcements broadcasted to all users.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string", "enum": ["general", "match", "urgent", "rule"] },
+        "pinned": { "type": "boolean" },
+        "createdAt": { "type": "string" },
+        "authorEmail": { "type": "string" },
+        "authorName": { "type": "string" }
+      },
+      "required": ["id", "title", "content", "category", "createdAt"]
+    },
+    "DirectChatMessage": {
+      "title": "DirectChatMessage",
+      "description": "Direct chat message between match opponents in My Campaign.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "channelId": { "type": "string" },
+        "matchId": { "type": "string" },
+        "senderId": { "type": "string" },
+        "senderName": { "type": "string" },
+        "recipientId": { "type": "string" },
+        "recipientName": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "channelId", "matchId", "senderId", "senderName", "recipientId", "text", "createdAt"]
     }
   },
   "firestore": {
+    "/announcements/{announcementId}": {
+      "schema": "Announcement",
+      "description": "Collection of admin broadcast announcements."
+    },
+    "/match_chats/{messageId}": {
+      "schema": "DirectChatMessage",
+      "description": "Collection of direct chat messages exchanged between match opponents."
+    },
     "/statsGuesses/{guessId}": {
       "schema": "StatGuess",
       "description": "Collection of trivia questions for stats guessing."

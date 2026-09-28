@@ -1,8 +1,8 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS, MANAGERS_LIST } from './constants';
-import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess } from './types';
+import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess, Announcement, DirectChatMessage } from './types';
 import { v4 as uuidv4 } from 'uuid';
 import { 
   DndContext, 
@@ -31,6 +31,12 @@ import { RandomMatchDraw } from './components/RandomMatchDraw';
 import { PremierLeagueHeaderBanner, PremierLeagueLogo } from './components/PremierLeagueDecorations';
 import { PREMIER_LEAGUE_TEAMS, getClubManager } from './constants';
 import { ClubSpotsSelector } from './components/ClubSpotsSelector';
+import { soundService, requestBrowserNotificationPermission, sendBrowserNotification } from './utils/notificationSound';
+import { AdminAnnouncementModal } from './components/AdminAnnouncementModal';
+import { NotificationCenter } from './components/NotificationCenter';
+import { NotificationPermissionBanner } from './components/NotificationPermissionBanner';
+import { OpponentDirectChatModal } from './components/OpponentDirectChatModal';
+import { AnnouncementsViewModal } from './components/AnnouncementsViewModal';
 
 const WORLD_CUP_FLAGS = new Map([...WORLD_CUP_TEAMS, ...MANAGERS_LIST].map(t => [t.name, t.flag]));
 
@@ -535,8 +541,15 @@ const TeamProfileModal = ({ team, matches, teams, onClose, isAdmin, resetPlayer,
         </div>
 
         <div className="flex flex-col md:flex-row gap-8 items-start mb-12 relative z-10 mt-8 md:mt-0">
-          <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-fc-purple-light/30 border border-fc-neon-green/50/30 flex items-center justify-center text-4xl md:text-5xl font-bold shrink-0 shadow-lg overflow-hidden">
-            {team.logoUrl ? <img src={team.logoUrl} className="w-full h-full object-cover" /> : team.name[0]}
+          <div className="w-24 h-24 md:w-32 md:h-32 rounded-2xl bg-black/40 border border-[#00ff85]/40 flex items-center justify-center text-4xl md:text-5xl font-bold shrink-0 shadow-lg overflow-hidden p-2">
+            {(() => {
+              const logo = team.logoUrl || getClubLogo(team.country) || getClubLogo(team.name);
+              return logo ? (
+                <img src={logo} alt={team.name} className="w-full h-full object-contain filter drop-shadow-md" referrerPolicy="no-referrer" />
+              ) : (
+                team.name[0]
+              );
+            })()}
           </div>
           <div className="flex-1 space-y-2">
             <h2 className="text-3xl md:text-5xl font-display font-bold  tracking-tight leading-none flex items-center gap-3">
@@ -704,15 +717,18 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
     const displayStatus = match.status === 'finished' ? 'finished' : (overrideStatus || match.status);
 
-    const TeamLogo = ({ team }: { team: Team | undefined }) => (
-      <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10">
-        {team?.logoUrl ? (
-          <img src={team.logoUrl} alt={team.name} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
-        ) : (
-          team?.name[0] || '?'
-        )}
-      </div>
-    );
+    const TeamLogo = ({ team }: { team: Team | undefined }) => {
+      const resolvedLogo = team?.logoUrl || getClubLogo(team?.country) || getClubLogo(team?.name);
+      return (
+        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 border border-white/10 flex items-center justify-center text-2xl font-bold shadow-lg group-hover:scale-110 transition-transform overflow-hidden z-10 p-1">
+          {resolvedLogo ? (
+            <img src={resolvedLogo} alt={team?.name} className="w-full h-full object-contain filter drop-shadow-sm" referrerPolicy="no-referrer" />
+          ) : (
+            team?.name?.[0] || '?'
+          )}
+        </div>
+      );
+    };
 
     const renderTeamName = (teamType: 'away' | 'home', team: Team | undefined) => {
       if (isAdmin && isEditingMode && onUpdateMatch) {
@@ -2168,7 +2184,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     matches,
     handleRandomizeGroups,
     handleClearGroups,
-    refreshCache
+    refreshCache,
+    onOpenAnnouncements,
+    announcementsCount = 0
   }: { 
     onClose: () => void, 
     isAdmin: boolean,
@@ -2200,7 +2218,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     matches?: Match[],
     handleRandomizeGroups: () => Promise<void>,
     handleClearGroups: () => Promise<void>,
-    refreshCache: (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => Promise<void>
+    refreshCache: (type: 'matches' | 'teams' | 'bracket' | 'config' | 'site_content' | 'cache_qual') => Promise<void>,
+    onOpenAnnouncements?: () => void,
+    announcementsCount?: number
   }) => {
     const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin' | 'mode' | 'managers_admin'>('bracket');
 
@@ -2758,6 +2778,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               {isEditingMode ? 'Editing Enabled' : 'Editing Disabled'}
             </button>
             <div className="w-px bg-white/10 mx-2 flex-shrink-0" />
+            <button 
+              onClick={() => onOpenAnnouncements && onOpenAnnouncements()}
+              className="flex-1 md:flex-initial px-4 md:px-5 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit bg-purple-500/20 hover:bg-purple-500 text-purple-200 hover:text-white border border-purple-500/30 flex items-center gap-1.5 shadow-sm"
+            >
+              <Megaphone className="w-3.5 h-3.5 text-purple-300" />
+              <span>Announcements ({announcementsCount})</span>
+            </button>
             <button 
               onClick={() => setActiveTab('bracket')}
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'bracket' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
@@ -4867,11 +4894,9 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
   );
 }
 
-const RotatingFlag = ({ mode, config }: { mode: string | undefined, config?: Config }) => {
-  const isManagerMode = mode === 'all_in_random';
-  const displayItems = isManagerMode 
-    ? getMergedManagers(config).slice(0, 15).map(m => ({ type: 'image', src: getManagerPhoto(m.name, config), alt: m.name }))
-    : PREMIER_LEAGUE_TEAMS.map(t => ({ type: 'logo', src: t.logoUrl, alt: t.name }));
+const RotatingFlag = ({ mode, config }: { mode?: string, config?: Config }) => {
+  // Always use official Premier League club logos: "Well use club logo not the manager photo in home"
+  const displayItems = PREMIER_LEAGUE_TEAMS.map(t => ({ type: 'logo', src: t.logoUrl, alt: t.name }));
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -4894,21 +4919,12 @@ const RotatingFlag = ({ mode, config }: { mode: string | undefined, config?: Con
           transition={{ duration: 0.45, type: "spring", bounce: 0.35 }}
           className="absolute inset-0 flex items-center justify-center p-1.5"
         >
-          {isManagerMode ? (
-            <img 
-              src={current.src} 
-              alt={current.alt} 
-              className="w-full h-full object-cover rounded-full shadow-lg border-2 border-[#00ff85]" 
-              referrerPolicy="no-referrer" 
-            />
-          ) : (
-            <img 
-              src={current.src} 
-              alt={current.alt} 
-              title={current.alt}
-              className="w-full h-full object-contain filter drop-shadow-[0_0_14px_rgba(0,255,133,0.35)]" 
-            />
-          )}
+          <img 
+            src={current.src} 
+            alt={current.alt} 
+            title={current.alt}
+            className="w-full h-full object-contain filter drop-shadow-[0_0_16px_rgba(0,255,133,0.45)]" 
+          />
         </motion.div>
       </AnimatePresence>
     </div>
@@ -4986,6 +5002,17 @@ export default function App() {
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit'>('stats');
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
+
+  // Announcements & Opponent Chat states
+  const [announcements, setAnnouncements] = useState<Announcement[]>([]);
+  const [isAdminAnnouncementModalOpen, setIsAdminAnnouncementModalOpen] = useState(false);
+  const [isAnnouncementsViewModalOpen, setIsAnnouncementsViewModalOpen] = useState(false);
+  const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null);
+
+  const [chatMessages, setChatMessages] = useState<DirectChatMessage[]>([]);
+  const [activeChatMatch, setActiveChatMatch] = useState<Match | null>(null);
+  const [activeChatOpponentId, setActiveChatOpponentId] = useState<string | null>(null);
+  const [chatToast, setChatToast] = useState<{ senderName: string; text: string; matchId: string; opponentId: string } | null>(null);
 
   const renderStatsTab = () => {
     
@@ -7379,6 +7406,155 @@ export default function App() {
     return () => unsubGuesses();
   }, []);
 
+  // Real-time Announcements Listener
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'announcements'), (snapshot) => {
+      const list: Announcement[] = [];
+      snapshot.forEach((docSnap) => {
+        list.push({ ...docSnap.data(), id: docSnap.id } as Announcement);
+      });
+      list.sort((a, b) => {
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
+      setAnnouncements(list);
+    }, (error) => {
+      console.error("Error syncing announcements:", error);
+    });
+    return () => unsub();
+  }, []);
+
+  // Real-time Match Chats Listener
+  const prevMessagesCountRef = useRef(0);
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, 'match_chats'), (snapshot) => {
+      const msgs: DirectChatMessage[] = [];
+      snapshot.forEach((docSnap) => {
+        msgs.push({ ...docSnap.data(), id: docSnap.id } as DirectChatMessage);
+      });
+      msgs.sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+      if (prevMessagesCountRef.current > 0 && msgs.length > prevMessagesCountRef.current) {
+        const latest = msgs[msgs.length - 1];
+        const isForMe = (user && latest.recipientId === user.uid) || (myRegistrationData && (latest.recipientId === myRegistrationData.id || latest.recipientId === myRegistrationData.userId));
+        const isFromOther = (!user || latest.senderId !== user.uid) && (!myRegistrationData || latest.senderId !== myRegistrationData.id);
+
+        if (isForMe && isFromOther) {
+          soundService.playMessageChime();
+          sendBrowserNotification(`Match Chat: ${latest.senderName}`, {
+            body: latest.text,
+          });
+          if (activeChatOpponentId !== latest.senderId) {
+            setChatToast({
+              senderName: latest.senderName,
+              text: latest.text,
+              matchId: latest.matchId,
+              opponentId: latest.senderId
+            });
+            setTimeout(() => setChatToast(null), 7000);
+          }
+        }
+      }
+      prevMessagesCountRef.current = msgs.length;
+      setChatMessages(msgs);
+    }, (error) => {
+      console.error("Error syncing match_chats:", error);
+    });
+    return () => unsub();
+  }, [user, myRegistrationData, activeChatOpponentId]);
+
+  const handleAddAnnouncement = async (annData: Omit<Announcement, 'id' | 'createdAt'>) => {
+    if (!isAdmin) return;
+    const newId = uuidv4();
+    const newAnn: Announcement = {
+      ...annData,
+      id: newId,
+      createdAt: new Date().toISOString()
+    };
+    await setDoc(doc(db, 'announcements', newId), newAnn);
+    soundService.playAnnouncementChime();
+    sendBrowserNotification(`Announcement: ${newAnn.title}`, {
+      body: newAnn.content
+    });
+  };
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    if (!isAdmin) return;
+    await deleteDoc(doc(db, 'announcements', id));
+  };
+
+  const handleTogglePinAnnouncement = async (id: string, currentPinned: boolean) => {
+    if (!isAdmin) return;
+    await updateDoc(doc(db, 'announcements', id), { pinned: !currentPinned });
+  };
+
+  const handleSendDirectMessage = async (text: string) => {
+    if (!user) {
+      setShowLoginModal(true);
+      return;
+    }
+    if (!activeChatOpponentId) return;
+
+    const myId = user.uid;
+    const oppId = activeChatOpponentId;
+    const pairKey = [myId, oppId].sort().join('_');
+
+    const oppReg = registrations.find(r => r.id === oppId || r.userId === oppId);
+    const oppTeam = teams.find(t => t.id === oppId);
+    const oppName = oppReg?.name || oppTeam?.name || 'Opponent';
+
+    const myClubName = myRegistrationData?.country || 'My Club';
+    const myManager = myRegistrationData?.managerName || getClubManager(myClubName)?.manager;
+    const myClubLogo = myRegistrationData?.logoUrl || getClubLogo(myClubName);
+    const myPhoto = myClubLogo || myRegistrationData?.managerPhoto || getClubManager(myClubName)?.managerPhoto;
+
+    const isMatchScored = activeChatMatch ? (
+      activeChatMatch.status === 'finished' || 
+      (activeChatMatch.homeScore !== undefined && activeChatMatch.awayScore !== undefined)
+    ) : false;
+
+    const newId = uuidv4();
+    const newMsg: DirectChatMessage = {
+      id: newId,
+      channelId: pairKey,
+      matchId: activeChatMatch?.id || '',
+      senderId: myId,
+      senderName: myRegistrationData?.name || myRegistrationData?.fcName || user.displayName || 'Player',
+      senderClub: myClubName,
+      senderPhoto: myPhoto,
+      recipientId: oppId,
+      recipientName: oppName,
+      text,
+      createdAt: new Date().toISOString(),
+      matchScored: isMatchScored,
+      read: false
+    };
+
+    await setDoc(doc(db, 'match_chats', newId), newMsg);
+  };
+
+  const activeChatMessages = useMemo(() => {
+    if (!activeChatOpponentId || !user) return [];
+    const myId = user.uid;
+    const myRegId = myRegistrationData?.id;
+    const oppId = activeChatOpponentId;
+    const oppReg = registrations.find(r => r.id === oppId || r.userId === oppId);
+    const oppUserId = oppReg?.userId;
+
+    return chatMessages.filter(m => {
+      const match1 = (m.senderId === myId || (myRegId && m.senderId === myRegId)) &&
+                     (m.recipientId === oppId || (oppUserId && m.recipientId === oppUserId));
+      const match2 = (m.senderId === oppId || (oppUserId && m.senderId === oppUserId)) &&
+                     (m.recipientId === myId || (myRegId && m.recipientId === myRegId));
+      return match1 || match2;
+    });
+  }, [chatMessages, activeChatOpponentId, user, myRegistrationData, registrations]);
+
+  const pinnedAnnouncement = useMemo(() => {
+    return announcements.find(a => a.pinned) || announcements[0] || null;
+  }, [announcements]);
+
   useEffect(() => {
     const testConnection = async () => {
       try {
@@ -7692,37 +7868,60 @@ export default function App() {
           </motion.div>
 
           {/* Top Right Auth */}
-          <div className="absolute top-0 right-4 md:relative md:-top-4 z-[100] flex items-center justify-end w-full md:w-auto">
+          <div className="absolute top-3 right-3 sm:right-4 md:relative md:top-auto md:right-auto z-[100] flex items-center justify-end gap-2 max-w-[calc(100%-1.5rem)] md:max-w-none md:w-auto">
+            {/* Notification Center Trigger */}
+            <NotificationCenter
+              announcements={announcements}
+              messages={chatMessages}
+              currentUserId={user?.uid}
+              onOpenChatWithOpponent={(oppId, mId) => {
+                setActiveChatOpponentId(oppId);
+                const found = matches.find(m => m.id === mId) || null;
+                setActiveChatMatch(found);
+              }}
+              onViewAllAnnouncements={() => setIsAnnouncementsViewModalOpen(true)}
+            />
+
             {user && !user.isAnonymous ? (
-              <div className="flex items-center gap-2 p-1.5 bg-white/[0.03] border border-white/5 rounded-2xl backdrop-blur-xl shadow-lg">
+              <div className="flex items-center gap-1.5 sm:gap-2 p-1.5 bg-white/[0.03] border border-white/5 rounded-2xl backdrop-blur-xl shadow-lg">
                 <div className="hidden sm:block text-right px-3 py-1">
                   <p className="text-[10px] text-white/50 tracking-widest uppercase leading-none font-sans font-bold mb-0.5">Session Active</p>
                   <p className="text-xs font-bold text-white truncate max-w-[120px] font-sans">{user.displayName || user.email}</p>
                 </div>
+                {isAdmin && (
+                  <button
+                    onClick={() => setIsAdminAnnouncementModalOpen(true)}
+                    className="px-2.5 sm:px-3 py-2 bg-gradient-to-r from-purple-600/30 to-indigo-600/30 hover:from-purple-600 hover:to-indigo-600 text-white font-sans font-bold text-[10px] uppercase tracking-wider rounded-xl transition-all flex items-center gap-1.5 border border-purple-500/40 shadow-sm"
+                    title="Broadcast Announcement"
+                  >
+                    <Megaphone className="w-3.5 h-3.5 text-purple-300" />
+                    <span className="hidden sm:inline">Announce</span>
+                  </button>
+                )}
                 {(isAdmin || isDrawAdmin) && (
                   <button
                     onClick={() => setIsAdminModalOpen(true)}
-                    className="px-3 py-2 bg-[#00ff85]/20 hover:bg-[#00ff85] text-white hover:text-black font-sans font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-2 border border-[#00ff85]/30 shadow-sm"
+                    className="px-2.5 sm:px-3 py-2 bg-[#00ff85]/20 hover:bg-[#00ff85] text-white hover:text-black font-sans font-bold text-[10px] uppercase tracking-widest rounded-xl transition-all flex items-center gap-1.5 sm:gap-2 border border-[#00ff85]/30 shadow-sm"
                   >
-                    <Settings className="w-4 h-4" />
+                    <Settings className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                     <span className="hidden sm:inline">Admin</span>
                   </button>
                 )}
                 <button 
                   onClick={() => logout()}
-                  className="p-2.5 bg-white/[0.05] hover:bg-[#EF4444] text-white/80 hover:text-white rounded-xl transition-colors border border-transparent hover:border-white/20 shadow-sm ml-1"
+                  className="p-2 sm:p-2.5 bg-white/[0.05] hover:bg-[#EF4444] text-white/80 hover:text-white rounded-xl transition-colors border border-transparent hover:border-white/20 shadow-sm"
                   title="Logout"
                 >
-                  <LogOut className="w-4 h-4" />
+                  <LogOut className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
                 </button>
               </div>
             ) : (
               <button 
                 onClick={() => setShowLoginModal(true)}
-                className="flex items-center gap-2 px-5 py-2.5 bg-[#00ff85] hover:bg-[#00ff85]/90 text-[#38003c] font-sans font-extrabold rounded-2xl transition-all text-xs tracking-widest shadow-lg hover:shadow-[0_0_20px_rgba(0,255,133,0.4)] hover:-translate-y-0.5 uppercase"
+                className="flex items-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 bg-[#00ff85] hover:bg-[#00ff85]/90 text-[#38003c] font-sans font-extrabold rounded-2xl transition-all text-xs tracking-widest shadow-lg hover:shadow-[0_0_20px_rgba(0,255,133,0.4)] active:scale-95 uppercase"
               >
-                <LogIn className="w-4 h-4" />
-                Player Login
+                <LogIn className="w-3.5 sm:w-4 h-3.5 sm:h-4" />
+                <span className="text-[11px] sm:text-xs">Player Login</span>
               </button>
             )}
           </div>
@@ -7784,6 +7983,60 @@ export default function App() {
 
       {/* Main Content */}
       <main className="max-w-5xl mx-auto px-4 py-12">
+        {/* Ask Users To Turn On Notifications & Direct Broadcast Announcement Bar */}
+        <NotificationPermissionBanner
+          pinnedAnnouncement={pinnedAnnouncement}
+          onOpenAnnouncement={(ann) => {
+            setSelectedAnnouncement(ann);
+            setIsAnnouncementsViewModalOpen(true);
+          }}
+        />
+
+        {/* Floating Opponent Chat Alert Toast (Mobile Compatible) */}
+        <AnimatePresence>
+          {chatToast && (
+            <motion.div
+              initial={{ opacity: 0, y: -20, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              className="mb-6 p-4 rounded-2xl bg-zinc-900/95 border border-fc-neon-green/50 shadow-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-white backdrop-blur-xl"
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="p-2.5 rounded-xl bg-fc-neon-green/20 text-fc-neon-green shrink-0">
+                  <MessageSquare className="w-5 h-5 animate-bounce" />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-sm text-fc-neon-green truncate">{chatToast.senderName}</span>
+                    <span className="text-[10px] text-white/40">messaged in match chat</span>
+                  </div>
+                  <p className="text-xs text-white/85 line-clamp-1 italic mt-0.5">"{chatToast.text}"</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 w-full sm:w-auto shrink-0 justify-end pt-1 sm:pt-0">
+                <button
+                  onClick={() => {
+                    setActiveChatOpponentId(chatToast.opponentId);
+                    const found = matches.find(m => m.id === chatToast.matchId) || null;
+                    setActiveChatMatch(found);
+                    setChatToast(null);
+                  }}
+                  className="flex-1 sm:flex-initial px-4 py-2 bg-fc-neon-green text-black font-extrabold text-xs uppercase tracking-wider rounded-xl hover:brightness-110 active:scale-95 transition-all shadow-md text-center"
+                >
+                  Reply Now &rarr;
+                </button>
+                <button
+                  onClick={() => setChatToast(null)}
+                  className="p-2 text-white/40 hover:text-white rounded-xl hover:bg-white/10 shrink-0"
+                  aria-label="Dismiss chat alert"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <AnimatePresence mode="wait">
           {activeTab === 'campaign' && (
             <motion.div
@@ -7943,9 +8196,27 @@ export default function App() {
                         <div className="space-y-6">
                            <h3 className="text-lg font-display font-bold  text-white px-4">All Match Results</h3>
                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                             {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').map(m => (
-                               <MatchCard key={m.id} match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
-                             ))}
+                             {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').map(m => {
+                               const isHome = m.homeTeamId === myRegistration.id;
+                               const opponentId = isHome ? m.awayTeamId : m.homeTeamId;
+                               return (
+                                 <div key={m.id} className="space-y-2">
+                                   <MatchCard match={m} teams={teams} onClick={() => setSelectedMatch(m)} />
+                                   {opponentId && (
+                                     <button
+                                       onClick={() => {
+                                         setActiveChatMatch(m);
+                                         setActiveChatOpponentId(opponentId);
+                                       }}
+                                       className="w-full py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white/70 hover:text-fc-neon-green transition-all flex items-center justify-center gap-1.5"
+                                     >
+                                       <History className="w-3.5 h-3.5 text-amber-400" />
+                                       <span>View Preserved Opponent Chat</span>
+                                     </button>
+                                   )}
+                                 </div>
+                               );
+                             })}
                            </div>
                            {myMatches.filter(m => m.status !== 'scheduled' && m.status !== 'rescheduled').length === 0 && (
                                <div className="p-8 text-center text-white/40 bg-white/5 rounded-2xl border border-white/10 mt-4">
@@ -8171,7 +8442,19 @@ export default function App() {
                                           </div>
                                          </div>
                                        </div>
-                                       <div className="relative z-10 md:w-auto w-full">
+                                       <div className="relative z-10 md:w-auto w-full flex items-center gap-2">
+                                          {opponentId && (
+                                            <button 
+                                              onClick={() => {
+                                                setActiveChatMatch(m);
+                                                setActiveChatOpponentId(opponentId);
+                                              }}
+                                              className="w-full md:w-auto px-4 py-3 bg-fc-neon-green/15 hover:bg-fc-neon-green text-fc-neon-green hover:text-black border border-fc-neon-green/30 rounded-2xl text-xs font-bold tracking-normal transition-all flex items-center justify-center gap-1.5 shadow-sm whitespace-nowrap group/chatBtn"
+                                            >
+                                              <MessageSquare className="w-3.5 h-3.5 text-fc-neon-green group-hover/chatBtn:text-black transition-colors" />
+                                              <span>Chat with Opponent</span>
+                                            </button>
+                                          )}
                                           <button 
                                             onClick={() => setSelectedMatch(m)} 
                                             className="w-full md:w-auto px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/5 rounded-2xl text-white text-xs font-bold tracking-normal transition-colors whitespace-nowrap"
@@ -9102,6 +9385,8 @@ export default function App() {
             handleRandomizeGroups={handleRandomizeGroups}
             handleClearGroups={handleClearGroups}
             refreshCache={refreshCache}
+            onOpenAnnouncements={() => setIsAdminAnnouncementModalOpen(true)}
+            announcementsCount={announcements.length}
           />
         )}
         {selectedTeam && (
@@ -9113,6 +9398,52 @@ export default function App() {
             isAdmin={isAdmin}
             resetPlayer={handleResetPlayer}
             config={config}
+          />
+        )}
+
+        {/* Admin Announcement Modal */}
+        {isAdminAnnouncementModalOpen && (
+          <AdminAnnouncementModal
+            isOpen={isAdminAnnouncementModalOpen}
+            onClose={() => setIsAdminAnnouncementModalOpen(false)}
+            announcements={announcements}
+            onAddAnnouncement={handleAddAnnouncement}
+            onDeleteAnnouncement={handleDeleteAnnouncement}
+            onTogglePin={handleTogglePinAnnouncement}
+            authorEmail={user?.email || 'Admin'}
+            authorName={user?.displayName || myRegistrationData?.name || 'Tournament Organizer'}
+          />
+        )}
+
+        {/* User Announcements View Modal */}
+        {isAnnouncementsViewModalOpen && (
+          <AnnouncementsViewModal
+            isOpen={isAnnouncementsViewModalOpen}
+            onClose={() => {
+              setIsAnnouncementsViewModalOpen(false);
+              setSelectedAnnouncement(null);
+            }}
+            announcements={announcements}
+            selectedAnnouncement={selectedAnnouncement}
+          />
+        )}
+
+        {/* Opponent Match Direct Chat Modal */}
+        {activeChatOpponentId && (
+          <OpponentDirectChatModal
+            isOpen={Boolean(activeChatOpponentId)}
+            onClose={() => {
+              setActiveChatOpponentId(null);
+              setActiveChatMatch(null);
+            }}
+            match={activeChatMatch}
+            currentUserRegistration={myRegistrationData}
+            opponentRegistration={registrations.find(r => r.id === activeChatOpponentId || r.userId === activeChatOpponentId) || null}
+            opponentTeam={teams.find(t => t.id === activeChatOpponentId) || null}
+            myTeam={teams.find(t => t.id === myRegistrationData?.id) || null}
+            messages={activeChatMessages}
+            onSendMessage={handleSendDirectMessage}
+            isScored={activeChatMatch ? (activeChatMatch.status === 'finished' || (activeChatMatch.homeScore !== undefined && activeChatMatch.awayScore !== undefined)) : false}
           />
         )}
 
