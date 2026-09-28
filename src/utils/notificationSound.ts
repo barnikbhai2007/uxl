@@ -120,8 +120,11 @@ export async function sendBrowserNotification(title: string, options?: Notificat
     try {
       if ('serviceWorker' in navigator) {
         const registration = await registerNotificationServiceWorker() || await navigator.serviceWorker.getRegistration();
-        if (registration && 'showNotification' in registration) {
-          await registration.showNotification(title, {
+        const activeRegistration = registration
+          ? await navigator.serviceWorker.ready.catch(() => registration)
+          : null;
+        if (activeRegistration && 'showNotification' in activeRegistration) {
+          await activeRegistration.showNotification(title, {
             icon: '/favicon.ico',
             badge: '/favicon.ico',
             ...options
