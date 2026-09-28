@@ -131,7 +131,18 @@ export async function sendPushTestNotification(identityIds: string[] = []): Prom
       }),
     });
 
-    return response.ok;
+    if (!response.ok) return false;
+    const result = await response.json().catch(() => null);
+    const push = result?.push;
+    if (push && typeof push.matched === 'number' && push.matched === 0) {
+      console.warn('Push test found no matching subscription:', push);
+      return false;
+    }
+    if (push && typeof push.sent === 'number' && push.sent === 0) {
+      console.warn('Push test was not accepted by the push service:', push);
+      return false;
+    }
+    return true;
   } catch (error) {
     console.warn('Failed to send push test notification:', error);
     return false;
