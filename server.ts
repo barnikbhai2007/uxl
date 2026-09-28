@@ -9,6 +9,7 @@ import jwt from "jsonwebtoken";
 import fs from "fs";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import initSqlJs from "sql.js";
+import webpush from "web-push";
 const __dirname = process.cwd();
 
 const app = express();
@@ -18,6 +19,110 @@ app.use(cors({ origin: process.env.CORS_ORIGIN || "*" }));
 app.use(express.json({ limit: '10mb' }));
 
 const JWT_SECRET = process.env.JWT_SECRET || "some_random_secret_string";
+
+const VAPID_FILE = path.join(__dirname, ".vapid.json");
+
+function loadVapidKeys() {
+  const envPublic = process.env.VAPID_PUBLIC_KEY;
+  const envPrivate = process.env.VAPID_PRIVATE_KEY;
+
+  if (envPublic && envPrivate) {
+    return { publicKey: envPublic, privateKey: envPrivate };
+  }
+
+  try {
+    if (fs.existsSync(VAPID_FILE)) {
+      const stored = JSON.parse(fs.readFileSync(VAPID_FILE, "utf8"));
+      if (stored?.publicKey && stored?.privateKey) return stored;
+    }
+  } catch (error) {
+    console.warn("[Web Push] Could not read VAPID key file:", error);
+  }
+
+  const generated = webpush.generateVAPIDKeys();
+  try {
+    fs.writeFileSync(VAPID_FILE, JSON.stringify(generated, null, 2), { mode: 0o600 });
+  } catch (error) {
+    console.warn("[Web Push] Could not persist VAPID key file:", error);
+  }
+  console.log("[Web Push] Generated new VAPID keys.");
+  return generated;
+}
+
+const VAPID_KEYS = loadVapidKeys();
+
+webpush.setVapidDetails(
+  process.env.VAPID_SUBJECT || "mailto:admin@uxi11.duckdns.org",
+  VAPID_KEYS.publicKey,
+  VAPID_KEYS.privateKey,
+);
+
+function getAuthenticatedUid(req: express.Request): string | null {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return null;
+
+  const token = authHeader.split(" ")[1];
+  if (!token) return null;
+
+  try {
+    const decoded: any = jwt.verify(token, JWT_SECRET);
+    return typeof decoded?.uid === "string" ? decoded.uid : null;
+  } catch {
+    return null;
+  }
+}
+
+function pushSubscriptionId(endpoint: string) {
+  return crypto.createHash("sha256").update(endpoint).digest("hex");
+}
+
+async function sendPushNotifications(
+  targetUids: string[] | null,
+  payload: { title: string; body: string; url?: string; tag?: string },
+) {
+  try {
+    const rows = await runD1Query(
+      "SELECT id, data FROM documents WHERE collection = ?",
+      ["push_subscriptions"],
+    );
+
+    const wanted = targetUids && targetUids.length > 0 ? new Set(targetUids) : null;
+    const subscriptions = rows
+      .map((row: any) => {
+        try {
+          return { id: row.id, data: JSON.parse(row.data) };
+        } catch {
+          return null;
+        }
+      })
+      .filter((row: any) => row?.data?.subscription?.endpoint)
+      .filter((row: any) => !wanted || (Array.isArray(row.data.uids) && row.data.uids.some((uid: string) => wanted.has(uid))));
+
+    await Promise.all(
+      subscriptions.map(async ({ id, data }: any) => {
+        try {
+          await webpush.sendNotification(
+            data.subscription,
+            JSON.stringify(payload),
+            { TTL: 120 },
+          );
+        } catch (error: any) {
+          const status = error?.statusCode;
+          if (status === 404 || status === 410) {
+            await runD1Query(
+              "DELETE FROM documents WHERE collection = ? AND id = ?",
+              ["push_subscriptions", id],
+            ).catch(() => {});
+          } else {
+            console.warn("[Web Push] Delivery failed:", status || error?.message || error);
+          }
+        }
+      }),
+    );
+  } catch (error: any) {
+    console.warn("[Web Push] Notification dispatch failed:", error?.message || error);
+  }
+}
 
 type RealtimeClient = {
   id: number;
@@ -88,6 +193,81 @@ app.get("/api/events", (req, res) => {
     clearInterval(heartbeat);
     realtimeClients.delete(client.id);
   });
+});
+
+// -------------------------------------------------------------
+// Web Push subscription routes
+// -------------------------------------------------------------
+app.get("/api/push/public-key", (_req, res) => {
+  res.json({ success: true, publicKey: VAPID_KEYS.publicKey });
+});
+
+app.post("/api/push/subscribe", async (req, res) => {
+  const uid = getAuthenticatedUid(req);
+  if (!uid) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+
+  try {
+    const subscription = req.body?.subscription || req.body;
+    const endpoint = subscription?.endpoint;
+    const keys = subscription?.keys;
+
+    if (
+      typeof endpoint !== "string" ||
+      !endpoint ||
+      !keys ||
+      typeof keys.p256dh !== "string" ||
+      typeof keys.auth !== "string"
+    ) {
+      return res.status(400).json({ success: false, error: "Invalid push subscription" });
+    }
+
+    const requestedUids = Array.isArray(req.body?.uids)
+      ? req.body.uids.filter((value: any): value is string => typeof value === "string" && value.length > 0)
+      : [];
+
+    const uids = Array.from(new Set([uid, ...requestedUids]));
+    const id = pushSubscriptionId(endpoint);
+
+    await runD1Query(
+      "INSERT INTO documents (collection, id, data) VALUES (?, ?, ?) ON CONFLICT(collection, id) DO UPDATE SET data = excluded.data",
+      [
+        "push_subscriptions",
+        id,
+        JSON.stringify({
+          uid,
+          uids,
+          subscription,
+          updatedAt: new Date().toISOString(),
+        }),
+      ],
+    );
+
+    res.json({ success: true });
+  } catch (error: any) {
+    console.error("[Web Push] Subscribe error:", error);
+    res.status(500).json({ success: false, error: error?.message || "Subscription failed" });
+  }
+});
+
+app.delete("/api/push/subscribe", async (req, res) => {
+  const uid = getAuthenticatedUid(req);
+  if (!uid) {
+    return res.status(401).json({ success: false, error: "Unauthorized" });
+  }
+
+  const endpoint = req.body?.endpoint;
+  if (typeof endpoint !== "string" || !endpoint) {
+    return res.status(400).json({ success: false, error: "Endpoint is required" });
+  }
+
+  await runD1Query(
+    "DELETE FROM documents WHERE collection = ? AND id = ?",
+    ["push_subscriptions", pushSubscriptionId(endpoint)],
+  );
+
+  res.json({ success: true });
 });
 
 // -------------------------------------------------------------
@@ -283,8 +463,30 @@ app.post("/api/db/set", async (req, res) => {
         { type: "db_change", collection, action: "set", data },
         Array.from(new Set(targetUids))
       );
+
+      if (data?.recipientId) {
+        void sendPushNotifications(
+          [data.recipientId],
+          {
+            title: `Match Chat: ${data?.senderName || "Opponent"}`,
+            body: String(data?.text || "You received a new message."),
+            url: "/",
+            tag: `match-chat-${id}`,
+          },
+        );
+      }
     } else if (collection === "announcements") {
       broadcastRealtime({ type: "db_change", collection, action: "set", data });
+
+      void sendPushNotifications(
+        null,
+        {
+          title: `Announcement: ${data?.title || "New Announcement"}`,
+          body: String(data?.content || "There is a new announcement on UXI."),
+          url: "/",
+          tag: `announcement-${id}`,
+        },
+      );
     }
 
     res.json({ success: true });
@@ -311,12 +513,23 @@ app.post("/api/db/update", async (req, res) => {
     );
 
     if (collection === "announcements") {
+      const updatedData = JSON.parse(newDataStr);
       broadcastRealtime({
         type: "db_change",
         collection,
         action: "update",
-        data: JSON.parse(newDataStr),
+        data: updatedData,
       });
+
+      void sendPushNotifications(
+        null,
+        {
+          title: `Announcement: ${updatedData?.title || "Announcement Updated"}`,
+          body: String(updatedData?.content || "An announcement was updated on UXI."),
+          url: "/",
+          tag: `announcement-${id}`,
+        },
+      );
     } else if (collection === "match_chats") {
       const mergedData = JSON.parse(newDataStr);
       const targetUids = [mergedData?.senderId, mergedData?.recipientId].filter(
