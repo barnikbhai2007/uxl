@@ -71,6 +71,10 @@ jobs:
             echo "=== Installing dependencies ==="
 
             rm -rf node_modules
+
+            # Keep the lockfile synchronized when a production dependency is added.
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+
             npm ci
 
             echo "=== Building frontend ==="
