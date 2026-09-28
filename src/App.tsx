@@ -2092,6 +2092,11 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                     existingRegistrations={existingRegistrations}
                     config={config}
                     currentUserId={user?.uid}
+               currentUserIds={Array.from(new Set([
+                 user?.uid,
+                 myRegistrationData?.id,
+                 myRegistrationData?.userId,
+               ].filter((value): value is string => Boolean(value))))}
                     onSelectClub={(club) => {
                       setFormData({
                         ...formData,
