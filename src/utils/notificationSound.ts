@@ -153,6 +153,10 @@ export async function enablePushNotifications(identityIds: string[] = []): Promi
     const registration = await registerNotificationServiceWorker();
     if (!registration) return false;
 
+    // Wait until the worker is active before touching PushManager.
+    const activeRegistration = await navigator.serviceWorker.ready;
+    if (!activeRegistration) return false;
+
     const keyResponse = await fetch(`${PUSH_API_URL}/api/push/public-key`, {
       cache: 'no-store',
     });
@@ -161,10 +165,10 @@ export async function enablePushNotifications(identityIds: string[] = []): Promi
     const keyData = await keyResponse.json();
     if (!keyData?.publicKey) throw new Error('Push public key is missing');
 
-    let subscription = await registration.pushManager.getSubscription();
+    let subscription = await activeRegistration.pushManager.getSubscription();
 
     if (!subscription) {
-      subscription = await registration.pushManager.subscribe({
+      subscription = await activeRegistration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: urlBase64ToUint8Array(keyData.publicKey),
       });
