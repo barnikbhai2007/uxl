@@ -70,10 +70,13 @@ jobs:
 
             echo "=== Installing dependencies ==="
 
-            # Do not delete a live node_modules tree in-place.
-            # A running PM2 process may still have files open inside it.
-            # Move it aside, install a completely fresh dependency tree, and
-            # remove the backup only after the new deployment is healthy.
+            # Stop the running app before replacing dependencies. This prevents
+            # npm from racing with files held by the live Node process.
+            if pm2 describe uxl > /dev/null 2>&1; then
+              echo "Stopping UXL temporarily for a clean dependency install."
+              pm2 stop uxl || true
+            fi
+
             NODE_MODULES_BACKUP="/opt/uxl/node_modules.previous.$(date +%s)"
             if [ -d node_modules ]; then
               mv node_modules "$NODE_MODULES_BACKUP"
