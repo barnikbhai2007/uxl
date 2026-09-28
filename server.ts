@@ -98,6 +98,10 @@ async function sendPushNotifications(
       .filter((row: any) => row?.data?.subscription?.endpoint)
       .filter((row: any) => !wanted || (Array.isArray(row.data.uids) && row.data.uids.some((uid: string) => wanted.has(uid))));
 
+    let sent = 0;
+    let removed = 0;
+    let failed = 0;
+
     await Promise.all(
       subscriptions.map(async ({ id, data }: any) => {
         try {
@@ -106,21 +110,38 @@ async function sendPushNotifications(
             JSON.stringify(payload),
             { TTL: 120 },
           );
+          sent += 1;
         } catch (error: any) {
           const status = error?.statusCode;
           if (status === 404 || status === 410) {
+            removed += 1;
             await runD1Query(
               "DELETE FROM documents WHERE collection = ? AND id = ?",
               ["push_subscriptions", id],
             ).catch(() => {});
           } else {
+            failed += 1;
             console.warn("[Web Push] Delivery failed:", status || error?.message || error);
           }
         }
       }),
     );
+
+    return {
+      matched: subscriptions.length,
+      sent,
+      removed,
+      failed,
+    };
   } catch (error: any) {
     console.warn("[Web Push] Notification dispatch failed:", error?.message || error);
+    return {
+      matched: 0,
+      sent: 0,
+      removed: 0,
+      failed: 1,
+      error: error?.message || "Push dispatch failed",
+    };
   }
 }
 
@@ -257,14 +278,14 @@ app.post("/api/push/test", async (req, res) => {
   const uid = authUid || req.body?.uid || requestedUids[0];
   const targetUids = uid ? [uid, ...requestedUids] : null;
 
-  await sendPushNotifications(targetUids, {
+  const result = await sendPushNotifications(targetUids, {
     title: "UXI Tournament Notifications 🔔",
     body: "Background push notifications are connected on this device.",
     url: "/",
     tag: "uxi-push-test",
   });
 
-  res.json({ success: true });
+  res.json({ success: true, push: result });
 });
 
 app.delete("/api/push/subscribe", async (req, res) => {
