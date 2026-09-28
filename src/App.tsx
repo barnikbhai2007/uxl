@@ -7432,20 +7432,12 @@ export default function App() {
 
         if (isForMe && isFromOther) {
           soundService.playMessageChime();
-          void sendBrowserNotification(`Match Chat: ${latest.senderName}`, {
-            body: latest.text,
-            tag: `match-chat-${latest.id}`,
-          });
         }
       }
 
       if (event.collection === 'announcements' && event.action === 'set') {
         const announcement = event.data as Announcement;
         soundService.playAnnouncementChime();
-        void sendBrowserNotification(`Announcement: ${announcement.title}`, {
-          body: announcement.content,
-          tag: `announcement-${announcement.id}`,
-        });
       }
     });
 
