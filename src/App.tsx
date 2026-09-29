@@ -7416,13 +7416,24 @@ export default function App() {
 
       if (event.collection === 'match_chats' && (event.action === 'set' || event.action === 'update')) {
         const latest = event.data as DirectChatMessage;
-        const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId].filter(Boolean);
-        const isForMe = myIds.includes(latest.recipientId) || (latest.recipientUserId && myIds.includes(latest.recipientUserId));
+        const savedSelectedPlayerId = typeof localStorage !== 'undefined' ? localStorage.getItem('selected_player_id') : '';
+        const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, savedSelectedPlayerId].filter(Boolean);
+        
+        const targetMatch = matches.find(m => m.id === latest.matchId);
+        const isMyMatch = targetMatch ? (
+          myIds.includes(targetMatch.homeTeamId) || 
+          myIds.includes(targetMatch.awayTeamId) ||
+          myIds.includes(latest.recipientId) ||
+          (latest.recipientUserId && myIds.includes(latest.recipientUserId))
+        ) : (
+          latest.recipientId && myIds.includes(latest.recipientId)
+        );
+
         const isFromOther = !myIds.includes(latest.senderId);
 
-        if (isForMe && isFromOther) {
+        if ((isMyMatch || isAdmin) && isFromOther) {
           soundService.playMessageChime();
-          void sendBrowserNotification(`Match Chat: ${latest.senderName}`, {
+          void sendBrowserNotification(`⚽ Match Chat: ${latest.senderName}`, {
             body: latest.text,
             tag: `match-chat-${latest.id}`,
             data: { url: '/' }
@@ -7451,7 +7462,7 @@ export default function App() {
     });
 
     return stop;
-  }, [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, activeChatOpponentId]);
+  }, [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, activeChatOpponentId, matches, isAdmin]);
 
   // Real-time Announcements Listener
   const prevAnnouncementsCountRef = useRef(0);
@@ -7507,10 +7518,22 @@ export default function App() {
         const latest = msgs[msgs.length - 1];
         const savedGuestName = typeof localStorage !== 'undefined' ? localStorage.getItem('chat_guest_name') : '';
         const savedGuestUid = typeof localStorage !== 'undefined' ? localStorage.getItem('chat_guest_uid') : '';
-        const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, savedGuestUid].filter(Boolean);
+        const savedSelectedPlayerId = typeof localStorage !== 'undefined' ? localStorage.getItem('selected_player_id') : '';
+        const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, savedGuestUid, savedSelectedPlayerId].filter(Boolean);
         const isFromOther = !myIds.includes(latest.senderId) && (!savedGuestName || latest.senderName !== savedGuestName);
 
-        if (isFromOther) {
+        // Filter: only notify if the message is in a match the user is playing in (or user is admin)
+        const targetMatch = matches.find(m => m.id === latest.matchId);
+        const isMyMatch = targetMatch ? (
+          myIds.includes(targetMatch.homeTeamId) || 
+          myIds.includes(targetMatch.awayTeamId) ||
+          myIds.includes(latest.recipientId) ||
+          (latest.recipientUserId && myIds.includes(latest.recipientUserId))
+        ) : (
+          latest.recipientId && myIds.includes(latest.recipientId)
+        );
+
+        if (isFromOther && (isMyMatch || isAdmin)) {
           soundService.playMessageChime();
           void sendBrowserNotification(`⚽ Match Chat: ${latest.senderName}`, {
             body: latest.text,
@@ -7534,7 +7557,7 @@ export default function App() {
       console.error("Error syncing match_chats:", error);
     });
     return () => unsub();
-  }, [user, myRegistrationData, activeChatOpponentId]);
+  }, [user, myRegistrationData, activeChatOpponentId, matches, isAdmin]);
 
   const handleSendMatchChatMessage = async (
     matchId: string,
@@ -7564,10 +7587,23 @@ export default function App() {
       savedGuestName = localStorage.getItem('chat_guest_name') || '';
     }
 
-    const myId = user?.uid || guestUid || `guest-${Date.now()}`;
+    const myId = user?.uid || myRegistrationData?.id || guestUid || `guest-${Date.now()}`;
     const myName = myRegistrationData?.name || myRegistrationData?.fcName || user?.displayName || savedGuestName || 'Player';
     const myClubName = myRegistrationData?.country || 'Premier League Club';
     const myClubLogo = myRegistrationData?.logoUrl || getClubLogo(myClubName);
+
+    // Auto-detect opponent ID and name if not provided
+    let finalRecipientId = recipientId || '';
+    let finalRecipientName = recipientName || 'Opponent';
+    if (targetMatch && !finalRecipientId) {
+      if (targetMatch.homeTeamId === myId || targetMatch.homeTeamId === myRegistrationData?.id) {
+        finalRecipientId = targetMatch.awayTeamId;
+        finalRecipientName = targetMatch.awayTeamName || 'Opponent';
+      } else {
+        finalRecipientId = targetMatch.homeTeamId;
+        finalRecipientName = targetMatch.homeTeamName || 'Opponent';
+      }
+    }
 
     const newId = uuidv4();
     const newMsg: DirectChatMessage = {
@@ -7578,8 +7614,8 @@ export default function App() {
       senderName: myName,
       senderClub: myClubName,
       senderPhoto: myClubLogo || undefined,
-      recipientId: recipientId || '',
-      recipientName: recipientName || 'Match Chat',
+      recipientId: finalRecipientId,
+      recipientName: finalRecipientName,
       text: text.trim(),
       createdAt: new Date().toISOString(),
       matchScored: isFinished,
@@ -8022,8 +8058,19 @@ export default function App() {
             {/* Notification Center Trigger */}
             <NotificationCenter
               announcements={announcements}
-              messages={chatMessages}
-              currentUserId={user?.uid}
+              messages={chatMessages.filter(m => {
+                if (isAdmin) return true;
+                const savedPid = typeof localStorage !== 'undefined' ? localStorage.getItem('selected_player_id') : null;
+                const myIds = [user?.uid, myRegistrationData?.id, myRegistrationData?.userId, savedPid].filter(Boolean);
+                if (!myIds.length) return false;
+                const targetMatch = matches.find(match => match.id === m.matchId);
+                if (targetMatch) {
+                  return myIds.includes(targetMatch.homeTeamId) || myIds.includes(targetMatch.awayTeamId);
+                }
+                return myIds.includes(m.recipientId) || myIds.includes(m.senderId);
+              })}
+              currentUserId={user?.uid || myRegistrationData?.id}
+              currentUserIds={[user?.uid, myRegistrationData?.id, myRegistrationData?.userId].filter(Boolean) as string[]}
               onOpenChatWithOpponent={(oppId, mId) => {
                 setActiveChatOpponentId(oppId);
                 const found = matches.find(m => m.id === mId) || null;

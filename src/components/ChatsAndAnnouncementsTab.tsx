@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
-  Megaphone, MessageSquare, Bell, BellRing, Pin, CheckCircle2, AlertTriangle, 
-  Send, Lock, Search, Filter, Sparkles, Volume2, Shield, Calendar, Trophy, 
-  Clock, Check, Trash2, ChevronDown, ChevronUp, UserCheck, RefreshCw, Info,
-  Share2
+  Megaphone, MessageSquare, Bell, BellRing, Pin, CheckCircle2,
+  Send, Lock, Search, Shield, Trash2, ChevronDown, ChevronUp, UserCheck, 
+  Users, Swords, Check
 } from 'lucide-react';
 import { Announcement, DirectChatMessage, Match, Team, Registration } from '../types';
 import { PREMIER_LEAGUE_TEAMS } from '../constants';
@@ -47,12 +46,27 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
   const [searchQuery, setSearchQuery] = useState('');
   const [expandedMatchId, setExpandedMatchId] = useState<string | null>(null);
   const [messageInputs, setMessageInputs] = useState<Record<string, string>>({});
-  const [guestSenderName, setGuestSenderName] = useState(() => {
-    return localStorage.getItem('chat_guest_name') || '';
-  });
   const [permissionState, setPermissionState] = useState<NotificationPermission>('default');
   const [sendingMatchId, setSendingMatchId] = useState<string | null>(null);
-  const [copiedLink, setCopiedLink] = useState(false);
+  
+  // Selected player ID for visitors/guests or when switching player identity
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string>(() => {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('selected_player_id') || '';
+    }
+    return '';
+  });
+
+  // Admin view mode toggle: 'my_matches' (default) vs 'all_matches'
+  const [adminViewMode, setAdminViewMode] = useState<'my_matches' | 'all_matches'>('my_matches');
+
+  const [guestSenderName, setGuestSenderName] = useState(() => {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem('chat_guest_name') || '';
+    }
+    return '';
+  });
+
   const chatScrollBottomRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Sync browser permission
@@ -68,7 +82,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     if (res === 'granted') {
       soundService.playAnnouncementChime();
       void sendBrowserNotification('🔔 Notifications Enabled!', {
-        body: 'You will now receive instant Chrome alerts for tournament announcements and match chats.',
+        body: 'You will receive Chrome alerts when your match opponents message you or official notices are posted.',
         tag: 'perm-granted-test'
       });
     }
@@ -77,12 +91,12 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
   const handleTestNotification = () => {
     soundService.playMessageChime();
     void sendBrowserNotification('⚽ Chrome Notification Test', {
-      body: 'Notifications are working! You will be alerted when new match chats or announcements arrive.',
+      body: 'Notifications are working! You will be alerted when new opponent chats or announcements arrive.',
       tag: 'test-chrome-notification'
     });
   };
 
-  // Helper to get team details
+  // Helper to get team/player details
   const getTeam = (teamId: string) => {
     const fromTeams = teams.find(t => t.id === teamId);
     if (fromTeams) return fromTeams;
@@ -90,6 +104,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     if (fromReg) {
       return {
         id: fromReg.id,
+        uid: fromReg.userId,
         name: fromReg.country || fromReg.name,
         fullName: fromReg.name,
         fcName: fromReg.fcName,
@@ -101,6 +116,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     if (plClub) {
       return {
         id: plClub.shortName,
+        uid: plClub.shortName,
         name: plClub.name,
         fullName: plClub.name,
         fcName: plClub.manager,
@@ -110,6 +126,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     }
     return {
       id: teamId,
+      uid: teamId,
       name: teamId,
       fullName: teamId,
       fcName: teamId,
@@ -118,16 +135,140 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     } as any;
   };
 
+  // Determine active player registration
+  const activePlayer = useMemo(() => {
+    if (myRegistrationData) return myRegistrationData;
+    if (selectedPlayerId) {
+      const found = registrations.find(r => r.id === selectedPlayerId || r.userId === selectedPlayerId);
+      if (found) return found;
+      const teamFound = teams.find(t => t.id === selectedPlayerId);
+      if (teamFound) {
+        return {
+          id: teamFound.id,
+          userId: teamFound.uid || teamFound.id,
+          name: teamFound.fullName || teamFound.name,
+          fcName: teamFound.fcName || teamFound.name,
+          country: teamFound.country || teamFound.name,
+          logoUrl: teamFound.logoUrl,
+          status: 'approved'
+        } as Registration;
+      }
+    }
+    if (currentUser?.uid) {
+      const foundByUid = registrations.find(r => r.userId === currentUser.uid || r.id === currentUser.uid);
+      if (foundByUid) return foundByUid;
+    }
+    return null;
+  }, [myRegistrationData, selectedPlayerId, currentUser, registrations, teams]);
+
+  // Handle switching player identity
+  const handleSelectPlayer = (playerId: string) => {
+    setSelectedPlayerId(playerId);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('selected_player_id', playerId);
+    }
+  };
+
+  // Check if a match is "my match" (the user is home or away team)
+  const isMyMatch = (m: Match): boolean => {
+    // Direct matches to active player
+    const candidateIds = [
+      activePlayer?.id,
+      activePlayer?.userId,
+      myRegistrationData?.id,
+      myRegistrationData?.userId,
+      currentUser?.uid,
+      selectedPlayerId
+    ].filter(Boolean) as string[];
+
+    if (candidateIds.includes(m.homeTeamId) || candidateIds.includes(m.awayTeamId)) {
+      return true;
+    }
+
+    const candidateNames = [
+      activePlayer?.fcName?.toLowerCase(),
+      activePlayer?.name?.toLowerCase(),
+      activePlayer?.country?.toLowerCase(),
+      myRegistrationData?.fcName?.toLowerCase(),
+      myRegistrationData?.name?.toLowerCase(),
+      guestSenderName?.toLowerCase()
+    ].filter(Boolean) as string[];
+
+    const home = getTeam(m.homeTeamId);
+    const away = getTeam(m.awayTeamId);
+
+    if (candidateIds.includes(home.id) || candidateIds.includes(home.uid)) return true;
+    if (candidateIds.includes(away.id) || candidateIds.includes(away.uid)) return true;
+
+    if (candidateNames.some(n => 
+      home.fcName?.toLowerCase() === n || 
+      home.name?.toLowerCase() === n || 
+      home.fullName?.toLowerCase() === n
+    )) return true;
+
+    if (candidateNames.some(n => 
+      away.fcName?.toLowerCase() === n || 
+      away.name?.toLowerCase() === n || 
+      away.fullName?.toLowerCase() === n
+    )) return true;
+
+    return false;
+  };
+
+  // Determine opponent for a match
+  const getOpponentInfo = (m: Match) => {
+    const home = getTeam(m.homeTeamId);
+    const away = getTeam(m.awayTeamId);
+
+    const candidateIds = [
+      activePlayer?.id,
+      activePlayer?.userId,
+      myRegistrationData?.id,
+      myRegistrationData?.userId,
+      currentUser?.uid,
+      selectedPlayerId
+    ].filter(Boolean) as string[];
+
+    const isHomeMe = candidateIds.includes(m.homeTeamId) || 
+      candidateIds.includes(home.id) || 
+      (activePlayer?.fcName && home.fcName?.toLowerCase() === activePlayer.fcName.toLowerCase());
+
+    if (isHomeMe) {
+      return {
+        myTeam: home,
+        opponent: away,
+        isHome: true,
+        opponentId: m.awayTeamId,
+        opponentName: away.fcName || away.name || away.fullName || 'Opponent'
+      };
+    } else {
+      return {
+        myTeam: away,
+        opponent: home,
+        isHome: false,
+        opponentId: m.homeTeamId,
+        opponentName: home.fcName || home.name || home.fullName || 'Opponent'
+      };
+    }
+  };
+
   // Sort matches into upcoming vs finished
   const sortedMatches = useMemo(() => {
     return [...matches].sort((a, b) => {
-      // Prioritize upcoming matches
       const aIsFinished = a.status === 'finished' || (a.homeScore !== undefined && a.awayScore !== undefined && a.homeScore !== null);
       const bIsFinished = b.status === 'finished' || (b.homeScore !== undefined && b.awayScore !== undefined && b.homeScore !== null);
       if (aIsFinished !== bIsFinished) return aIsFinished ? 1 : -1;
       return a.matchNumber - b.matchNumber;
     });
   }, [matches]);
+
+  // Filter matches: ONLY show matches the user is playing in (unless admin specifically chooses all matches)
+  const userMatchedMatches = useMemo(() => {
+    if (isAdmin && adminViewMode === 'all_matches') {
+      return sortedMatches;
+    }
+    return sortedMatches.filter(m => isMyMatch(m));
+  }, [sortedMatches, isAdmin, adminViewMode, activePlayer, selectedPlayerId, currentUser, myRegistrationData, teams, registrations]);
 
   // Filter announcements
   const filteredAnnouncements = useMemo(() => {
@@ -138,9 +279,9 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     });
   }, [announcements, searchQuery]);
 
-  // Filter matches
+  // Filter matches by tab mode and search query
   const filteredMatches = useMemo(() => {
-    return sortedMatches.filter(m => {
+    return userMatchedMatches.filter(m => {
       const isFinished = m.status === 'finished' || (m.homeScore !== undefined && m.awayScore !== undefined && m.homeScore !== null);
       if (filterMode === 'upcoming' && isFinished) return false;
       if (filterMode === 'finished' && !isFinished) return false;
@@ -161,7 +302,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
         (away?.fcName && away.fcName.toLowerCase().includes(q))
       );
     });
-  }, [sortedMatches, filterMode, searchQuery, teams, registrations]);
+  }, [userMatchedMatches, filterMode, searchQuery, teams, registrations]);
 
   // Messages count per match
   const messagesByMatch = useMemo(() => {
@@ -186,11 +327,10 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     const text = messageInputs[match.id]?.trim();
     if (!text) return;
 
-    const home = getTeam(match.homeTeamId);
-    const away = getTeam(match.awayTeamId);
+    const { opponent, opponentId, opponentName } = getOpponentInfo(match);
 
     // Save guest name if entered
-    if (guestSenderName.trim()) {
+    if (guestSenderName.trim() && typeof localStorage !== 'undefined') {
       try {
         localStorage.setItem('chat_guest_name', guestSenderName.trim());
       } catch {}
@@ -201,8 +341,8 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
       await onSendMessage(
         match.id,
         text,
-        match.awayTeamId,
-        away?.name || 'Opponent'
+        opponentId,
+        opponentName || opponent.name || 'Opponent'
       );
       setMessageInputs(prev => ({ ...prev, [match.id]: '' }));
       
@@ -218,8 +358,8 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
     }
   };
 
-  const upcomingCount = sortedMatches.filter(m => !(m.status === 'finished' || (m.homeScore !== undefined && m.awayScore !== undefined && m.homeScore !== null))).length;
-  const finishedCount = sortedMatches.filter(m => (m.status === 'finished' || (m.homeScore !== undefined && m.awayScore !== undefined && m.homeScore !== null))).length;
+  const myUpcomingCount = userMatchedMatches.filter(m => !(m.status === 'finished' || (m.homeScore !== undefined && m.awayScore !== undefined && m.homeScore !== null))).length;
+  const myFinishedCount = userMatchedMatches.filter(m => (m.status === 'finished' || (m.homeScore !== undefined && m.awayScore !== undefined && m.homeScore !== null))).length;
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-16">
@@ -231,13 +371,13 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#00ff85]/10 border border-[#00ff85]/30 text-[#00ff85] text-[10px] font-black uppercase tracking-widest mb-3">
               <span className="w-2 h-2 rounded-full bg-[#00ff85] animate-ping" />
-              Official Tournament Hub
+              Direct Opponent & Notice Center
             </div>
             <h2 className="text-3xl sm:text-4xl font-display font-black text-white tracking-tight flex items-center gap-3">
               Chats & Announcements
             </h2>
             <p className="text-white/60 text-sm max-w-xl mt-2 leading-relaxed font-sans">
-              Official broadcast notice board & live discussion rooms for upcoming matches. Once a match concludes, its chat is archived and locked.
+              Connect directly with players you have a scheduled match against. Official announcements and notices are posted above.
             </p>
           </div>
 
@@ -286,7 +426,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                 <Bell className="w-4 h-4" />
               </div>
               <p className="text-white/80">
-                <strong className="text-[#00ff85]">Chrome Notifications:</strong> Turn on notifications so you immediately hear the chime and see popup alerts when new match chats or official announcements are sent.
+                <strong className="text-[#00ff85]">Chrome Notifications:</strong> Turn on notifications so you immediately hear the chime and see alerts when your match opponents message you or official tournament notices are posted.
               </p>
             </div>
             <button
@@ -295,6 +435,110 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
             >
               Allow in Chrome
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* PLAYER IDENTITY & FILTER BAR */}
+      <div className="p-4 rounded-3xl bg-white/[0.02] border border-white/10 backdrop-blur-md space-y-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* Active Player Status */}
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-10 h-10 rounded-2xl bg-fc-neon-green/10 border border-fc-neon-green/30 flex items-center justify-center shrink-0 overflow-hidden">
+              {activePlayer?.logoUrl ? (
+                <img src={activePlayer.logoUrl} alt="" className="w-full h-full object-cover" />
+              ) : (
+                <Swords className="w-5 h-5 text-fc-neon-green" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="text-[10px] uppercase font-mono tracking-widest text-[#00ff85]">
+                  Active Player View
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00ff85]" />
+                <span className="text-[10px] text-white/50">
+                  {userMatchedMatches.length} Match{userMatchedMatches.length === 1 ? '' : 'es'} with Opponents
+                </span>
+              </div>
+              <p className="text-sm font-bold text-white truncate">
+                {activePlayer ? (
+                  <>
+                    <span>{activePlayer.fcName || activePlayer.name}</span>
+                    <span className="text-white/40 font-normal ml-1.5">({activePlayer.country || 'Team'})</span>
+                  </>
+                ) : (
+                  <span className="text-white/60 italic">No player selected - Select your player profile below</span>
+                )}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Player Switcher / Selector */}
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="text-xs text-white/50 font-sans flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5 text-fc-neon-green" />
+              <span>Playing As:</span>
+            </label>
+            <select
+              value={activePlayer?.id || selectedPlayerId || ''}
+              onChange={(e) => handleSelectPlayer(e.target.value)}
+              className="px-3 py-1.5 rounded-xl bg-black/60 border border-white/15 text-white text-xs font-bold focus:outline-none focus:border-[#00ff85] transition-colors"
+            >
+              <option value="" disabled>-- Select Your Gamer/Team Profile --</option>
+              {registrations.map((reg) => (
+                <option key={reg.id} value={reg.id}>
+                  {reg.fcName || reg.name} ({reg.country || 'Club'})
+                </option>
+              ))}
+            </select>
+
+            {isAdmin && (
+              <div className="ml-2 flex items-center gap-1 p-1 rounded-xl bg-purple-900/30 border border-purple-500/30">
+                <button
+                  onClick={() => setAdminViewMode('my_matches')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    adminViewMode === 'my_matches'
+                      ? 'bg-purple-600 text-white shadow'
+                      : 'text-purple-300 hover:text-white'
+                  }`}
+                  title="Only show matches involving your player"
+                >
+                  My Matches Only
+                </button>
+                <button
+                  onClick={() => setAdminViewMode('all_matches')}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all ${
+                    adminViewMode === 'all_matches'
+                      ? 'bg-purple-600 text-white shadow'
+                      : 'text-purple-300 hover:text-white'
+                  }`}
+                  title="Admin view of all tournament matches"
+                >
+                  All Matches (Admin)
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Guest Name setting if not logged in */}
+        {!currentUser && (
+          <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-white/70">
+              <UserCheck className="w-4 h-4 text-[#00ff85]" />
+              <span>Chatting as guest / visitor:</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                placeholder="Enter your chat nickname..."
+                value={guestSenderName}
+                onChange={(e) => setGuestSenderName(e.target.value)}
+                className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-[#00ff85]"
+              />
+              <span className="text-[10px] text-white/40 font-mono">(saved)</span>
+            </div>
           </div>
         )}
       </div>
@@ -332,7 +576,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
             }`}
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span>Upcoming Match Chats ({upcomingCount})</span>
+            <span>Upcoming Matches ({myUpcomingCount})</span>
           </button>
           <button
             onClick={() => setFilterMode('finished')}
@@ -343,7 +587,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
             }`}
           >
             <Lock className="w-3 h-3 text-white/50" />
-            <span>Finished (Archived {finishedCount})</span>
+            <span>Finished & Locked ({myFinishedCount})</span>
           </button>
         </div>
 
@@ -351,33 +595,13 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-white/40" />
           <input
             type="text"
-            placeholder="Search teams, matches, notices..."
+            placeholder="Search opponents, notices..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-white text-xs placeholder:text-white/40 focus:outline-none focus:border-[#00ff85]/50 transition-colors"
           />
         </div>
       </div>
-
-      {/* Guest Name Config (if user not logged in) */}
-      {!currentUser && (
-        <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-          <div className="flex items-center gap-2 text-white/70">
-            <UserCheck className="w-4 h-4 text-[#00ff85]" />
-            <span>You are chatting as a visitor. Set your chat nickname:</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="text"
-              placeholder="e.g. Priyam / GamerX"
-              value={guestSenderName}
-              onChange={(e) => setGuestSenderName(e.target.value)}
-              className="px-3 py-1.5 rounded-xl bg-white/10 border border-white/15 text-white text-xs placeholder:text-white/30 focus:outline-none focus:border-[#00ff85]"
-            />
-            <span className="text-[10px] text-white/40 font-mono">(auto-saved)</span>
-          </div>
-        </div>
-      )}
 
       {/* SECTION 1: OFFICIAL ANNOUNCEMENTS NOTICE BOARD */}
       {(filterMode === 'all' || filterMode === 'announcements') && (
@@ -479,31 +703,57 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
         </div>
       )}
 
-      {/* SECTION 2: MATCH-BY-MATCH DISCUSSION CHATS */}
+      {/* SECTION 2: MATCH OPPONENT CHATS (ONLY PLAYERS I HAVE A MATCH WITH) */}
       {(filterMode === 'all' || filterMode === 'upcoming' || filterMode === 'finished') && (
         <div className="space-y-4 pt-4">
           <div className="flex items-center justify-between border-b border-white/10 pb-3">
             <div className="flex items-center gap-3">
               <div className="p-2.5 rounded-xl bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                <MessageSquare className="w-5 h-5" />
+                <Swords className="w-5 h-5" />
               </div>
               <div>
                 <h3 className="text-xl font-display font-bold text-white tracking-tight">
-                  Match Discussion Rooms
+                  My Match Chats & Opponents
                 </h3>
                 <p className="text-xs text-white/50">
-                  Upcoming matches are open for team banter and coordination. Completed matches fade and are locked from further messaging.
+                  Private discussion rooms exclusively with players you have a match with. When a match ends, the room is faded and locked.
                 </p>
               </div>
             </div>
             <span className="px-2.5 py-1 rounded-full bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase tracking-wider">
-              {filteredMatches.length} Matches
+              {filteredMatches.length} Opponent{filteredMatches.length === 1 ? '' : 's'}
             </span>
           </div>
 
           {filteredMatches.length === 0 ? (
-            <div className="p-8 text-center bg-white/[0.02] border border-white/5 rounded-2xl text-white/40 text-xs">
-              No matches found matching current filters.
+            <div className="p-10 text-center bg-white/[0.02] border border-white/10 rounded-3xl space-y-4">
+              <div className="w-14 h-14 mx-auto rounded-2xl bg-white/5 flex items-center justify-center border border-white/10">
+                <Swords className="w-7 h-7 text-white/30" />
+              </div>
+              <div>
+                <h4 className="text-base font-bold text-white">No Scheduled Matches Found</h4>
+                <p className="text-xs text-white/50 max-w-md mx-auto mt-1">
+                  {activePlayer 
+                    ? `No matches scheduled yet for ${activePlayer.fcName || activePlayer.name}. Once the admin adds your fixtures, your opponent conversation rooms will show up here.`
+                    : 'Please select which player you are in the dropdown above to view only your matches and opponent chats.'}
+                </p>
+              </div>
+              {!activePlayer && registrations.length > 0 && (
+                <div className="pt-2">
+                  <span className="text-xs text-[#00ff85] font-bold mr-2">Quick Select:</span>
+                  <div className="inline-flex flex-wrap gap-2 justify-center max-w-xl mx-auto">
+                    {registrations.slice(0, 5).map(r => (
+                      <button
+                        key={r.id}
+                        onClick={() => handleSelectPlayer(r.id)}
+                        className="px-3 py-1.5 bg-white/10 hover:bg-[#00ff85]/20 text-white hover:text-[#00ff85] rounded-xl text-xs font-bold transition-all border border-white/10"
+                      >
+                        {r.fcName || r.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
@@ -514,6 +764,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                 const matchChatList = messagesByMatch[match.id] || [];
                 const isExpanded = expandedMatchId === match.id;
                 const draftText = messageInputs[match.id] || '';
+                const { opponent, opponentName, isHome } = getOpponentInfo(match);
 
                 return (
                   <div
@@ -527,14 +778,31 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                         : 'bg-white/[0.02] border-white/10 hover:border-white/25 hover:bg-white/[0.04]'
                     }`}
                   >
-                    {/* Match Card Header Row */}
+                    {/* Opponent Banner Bar */}
+                    <div className="px-4 py-2 bg-white/[0.03] border-b border-white/5 flex items-center justify-between text-[11px]">
+                      <div className="flex items-center gap-2">
+                        <span className="px-2 py-0.5 rounded-md bg-[#00ff85]/15 text-[#00ff85] font-black text-[9px] uppercase tracking-wider border border-[#00ff85]/30">
+                          Opponent
+                        </span>
+                        <span className="font-bold text-white">
+                          {opponentName} ({opponent.name || opponent.fullName})
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-white/50 text-[10px] font-mono">
+                        <span>Match #{match.matchNumber}</span>
+                        <span>·</span>
+                        <span>{match.date || 'Scheduled'}</span>
+                      </div>
+                    </div>
+
+                    {/* Match Card Row */}
                     <div 
                       onClick={() => setExpandedMatchId(isExpanded ? null : match.id)}
                       className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer select-none"
                     >
                       {/* Left: Match Number & Status */}
                       <div className="flex items-center gap-3 shrink-0">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs ${
+                        <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-xs ${
                           isFinished
                             ? 'bg-zinc-800 text-zinc-400 border border-zinc-700'
                             : 'bg-[#00ff85]/20 text-[#00ff85] border border-[#00ff85]/40'
@@ -559,17 +827,22 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                             )}
                           </div>
                           <p className="text-[10px] text-white/40 mt-0.5">
-                            {match.matchday ? `Matchday ${match.matchday}` : 'Premier League Stage'}
+                            {match.matchday ? `Matchday ${match.matchday}` : 'Tournament Fixture'}
                           </p>
                         </div>
                       </div>
 
-                      {/* Center: Teams Confrontation */}
+                      {/* Center: Confrontation */}
                       <div className="flex items-center justify-between sm:justify-center gap-4 flex-1 max-w-md mx-auto">
                         {/* Home Team */}
                         <div className="flex items-center gap-2.5 flex-1 justify-end min-w-0">
                           <div className="text-right min-w-0">
-                            <p className="font-bold text-sm text-white truncate">{home.fullName || home.name}</p>
+                            <div className="flex items-center justify-end gap-1.5">
+                              {isHome && (
+                                <span className="px-1.5 py-0.2 bg-[#00ff85]/20 text-[#00ff85] font-black text-[8px] rounded uppercase">YOU</span>
+                              )}
+                              <p className="font-bold text-sm text-white truncate">{home.fullName || home.name}</p>
+                            </div>
                             <p className="text-[10px] text-[#00ff85] truncate font-mono">{home.fcName}</p>
                           </div>
                           <div className="w-9 h-9 rounded-xl bg-black border border-white/10 flex items-center justify-center overflow-hidden shrink-0">
@@ -604,7 +877,12 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                             )}
                           </div>
                           <div className="text-left min-w-0">
-                            <p className="font-bold text-sm text-white truncate">{away.fullName || away.name}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-bold text-sm text-white truncate">{away.fullName || away.name}</p>
+                              {!isHome && (
+                                <span className="px-1.5 py-0.2 bg-[#00ff85]/20 text-[#00ff85] font-black text-[8px] rounded uppercase">YOU</span>
+                              )}
+                            </div>
                             <p className="text-[10px] text-[#00ff85] truncate font-mono">{away.fcName}</p>
                           </div>
                         </div>
@@ -614,7 +892,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                       <div className="flex items-center justify-end gap-3 shrink-0">
                         <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold ${
                           matchChatList.length > 0
-                            ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                            ? 'bg-[#00ff85]/20 text-[#00ff85] border border-[#00ff85]/30'
                             : 'bg-white/5 text-white/40 border border-white/10'
                         }`}>
                           <MessageSquare className="w-3.5 h-3.5" />
@@ -626,7 +904,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                       </div>
                     </div>
 
-                    {/* Expandable Chat Drawer */}
+                    {/* Expandable Chat Drawer with Opponent */}
                     <AnimatePresence>
                       {isExpanded && (
                         <motion.div
@@ -638,18 +916,23 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                           <div className="p-4 sm:p-6 space-y-4">
                             {/* Match Chat Header status info */}
                             <div className="flex items-center justify-between text-xs text-white/60 pb-2 border-b border-white/5">
-                              <span className="font-bold text-white/80">
-                                Match #{match.matchNumber} Chat Channel
-                              </span>
+                              <div className="flex items-center gap-2">
+                                <span className="font-bold text-white/90">
+                                  Conversation with {opponentName}
+                                </span>
+                                <span className="text-white/40 font-mono">
+                                  ({opponent.country || opponent.name})
+                                </span>
+                              </div>
                               {isFinished ? (
                                 <span className="text-red-400 font-bold flex items-center gap-1">
                                   <Lock className="w-3.5 h-3.5" />
-                                  Match done · Input locked
+                                  Match concluded · Input locked
                                 </span>
                               ) : (
                                 <span className="text-[#00ff85] font-bold flex items-center gap-1">
                                   <span className="w-2 h-2 rounded-full bg-[#00ff85] animate-ping" />
-                                  Live chat active
+                                  Chat Open
                                 </span>
                               )}
                             </div>
@@ -659,12 +942,20 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                               {matchChatList.length === 0 ? (
                                 <div className="py-12 text-center text-white/30 text-xs">
                                   <MessageSquare className="w-8 h-8 mx-auto mb-2 opacity-30" />
-                                  <p>No messages in this match chat yet.</p>
-                                  {!isFinished && <p className="text-[11px] text-[#00ff85] mt-1">Be the first to send a message!</p>}
+                                  <p>No messages with {opponentName} yet.</p>
+                                  {!isFinished && (
+                                    <p className="text-[11px] text-[#00ff85] mt-1 font-sans">
+                                      Send a message to coordinate your match time or say hello!
+                                    </p>
+                                  )}
                                 </div>
                               ) : (
                                 matchChatList.map((msg) => {
-                                  const isMyMessage = currentUser?.uid === msg.senderId || (guestSenderName && msg.senderName === guestSenderName);
+                                  const isMyMessage = currentUser?.uid === msg.senderId || 
+                                    activePlayer?.userId === msg.senderId ||
+                                    activePlayer?.id === msg.senderId ||
+                                    (guestSenderName && msg.senderName === guestSenderName);
+
                                   return (
                                     <div
                                       key={msg.id}
@@ -718,14 +1009,14 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                               <div className="p-4 rounded-2xl bg-zinc-900/90 border border-zinc-800 text-center text-xs text-zinc-400 flex items-center justify-center gap-2">
                                 <Lock className="w-4 h-4 text-zinc-500" />
                                 <span>
-                                  <strong>Match Concluded:</strong> Chat is permanently faded and archived. No further messages can be submitted.
+                                  <strong>Match Concluded:</strong> Chat is faded and archived. No further messages can be sent.
                                 </span>
                               </div>
                             ) : (
                               <div className="space-y-2">
                                 {/* Quick reaction chips */}
                                 <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-                                  {['⚽ Good game!', '🔥 Let’s play!', '👏 Well played', '🏆 Ready to win', '⚔️ Match on', '🤝 GG'].map((quick) => (
+                                  {['⚽ Ready when you are!', '🔥 Good luck!', '🎮 Inviting you now', '🏆 GG bro', '🤝 Well played', '🕒 What time works for you?'].map((quick) => (
                                     <button
                                       key={quick}
                                       type="button"
@@ -743,13 +1034,7 @@ export const ChatsAndAnnouncementsTab: React.FC<ChatsAndAnnouncementsTabProps> =
                                 <div className="flex items-center gap-2">
                                   <input
                                     type="text"
-                                    placeholder={
-                                      currentUser
-                                        ? `Message match participants as ${currentUser.displayName || 'Player'}...`
-                                        : guestSenderName
-                                        ? `Message as ${guestSenderName}...`
-                                        : 'Type message for this match...'
-                                    }
+                                    placeholder={`Message ${opponentName}...`}
                                     value={draftText}
                                     onChange={(e) => setMessageInputs(prev => ({ ...prev, [match.id]: e.target.value }))}
                                     onKeyDown={(e) => {
