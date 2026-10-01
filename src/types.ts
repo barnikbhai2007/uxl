@@ -69,6 +69,8 @@ export interface Match {
   evidenceUploadedBy?: string;
   evidenceTimestamp?: any;
   evidenceImage?: string;
+  evidenceScorersImage?: string;
+  evidenceImages?: string[];
   challengeLevelHome?: 'easy' | 'moderate' | 'hard' | 'bonus';
   challengeLevelAway?: 'easy' | 'moderate' | 'hard' | 'bonus';
   challengeCompletedHome?: boolean;

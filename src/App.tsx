@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin, Lock } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin, Lock, CheckCircle2, FileText, Image as ImageIcon } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS, MANAGERS_LIST } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess, Announcement, DirectChatMessage } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -5000,9 +5000,39 @@ export default function App() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [bracket, setBracket] = useState<BracketMatch[]>([]);
   const [isSubmittingImg, setIsSubmittingImg] = useState(false);
+  const [scorecardFile, setScorecardFile] = useState<File | null>(null);
+  const [scorecardPreview, setScorecardPreview] = useState<string | null>(null);
+  const [scorersFile, setScorersFile] = useState<File | null>(null);
+  const [scorersPreview, setScorersPreview] = useState<string | null>(null);
   const [motmInput, setMotmInput] = useState('');
   const [showMotmSuggestions, setShowMotmSuggestions] = useState(false);
   const [aiAnalysisResult, setAiAnalysisResult] = useState<string | null>(null);
+
+  const handleSelectScorecard = (file: File | null) => {
+    if (scorecardPreview) {
+      URL.revokeObjectURL(scorecardPreview);
+    }
+    if (file) {
+      setScorecardFile(file);
+      setScorecardPreview(URL.createObjectURL(file));
+    } else {
+      setScorecardFile(null);
+      setScorecardPreview(null);
+    }
+  };
+
+  const handleSelectScorers = (file: File | null) => {
+    if (scorersPreview) {
+      URL.revokeObjectURL(scorersPreview);
+    }
+    if (file) {
+      setScorersFile(file);
+      setScorersPreview(URL.createObjectURL(file));
+    } else {
+      setScorersFile(null);
+      setScorersPreview(null);
+    }
+  };
   const [campaignTab, setCampaignTab] = useState<'stats' | 'history' | 'edit'>('stats');
   const [newsFeed, setNewsFeed] = useState<any[]>([]);
 
@@ -6726,7 +6756,12 @@ export default function App() {
 
 
 
-  const processMatchResultImage = async (file: File, playerRegistration: Registration, motm: string | null = null) => {
+  const processMatchResultImages = async (
+    scorecardFile: File,
+    scorersFile: File,
+    playerRegistration: Registration,
+    motm: string | null = null
+  ) => {
     setIsSubmittingImg(true);
     setAiAnalysisResult(null);
     try {
@@ -6744,8 +6779,8 @@ export default function App() {
       const groqKey = keyData.key;
       const model = keyData.model || "meta-llama/llama-4-scout-17b-16e-instruct";
 
-      // 2. Read the original uncompressed image as base64 for full accurate quality reading
-      setAiAnalysisResult("Processing original screenshot for AI vision...");
+      // 2. Read both original uncompressed images as base64 for full accurate quality reading
+      setAiAnalysisResult("Reading Photo 1 (Scorecard) & Photo 2 (Goal Scorers) for AI vision...");
       const getOriginalBase64 = (f: File): Promise<string> => {
         return new Promise((resolve, reject) => {
           const reader = new FileReader();
@@ -6759,59 +6794,55 @@ export default function App() {
         });
       };
       
-      const originalBase64 = await getOriginalBase64(file);
-      const mimeType = file.type || 'image/jpeg';
+      const scorecardBase64 = await getOriginalBase64(scorecardFile);
+      const scorecardMime = scorecardFile.type || 'image/jpeg';
+
+      const scorersBase64 = await getOriginalBase64(scorersFile);
+      const scorersMime = scorersFile.type || 'image/jpeg';
 
       const homeGoalkeeper = teams.find(t => t.fcName === playerRegistration.fcName)?.goalkeeper || "Not specified";
       const awayGoalkeeper = teams.find(t => t.fcName !== playerRegistration.fcName)?.goalkeeper || "Not specified";
 
-      const promptText = `Analyze this FC Mobile match result screenshot. The player reporting this is named "${playerRegistration.fcName}".
+      const promptText = `Analyze these TWO FC Mobile match result screenshots. The player reporting this is named "${playerRegistration.fcName}".
               
+      SCREENSHOT 1: MATCH SCORECARD (Shows final score, player usernames, and team statistics)
+      SCREENSHOT 2: GOAL SCORER PAGE (Shows detailed goal scorers list, soccer ball icons, minutes, and team assignment)
+
       CONTEXT:
       - Home Team Goalkeeper: ${homeGoalkeeper}
       - Away Team Goalkeeper: ${awayGoalkeeper}
+      - Man of the Match Reported: ${motm || "Not specified"}
 
       INSTRUCTIONS:
-      1. USERNAME DETECTION (CRITICAL):
-         - Home player username = large bold text TOP LEFT of screen.
-         - Away player username = large bold Latin text TOP RIGHT of screen.
+      1. USERNAME DETECTION (From Screenshot 1 Scorecard):
+         - Home player username = large bold text TOP LEFT of scorecard screen.
+         - Away player username = large bold Latin text TOP RIGHT of scorecard screen.
          - IGNORE all subtitle text below usernames (team names, league names, Cyrillic text, "NO LEAGUE" etc.).
          - The username is ALWAYS Latin alphabet, never Cyrillic. 
          - Examples: "brokenaqua", "Icebear" — NOT "збірна України 3", "KOLKATA MASTERS", or "NO LEAGUE".
-      2. Identify the TWO TEAM NAMES ("team1" for Left, "team2" for Right) using the usernames detected above.
-      3. Identify the Final Score in the middle. team1Score is Left, team2Score is Right.
-      4. Extract GOAL SCORERS:
-         - In FC Mobile Match Summary, the screen has two distinct halves:
-           * LEFT HALF contains the Home team's details, including a list of Home goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 18').
-           * RIGHT HALF contains the Away team's details, including a list of Away goal scorers, accompanied by Goal icons (soccer ball) and minutes (e.g. 54').
-         - Scan both halves of the screen carefully. Player Names under the Left (Home) team belong to "team1". Player Names under the Right (Away) team belong to "team2".
+      2. Identify the TWO TEAM NAMES ("team1" for Left/Home, "team2" for Right/Away) using the usernames detected above.
+      3. Identify the Final Score in the middle of Screenshot 1 (Scorecard). team1Score is Left, team2Score is Right.
+      4. Extract GOAL SCORERS (From Screenshot 2 Goal Scorer Page):
+         - Look at Screenshot 2 (Goal Scorers Page screenshot).
+         - Scan both halves / list of goals with soccer ball icons and minutes (e.g. 18', 54').
+         - Player Names under the Left (Home) team belong to "team1". Player Names under the Right (Away) team belong to "team2".
          - DO NOT MIX THEM UP. Left-side scorers are strictly "team1", and Right-side scorers are strictly "team2".
-         - FOLLOW THE CRITICAL SCORER ASSIGNMENT RULES BELOW.
-      5. Extract Match Stats: Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
+         - Sum of team1 scorers must equal team1Score, and sum of team2 scorers must equal team2Score.
+      5. Extract Match Stats (From Screenshot 1 Scorecard):
+         - Possession, Shots, Shots on Target, Pass Accuracy, Fouls, Offsides, Saves.
          - For "Shots (On Goal)" like "6(6)": 'shots' is 6, 'shotsOnTarget' is 6.
          - Left-side values = "team1Stats".
          - Right-side values = "team2Stats".
-      6. MAN OF THE MATCH (MOTM): Look at the player ratings or for a player highlighted with a Star Icon or "MVP". Assign their name to "manOfTheMatch". IF NOT EXPLICITLY SHOWN, just pick the player with the most goals from the winning team (if they scored multiple goals). Otherwise, leave it as null.
-      
-      CRITICAL SCORER ASSIGNMENT RULES:
-      1. Goals listed on the Left-side half of the screenshot are scored by the Left-side player/team (team1).
-      2. Goals listed on the Right-side half of the screenshot are scored by the Right-side player/team (team2).
-      3. Verify the final score:
-         - If team1Score is 3, exactly 3 goals must contain team1 scorers.
-         - If team2Score is 2, exactly 2 goals must contain team2 scorers.
-      4. If a player is listed on the Left side, their "team" field MUST be "team1". If listed on the Right side, their "team" field MUST be "team2".
-      5. The sum of goals for team1 scorers MUST equal team1Score, and the sum of goals for team2 scorers MUST equal team2Score.
-      6. Under no circumstances should you assign a left-side scorer to "team2", or a right-side scorer to "team1".
-      7. team1 = the LEFT side player (home), team2 = the RIGHT side player (away).
-      8. Double check: count team1 scorers = team1Score, count team2 scorers = team2Score.
+      6. MAN OF THE MATCH (MOTM):
+         - Use "${motm}" if provided, or detect MVP/Star player.
 
       CRITICAL RULES:
       - ALWAYS USE STRICTLY "team1" OR "team2" in the "team" field of each scorer.
       - Ensure "team1Score" matches the total number of goals in the "team1" scorers list.
+      - Ensure "team2Score" matches the total number of goals in the "team2" scorers list.
       - One team must match or contain "${playerRegistration.fcName}".
       
-      Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation.
-      CRITICAL: The "scorers" array must have ALL goals assigned.
+      Return JSON in this exact structure, ONLY the raw JSON object, no markdown, no backticks, no explanation:
       { 
         "team1": "string", "team2": "string", 
         "team1Score": number, "team2Score": number, 
@@ -6821,8 +6852,8 @@ export default function App() {
         "manOfTheMatch": "string"
       }`;
 
-      // 3. Post to Groq directly - uncompressed full-quality image is used, bypassing Render bandwidth entirely
-      setAiAnalysisResult("Analyzing high-quality match image with Groq Vision...");
+      // 3. Post to Groq Vision API with BOTH screenshots
+      setAiAnalysisResult("Analyzing Scorecard & Goal Scorers screenshots with AI Vision...");
       const groqResponse = await fetch('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -6836,8 +6867,20 @@ export default function App() {
               role: 'user',
               content: [
                 {
+                  type: 'text',
+                  text: 'PHOTO 1: MATCH SCORECARD (Final score, player usernames, team stats).'
+                },
+                {
                   type: 'image_url',
-                  image_url: { url: `data:${mimeType};base64,${originalBase64}` }
+                  image_url: { url: `data:${scorecardMime};base64,${scorecardBase64}` }
+                },
+                {
+                  type: 'text',
+                  text: 'PHOTO 2: GOAL SCORER PAGE SCREENSHOT (Detailed list of all goal scorers, soccer ball icons, minutes, and team assignment).'
+                },
+                {
+                  type: 'image_url',
+                  image_url: { url: `data:${scorersMime};base64,${scorersBase64}` }
                 },
                 {
                   type: 'text',
@@ -6859,18 +6902,22 @@ export default function App() {
       const cleanJsonText = rawText.replace(/```json|```/g, "").trim();
       const parsedMatchData = JSON.parse(cleanJsonText);
 
-      // 4. Compress the image for R2 upload & Telegram evidence to minimize server payload and outbound size
-      setAiAnalysisResult("Compressing final stored copy for archive records...");
-      const compressedBase64 = await compressImage(file);
+      // 4. Compress both images for archive storage & evidence
+      setAiAnalysisResult("Compressing verification photos for tournament archive...");
+      const compressedScorecard = await compressImage(scorecardFile);
+      const compressedScorers = await compressImage(scorersFile);
 
-      // 5. Submit the rich analysis data and lightweight image to the server for persistent record storage and achievements
-      setAiAnalysisResult("Submitting results and processing tournament achievements...");
+      // 5. Submit the rich analysis data and lightweight images to the server
+      setAiAnalysisResult("Submitting verified match result and processing achievements...");
       const response = await fetch(`${VITE_API_URL}/api/analyze-match`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          base64: compressedBase64,
-          mimeType: 'image/jpeg',
+          base64: compressedScorecard,
+          base64Scorecard: compressedScorecard,
+          mimeTypeScorecard: 'image/jpeg',
+          base64Scorers: compressedScorers,
+          mimeTypeScorers: 'image/jpeg',
           fcName: playerRegistration.fcName,
           homeGoalkeeper,
           awayGoalkeeper,
@@ -7075,9 +7122,11 @@ export default function App() {
           // Deep clean payload to guarantee no undefined values or internal fields throw a Firestore error
           const cleanedPayload = cleanDocData(updatePayload);
           
-          // Save the URL as evidence for admins to verify
+          // Save the URLs as evidence for admins to verify
           cleanedPayload.evidenceImage = resData.evidenceUrl || null;
-          if (!cleanedPayload.evidenceImage) {
+          cleanedPayload.evidenceScorersImage = resData.evidenceScorersUrl || null;
+          cleanedPayload.evidenceImages = resData.evidenceUrls || [resData.evidenceUrl, resData.evidenceScorersUrl].filter(Boolean);
+          if (!cleanedPayload.evidenceImage && !cleanedPayload.evidenceScorersImage) {
             console.warn("No evidence URL returned from API, not saving image link.");
           }
           cleanedPayload.evidenceUploadedBy = playerRegistration.fcName;
@@ -7113,8 +7162,6 @@ export default function App() {
             }
           }
 
-
-
           if (cleanedPayload.status === 'finished') {
             const homeT = dbTeams.find(t => t.id === existingMatch.homeTeamId);
             const awayT = dbTeams.find(t => t.id === existingMatch.awayTeamId);
@@ -7134,7 +7181,16 @@ export default function App() {
             }).catch(e => console.error("News trigger failed:", e));
           }
 
-          setAiAnalysisResult("SUCCESS: Match result verified and updated!");
+          // Reset upload states on success
+          if (scorecardPreview) URL.revokeObjectURL(scorecardPreview);
+          if (scorersPreview) URL.revokeObjectURL(scorersPreview);
+          setScorecardFile(null);
+          setScorecardPreview(null);
+          setScorersFile(null);
+          setScorersPreview(null);
+          setMotmInput('');
+
+          setAiAnalysisResult("SUCCESS: Match result verified from Scorecard & Goal Scorers page!");
         }
 
     } catch (error) {
@@ -7143,6 +7199,11 @@ export default function App() {
     } finally {
       setIsSubmittingImg(false);
     }
+  };
+
+  // Backwards compatibility wrapper for single image calls
+  const processMatchResultImage = async (file: File, playerRegistration: Registration, motm: string | null = null) => {
+    return processMatchResultImages(file, file, playerRegistration, motm);
   };
 
   const handleRegister = async (regData: Omit<Registration, 'id' | 'userId' | 'timestamp' | 'status'>) => {
@@ -8532,39 +8593,189 @@ export default function App() {
                                 }
 
                                 return (
-                                  <div className="flex flex-col md:flex-row gap-4 w-full relative z-20">
-                                    <div className="flex-1 flex flex-col items-center justify-center p-8 border-2 border-dashed border-white/10 rounded-2xl hover:border-fc-neon-green/50/50 transition-all group cursor-pointer relative">
-                                      <input 
-                                        type="file" 
-                                        accept="image/*"
-                                        onChange={(e) => {
-                                          const file = e.target.files?.[0];
-                                          if (file) {
-                                            if (!myRegistration) {
-                                              alert("Please register a team first to submit match results.");
-                                              return;
-                                            }
-                                            if (!motmInput.trim()) {
-                                              alert("Please enter/select the Man of the Match (Required) before uploading!");
-                                              e.target.value = '';
-                                              return;
-                                            }
-                                            processMatchResultImage(file, myRegistration, motmInput.trim());
-                                          }
-                                        }}
-                                        className="absolute inset-0 opacity-0 cursor-pointer"
-                                      />
-                                      <Plus className="w-8 h-8 text-fc-neon-green/40 mb-3 group-hover:text-fc-neon-green transition-colors" />
-                                      <span className="text-[10px] font-bold text-white/40 tracking-normal text-center">Upload FC Result<br/>(Max 2MB)</span>
+                                  <div className="space-y-4 w-full relative z-20">
+                                    {/* 2 Photos Notice Header */}
+                                    <div className="bg-white/5 border border-white/10 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                      <div className="flex items-center gap-3">
+                                        <div className="w-9 h-9 rounded-xl bg-fc-neon-green/20 border border-fc-neon-green/40 flex items-center justify-center shrink-0">
+                                          <Sparkles className="w-4 h-4 text-fc-neon-green" />
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-bold text-white tracking-wide">2 Match Screenshots Required</p>
+                                          <p className="text-[11px] text-white/50">Upload both screenshots so AI Vision can accurately verify final score, usernames, stats & goal scorers.</p>
+                                        </div>
+                                      </div>
+                                      <div className="flex items-center gap-2 text-[10px] font-bold shrink-0">
+                                        <span className={`px-2.5 py-1 rounded-full border transition-colors ${scorecardFile ? 'bg-fc-neon-green/20 border-fc-neon-green/50 text-fc-neon-green' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                                          1. Scorecard {scorecardFile ? '✓' : '•'}
+                                        </span>
+                                        <span className={`px-2.5 py-1 rounded-full border transition-colors ${scorersFile ? 'bg-fc-neon-green/20 border-fc-neon-green/50 text-fc-neon-green' : 'bg-white/5 border-white/10 text-white/40'}`}>
+                                          2. Goal Scorers {scorersFile ? '✓' : '•'}
+                                        </span>
+                                      </div>
                                     </div>
-                                    <div className="flex-1 flex flex-col justify-center p-4 border border-white/10 rounded-2xl bg-white/5 relative z-30">
-                                        <label className="text-[10px] font-bold tracking-normal text-white/40 mb-2 block text-center uppercase tracking-wider">
-                                          Man of the Match <span className="text-red-500 font-extrabold">*Required*</span>
+
+                                    {/* 2 Upload Photo Slots */}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                      {/* Photo 1: Match Scorecard */}
+                                      <div className="flex flex-col p-4 bg-white/5 border border-white/10 rounded-2xl relative overflow-hidden transition-all hover:border-white/20">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-fc-neon-green/20 text-fc-neon-green border border-fc-neon-green/30">
+                                              1st Photo
+                                            </span>
+                                            <span className="text-xs font-bold text-white">Scorecard Screenshot</span>
+                                          </div>
+                                          {scorecardFile && (
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-fc-neon-green">
+                                              <CheckCircle2 className="w-3.5 h-3.5" />
+                                              Ready
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[11px] text-white/40 mb-3">Final score screen showing player usernames and match statistics.</p>
+
+                                        {scorecardPreview ? (
+                                          <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/40 group">
+                                            <img 
+                                              src={scorecardPreview} 
+                                              alt="Scorecard preview" 
+                                              className="w-full h-36 object-cover object-center"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3">
+                                              <div className="flex items-center justify-between text-xs text-white">
+                                                <span className="truncate max-w-[150px] font-bold text-[11px]">{scorecardFile?.name}</span>
+                                                <span className="text-[10px] text-white/60">{scorecardFile ? `${(scorecardFile.size / 1024).toFixed(0)} KB` : ''}</span>
+                                              </div>
+                                              <div className="flex items-center gap-2 mt-2">
+                                                <label className="flex-1 py-1.5 px-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-center text-xs font-bold cursor-pointer transition-colors border border-white/10">
+                                                  Change
+                                                  <input 
+                                                    type="file" 
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                      const f = e.target.files?.[0];
+                                                      if (f) handleSelectScorecard(f);
+                                                    }}
+                                                    className="hidden"
+                                                  />
+                                                </label>
+                                                <button 
+                                                  type="button"
+                                                  onClick={() => handleSelectScorecard(null)}
+                                                  className="py-1.5 px-3 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white rounded-lg text-xs font-bold transition-colors border border-red-500/30"
+                                                >
+                                                  Remove
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <label className="flex-1 min-h-[140px] flex flex-col items-center justify-center p-4 border-2 border-dashed border-white/15 rounded-xl hover:border-fc-neon-green/60 hover:bg-fc-neon-green/[0.02] transition-all cursor-pointer group text-center relative">
+                                            <input 
+                                              type="file" 
+                                              accept="image/*"
+                                              onChange={(e) => {
+                                                const f = e.target.files?.[0];
+                                                if (f) handleSelectScorecard(f);
+                                              }}
+                                              className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2 group-hover:bg-fc-neon-green/20 transition-colors">
+                                              <Upload className="w-5 h-5 text-white/40 group-hover:text-fc-neon-green transition-colors" />
+                                            </div>
+                                            <span className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">Upload Scorecard Photo</span>
+                                            <span className="text-[10px] text-white/40 mt-1">Tap to select or drop screenshot</span>
+                                          </label>
+                                        )}
+                                      </div>
+
+                                      {/* Photo 2: Goal Scorer Page */}
+                                      <div className="flex flex-col p-4 bg-white/5 border border-white/10 rounded-2xl relative overflow-hidden transition-all hover:border-white/20">
+                                        <div className="flex items-center justify-between mb-2">
+                                          <div className="flex items-center gap-2">
+                                            <span className="px-2 py-0.5 rounded text-[9px] font-bold tracking-wider uppercase bg-orange-500/20 text-orange-400 border border-orange-500/30">
+                                              2nd Photo
+                                            </span>
+                                            <span className="text-xs font-bold text-white">Goal Scorer Page Screenshot</span>
+                                          </div>
+                                          {scorersFile && (
+                                            <span className="flex items-center gap-1 text-[10px] font-bold text-fc-neon-green">
+                                              <CheckCircle2 className="w-3.5 h-3.5" />
+                                              Ready
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[11px] text-white/40 mb-3">Goal summary screen showing goal scorers, soccer ball icons & minutes.</p>
+
+                                        {scorersPreview ? (
+                                          <div className="relative rounded-xl overflow-hidden border border-white/10 bg-black/40 group">
+                                            <img 
+                                              src={scorersPreview} 
+                                              alt="Goal scorers preview" 
+                                              className="w-full h-36 object-cover object-center"
+                                            />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex flex-col justify-end p-3">
+                                              <div className="flex items-center justify-between text-xs text-white">
+                                                <span className="truncate max-w-[150px] font-bold text-[11px]">{scorersFile?.name}</span>
+                                                <span className="text-[10px] text-white/60">{scorersFile ? `${(scorersFile.size / 1024).toFixed(0)} KB` : ''}</span>
+                                              </div>
+                                              <div className="flex items-center gap-2 mt-2">
+                                                <label className="flex-1 py-1.5 px-3 bg-white/10 hover:bg-white/20 text-white rounded-lg text-center text-xs font-bold cursor-pointer transition-colors border border-white/10">
+                                                  Change
+                                                  <input 
+                                                    type="file" 
+                                                    accept="image/*"
+                                                    onChange={(e) => {
+                                                      const f = e.target.files?.[0];
+                                                      if (f) handleSelectScorers(f);
+                                                    }}
+                                                    className="hidden"
+                                                  />
+                                                </label>
+                                                <button 
+                                                  type="button"
+                                                  onClick={() => handleSelectScorers(null)}
+                                                  className="py-1.5 px-3 bg-red-500/20 hover:bg-red-500 text-red-400 hover:text-white rounded-lg text-xs font-bold transition-colors border border-red-500/30"
+                                                >
+                                                  Remove
+                                                </button>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <label className="flex-1 min-h-[140px] flex flex-col items-center justify-center p-4 border-2 border-dashed border-white/15 rounded-xl hover:border-orange-400/60 hover:bg-orange-400/[0.02] transition-all cursor-pointer group text-center relative">
+                                            <input 
+                                              type="file" 
+                                              accept="image/*"
+                                              onChange={(e) => {
+                                                const f = e.target.files?.[0];
+                                                if (f) handleSelectScorers(f);
+                                              }}
+                                              className="absolute inset-0 opacity-0 cursor-pointer"
+                                            />
+                                            <div className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center mb-2 group-hover:bg-orange-400/20 transition-colors">
+                                              <Upload className="w-5 h-5 text-white/40 group-hover:text-orange-400 transition-colors" />
+                                            </div>
+                                            <span className="text-xs font-bold text-white/80 group-hover:text-white transition-colors">Upload Goal Scorer Photo</span>
+                                            <span className="text-[10px] text-white/40 mt-1">Tap to select or drop screenshot</span>
+                                          </label>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* MOTM Input & Submit Button Row */}
+                                    <div className="flex flex-col md:flex-row gap-4 items-stretch md:items-end">
+                                      {/* Man of the Match */}
+                                      <div className="flex-1 p-4 border border-white/10 rounded-2xl bg-white/5 relative z-30">
+                                        <label className="text-[10px] font-bold tracking-normal text-white/60 mb-2 block uppercase tracking-wider flex items-center justify-between">
+                                          <span>Man of the Match</span>
+                                          <span className="text-red-400 font-extrabold">*Required*</span>
                                         </label>
-                                        <div className="relative w-full max-w-xs mx-auto z-40">
+                                        <div className="relative w-full z-40">
                                           <input 
                                             type="text" 
-                                            placeholder="Type or select name..." 
+                                            placeholder="Type or select MVP player..." 
                                             value={motmInput}
                                             onChange={(e) => {
                                               setMotmInput(e.target.value);
@@ -8572,13 +8783,12 @@ export default function App() {
                                             }}
                                             onFocus={() => setShowMotmSuggestions(true)}
                                             onBlur={() => {
-                                              // Close suggestions after a small delay to handle click selections safely
                                               setTimeout(() => setShowMotmSuggestions(false), 200);
                                             }}
-                                            className="w-full bg-black/20 border border-white/10 rounded-2xl p-3 text-white focus:border-fc-neon-green/50 outline-none text-sm text-center font-bold"
+                                            className="w-full bg-black/30 border border-white/15 rounded-xl p-3 text-white focus:border-fc-neon-green/60 outline-none text-sm font-bold placeholder:text-white/20 transition-colors"
                                           />
                                           {showMotmSuggestions && (
-                                            <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-2xl shadow-xl z-50 max-h-40 overflow-y-auto hide-scrollbar">
+                                            <div className="absolute top-full left-0 right-0 mt-1 bg-fc-purple-dark border border-white/20 rounded-xl shadow-2xl z-50 max-h-48 overflow-y-auto hide-scrollbar">
                                               {motmSuggestions
                                                 .filter(item => !motmInput || item.toLowerCase().includes(motmInput.toLowerCase()))
                                                 .map(item => (
@@ -8586,7 +8796,6 @@ export default function App() {
                                                     key={item}
                                                     type="button"
                                                     onMouseDown={(e) => {
-                                                      // Prevent immediate input blur which blocks selection
                                                       e.preventDefault();
                                                       setMotmInput(item);
                                                       setShowMotmSuggestions(false);
@@ -8595,9 +8804,10 @@ export default function App() {
                                                       setMotmInput(item); 
                                                       setShowMotmSuggestions(false); 
                                                     }}
-                                                    className="w-full text-center p-3 hover:bg-white/10 text-sm font-bold text-white border-b border-white/5 last:border-0 relative z-50 cursor-pointer"
+                                                    className="w-full text-left px-4 py-2.5 hover:bg-white/10 text-xs font-bold text-white border-b border-white/5 last:border-0 relative z-50 cursor-pointer flex items-center justify-between"
                                                   >
-                                                    {item}
+                                                    <span>{item}</span>
+                                                    <span className="text-[9px] text-fc-neon-green/60 uppercase">Pick</span>
                                                   </button>
                                                 ))
                                               }
@@ -8609,23 +8819,79 @@ export default function App() {
                                             </div>
                                           )}
                                         </div>
+                                      </div>
+
+                                      {/* Submit Button */}
+                                      <div className="md:w-72 flex flex-col justify-end">
+                                        <button
+                                          type="button"
+                                          disabled={isSubmittingImg}
+                                          onClick={() => {
+                                            if (!myRegistration) {
+                                              alert("Please register a team first to submit match results.");
+                                              return;
+                                            }
+                                            if (!scorecardFile) {
+                                              alert("Please upload Photo 1: Match Scorecard screenshot (final score, usernames & team statistics).");
+                                              return;
+                                            }
+                                            if (!scorersFile) {
+                                              alert("Please upload Photo 2: Goal Scorer page screenshot (goal scorers list with ball icons and minutes).");
+                                              return;
+                                            }
+                                            if (!motmInput.trim()) {
+                                              alert("Please enter/select the Man of the Match (Required) before uploading!");
+                                              return;
+                                            }
+                                            processMatchResultImages(scorecardFile, scorersFile, myRegistration, motmInput.trim());
+                                          }}
+                                          className={`w-full py-4 px-5 rounded-2xl font-bold text-xs tracking-wider uppercase transition-all flex items-center justify-center gap-2 shadow-lg ${
+                                            scorecardFile && scorersFile && motmInput.trim()
+                                              ? 'bg-fc-neon-green text-black hover:bg-fc-neon-green/90 shadow-fc-neon-green/20 cursor-pointer animate-pulse'
+                                              : 'bg-white/10 text-white/60 hover:bg-white/15 cursor-pointer border border-white/10'
+                                          } ${isSubmittingImg ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                          {isSubmittingImg ? (
+                                            <>
+                                              <Loader2 className="w-4 h-4 animate-spin text-black" />
+                                              <span>Analyzing Photos...</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Sparkles className="w-4 h-4" />
+                                              <span>Verify & Submit Result</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      </div>
                                     </div>
                                   </div>
                                 );
                               })()}
 
                               {isSubmittingImg && (
-                                 <div className="flex items-center justify-center gap-3 text-fc-neon-green">
-                                   <Loader2 className="w-4 h-4 animate-spin" />
-                                   <span className="text-[10px] font-bold tracking-normal">AI Analyzing Photo...</span>
-                                 </div>
+                                <div className="p-4 bg-fc-neon-green/10 border border-fc-neon-green/30 rounded-2xl flex items-center justify-center gap-3 text-fc-neon-green">
+                                  <Loader2 className="w-5 h-5 animate-spin shrink-0" />
+                                  <span className="text-xs font-bold tracking-normal">
+                                    {aiAnalysisResult || 'Analyzing Scorecard & Goal Scorers Screenshots with AI Vision...'}
+                                  </span>
+                                </div>
                               )}
 
-                              {aiAnalysisResult && (
-                                <div className={`p-4 rounded-2xl text-[10px] font-bold tracking-normal ${
-                                  aiAnalysisResult.startsWith('SUCCESS') ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'
+                              {!isSubmittingImg && aiAnalysisResult && (
+                                <div className={`p-4 rounded-2xl text-xs font-bold tracking-normal flex items-start gap-3 border ${
+                                  aiAnalysisResult.startsWith('SUCCESS') 
+                                    ? 'bg-green-500/10 text-green-400 border-green-500/20' 
+                                    : 'bg-red-500/10 text-red-400 border-red-500/20'
                                 }`}>
-                                  {aiAnalysisResult}
+                                  {aiAnalysisResult.startsWith('SUCCESS') ? (
+                                    <CheckCircle2 className="w-5 h-5 shrink-0 text-green-400 mt-0.5" />
+                                  ) : (
+                                    <AlertCircle className="w-5 h-5 shrink-0 text-red-400 mt-0.5" />
+                                  )}
+                                  <div className="flex-1 whitespace-pre-line leading-relaxed">
+                                    {aiAnalysisResult}
+                                  </div>
                                 </div>
                               )}
                             </div>

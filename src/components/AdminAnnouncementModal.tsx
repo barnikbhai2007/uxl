@@ -23,7 +23,7 @@ const PRESET_ANNOUNCEMENTS = [
   },
   {
     title: 'Match Result Submission Reminder 📸',
-    content: 'Please upload a clear screenshot of the final score screen and select Man of the Match immediately after your game.',
+    content: 'Please upload both match screenshots (1st: Scorecard screen, 2nd: Goal Scorer page) and select Man of the Match immediately after your game.',
     category: 'rule' as const
   },
   {

@@ -811,7 +811,19 @@ app.get("/api/test-ai", async (req, res) => {
 
 app.post("/api/analyze-match", async (req, res) => {
   try {
-    const { base64, mimeType, fcName, homeGoalkeeper, awayGoalkeeper, motm, preAnalyzedMatchData } = req.body;
+    const { 
+      base64, 
+      mimeType, 
+      base64Scorecard, 
+      mimeTypeScorecard, 
+      base64Scorers, 
+      mimeTypeScorers, 
+      fcName, 
+      homeGoalkeeper, 
+      awayGoalkeeper, 
+      motm, 
+      preAnalyzedMatchData 
+    } = req.body;
     let matchData;
     
     if (preAnalyzedMatchData) {
@@ -826,16 +838,32 @@ app.post("/api/analyze-match", async (req, res) => {
 
       const groq = new Groq({ apiKey: config.key });
 
+      const contentParts: any[] = [];
+      if (base64Scorecard) {
+        contentParts.push(
+          { type: "text", text: "PHOTO 1: MATCH SCORECARD (Shows final score, usernames, and team statistics)" },
+          { type: "image_url", image_url: { url: `data:${mimeTypeScorecard || 'image/jpeg'};base64,${base64Scorecard}` } }
+        );
+      }
+      if (base64Scorers) {
+        contentParts.push(
+          { type: "text", text: "PHOTO 2: GOAL SCORERS PAGE (Shows detailed goal scorers list, minute of each goal, and teams)" },
+          { type: "image_url", image_url: { url: `data:${mimeTypeScorers || 'image/jpeg'};base64,${base64Scorers}` } }
+        );
+      }
+      if (!base64Scorecard && !base64Scorers && base64) {
+        contentParts.push(
+          { type: "image_url", image_url: { url: `data:${mimeType || 'image/jpeg'};base64,${base64}` } }
+        );
+      }
+
       const response = await groq.chat.completions.create({
         model: config.model,
         messages: [
           {
             role: "user",
             content: [
-              {
-                type: "image_url",
-                image_url: { url: `data:${mimeType};base64,${base64}` }
-              },
+              ...contentParts,
               {
                 type: "text",
                 text: `Analyze this FC Mobile match result screenshot. The player reporting this is named "${fcName}".
@@ -1023,17 +1051,35 @@ app.post("/api/analyze-match", async (req, res) => {
       await checkAndAwardAchievements(opponentName, matchData);
     }
 
-    let publicImageUrl = null;
-    try {
-      const ext = (mimeType && mimeType.includes('png')) ? 'png' : 'jpg';
-      const fileName = `report_${Date.now()}_${crypto.randomUUID()}.${ext}`;
-      publicImageUrl = await uploadToR2(base64, mimeType, fileName);
-    } catch (err) {
-      console.error("Storage upload exception:", err);
+    let publicScorecardUrl = null;
+    let publicScorersUrl = null;
+
+    const cardData = base64Scorecard || base64;
+    const cardMime = mimeTypeScorecard || mimeType || 'image/jpeg';
+    if (cardData) {
+      try {
+        const ext = cardMime.includes('png') ? 'png' : 'jpg';
+        const fileName = `scorecard_${Date.now()}_${crypto.randomUUID()}.${ext}`;
+        publicScorecardUrl = await uploadToR2(cardData, cardMime, fileName);
+      } catch (err) {
+        console.error("Scorecard upload exception:", err);
+      }
     }
 
+    if (base64Scorers) {
+      try {
+        const ext = (mimeTypeScorers || 'image/jpeg').includes('png') ? 'png' : 'jpg';
+        const fileName = `scorers_${Date.now()}_${crypto.randomUUID()}.${ext}`;
+        publicScorersUrl = await uploadToR2(base64Scorers, mimeTypeScorers || 'image/jpeg', fileName);
+      } catch (err) {
+        console.error("Scorers upload exception:", err);
+      }
+    }
+
+    const publicImageUrl = publicScorecardUrl || publicScorersUrl;
+
     console.log('[Telegram] Sending match result...');
-    await sendTelegramMatchResult(matchData, base64, mimeType, motm);
+    await sendTelegramMatchResult(matchData, cardData, cardMime, motm);
 
     // Save report to D1
     try {
@@ -1044,8 +1090,10 @@ app.post("/api/analyze-match", async (req, res) => {
         },
         reporterName: fcName || 'Unknown Player',
         timestamp: new Date().toISOString(),
-        imageUrl: publicImageUrl,
-        mimeType: mimeType || 'image/jpeg',
+        imageUrl: publicScorecardUrl || publicImageUrl,
+        scorersImageUrl: publicScorersUrl || null,
+        evidenceUrls: [publicScorecardUrl, publicScorersUrl].filter(Boolean),
+        mimeType: cardMime,
         matchId: matchData.matchId || null,
         motm: motm || null,
         analysisSummary: `Verified match between ${matchData.team1} and ${matchData.team2} (Reported by ${fcName || 'Unknown'})`
@@ -1060,7 +1108,13 @@ app.post("/api/analyze-match", async (req, res) => {
       console.error("Failed to save report to database:", saveError);
     }
     
-    res.json({ success: true, matchData, evidenceUrl: publicImageUrl });
+    res.json({ 
+      success: true, 
+      matchData, 
+      evidenceUrl: publicScorecardUrl || publicImageUrl,
+      evidenceScorersUrl: publicScorersUrl || null,
+      evidenceUrls: [publicScorecardUrl, publicScorersUrl].filter(Boolean)
+    });
   } catch (error: any) {
     console.error("AI Error:", error);
     res.status(500).json({ success: false, message: error.message });
