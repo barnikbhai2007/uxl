@@ -132,6 +132,8 @@ export interface Config {
   mode?: 'premier_league' | 'all_in_random' | 'world_cup' | 'durga_puja';
   registrationEnabled: boolean;
   tabVisibility?: Record<string, boolean>;
+  announcementTabLabel?: string;
+  announcementTabVisible?: boolean;
   hiddenDates?: string[];
   dateOrder?: string[];
   geminiApiKey?: string;

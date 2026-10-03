@@ -780,7 +780,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         </div>
         
         <div className="flex items-center justify-between gap-4 relative z-10">
-          <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
+          <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+            <span className="px-2 py-0.5 rounded-md text-[9px] font-sans font-black tracking-[0.15em] uppercase bg-[#00ff85]/15 text-[#00ff85] border border-[#00ff85]/35 shadow-sm">
+              HOME
+            </span>
             <TeamLogo team={homeTeam} />
             {renderTeamName('home', homeTeam)}
           </div>
@@ -819,7 +822,10 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col items-center gap-1 min-w-0">
+          <div className="flex-1 flex flex-col items-center gap-1.5 min-w-0">
+            <span className="px-2 py-0.5 rounded-md text-[9px] font-sans font-black tracking-[0.15em] uppercase bg-orange-500/15 text-orange-400 border border-orange-500/35 shadow-sm">
+              AWAY
+            </span>
             <TeamLogo team={awayTeam} />
             {renderTeamName('away', awayTeam)}
           </div>
@@ -992,6 +998,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
 
             <div className="flex flex-col md:flex-row items-center justify-between gap-8 md:gap-4 mb-12">
               <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-2xl transition-colors">
+                <span className="px-3 py-1 rounded-full text-[10px] font-sans font-black tracking-[0.2em] uppercase bg-[#00ff85]/15 text-[#00ff85] border border-[#00ff85]/40 shadow-sm">
+                  HOME
+                </span>
                 <div 
                   className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); if (homeTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: homeTeam })) }}
@@ -1196,6 +1205,9 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               </div>
 
               <div className="flex-1 flex flex-col items-center text-center gap-4 p-4 rounded-2xl transition-colors">
+                <span className="px-3 py-1 rounded-full text-[10px] font-sans font-black tracking-[0.2em] uppercase bg-orange-500/15 text-orange-400 border border-orange-500/40 shadow-sm">
+                  AWAY
+                </span>
                 <div 
                   className="flex flex-col items-center text-center gap-4 cursor-pointer hover:opacity-80 transition-opacity"
                   onClick={(e) => { e.stopPropagation(); if (awayTeam) window.dispatchEvent(new CustomEvent('openTeamProfile', { detail: awayTeam })) }}
@@ -2510,6 +2522,37 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
       setIsAwarding(false);
     };
 
+    const [announcementTabLabelInput, setAnnouncementTabLabelInput] = useState(config.announcementTabLabel || 'Chats & Notice');
+
+    useEffect(() => {
+      setAnnouncementTabLabelInput(config.announcementTabLabel || 'Chats & Notice');
+    }, [config.announcementTabLabel]);
+
+    const handleToggleAnnouncementVisibility = async () => {
+      const isCurrentlyVisible = config.announcementTabVisible !== false && (config.tabVisibility?.['chats'] ?? config.tabVisibility?.['announcement'] ?? true);
+      const newVisibility = !isCurrentlyVisible;
+      const newTabs = {
+        ...(config.tabVisibility || {}),
+        chats: newVisibility,
+        announcement: newVisibility,
+        announcements: newVisibility
+      };
+      await handleUpdateConfig({
+        ...config,
+        tabVisibility: newTabs,
+        announcementTabVisible: newVisibility
+      });
+    };
+
+    const handleSaveAnnouncementTabLabel = async () => {
+      const trimmed = announcementTabLabelInput.trim() || 'Chats & Notice';
+      await handleUpdateConfig({
+        ...config,
+        announcementTabLabel: trimmed
+      });
+      alert(`Announcement tab label updated to "${trimmed}"!`);
+    };
+
     const sensors = useSensors(
       useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
       useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
@@ -3450,53 +3493,197 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
             )}
             
             {activeTab === 'visibility' && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
-                <h3 className="text-xl font-display font-bold  text-white mb-6">Tab Visibility Management</h3>
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-6">
+                <div>
+                  <h3 className="text-xl font-display font-bold text-white">Tab Visibility Management</h3>
+                  <p className="text-xs text-white/50 mt-1">Control which navigation tabs are visible to players and visitors.</p>
+                </div>
+
                 <div className="space-y-4">
-                  {['Fixtures', 'Table', 'Bracket', 'Registration', 'Stats', 'News', 'Campaign'].map(tab => (
-                    <div key={tab} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
-                      <span className="text-sm font-bold text-white">{tab}</span>
+                  {/* Dedicated Announcement Tab Visibility & Label Section */}
+                  <div className="p-5 bg-purple-500/10 rounded-2xl border border-purple-500/30 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3.5">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
+                        <Megaphone className="w-5 h-5 text-purple-300" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-white">Announcement / Notice Tab</span>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40">Notice Board</span>
+                        </div>
+                        <p className="text-xs text-white/50 mt-0.5">Official notices, tournament alerts & opponent match chats ({config.announcementTabLabel || 'Chats & Notice'})</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2.5">
                       <button 
-                        onClick={() => {
-                          const newTabs = { ...(config.tabVisibility || {}), [tab.toLowerCase()]: !(config.tabVisibility?.[tab.toLowerCase()] ?? true) };
-                          handleUpdateConfig({ ...config, tabVisibility: newTabs });
-                        }}
-                        className={`px-4 py-2 rounded-2xl font-bold text-xs ${!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'bg-red-500/20 text-red-500' : 'bg-green-500/20 text-green-500'}`}
+                        onClick={handleToggleAnnouncementVisibility}
+                        className={`px-4 py-2 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm ${
+                          (config.announcementTabVisible !== false && (config.tabVisibility?.['chats'] ?? config.tabVisibility?.['announcement'] ?? true))
+                            ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                            : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                        }`}
                       >
-                        {!(config.tabVisibility?.[tab.toLowerCase()] ?? true) ? 'Disabled' : 'Enabled'}
+                        {(config.announcementTabVisible !== false && (config.tabVisibility?.['chats'] ?? config.tabVisibility?.['announcement'] ?? true)) ? (
+                          <>
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>Enabled (Visible)</span>
+                          </>
+                        ) : (
+                          <>
+                            <EyeOff className="w-3.5 h-3.5" />
+                            <span>Disabled (Hidden)</span>
+                          </>
+                        )}
                       </button>
                     </div>
-                  ))}
+                  </div>
+
+                  {/* Announcement Tab Label Editor */}
+                  <div className="p-4 bg-white/[0.02] rounded-2xl border border-white/5 flex flex-col sm:flex-row items-center gap-3">
+                    <label className="text-xs text-white/70 font-bold whitespace-nowrap">Announcement Tab Label:</label>
+                    <div className="flex-1 flex gap-2 w-full">
+                      <input 
+                        type="text" 
+                        value={announcementTabLabelInput}
+                        onChange={(e) => setAnnouncementTabLabelInput(e.target.value)}
+                        placeholder="Chats & Notice"
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green"
+                      />
+                      <button
+                        onClick={handleSaveAnnouncementTabLabel}
+                        className="px-4 py-1.5 bg-fc-neon-green/20 hover:bg-fc-neon-green text-fc-neon-green hover:text-black rounded-xl text-xs font-bold transition-colors border border-fc-neon-green/30 whitespace-nowrap"
+                      >
+                        Save Label
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Standard Tabs */}
+                  {[
+                    { id: 'fixtures', name: 'Fixtures' },
+                    { id: 'table', name: 'Table Standings' },
+                    { id: 'bracket', name: 'Knockout Bracket' },
+                    { id: 'registration', name: 'Registration Portal' },
+                    { id: 'stats', name: 'Tournament Stats' },
+                    { id: 'news', name: 'News & Media' },
+                    { id: 'campaign', name: 'My Campaign' },
+                  ].map(tab => {
+                    const isTabVisible = config.tabVisibility?.[tab.id] ?? true;
+                    return (
+                      <div key={tab.id} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl border border-white/10">
+                        <span className="text-sm font-bold text-white">{tab.name}</span>
+                        <button 
+                          onClick={() => {
+                            const newTabs = { ...(config.tabVisibility || {}), [tab.id]: !isTabVisible };
+                            handleUpdateConfig({ ...config, tabVisibility: newTabs });
+                          }}
+                          className={`px-4 py-2 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all ${
+                            isTabVisible ? 'bg-green-500/20 text-green-400 border border-green-500/30' : 'bg-red-500/20 text-red-400 border border-red-500/30'
+                          }`}
+                        >
+                          {isTabVisible ? (
+                            <>
+                              <Eye className="w-3.5 h-3.5" />
+                              <span>Enabled</span>
+                            </>
+                          ) : (
+                            <>
+                              <EyeOff className="w-3.5 h-3.5" />
+                              <span>Disabled</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
             
             {activeTab === 'label' && (
-              <div className="bg-white/5 border border-white/10 rounded-2xl p-8">
-                <h3 className="text-xl font-display font-bold  text-white mb-6">Date Label Management (Drag to Reorder)</h3>
-                <div className="space-y-4">
-                  <DndContext 
-                    sensors={sensors}
-                    collisionDetection={closestCenter}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <SortableContext 
-                      items={sortedDates}
-                      strategy={verticalListSortingStrategy}
+              <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-6">
+                {/* Announcement Tab Label & Visibility Setting */}
+                <div className="p-5 bg-purple-500/10 rounded-2xl border border-purple-500/30">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-500/30 flex items-center justify-center shrink-0">
+                        <Megaphone className="w-5 h-5 text-purple-300" />
+                      </div>
+                      <div>
+                        <h4 className="text-base font-bold text-white">Announcement Tab Label & Visibility</h4>
+                        <p className="text-xs text-white/50">Turn the announcement tab visibility ON/OFF and edit its display label.</p>
+                      </div>
+                    </div>
+
+                    <button 
+                      onClick={handleToggleAnnouncementVisibility}
+                      className={`px-4 py-2 rounded-2xl font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm ${
+                        (config.announcementTabVisible !== false && (config.tabVisibility?.['chats'] ?? config.tabVisibility?.['announcement'] ?? true))
+                          ? 'bg-green-500/20 text-green-400 border border-green-500/30 hover:bg-green-500/30'
+                          : 'bg-red-500/20 text-red-400 border border-red-500/30 hover:bg-red-500/30'
+                      }`}
                     >
-                      {sortedDates.map((date, index) => (
-                        <SortableDateItem 
-                          key={date} 
-                          date={date} 
-                          index={index}
-                          total={sortedDates.length}
-                          isHidden={config.hiddenDates?.includes(date) || false}
-                          matchLabels={matchLabels} 
-                          updateMatchLabel={updateMatchLabel} 
-                        />
-                      ))}
-                    </SortableContext>
-                  </DndContext>
+                      {(config.announcementTabVisible !== false && (config.tabVisibility?.['chats'] ?? config.tabVisibility?.['announcement'] ?? true)) ? (
+                        <>
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Visible (ON)</span>
+                        </>
+                      ) : (
+                        <>
+                          <EyeOff className="w-3.5 h-3.5" />
+                          <span>Hidden (OFF)</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex flex-col sm:flex-row items-center gap-3">
+                    <label className="text-xs text-white/70 font-bold whitespace-nowrap">Tab Label Name:</label>
+                    <div className="flex-1 flex gap-2 w-full">
+                      <input 
+                        type="text" 
+                        value={announcementTabLabelInput}
+                        onChange={(e) => setAnnouncementTabLabelInput(e.target.value)}
+                        placeholder="Chats & Notice (or Announcements)"
+                        className="flex-1 bg-black/40 border border-white/10 rounded-xl px-3 py-1.5 text-xs text-white outline-none focus:border-fc-neon-green"
+                      />
+                      <button
+                        onClick={handleSaveAnnouncementTabLabel}
+                        className="px-4 py-1.5 bg-fc-neon-green/20 hover:bg-fc-neon-green text-fc-neon-green hover:text-black rounded-xl text-xs font-bold transition-colors border border-fc-neon-green/30 whitespace-nowrap"
+                      >
+                        Save Label
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xl font-display font-bold text-white mb-6">Date Label Management (Drag to Reorder)</h3>
+                  <div className="space-y-4">
+                    <DndContext 
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext 
+                        items={sortedDates}
+                        strategy={verticalListSortingStrategy}
+                      >
+                        {sortedDates.map((date, index) => (
+                          <SortableDateItem 
+                            key={date} 
+                            date={date} 
+                            index={index}
+                            total={sortedDates.length}
+                            isHidden={config.hiddenDates?.includes(date) || false}
+                            matchLabels={matchLabels} 
+                            updateMatchLabel={updateMatchLabel} 
+                          />
+                        ))}
+                      </SortableContext>
+                    </DndContext>
+                  </div>
                 </div>
               </div>
             )}
@@ -4979,6 +5166,13 @@ export default function App() {
   };
 
   const [activeTab, setActiveTab] = useState<'fixtures' | 'chats' | 'trivia' | 'stats' | 'table' | 'bracket' | 'news' | 'registration' | 'campaign'>('fixtures');
+
+  useEffect(() => {
+    const isAnnouncementVisible = config.announcementTabVisible !== false && (config.tabVisibility?.['chats'] ?? config.tabVisibility?.['announcement'] ?? true);
+    if (!isAnnouncementVisible && activeTab === 'chats') {
+      setActiveTab('fixtures');
+    }
+  }, [config.announcementTabVisible, config.tabVisibility, activeTab]);
   const [chatsTabFilter, setChatsTabFilter] = useState<'all' | 'upcoming' | 'finished' | 'announcements'>('all');
   const [chatsTabSearch, setChatsTabSearch] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -8192,7 +8386,7 @@ export default function App() {
           <div className="flex flex-wrap justify-center items-center gap-2 md:gap-3 pointer-events-auto w-full md:w-auto overflow-x-auto hide-scrollbar pb-4 md:pb-0">
             {[
               { id: 'fixtures', label: 'Fixtures', icon: Calendar },
-              { id: 'chats', label: 'Chats & Notice', icon: MessageSquare },
+              { id: 'chats', label: config.announcementTabLabel || 'Chats & Notice', icon: MessageSquare },
               { id: 'stats', label: 'Stats', icon: BarChart2 },
               { id: 'table', label: 'Table', icon: TableIcon },
               { id: 'bracket', label: 'Bracket', icon: GitBranch },
@@ -8206,6 +8400,13 @@ export default function App() {
               if (tab.id === 'campaign') return !!user;
 
               // Check custom visibility
+              if (tab.id === 'chats') {
+                if (config.announcementTabVisible === false) return false;
+                if (config.tabVisibility?.['chats'] === false) return false;
+                if (config.tabVisibility?.['announcement'] === false) return false;
+                if (config.tabVisibility?.['announcements'] === false) return false;
+                return true;
+              }
               const isVisible = config.tabVisibility?.[tab.id] ?? true;
               return isVisible;
             }).map((tab) => (
