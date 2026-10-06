@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin, Lock, CheckCircle2, FileText, Image as ImageIcon } from 'lucide-react';
+import { Trophy, Calendar, Table as TableIcon, GitBranch, ChevronRight, RefreshCw, Star, Copy, Check, Info, Search, BarChart2, Award, LogIn, LogOut, Loader2, Plus, Trash2, Save, X, Trophy as TrophyIcon, Eye, EyeOff, Shield, RotateCcw, ArrowLeft, Users, Layout, Edit3, Edit2, Settings, User as UserIcon, Download, Upload, IdCard, ChevronUp, ChevronDown, Sparkles, AlertCircle, ArrowRightLeft, HelpCircle, Megaphone, MessageSquare, Bell, BellRing, History, Pin, Lock, Key, CheckCircle2, FileText, Image as ImageIcon } from 'lucide-react';
 import { INITIAL_TEAMS, TEAMS_LIST, TOURNAMENT_SCHEDULE, TEAM_DETAILS, WORLD_CUP_TEAMS, MANAGERS_LIST } from './constants';
 import { Team, Match, BracketMatch, Scorer, Registration, Config, MatchReport, Achievement, UserAchievement, UserProfile, StatGuess, Announcement, DirectChatMessage } from './types';
 import { v4 as uuidv4 } from 'uuid';
@@ -2235,7 +2235,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     onOpenAnnouncements?: () => void,
     announcementsCount?: number
   }) => {
-    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin' | 'mode' | 'managers_admin'>('bracket');
+    const [activeTab, setActiveTab] = useState<'bracket' | 'registrations' | 'passwords' | 'label' | 'visibility' | 'ai' | 'reports' | 'backup' | 'edits' | 'schedule' | 'groups' | 'names' | 'countries' | 'draw_admin' | 'mode' | 'managers_admin'>('bracket');
 
     const getBracketTeamFlag = (teamName?: string, teamId?: string) => {
       if (!teamName || teamName === 'TBD') return '';
@@ -2268,6 +2268,82 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
     const [newManagerFlag, setNewManagerFlag] = useState('🌍');
     const [isSavingManager, setIsSavingManager] = useState(false);
     const [adminUsers, setAdminUsers] = useState<any[]>([]);
+
+    const [playerPasswordInputs, setPlayerPasswordInputs] = useState<Record<string, string>>({});
+    const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
+    const [passwordSavingId, setPasswordSavingId] = useState<string | null>(null);
+    const [passwordSavedId, setPasswordSavedId] = useState<string | null>(null);
+    const [copiedPassId, setCopiedPassId] = useState<string | null>(null);
+    const [passwordSearchQuery, setPasswordSearchQuery] = useState('');
+
+    const handleSavePlayerPassword = async (userId: string, playerName: string, passVal?: string) => {
+      const targetPass = (passVal !== undefined ? passVal : (playerPasswordInputs[userId] || '')).trim();
+      if (!targetPass) {
+        alert('Please enter a password for this player.');
+        return;
+      }
+      setPasswordSavingId(userId);
+      try {
+        const cleanName = playerName.replace(/\s+/g, '_').toLowerCase();
+        const userRef = doc(db, 'users', userId);
+        await setDoc(userRef, {
+          uid: userId,
+          displayName: playerName,
+          playerPassword: targetPass,
+          role: 'user',
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+
+        const updatedPasswords = {
+          ...(config.playerPasswords || {}),
+          [userId]: targetPass,
+          [cleanName]: targetPass,
+          [playerName.toLowerCase().trim()]: targetPass
+        };
+        await handleUpdateConfig({
+          ...config,
+          playerPasswords: updatedPasswords
+        });
+
+        const reg = registrations.find(r => r.userId === userId || r.name.toLowerCase() === playerName.toLowerCase());
+        if (reg) {
+          try {
+            await updateDoc(doc(db, 'registrations', reg.id), { playerPassword: targetPass });
+          } catch (e) {
+            console.warn('Could not update registration playerPassword:', e);
+          }
+        }
+
+        setAdminUsers(prev => {
+          const exists = prev.some(u => u.id === userId);
+          if (exists) {
+            return prev.map(u => u.id === userId ? { ...u, playerPassword: targetPass } : u);
+          }
+          return [...prev, { id: userId, displayName: playerName, playerPassword: targetPass, role: 'user' }];
+        });
+
+        setPasswordSavedId(userId);
+        setTimeout(() => setPasswordSavedId(null), 3000);
+      } catch (err: any) {
+        console.error('Failed to save password:', err);
+        alert('Failed to save password: ' + (err.message || 'Unknown error'));
+      } finally {
+        setPasswordSavingId(null);
+      }
+    };
+
+    const handleGeneratePinForPlayer = (userId: string, playerName: string) => {
+      const pin = String(Math.floor(100000 + Math.random() * 900000));
+      setPlayerPasswordInputs(prev => ({ ...prev, [userId]: pin }));
+      handleSavePlayerPassword(userId, playerName, pin);
+    };
+
+    const handleCopyPlayerCredentials = (playerName: string, passVal: string, userId: string) => {
+      const text = `Player: ${playerName}\nLogin Password: ${passVal}\nLogin URL: ${window.location.origin}`;
+      navigator.clipboard.writeText(text);
+      setCopiedPassId(userId);
+      setTimeout(() => setCopiedPassId(null), 2500);
+    };
 
     const [editingGroupKey, setEditingGroupKey] = useState<string | null>(null);
     const [editingGroupName, setEditingGroupName] = useState<string>('');
@@ -2318,7 +2394,7 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
         const snap = await getDocs(collection(db, 'users'));
         setAdminUsers(snap.docs.map(d => ({id: d.id, ...d.data() as any})).filter(u => u.role !== 'admin'));
       };
-      if (activeTab === 'registrations') {
+      if (activeTab === 'registrations' || activeTab === 'passwords') {
         fetchU();
       }
     }, [activeTab]);
@@ -2840,6 +2916,13 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
               className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit ${activeTab === 'registrations' ? 'bg-fc-neon-green text-black text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
             >
               Applicants
+            </button>
+            <button 
+              onClick={() => setActiveTab('passwords')}
+              className={`flex-1 md:flex-initial px-4 md:px-6 py-2 rounded-2xl text-[9px] md:text-[10px] font-bold tracking-nowrap tracking-normal transition-all min-w-fit flex items-center gap-1.5 ${activeTab === 'passwords' ? 'bg-fc-neon-green text-black shadow-lg shadow-fc-neon-green/20' : 'text-white/40 hover:text-white/60'}`}
+            >
+              <Key className="w-3.5 h-3.5" />
+              <span>Player Passwords</span>
             </button>
             <button 
               onClick={() => setActiveTab('groups')}
@@ -3445,35 +3528,415 @@ const EditableMatchBadge = ({ match, isAdmin, onUpdateMatch, className, textClas
                                 </div>
                               </div>
                             </div>
+
+                            {/* Inline Player Password Access Row */}
+                            {(() => {
+                              const currentPass = user.playerPassword || reg.playerPassword || config.playerPasswords?.[user.id] || config.playerPasswords?.[reg.userId] || config.playerPasswords?.[reg.name.toLowerCase().trim()] || '';
+                              const inputVal = playerPasswordInputs[user.id || reg.userId] !== undefined ? playerPasswordInputs[user.id || reg.userId] : currentPass;
+                              const isRevealed = revealedPasswords[user.id || reg.userId];
+                              const isSaving = passwordSavingId === (user.id || reg.userId);
+                              const isSaved = passwordSavedId === (user.id || reg.userId);
+                              const isCopied = copiedPassId === (user.id || reg.userId);
+
+                              return (
+                                <div className="w-full mt-3 pt-3 border-t border-white/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-black/30 p-3 rounded-xl border border-white/5">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-6 h-6 rounded-lg bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center text-yellow-400 shrink-0">
+                                      <Key className="w-3.5 h-3.5" />
+                                    </div>
+                                    <div>
+                                      <div className="flex items-center gap-1.5">
+                                        <span className="text-[10px] font-bold text-white uppercase tracking-wider">Login Password:</span>
+                                        {currentPass ? (
+                                          <span className="font-mono text-xs text-yellow-400 font-bold bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">
+                                            {isRevealed ? currentPass : '••••••••'}
+                                          </span>
+                                        ) : (
+                                          <span className="text-[10px] text-red-400/80 italic">No password set</span>
+                                        )}
+                                      </div>
+                                      <p className="text-[9px] text-white/40">Player can use this in Admin section login to get back their account</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto">
+                                    <div className="relative">
+                                      <input 
+                                        type={isRevealed ? "text" : "password"}
+                                        value={inputVal}
+                                        onChange={(e) => setPlayerPasswordInputs(prev => ({ ...prev, [user.id || reg.userId]: e.target.value }))}
+                                        placeholder="Set password..."
+                                        className="bg-black/60 border border-white/10 rounded-lg px-2.5 py-1 text-xs text-white outline-none focus:border-fc-neon-green w-32 font-mono pr-7"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => setRevealedPasswords(prev => ({ ...prev, [user.id || reg.userId]: !isRevealed }))}
+                                        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                        title={isRevealed ? "Hide" : "Show"}
+                                      >
+                                        {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                      </button>
+                                    </div>
+                                    <button
+                                      onClick={() => handleSavePlayerPassword(user.id || reg.userId, user.displayName || reg.name, inputVal)}
+                                      disabled={isSaving}
+                                      className="px-2.5 py-1 bg-fc-neon-green/20 hover:bg-fc-neon-green text-fc-neon-green hover:text-black rounded-lg text-xs font-bold transition-all border border-fc-neon-green/30 flex items-center gap-1 shrink-0"
+                                    >
+                                      {isSaved ? <Check className="w-3 h-3 text-green-400" /> : isSaving ? <Loader2 className="w-3 h-3 animate-spin" /> : null}
+                                      {isSaved ? 'Saved!' : isSaving ? 'Saving...' : 'Save'}
+                                    </button>
+                                    <button
+                                      onClick={() => handleGeneratePinForPlayer(user.id || reg.userId, user.displayName || reg.name)}
+                                      className="px-2 py-1 bg-purple-500/20 hover:bg-purple-500 text-purple-200 hover:text-white rounded-lg text-[10px] font-bold transition-all border border-purple-500/30 whitespace-nowrap"
+                                      title="Generate PIN"
+                                    >
+                                      PIN
+                                    </button>
+                                    {currentPass && (
+                                      <button
+                                        onClick={() => handleCopyPlayerCredentials(user.displayName || reg.name, currentPass, user.id || reg.userId)}
+                                        className="px-2 py-1 bg-white/5 hover:bg-white/15 text-white/80 rounded-lg text-[10px] font-bold transition-all border border-white/10 flex items-center gap-1 whitespace-nowrap"
+                                        title="Copy Credentials"
+                                      >
+                                        {isCopied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                        <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              );
+                            })()}
                           </div>
                         );
                       })}
                       
-                      {adminUsers.filter(u => u.id && !registrations.find(r => r.userId === u.id) && u.role !== 'admin').map((user) => (
-                        <div key={user.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all flex items-center justify-between mt-2">
-                          <div>
-                             <p className="text-sm font-bold text-white mb-1"><span className="text-fc-neon-green/60 mr-2">Gamer:</span>{user.displayName || user.name || 'Unknown'}</p>
-                             <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
+                      {adminUsers.filter(u => u.id && !registrations.find(r => r.userId === u.id) && u.role !== 'admin').map((user) => {
+                        const currentPass = user.playerPassword || config.playerPasswords?.[user.id] || config.playerPasswords?.[(user.displayName||'').toLowerCase().trim()] || '';
+                        const inputVal = playerPasswordInputs[user.id] !== undefined ? playerPasswordInputs[user.id] : currentPass;
+                        const isRevealed = revealedPasswords[user.id];
+                        const isSaving = passwordSavingId === user.id;
+                        const isSaved = passwordSavedId === user.id;
+                        const isCopied = copiedPassId === user.id;
+
+                        return (
+                          <div key={user.id} className="bg-white/5 border border-white/10 rounded-2xl p-4 md:p-6 hover:bg-white/10 transition-all flex flex-col gap-3 mt-2">
+                            <div className="flex items-center justify-between">
+                              <div>
+                                 <p className="text-sm font-bold text-white mb-1"><span className="text-fc-neon-green/60 mr-2">Gamer:</span>{user.displayName || user.name || 'Unknown'}</p>
+                                 <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-gray-500/20 text-gray-400">Under Process</span>
+                              </div>
+                              <button 
+                                 onClick={async () => {
+                                   if (window.confirm('Delete this user? Name spot will be freed.')) {
+                                     try {
+                                       await deleteDoc(doc(db, 'users', user.id));
+                                     } catch (e) {
+                                       console.warn("Could not delete shadow user doc:", e);
+                                     }
+                                     setAdminUsers(prev => prev.filter(u => u.id !== user.id));
+                                   }
+                                 }}
+                                 className="p-2.5 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-xl flex items-center gap-1.5 text-xs font-bold"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" /> Reset Name
+                              </button>
+                            </div>
+
+                            {/* Shadow User Password Row */}
+                            <div className="pt-2 border-t border-white/5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 bg-black/20 p-2.5 rounded-xl">
+                              <div className="flex items-center gap-2">
+                                <Key className="w-3.5 h-3.5 text-yellow-400" />
+                                <span className="text-[10px] text-white/70 font-bold uppercase">Password:</span>
+                                {currentPass ? (
+                                  <span className="font-mono text-xs text-yellow-400 font-bold bg-yellow-500/10 px-2 py-0.5 rounded">
+                                    {isRevealed ? currentPass : '••••••••'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] text-red-400 italic">No password</span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <input 
+                                  type={isRevealed ? "text" : "password"}
+                                  value={inputVal}
+                                  onChange={(e) => setPlayerPasswordInputs(prev => ({ ...prev, [user.id]: e.target.value }))}
+                                  placeholder="Set password..."
+                                  className="bg-black/60 border border-white/10 rounded-lg px-2 py-1 text-xs text-white outline-none focus:border-fc-neon-green w-28 font-mono"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setRevealedPasswords(prev => ({ ...prev, [user.id]: !isRevealed }))}
+                                  className="p-1 bg-white/5 hover:bg-white/10 text-white/60 hover:text-white rounded"
+                                >
+                                  {isRevealed ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                                </button>
+                                <button
+                                  onClick={() => handleSavePlayerPassword(user.id, user.displayName || user.name || 'Gamer', inputVal)}
+                                  disabled={isSaving}
+                                  className="px-2.5 py-1 bg-fc-neon-green/20 hover:bg-fc-neon-green text-fc-neon-green hover:text-black rounded-lg text-xs font-bold transition-all border border-fc-neon-green/30"
+                                >
+                                  {isSaved ? 'Saved!' : isSaving ? '...' : 'Save'}
+                                </button>
+                                <button
+                                  onClick={() => handleGeneratePinForPlayer(user.id, user.displayName || user.name || 'Gamer')}
+                                  className="px-2 py-1 bg-purple-500/20 hover:bg-purple-500 text-purple-200 hover:text-white rounded-lg text-[10px] font-bold"
+                                >
+                                  PIN
+                                </button>
+                                {currentPass && (
+                                  <button
+                                    onClick={() => handleCopyPlayerCredentials(user.displayName || user.name || 'Gamer', currentPass, user.id)}
+                                    className="px-2 py-1 bg-white/5 hover:bg-white/15 text-white/80 rounded-lg text-[10px] font-bold flex items-center gap-1"
+                                  >
+                                    {isCopied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                    <span>{isCopied ? 'Copied' : 'Copy'}</span>
+                                  </button>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <button 
-                             onClick={async () => {
-                               if (window.confirm('Delete this user? Name spot will be freed.')) {
-                                 try {
-                                   await deleteDoc(doc(db, 'users', user.id));
-                                 } catch (e) {
-                                   console.warn("Could not delete shadow user doc:", e);
-                                 }
-                                 setAdminUsers(prev => prev.filter(u => u.id !== user.id));
-                               }
-                             }}
-                             className="p-3 bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-all rounded-2xl flex items-center gap-2 text-xs font-bold tracking-normal"
-                          >
-                            <Trash2 className="w-4 h-4" /> Reset Name
-                          </button>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </>
                   )}
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'passwords' && (
+              <div className="space-y-6">
+                <div className="bg-white/5 border border-white/10 rounded-2xl p-6 md:p-8 space-y-4">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-2xl bg-yellow-500/20 border border-yellow-500/30 flex items-center justify-center text-yellow-400 shrink-0">
+                        <Key className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-display font-bold text-white">Player Passwords & Account Recovery</h3>
+                        <p className="text-xs text-white/50 mt-0.5">
+                          Set login passwords for players. Players can use this password in the <strong>Admin section login</strong> (or Player login) to instantly get back their account on any device!
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={async () => {
+                          const allGamerItems = [
+                            ...registrations.map(r => ({ id: r.userId || r.id, name: r.name })),
+                            ...adminUsers.filter(u => u.id && !registrations.find(r => r.userId === u.id) && u.role !== 'admin').map(u => ({ id: u.id, name: u.displayName || u.name || 'Gamer' }))
+                          ];
+                          let count = 0;
+                          for (const g of allGamerItems) {
+                            const cur = config.playerPasswords?.[g.id] || config.playerPasswords?.[g.name.toLowerCase().trim()];
+                            if (!cur) {
+                              const pin = String(Math.floor(100000 + Math.random() * 900000));
+                              await handleSavePlayerPassword(g.id, g.name, pin);
+                              count++;
+                            }
+                          }
+                          alert(`Generated and saved login PINs for ${count} player(s)!`);
+                        }}
+                        className="px-4 py-2 bg-yellow-500/20 hover:bg-yellow-500 text-yellow-300 hover:text-black border border-yellow-500/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm whitespace-nowrap"
+                      >
+                        <Sparkles className="w-4 h-4" /> Auto-Generate Missing PINs
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Instructions Box */}
+                  <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl flex items-start gap-3 text-xs text-white/80">
+                    <Info className="w-4 h-4 text-purple-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <p className="font-bold text-purple-300">How Player Account Recovery Works:</p>
+                      <p className="text-white/60 leading-relaxed font-sans">
+                        1. Set or generate a password/PIN for any player below and click <strong className="text-white">Save</strong>.
+                        <br />
+                        2. Click <strong className="text-white">Copy Login Info</strong> to share the login with the player.
+                        <br />
+                        3. The player opens <strong>Player Login</strong>, switches to the <strong>Admin</strong> tab, enters this password, and clicks <strong>Login</strong>.
+                        <br />
+                        4. Their player account is immediately retrieved and restored with all registration stats, matches, and team data!
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Search Bar */}
+                  <div className="flex items-center gap-3 bg-black/40 border border-white/10 rounded-xl px-4 py-2">
+                    <Search className="w-4 h-4 text-white/40" />
+                    <input 
+                      type="text"
+                      value={passwordSearchQuery}
+                      onChange={(e) => setPasswordSearchQuery(e.target.value)}
+                      placeholder="Search player by name, FC name, or UID..."
+                      className="bg-transparent border-none outline-none text-xs text-white w-full placeholder-white/30"
+                    />
+                    {passwordSearchQuery && (
+                      <button onClick={() => setPasswordSearchQuery('')} className="text-white/40 hover:text-white text-xs">
+                        Clear
+                      </button>
+                    )}
+                  </div>
+                </div>
+
+                {/* Player Password List / Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {(() => {
+                    const combinedList = [
+                      ...registrations.map(r => {
+                        const u = adminUsers.find(user => user.id === r.userId) || { displayName: r.name, id: r.userId, name: r.name };
+                        return {
+                          type: 'registration' as const,
+                          id: r.userId || r.id,
+                          regId: r.id,
+                          name: r.name,
+                          fcName: r.fcName,
+                          country: r.country,
+                          logoUrl: r.logoUrl,
+                          status: r.status,
+                          password: u.playerPassword || r.playerPassword || config.playerPasswords?.[r.userId] || config.playerPasswords?.[r.name.toLowerCase().trim()] || ''
+                        };
+                      }),
+                      ...adminUsers.filter(u => u.id && !registrations.find(r => r.userId === u.id) && u.role !== 'admin').map(u => ({
+                        type: 'shadow' as const,
+                        id: u.id,
+                        regId: undefined,
+                        name: u.displayName || u.name || 'Gamer',
+                        fcName: 'Pending Registration',
+                        country: undefined,
+                        logoUrl: undefined,
+                        status: 'Under Process',
+                        password: u.playerPassword || config.playerPasswords?.[u.id] || config.playerPasswords?.[(u.displayName||'').toLowerCase().trim()] || ''
+                      }))
+                    ];
+
+                    const filtered = combinedList.filter(item => {
+                      if (!passwordSearchQuery) return true;
+                      const q = passwordSearchQuery.toLowerCase();
+                      return item.name.toLowerCase().includes(q) || (item.fcName && item.fcName.toLowerCase().includes(q)) || item.id.toLowerCase().includes(q);
+                    });
+
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="col-span-full p-12 text-center bg-white/5 border border-white/10 rounded-2xl">
+                          <Users className="w-12 h-12 text-white/10 mx-auto mb-3" />
+                          <p className="text-white/40 text-sm font-bold">No players found matching "{passwordSearchQuery}"</p>
+                        </div>
+                      );
+                    }
+
+                    return filtered.map(item => {
+                      const inputVal = playerPasswordInputs[item.id] !== undefined ? playerPasswordInputs[item.id] : item.password;
+                      const isRevealed = revealedPasswords[item.id];
+                      const isSaving = passwordSavingId === item.id;
+                      const isSaved = passwordSavedId === item.id;
+                      const isCopied = copiedPassId === item.id;
+
+                      return (
+                        <div key={item.id} className="bg-white/5 border border-white/10 rounded-2xl p-5 hover:bg-white/[0.07] transition-all space-y-4">
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
+                              <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center overflow-hidden font-bold text-white text-sm">
+                                {item.logoUrl ? (
+                                  <img src={item.logoUrl} className="w-full h-full object-cover" alt={item.name} referrerPolicy="no-referrer" />
+                                ) : (
+                                  item.name[0] || '?'
+                                )}
+                              </div>
+                              <div>
+                                <h4 className="text-sm font-bold text-white flex items-center gap-2">
+                                  <span>{item.name}</span>
+                                  {item.status === 'approved' && (
+                                    <span className="text-[9px] bg-green-500/20 text-green-400 px-1.5 py-0.5 rounded border border-green-500/30">Approved</span>
+                                  )}
+                                  {item.status === 'pending' && (
+                                    <span className="text-[9px] bg-yellow-500/20 text-yellow-400 px-1.5 py-0.5 rounded border border-yellow-500/30">Pending</span>
+                                  )}
+                                  {item.status === 'Under Process' && (
+                                    <span className="text-[9px] bg-gray-500/20 text-gray-400 px-1.5 py-0.5 rounded border border-gray-500/30">New Gamer</span>
+                                  )}
+                                </h4>
+                                <p className="text-[10px] text-white/50">{item.fcName || 'Participant'}</p>
+                              </div>
+                            </div>
+
+                            {item.password ? (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-green-500/20 text-green-400 border border-green-500/30 flex items-center gap-1">
+                                <Check className="w-3 h-3" /> Password Set
+                              </span>
+                            ) : (
+                              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-red-500/20 text-red-400 border border-red-500/30">
+                                No Password
+                              </span>
+                            )}
+                          </div>
+
+                          <div className="pt-3 border-t border-white/5 space-y-2">
+                            <label className="text-[10px] font-bold text-white/60 uppercase tracking-wider block">
+                              Login / Recovery Password:
+                            </label>
+                            <div className="flex items-center gap-2">
+                              <div className="relative flex-1">
+                                <input 
+                                  type={isRevealed ? "text" : "password"}
+                                  value={inputVal}
+                                  onChange={(e) => setPlayerPasswordInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                  placeholder="Set password or PIN..."
+                                  className="w-full bg-black/50 border border-white/10 rounded-xl px-3 py-2 text-xs text-white font-mono outline-none focus:border-fc-neon-green pr-8"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => setRevealedPasswords(prev => ({ ...prev, [item.id]: !isRevealed }))}
+                                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-white/40 hover:text-white"
+                                  title={isRevealed ? "Hide password" : "Show password"}
+                                >
+                                  {isRevealed ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                                </button>
+                              </div>
+
+                              <button
+                                onClick={() => handleSavePlayerPassword(item.id, item.name, inputVal)}
+                                disabled={isSaving}
+                                className="px-3.5 py-2 bg-fc-neon-green/20 hover:bg-fc-neon-green text-fc-neon-green hover:text-black border border-fc-neon-green/30 rounded-xl text-xs font-bold transition-all flex items-center gap-1 shrink-0"
+                              >
+                                {isSaved ? (
+                                  <>
+                                    <Check className="w-3.5 h-3.5 text-green-400" /> Saved!
+                                  </>
+                                ) : isSaving ? (
+                                  <>
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" /> Saving...
+                                  </>
+                                ) : (
+                                  <>Save</>
+                                )}
+                              </button>
+                            </div>
+
+                            <div className="flex items-center justify-between gap-2 pt-1">
+                              <button
+                                onClick={() => handleGeneratePinForPlayer(item.id, item.name)}
+                                className="text-[10px] font-bold text-purple-400 hover:text-purple-300 flex items-center gap-1 bg-purple-500/10 px-2 py-1 rounded-lg border border-purple-500/20 transition-colors"
+                              >
+                                <Sparkles className="w-3 h-3" /> Generate PIN
+                              </button>
+
+                              {item.password && (
+                                <button
+                                  onClick={() => handleCopyPlayerCredentials(item.name, item.password, item.id)}
+                                  className="text-[10px] font-bold text-white/70 hover:text-white flex items-center gap-1 bg-white/5 px-2.5 py-1 rounded-lg border border-white/10 transition-colors"
+                                  title="Copy credentials to send to player"
+                                >
+                                  {isCopied ? <Check className="w-3 h-3 text-green-400" /> : <Copy className="w-3 h-3" />}
+                                  <span>{isCopied ? 'Copied!' : 'Copy Login Info'}</span>
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             )}
@@ -4830,11 +5293,19 @@ const DEFAULT_PLAYERS = [
 function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLogin?: () => void }) {
   const [tab, setTab] = useState<'player'|'admin'>('player');
   const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
+  const [registeredPlayersList, setRegisteredPlayersList] = useState<{ name: string, id: string, hasPassword: boolean, password?: string }[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState('');
+  const [playerMode, setPlayerMode] = useState<'new'|'existing'>('new');
   const [password, setPassword] = useState('');
+  const [adminGamerName, setAdminGamerName] = useState('');
   const [error, setError] = useState('');
+  const [recoverySuccessMessage, setRecoverySuccessMessage] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [lastLoginDetails, setLastLoginDetails] = useState<{username: string, displayName: string, role: string, password?: string} | null>(null);
+
+  const [usersData, setUsersData] = useState<any[]>([]);
+  const [regsData, setRegsData] = useState<any[]>([]);
+  const [configDataState, setConfigDataState] = useState<any>(null);
 
   useEffect(() => {
     try {
@@ -4857,38 +5328,71 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           getDoc(doc(db, 'config', 'system'))
         ]);
 
-        const takenNames = new Set<string>();
-        usersSnap.forEach((doc: any) => {
-          const data = doc.data();
-          if (data.displayName && data.role !== 'admin') {
-            takenNames.add(data.displayName.toLowerCase().trim());
-          }
-          if (data.username && data.role !== 'admin') {
-            takenNames.add(data.username.toLowerCase().trim());
-          }
-        });
-
-        regsSnap.forEach((doc: any) => {
-          const data = doc.data();
-          if (data.name) {
-            takenNames.add(data.name.toLowerCase().trim());
-          }
-        });
-
+        const uList = usersSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
+        const rList = regsSnap.docs.map((d: any) => ({ id: d.id, ...d.data() }));
         const configData = configSnap.exists() ? configSnap.data() : null;
+
+        setUsersData(uList);
+        setRegsData(rList);
+        setConfigDataState(configData);
+
+        const takenNames = new Set<string>();
+        const existingList: { name: string, id: string, hasPassword: boolean, password?: string }[] = [];
+        const seenNames = new Set<string>();
+
+        // Registrations
+        rList.forEach((r: any) => {
+          if (r.name) {
+            takenNames.add(r.name.toLowerCase().trim());
+            const key = r.name.toLowerCase().trim();
+            if (!seenNames.has(key)) {
+              seenNames.add(key);
+              const pass = r.playerPassword || configData?.playerPasswords?.[r.userId] || configData?.playerPasswords?.[key] || '';
+              existingList.push({
+                name: r.name,
+                id: r.userId || r.id,
+                hasPassword: !!pass,
+                password: pass
+              });
+            }
+          }
+        });
+
+        // Users
+        uList.forEach((u: any) => {
+          if (u.displayName && u.role !== 'admin') {
+            takenNames.add(u.displayName.toLowerCase().trim());
+            const key = u.displayName.toLowerCase().trim();
+            if (!seenNames.has(key)) {
+              seenNames.add(key);
+              const pass = u.playerPassword || configData?.playerPasswords?.[u.id] || configData?.playerPasswords?.[key] || '';
+              existingList.push({
+                name: u.displayName,
+                id: u.id,
+                hasPassword: !!pass,
+                password: pass
+              });
+            }
+          }
+          if (u.username && u.role !== 'admin') {
+            takenNames.add(u.username.toLowerCase().trim());
+          }
+        });
+
+        setRegisteredPlayersList(existingList.sort((a, b) => a.name.localeCompare(b.name)));
+
         const basePlayers = (configData?.allowedNames && configData.allowedNames.length > 0
           ? configData.allowedNames
           : DEFAULT_PLAYERS) as string[];
         
         const available = Array.from(new Set(basePlayers)).filter(p => !takenNames.has(p.toLowerCase().trim())).sort((a,b) => a.localeCompare(b));
         setAvailablePlayers(available);
+
         if (available.length > 0) {
-          setSelectedPlayer(prev => {
-            if (prev && available.includes(prev)) {
-              return prev;
-            }
-            return available[0];
-          });
+          setSelectedPlayer(available[0]);
+        } else if (existingList.length > 0) {
+          setPlayerMode('existing');
+          setSelectedPlayer(existingList[0].name);
         }
       } catch (err) {
         console.error("Failed to fetch available players", err);
@@ -4922,19 +5426,21 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-    
-    if (tab === 'player' && !selectedPlayer) {
-      setError('No player selected or all spots taken.');
-      return;
-    }
+    setRecoverySuccessMessage('');
 
-    try {
-      if (tab === 'player') {
-        if (selectedPlayer.trim().toLowerCase() === 'barnik') {
-          if (!password) {
-            setError('Admin password is required for Barnik.');
-            return;
-          }
+    if (tab === 'player') {
+      if (!selectedPlayer) {
+        setError('No player selected.');
+        return;
+      }
+
+      // Special case: Admin Barnik
+      if (selectedPlayer.trim().toLowerCase() === 'barnik') {
+        if (!password) {
+          setError('Admin password is required for Barnik.');
+          return;
+        }
+        try {
           const res = await signIn(selectedPlayer, password, "admin");
           localStorage.setItem('last_login_details', JSON.stringify({
             username: selectedPlayer,
@@ -4943,32 +5449,154 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
             displayName: selectedPlayer
           }));
           if (onAdminLogin) onAdminLogin();
-        } else {
-          const res = await signIn(selectedPlayer, "", "user");
-          localStorage.setItem('last_login_details', JSON.stringify({
-            username: selectedPlayer,
-            password: "",
-            role: "user",
-            displayName: selectedPlayer
-          }));
+          onClose();
+        } catch (err: any) {
+          setError(err.message || 'Login failed');
         }
-      } else {
-        if (!password) {
-          setError('Admin password is required.');
+        return;
+      }
+
+      // Check if this player has a password set by Admin
+      const cleanSelected = selectedPlayer.trim().toLowerCase();
+      const existingEntry = registeredPlayersList.find(p => p.name.toLowerCase().trim() === cleanSelected);
+      const userDoc = usersData.find(u => (u.displayName || u.username || '').toLowerCase().trim() === cleanSelected || u.id === `user_${cleanSelected.replace(/\s+/g, '_')}`);
+      const regDoc = regsData.find(r => (r.name || '').toLowerCase().trim() === cleanSelected);
+
+      const setPass = userDoc?.playerPassword 
+        || regDoc?.playerPassword 
+        || configDataState?.playerPasswords?.[userDoc?.id || '']
+        || configDataState?.playerPasswords?.[cleanSelected]
+        || configDataState?.playerPasswords?.[cleanSelected.replace(/\s+/g, '_')]
+        || existingEntry?.password;
+
+      if (setPass || playerMode === 'existing') {
+        if (setPass && !password.trim()) {
+          setError(`Password set by Admin is required for ${selectedPlayer}.`);
           return;
         }
-        const res = await signIn("admin", password, "admin");
-        localStorage.setItem('last_login_details', JSON.stringify({
-          username: "admin",
-          password: password,
-          role: "admin",
-          displayName: "Admin"
-        }));
-        if (onAdminLogin) onAdminLogin();
+        if (setPass && password.trim() !== setPass.trim()) {
+          setError(`Incorrect password for ${selectedPlayer}. Please verify with Admin.`);
+          return;
+        }
       }
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
+
+      try {
+        const res = await signIn(selectedPlayer, password.trim(), "user");
+        localStorage.setItem('last_login_details', JSON.stringify({
+          username: selectedPlayer,
+          password: password.trim(),
+          role: "user",
+          displayName: selectedPlayer
+        }));
+        onClose();
+      } catch (err: any) {
+        setError(err.message || 'Login failed');
+      }
+
+    } else {
+      // TAB === 'ADMIN': Admin section login & player recovery
+      // "Using the password in admin section login the user can get back their account"
+      const supplied = (password || '').trim();
+      if (!supplied) {
+        setError('Please enter password.');
+        return;
+      }
+
+      const gamerNameSupplied = adminGamerName.trim();
+
+      // Step 1: If no specific gamer name was given, try Admin sign-in first
+      if (!gamerNameSupplied) {
+        try {
+          const res = await signIn("admin", supplied, "admin");
+          localStorage.setItem('last_login_details', JSON.stringify({
+            username: "admin",
+            password: supplied,
+            role: "admin",
+            displayName: "Admin"
+          }));
+          if (onAdminLogin) onAdminLogin();
+          onClose();
+          return;
+        } catch (adminErr) {
+          // Not admin password, check if it's a player password below!
+        }
+      }
+
+      // Step 2: Check if this password belongs to a player account set by Admin
+      let matchedPlayer: { name: string, id: string } | null = null;
+
+      if (gamerNameSupplied) {
+        const targetClean = gamerNameSupplied.toLowerCase();
+        const userDoc = usersData.find(u => (u.displayName || u.username || '').toLowerCase().trim() === targetClean || u.id === `user_${targetClean.replace(/\s+/g, '_')}`);
+        const regDoc = regsData.find(r => (r.name || '').toLowerCase().trim() === targetClean);
+        const setPass = userDoc?.playerPassword 
+          || regDoc?.playerPassword 
+          || configDataState?.playerPasswords?.[userDoc?.id || '']
+          || configDataState?.playerPasswords?.[targetClean]
+          || configDataState?.playerPasswords?.[targetClean.replace(/\s+/g, '_')];
+
+        if (setPass && setPass.trim() === supplied) {
+          matchedPlayer = {
+            name: userDoc?.displayName || regDoc?.name || gamerNameSupplied,
+            id: userDoc?.id || regDoc?.userId || `user_${targetClean.replace(/\s+/g, '_')}`
+          };
+        } else {
+          setError(`Password does not match player "${gamerNameSupplied}". Please check password set by Admin.`);
+          return;
+        }
+      } else {
+        // Search all usersData
+        for (const u of usersData) {
+          if (u.role !== 'admin' && u.playerPassword && u.playerPassword.trim() === supplied) {
+            matchedPlayer = { name: u.displayName || u.username || 'Player', id: u.id };
+            break;
+          }
+        }
+        // Search regsData
+        if (!matchedPlayer) {
+          for (const r of regsData) {
+            if (r.playerPassword && r.playerPassword.trim() === supplied) {
+              matchedPlayer = { name: r.name, id: r.userId || r.id };
+              break;
+            }
+          }
+        }
+        // Search configDataState.playerPasswords
+        if (!matchedPlayer && configDataState?.playerPasswords) {
+          for (const [key, pass] of Object.entries(configDataState.playerPasswords)) {
+            if (typeof pass === 'string' && pass.trim() === supplied) {
+              const u = usersData.find(user => user.id === key || (user.displayName || user.username || '').toLowerCase().trim() === key.toLowerCase());
+              const r = regsData.find(reg => reg.userId === key || reg.name.toLowerCase().trim() === key.toLowerCase());
+              const displayName = u?.displayName || u?.username || r?.name || key;
+              matchedPlayer = { name: displayName, id: key };
+              break;
+            }
+          }
+        }
+      }
+
+      if (matchedPlayer) {
+        // Account retrieved successfully!
+        try {
+          const res = await signIn(matchedPlayer.name, supplied, "user");
+          localStorage.setItem('last_login_details', JSON.stringify({
+            username: matchedPlayer.name,
+            password: supplied,
+            role: "user",
+            displayName: matchedPlayer.name
+          }));
+          setRecoverySuccessMessage(`Account retrieved! Welcome back, ${matchedPlayer.name}.`);
+          setTimeout(() => {
+            onClose();
+          }, 850);
+          return;
+        } catch (playerErr: any) {
+          setError(playerErr.message || 'Player login failed');
+          return;
+        }
+      }
+
+      setError('Invalid password. If retrieving your player account, enter the password set by Admin (or enter your Gamer Name above).');
     }
   };
 
@@ -4979,27 +5607,29 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.95 }}
-        className="relative bg-fc-purple-dark border border-fc-neon-green/30 p-8 rounded-2xl max-w-sm w-full font-mono text-white shadow-2xl"
+        className="relative bg-fc-purple-dark border border-fc-neon-green/30 p-6 md:p-8 rounded-2xl max-w-sm w-full font-mono text-white shadow-2xl"
       >
         <button onClick={onClose} className="absolute top-4 right-4 text-white/50 hover:text-white">
           <X className="w-5 h-5" />
         </button>
-        <h2 className="text-xl font-bold tracking-normal text-fc-neon-green mb-6 text-center">Login</h2>
+        <h2 className="text-xl font-bold tracking-normal text-fc-neon-green mb-6 text-center">Login Portal</h2>
         
         <div className="flex gap-4 mb-6">
           <button 
             type="button"
-            className={`flex-1 py-2 text-xs font-bold tracking-wider border-b-2 transition-colors ${tab === 'player' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
-            onClick={() => setTab('player')}
+            className={`flex-1 py-2 text-xs font-bold tracking-wider border-b-2 transition-colors flex items-center justify-center gap-1.5 ${tab === 'player' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
+            onClick={() => { setTab('player'); setError(''); }}
           >
-            Player
+            <UserIcon className="w-3.5 h-3.5" />
+            <span>Player</span>
           </button>
           <button 
             type="button"
-            className={`flex-1 py-2 text-xs font-bold tracking-wider border-b-2 transition-colors ${tab === 'admin' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
-            onClick={() => setTab('admin')}
+            className={`flex-1 py-2 text-xs font-bold tracking-wider border-b-2 transition-colors flex items-center justify-center gap-1.5 ${tab === 'admin' ? 'border-fc-neon-green text-white' : 'border-white/10 text-white/40'}`}
+            onClick={() => { setTab('admin'); setError(''); }}
           >
-            Admin
+            <Key className="w-3.5 h-3.5" />
+            <span>Admin / Recover</span>
           </button>
         </div>
 
@@ -5018,35 +5648,92 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           </div>
         )}
 
-        <form onSubmit={handleLogin} className="space-y-6">
+        <form onSubmit={handleLogin} className="space-y-5">
           {tab === 'player' && (
             <div className="space-y-4">
-              <div>
-                <label className="block text-[10px] text-white/50 mb-2">Select Player Name</label>
-                {isLoading ? (
-                  <div className="text-xs text-white/50">Loading available spots...</div>
-                ) : availablePlayers.length === 0 ? (
-                  <div className="text-xs text-red-400">All spots have been taken.</div>
-                ) : (
-                  <select 
-                    value={selectedPlayer}
-                    onChange={(e) => setSelectedPlayer(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
-                  >
-                    {availablePlayers.map(p => (
-                      <option key={p} value={p}>{p}</option>
-                    ))}
-                  </select>
-                )}
+              {/* Mode Toggle: Pick New Spot or Reclaim Account */}
+              <div className="flex bg-black/40 p-1 rounded-xl border border-white/10 text-[10px] font-sans font-bold">
+                <button
+                  type="button"
+                  onClick={() => { setPlayerMode('new'); setSelectedPlayer(availablePlayers[0] || ''); }}
+                  className={`flex-1 py-1.5 rounded-lg transition-all ${playerMode === 'new' ? 'bg-fc-neon-green text-black font-extrabold shadow-sm' : 'text-white/50 hover:text-white'}`}
+                >
+                  New Spot ({availablePlayers.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setPlayerMode('existing'); setSelectedPlayer(registeredPlayersList[0]?.name || ''); }}
+                  className={`flex-1 py-1.5 rounded-lg transition-all flex items-center justify-center gap-1 ${playerMode === 'existing' ? 'bg-fc-neon-green text-black font-extrabold shadow-sm' : 'text-white/50 hover:text-white'}`}
+                >
+                  <Key className="w-3 h-3" /> Reclaim Account ({registeredPlayersList.length})
+                </button>
               </div>
+
+              {playerMode === 'new' ? (
+                <div>
+                  <label className="block text-[10px] text-white/50 mb-2 font-sans">Select Open Player Spot</label>
+                  {isLoading ? (
+                    <div className="text-xs text-white/50 flex items-center gap-2">
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-fc-neon-green" /> Loading available spots...
+                    </div>
+                  ) : availablePlayers.length === 0 ? (
+                    <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-xs text-red-400 font-sans">
+                      All spots are taken. Switch to "Reclaim Account" to log back into your existing account!
+                    </div>
+                  ) : (
+                    <select 
+                      value={selectedPlayer}
+                      onChange={(e) => setSelectedPlayer(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-fc-neon-green text-white font-sans"
+                    >
+                      {availablePlayers.map(p => (
+                        <option key={p} value={p}>{p}</option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-[10px] text-white/50 mb-1 font-sans">Select Registered Gamer</label>
+                    {registeredPlayersList.length === 0 ? (
+                      <div className="text-xs text-white/40 italic font-sans">No registered accounts found yet.</div>
+                    ) : (
+                      <select 
+                        value={selectedPlayer}
+                        onChange={(e) => setSelectedPlayer(e.target.value)}
+                        className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-fc-neon-green text-white font-sans"
+                      >
+                        {registeredPlayersList.map(p => (
+                          <option key={p.id} value={p.name}>
+                            {p.name} {p.hasPassword ? '🔑 (Protected)' : ''}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] text-white/50 mb-1 font-sans">Player Password (Set by Admin)</label>
+                    <input 
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-fc-neon-green text-white font-sans placeholder-white/30"
+                      placeholder="Enter password given by admin"
+                    />
+                  </div>
+                </div>
+              )}
+
               {selectedPlayer.trim().toLowerCase() === 'barnik' && (
                 <div className="animate-in fade-in slide-in-from-top-2">
-                  <label className="block text-[10px] text-white/50 mb-2">Admin Password for Barnik</label>
+                  <label className="block text-[10px] text-white/50 mb-1 font-sans">Admin Password for Barnik</label>
                   <input 
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
+                    className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-fc-neon-green text-white font-sans placeholder-white/30"
                     placeholder="Enter admin password"
                   />
                 </div>
@@ -5055,26 +5742,62 @@ function LoginModal({ onClose, onAdminLogin }: { onClose: () => void, onAdminLog
           )}
 
           {tab === 'admin' && (
-            <div>
-              <label className="block text-[10px] text-white/50 mb-2">Admin Password</label>
-              <input 
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full bg-black/50 border border-white/10 rounded-2xl px-4 py-3 text-sm focus:outline-none focus:border-fc-neon-green/50 text-white"
-                placeholder="Enter admin password"
-              />
+            <div className="space-y-3">
+              <div className="p-3 bg-purple-500/10 border border-purple-500/20 rounded-xl text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-purple-300">
+                  <Key className="w-3.5 h-3.5" />
+                  <span>Admin & Account Recovery Login</span>
+                </div>
+                <p className="text-[11px] text-white/60 font-sans leading-relaxed">
+                  Enter <strong className="text-white">Admin Password</strong> to access tournament controls, OR enter your <strong className="text-white">Player Password</strong> set by Admin to get back your player account!
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-white/50 mb-1 font-sans">
+                  Gamer / Player Name <span className="text-white/30">(Optional)</span>
+                </label>
+                <input 
+                  type="text"
+                  value={adminGamerName}
+                  onChange={(e) => setAdminGamerName(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2 text-xs focus:outline-none focus:border-fc-neon-green text-white font-sans placeholder-white/30"
+                  placeholder="e.g. John (leave empty if password is unique)"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-white/50 mb-1 font-sans">Password</label>
+                <input 
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-black/50 border border-white/10 rounded-xl px-4 py-2.5 text-xs focus:outline-none focus:border-fc-neon-green text-white font-sans placeholder-white/30"
+                  placeholder="Enter admin password or player password"
+                />
+              </div>
             </div>
           )}
 
-          {error && <div className="text-red-500 text-xs text-center">{error}</div>}
+          {recoverySuccessMessage && (
+            <div className="p-3 bg-green-500/20 border border-green-500/40 rounded-xl text-green-300 text-xs font-bold text-center flex items-center justify-center gap-2 animate-in fade-in">
+              <Check className="w-4 h-4 text-green-400" />
+              <span>{recoverySuccessMessage}</span>
+            </div>
+          )}
+
+          {error && <div className="text-red-400 text-xs text-center font-sans">{error}</div>}
 
           <button 
             type="submit"
-            disabled={tab === 'player' && availablePlayers.length === 0}
-            className="w-full py-4 bg-fc-neon-green text-black tracking-normal font-bold text-xs hover:bg-fc-purple-light transition-colors rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={tab === 'player' && playerMode === 'new' && availablePlayers.length === 0}
+            className="w-full py-3.5 bg-fc-neon-green text-black tracking-normal font-bold text-xs hover:bg-fc-purple-light transition-colors rounded-xl disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-fc-neon-green/20"
           >
-            Proceed
+            {tab === 'admin' 
+              ? 'Login / Recover Account' 
+              : playerMode === 'existing' 
+                ? 'Reclaim & Log In' 
+                : 'Proceed'}
           </button>
         </form>
       </motion.div>

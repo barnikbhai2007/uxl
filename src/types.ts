@@ -121,6 +121,7 @@ export interface Registration {
   country?: string;
   managerName?: string;
   managerPhoto?: string;
+  playerPassword?: string;
 }
 
 export interface AppContent {
@@ -154,6 +155,7 @@ export interface Config {
   customManagers?: { name: string; flag: string; photoUrl: string }[];
   managerPhotos?: Record<string, string>;
   managerFlags?: Record<string, string>;
+  playerPasswords?: Record<string, string>;
 }
 
 export interface MatchReport {
@@ -188,6 +190,7 @@ export interface UserProfile {
   email: string;
   role: 'admin' | 'user';
   achievements?: UserAchievementMap;
+  playerPassword?: string;
 }
 
 export interface StatGuess {
